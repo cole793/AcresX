@@ -26,3 +26,10 @@ The Water component of the beta Buildability Score now uses the average complete
 
 ## v0.4.3 reliability fix
 FEMA and NWI parcel screening now runs through a Netlify Function. This avoids browser cross-origin failures and converts GeoJSON parcel geometry into the Esri polygon format required by the agency services. The nearby-well result set now retains five wells for the five-well average.
+
+## v0.5 zoning and permit intelligence
+
+- Adds a county zoning-source panel and verification workflow.
+- Adds a likely permit checklist covering building, septic, well/water, driveway access and critical-area review.
+- Spokane County includes direct agency links; other counties use county-specific official-source searches until direct integrations are added.
+- Zoning and permit results are screening guidance, not legal determinations or permit approvals.
