@@ -22,3 +22,7 @@ AcresX provides preliminary screening only. Flood, wetland, parcel, utility, and
 ## v0.4.2 water-score update
 
 The Water component of the beta Buildability Score now uses the average completed depth reported for up to the five closest recorded wells. Distances remain visible for each individual well in the results list and map popups. Wells without a reported completed depth are excluded from the average.
+
+
+## v0.4.3 reliability fix
+FEMA and NWI parcel screening now runs through a Netlify Function. This avoids browser cross-origin failures and converts GeoJSON parcel geometry into the Esri polygon format required by the agency services. The nearby-well result set now retains five wells for the five-well average.
