@@ -1,22 +1,36 @@
-# AcresX v0.3.1 — Utility & Listing Evidence
+# AcresX v0.4 — Interactive Property Map
 
-Changes in this release:
+Washington land-intelligence screening dashboard.
 
-- Removed mapped power-distance estimates and power-map overlays.
-- Retained the likely electric utility from Washington utility territory data.
-- Added automatic public-web listing evidence for statements such as “power at the road,” “power onsite,” “meter installed,” and “off-grid.”
-- Added source links, extracted evidence text, confidence labels, and a utility-verification disclaimer.
-- Updated the beta Buildability Score so it no longer uses mapped power distance.
+## New in v0.4
 
-## Activate automatic listing evidence
+- Interactive parcel map with highlighted parcel boundary
+- Street and satellite basemaps
+- Toggle selected parcel and nearby recorded wells
+- Click parcel or well markers for details
+- Fit-to-parcel control
+- Full-screen map mode
+- Responsive mobile map controls
+- Existing parcel, well, likely utility-provider, and listing-evidence tools retained
 
-The dashboard is ready to call a Netlify Function, but the web-search API requires credentials. In Netlify, open **Site configuration → Environment variables** and add:
+## Deploy on GitHub + Netlify
 
-- `GOOGLE_SEARCH_API_KEY` — Google Custom Search JSON API key
-- `GOOGLE_SEARCH_ENGINE_ID` — Programmable Search Engine ID configured to search the entire web
+Upload the contents of this folder to the root of the AcresX GitHub repository, preserving this structure:
 
-Then trigger a new Netlify deploy. The keys stay server-side and are not exposed in `index.html`. Without these variables, every other dashboard feature works and the listing-evidence panel displays “Search not configured.”
+```
+index.html
+README.md
+netlify.toml
+assets/
+  acresx-logo.png
+  favicon.png
+netlify/
+  functions/
+    listing-evidence.js
+```
+
+Netlify should redeploy automatically after the GitHub commit.
 
 ## Important
 
-Listing evidence is unverified seller/broker language. AcresX does not confirm that service is actually available, that a transformer is usable, or what an extension will cost. Confirm directly with the likely serving utility.
+AcresX is a preliminary public-record screening tool. Parcel boundaries, well records, utility territories, and listing statements must be verified with the applicable county, agency, utility, seller, or licensed professional before purchasing or developing land.
