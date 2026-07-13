@@ -1,18 +1,22 @@
-# AcresX v0.2 Dashboard
+# AcresX v0.3.1 — Utility & Listing Evidence
 
-Static Washington land-intelligence dashboard.
+Changes in this release:
 
-## Deploy
+- Removed mapped power-distance estimates and power-map overlays.
+- Retained the likely electric utility from Washington utility territory data.
+- Added automatic public-web listing evidence for statements such as “power at the road,” “power onsite,” “meter installed,” and “off-grid.”
+- Added source links, extracted evidence text, confidence labels, and a utility-verification disclaimer.
+- Updated the beta Buildability Score so it no longer uses mapped power distance.
 
-1. Upload `index.html` to the root of the GitHub repository.
-2. In Netlify, use the repository root as the publish directory.
-3. Netlify will redeploy automatically after the commit.
+## Activate automatic listing evidence
 
-## Current data layers
+The dashboard is ready to call a Netlify Function, but the web-search API requires credentials. In Netlify, open **Site configuration → Environment variables** and add:
 
-- Washington statewide parcel service
-- Washington Ecology well records
-- Washington utility territory layer
-- OpenStreetMap power infrastructure through Overpass
+- `GOOGLE_SEARCH_API_KEY` — Google Custom Search JSON API key
+- `GOOGLE_SEARCH_ENGINE_ID` — Programmable Search Engine ID configured to search the entire web
 
-All results are preliminary screening data and require independent verification.
+Then trigger a new Netlify deploy. The keys stay server-side and are not exposed in `index.html`. Without these variables, every other dashboard feature works and the listing-evidence panel displays “Search not configured.”
+
+## Important
+
+Listing evidence is unverified seller/broker language. AcresX does not confirm that service is actually available, that a transformer is usable, or what an extension will cost. Confirm directly with the likely serving utility.
