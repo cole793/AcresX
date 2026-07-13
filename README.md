@@ -1,36 +1,24 @@
-# AcresX v0.4 — Interactive Property Map
+# AcresX v0.4.1 — Parcel & Hazard Layers
 
-Washington land-intelligence screening dashboard.
+Washington land-intelligence dashboard with:
 
-## New in v0.4
-
-- Interactive parcel map with highlighted parcel boundary
+- Statewide parcel lookup and highlighted parcel geometry
+- Nearby Washington Ecology well records
+- Likely electric utility territory
+- FEMA National Flood Hazard Layer screening and map overlay
+- U.S. Fish & Wildlife Service National Wetlands Inventory screening and map overlay
 - Street and satellite basemaps
-- Toggle selected parcel and nearby recorded wells
-- Click parcel or well markers for details
-- Fit-to-parcel control
-- Full-screen map mode
-- Responsive mobile map controls
-- Existing parcel, well, likely utility-provider, and listing-evidence tools retained
+- Beta buildability score incorporating water, flood, wetlands, utility evidence, and data confidence
 
-## Deploy on GitHub + Netlify
+## Deployment
 
-Upload the contents of this folder to the root of the AcresX GitHub repository, preserving this structure:
+Upload the contents of this folder to the root of the GitHub repository. Netlify should deploy automatically.
 
-```
-index.html
-README.md
-netlify.toml
-assets/
-  acresx-logo.png
-  favicon.png
-netlify/
-  functions/
-    listing-evidence.js
-```
+## Important limitations
 
-Netlify should redeploy automatically after the GitHub commit.
+AcresX provides preliminary screening only. Flood, wetland, parcel, utility, and well records may be incomplete or outdated. A mapped absence is not proof that a hazard or restriction is absent. Confirm findings with the responsible agency, county, utility, surveyor, wetland professional, and other qualified professionals before purchasing or developing land.
 
-## Important
 
-AcresX is a preliminary public-record screening tool. Parcel boundaries, well records, utility territories, and listing statements must be verified with the applicable county, agency, utility, seller, or licensed professional before purchasing or developing land.
+## v0.4.2 water-score update
+
+The Water component of the beta Buildability Score now uses the average completed depth reported for up to the five closest recorded wells. Distances remain visible for each individual well in the results list and map popups. Wells without a reported completed depth are excluded from the average.
