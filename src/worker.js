@@ -1,18 +1,6 @@
+import { getZoningProfile } from './zoning-counties.js';
 const FEMA_URL = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
 const NWI_URL = 'https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/0/query';
-
-const countyProfiles = {
-  Spokane: {
-    planningAgency: 'Spokane County Building & Planning',
-    healthAgency: 'Spokane Regional Health District',
-    planningUrl: 'https://www.spokanecounty.org/194/Building-Planning',
-    zoningMapUrl: 'https://cp.spokanecounty.org/scout/scoutdashboard/',
-    permitUrl: 'https://www.spokanecounty.org/194/Building-Planning',
-    septicUrl: 'https://srhd.org/programs-and-services/environmental-health/onsite-sewage',
-    roadAgency: 'Spokane County Public Works',
-    catalogQuery: 'Spokane County zoning'
-  }
-};
 
 const POWER_PATTERNS = [
   { re: /power\s+(?:is\s+)?(?:available|at|along|near|to)\s+(?:the\s+)?(?:road|property|lot|site)/i, label: 'Power nearby' },
@@ -75,61 +63,99 @@ async function hazards(request) {
   return json({ error: 'Unknown hazard type.' }, 400);
 }
 
-function fallbackProfile(county) {
-  const official = `https://www.google.com/search?q=${encodeURIComponent(`${county} County Washington official`)}`;
-  return {
-    planningAgency: `${county} County planning or community development`, healthAgency: `${county} County environmental health`,
-    planningUrl: official,
-    zoningMapUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} County Washington official zoning GIS`)}`,
-    permitUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} County Washington official building permits`)}`,
-    septicUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} County Washington official septic permit`)}`,
-    roadAgency: `${county} County public works or roads department`, catalogQuery: `${county} County Washington zoning`
-  };
-}
-
-function zoningValue(attrs) {
-  const preferred = ['ZONING', 'ZONE', 'ZONE_CODE', 'ZONING_CODE', 'ZONINGCLASS', 'ZONING_CLASS', 'DESIGNATION', 'LANDUSE', 'LAND_USE'];
-  for (const wanted of preferred) {
-    const key = Object.keys(attrs || {}).find(k => k.toUpperCase().replace(/[^A-Z0-9_]/g, '') === wanted);
-    if (key && attrs[key] != null && String(attrs[key]).trim()) return { code: String(attrs[key]).trim(), field: key };
-  }
-  const key = Object.keys(attrs || {}).find(k => /zon(e|ing)|designation/i.test(k) && attrs[k] != null && String(attrs[k]).trim());
-  return key ? { code: String(attrs[key]).trim(), field: key } : null;
-}
-
-async function queryZoningCatalog(county, lat, lon, profile) {
-  const search = new URL('https://www.arcgis.com/sharing/rest/search');
-  search.searchParams.set('f', 'json');
-  search.searchParams.set('num', '20');
-  search.searchParams.set('q', `(${profile.catalogQuery}) AND (type:"Feature Service" OR type:"Map Service")`);
-  const sr = await fetch(search, { cf: { cacheTtl: 86400, cacheEverything: true } });
-  if (!sr.ok) return null;
-  const catalog = await sr.json();
-  const candidates = (catalog.results || []).filter(x => /zon(e|ing)|land.?use/i.test(`${x.title || ''} ${(x.tags || []).join(' ')}`)).slice(0, 8);
-  for (const item of candidates) {
-    if (!item.url || !/^https:\/\//i.test(item.url)) continue;
-    try {
-      const metaResp = await fetch(`${item.url}?f=json`, { cf: { cacheTtl: 86400, cacheEverything: true } });
-      if (!metaResp.ok) continue;
-      const meta = await metaResp.json();
-      const layers = (meta.layers || []).filter(l => /zon(e|ing)|land.?use/i.test(l.name || ''));
-      for (const layer of layers.slice(0, 5)) {
-        const q = new URL(`${item.url}/${layer.id}/query`);
-        q.searchParams.set('f', 'json'); q.searchParams.set('where', '1=1'); q.searchParams.set('geometry', `${lon},${lat}`);
-        q.searchParams.set('geometryType', 'esriGeometryPoint'); q.searchParams.set('inSR', '4326');
-        q.searchParams.set('spatialRel', 'esriSpatialRelIntersects'); q.searchParams.set('outFields', '*'); q.searchParams.set('returnGeometry', 'false');
-        const qr = await fetch(q, { cf: { cacheTtl: 86400, cacheEverything: true } });
-        if (!qr.ok) continue;
-        const data = await qr.json();
-        const attrs = data.features?.[0]?.attributes;
-        const val = zoningValue(attrs);
-        if (val) return { ...val, label: layer.name || item.title, sourceTitle: item.title, sourceUrl: item.url, itemId: item.id };
-      }
-    } catch (_) {}
+function normalizedField(attrs, candidates) {
+  const keys = Object.keys(attrs || {});
+  for (const candidate of candidates || []) {
+    const wanted = candidate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const key = keys.find(k => k.toUpperCase().replace(/[^A-Z0-9]/g, '') === wanted);
+    if (key && attrs[key] != null && String(attrs[key]).trim()) return { value: String(attrs[key]).trim(), field: key };
   }
   return null;
 }
 
+function zoningValue(attrs, profile) {
+  const code = normalizedField(attrs, profile.codeFields);
+  const name = normalizedField(attrs, profile.nameFields);
+  if (code || name) return { code: code?.value || name?.value, name: name?.value || '', field: code?.field || name?.field };
+  const key = Object.keys(attrs || {}).find(k => /zon(e|ing)|designation|land.?use/i.test(k) && attrs[k] != null && String(attrs[k]).trim());
+  return key ? { code: String(attrs[key]).trim(), name: '', field: key } : null;
+}
+
+function scoreCatalogItem(item, profile) {
+  const text = `${item.title || ''} ${(item.tags || []).join(' ')} ${item.description || ''}`.toLowerCase();
+  let score = 0;
+  if (/zon(e|ing)/.test(text)) score += 10;
+  if (/current|official|generalized/.test(text)) score += 3;
+  if (/spokane county|county/.test(text)) score += 2;
+  if (profile.preferredOwners?.some(owner => String(item.owner || '').toLowerCase().includes(owner.toLowerCase()))) score += 8;
+  if (/city of spokane/.test(text) && profile.county === 'Spokane') score -= 4;
+  return score;
+}
+
+async function queryPointLayer(serviceUrl, layerId, lat, lon, profile, sourceTitle) {
+  const q = new URL(`${serviceUrl}/${layerId}/query`);
+  q.searchParams.set('f', 'json'); q.searchParams.set('where', '1=1'); q.searchParams.set('geometry', `${lon},${lat}`);
+  q.searchParams.set('geometryType', 'esriGeometryPoint'); q.searchParams.set('inSR', '4326');
+  q.searchParams.set('spatialRel', 'esriSpatialRelIntersects'); q.searchParams.set('outFields', '*'); q.searchParams.set('returnGeometry', 'false');
+  const qr = await fetchWithTimeout(q, { cf: { cacheTtl: 86400, cacheEverything: true } }, 15000);
+  if (!qr.ok) return null;
+  const data = await qr.json();
+  if (data.error) return null;
+  for (const feature of data.features || []) {
+    const value = zoningValue(feature.attributes, profile);
+    if (value) return { ...value, sourceTitle, sourceUrl: serviceUrl, layerId };
+  }
+  return null;
+}
+
+async function inspectService(serviceUrl, lat, lon, profile, sourceTitle) {
+  const metaResp = await fetchWithTimeout(`${serviceUrl}?f=json`, { cf: { cacheTtl: 86400, cacheEverything: true } }, 15000);
+  if (!metaResp.ok) return null;
+  const meta = await metaResp.json();
+  const layers = [...(meta.layers || []), ...(meta.tables || [])]
+    .filter(layer => profile.layerNamePattern.test(layer.name || ''))
+    .slice(0, 12);
+  for (const layer of layers) {
+    const hit = await queryPointLayer(serviceUrl, layer.id, lat, lon, profile, sourceTitle || layer.name);
+    if (hit) return { ...hit, label: layer.name || sourceTitle };
+  }
+  return null;
+}
+
+async function queryZoningCatalog(county, lat, lon, profile) {
+  for (const candidate of profile.serviceCandidates || []) {
+    try {
+      const hit = await inspectService(candidate.url, lat, lon, profile, candidate.title || `${county} County zoning`);
+      if (hit) return hit;
+    } catch (_) {}
+  }
+
+  const seen = new Set();
+  const catalogItems = [];
+  for (const queryText of profile.catalogQueries || []) {
+    const search = new URL('https://www.arcgis.com/sharing/rest/search');
+    search.searchParams.set('f', 'json'); search.searchParams.set('num', '50');
+    search.searchParams.set('q', `(${queryText}) AND (type:"Feature Service" OR type:"Map Service")`);
+    try {
+      const sr = await fetchWithTimeout(search, { cf: { cacheTtl: 86400, cacheEverything: true } }, 15000);
+      if (!sr.ok) continue;
+      const catalog = await sr.json();
+      for (const item of catalog.results || []) {
+        if (!item.url || !/^https:\/\//i.test(item.url) || seen.has(item.url)) continue;
+        seen.add(item.url); catalogItems.push(item);
+      }
+    } catch (_) {}
+  }
+
+  catalogItems.sort((a,b) => scoreCatalogItem(b, profile) - scoreCatalogItem(a, profile));
+  for (const item of catalogItems.slice(0, 20)) {
+    try {
+      const hit = await inspectService(item.url, lat, lon, profile, item.title);
+      if (hit) return { ...hit, itemId: item.id, owner: item.owner };
+    } catch (_) {}
+  }
+  return null;
+}
 function permitList(profile) {
   return [
     { name: 'Land-use / zoning verification', agency: profile.planningAgency, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: profile.zoningMapUrl },
@@ -145,18 +171,24 @@ async function zoningPermits(request) {
   const body = await request.json();
   const county = String(body.county || '').trim();
   if (!county) return json({ error: 'County is required' }, 400);
-  const profile = countyProfiles[county] || fallbackProfile(county);
+  const profile = getZoningProfile(county);
   let hit = null;
   if (Number.isFinite(Number(body.lat)) && Number.isFinite(Number(body.lon))) hit = await queryZoningCatalog(county, Number(body.lat), Number(body.lon), profile);
   return json({
-    available: true, county, parcelId: body.parcelId || '', address: body.address || '', jurisdiction: `${county} County`,
+    available: true, county, parcelId: body.parcelId || '', address: body.address || '', jurisdiction: profile.jurisdiction || `${county} County`, countyStatus: profile.status,
     zoning: hit ? {
-      status: 'gis_match', code: hit.code, label: hit.label || 'Mapped zoning',
-      note: `Mapped zoning value returned from ${hit.sourceTitle}. Verify permitted uses and dimensional standards with the county.`,
+      status: 'gis_match', code: hit.code, name: hit.name || '', label: hit.label || 'Mapped zoning',
+      note: `Mapped zoning returned from ${hit.sourceTitle}. Verify permitted uses and dimensional standards with the county.`,
       url: profile.zoningMapUrl, sourceUrl: hit.sourceUrl, sourceField: hit.field
     } : {
-      status: 'verification_required', code: null, label: 'County zoning lookup',
-      note: 'No reliable automated zoning value was returned. Open the county zoning source and confirm the parcel designation.', url: profile.zoningMapUrl
+      status: profile.status === 'configured' ? 'no_match' : 'not_configured',
+      code: null,
+      name: '',
+      label: profile.status === 'configured' ? 'No mapped result' : 'Source not configured',
+      note: profile.status === 'configured'
+        ? `${county} County is configured, but no intersecting zoning value was returned. Open the official zoning source and confirm the parcel designation.`
+        : `${county} County uses the shared zoning adapter, but its authoritative GIS source has not been configured yet.`,
+      url: profile.zoningMapUrl
     }, agencies: profile, permits: permitList(profile)
   }, 200, 'public, max-age=3600, s-maxage=86400');
 }
