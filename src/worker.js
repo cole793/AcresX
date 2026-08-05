@@ -2,13 +2,27 @@ import { getZoningProfile } from './zoning-counties.js';
 const FEMA_URL = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
 const NWI_URL = 'https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/0/query';
 
-const POWER_PATTERNS = [
-  { re: /power\s+(?:is\s+)?(?:available|at|along|near|to)\s+(?:the\s+)?(?:road|property|lot|site)/i, label: 'Power nearby' },
-  { re: /(?:electricity|electrical service|electric service)\s+(?:is\s+)?available/i, label: 'Electric service available' },
-  { re: /power\s+(?:is\s+)?(?:on[- ]?site|on\s+(?:the\s+)?property|installed|connected)/i, label: 'Power onsite' },
-  { re: /(?:meter|transformer)\s+(?:is\s+)?(?:installed|on[- ]?site|on\s+(?:the\s+)?property|nearby|at\s+(?:the\s+)?road)/i, label: 'Electrical equipment mentioned' },
-  { re: /off[- ]?grid|no\s+(?:power|electricity)|power\s+not\s+available/i, label: 'Power limitation' },
-  { re: /buyer\s+to\s+verify\s+(?:all\s+)?utilities|utilities\s+unknown/i, label: 'Utilities unverified' }
+const LISTING_CLAIM_PATTERNS = [
+  { category: 'Power', label: 'Power onsite', re: /(?:power|electric(?:ity|al service)?)\s+(?:is\s+)?(?:on[- ]?site|on (?:the )?property|installed|connected)/i },
+  { category: 'Power', label: 'Power nearby', re: /(?:power|electric(?:ity|al service)?)\s+(?:is\s+)?(?:available|at|along|near|to)\s+(?:the\s+)?(?:road|property|lot|site)/i },
+  { category: 'Power', label: 'Electrical equipment mentioned', re: /(?:meter|transformer)\s+(?:is\s+)?(?:installed|on[- ]?site|on (?:the )?property|nearby|at (?:the )?road)/i },
+  { category: 'Power', label: 'Power limitation', re: /off[- ]?grid|no\s+(?:power|electricity)|power\s+not\s+available/i },
+  { category: 'Water', label: 'Well installed', re: /(?:private\s+)?well\s+(?:is\s+)?(?:installed|drilled|on[- ]?site|on (?:the )?property|in place)/i },
+  { category: 'Water', label: 'Shared well', re: /shared\s+well|community\s+well/i },
+  { category: 'Water', label: 'Well needed', re: /(?:buyer|new owner)\s+(?:to|must)\s+(?:install|drill)\s+(?:a\s+)?well|well\s+(?:needed|required)/i },
+  { category: 'Septic', label: 'Septic installed', re: /septic\s+(?:system\s+)?(?:is\s+)?(?:installed|in place|approved and installed)/i },
+  { category: 'Septic', label: 'Septic approved', re: /(?:septic|onsite sewage)\s+(?:design|permit|approval)\s+(?:is\s+)?(?:approved|completed|available)|approved\s+septic/i },
+  { category: 'Septic', label: 'Perc test mentioned', re: /perc(?:olation)?\s+test(?:ed|ing)?|soil\s+test(?:ed|ing)?\s+for\s+septic/i },
+  { category: 'Septic', label: 'Septic needed', re: /(?:buyer|new owner)\s+(?:to|must)\s+install\s+(?:a\s+)?septic|septic\s+(?:needed|required)/i },
+  { category: 'Access', label: 'Road access mentioned', re: /(?:legal|recorded|year[- ]round|paved|gravel)\s+(?:road\s+)?access|access\s+(?:from|off|via)/i },
+  { category: 'Access', label: 'Driveway installed', re: /driveway\s+(?:is\s+)?(?:installed|in place|cut in|completed)/i },
+  { category: 'Site work', label: 'Building pad prepared', re: /(?:building|home|house)\s+(?:pad|site)\s+(?:is\s+)?(?:prepared|excavated|graded|ready)|graded\s+building\s+(?:pad|site)/i },
+  { category: 'Survey', label: 'Survey mentioned', re: /(?:recent|recorded|boundary)\s+survey|surveyed\s+(?:property|parcel|lot)|corners\s+(?:are\s+)?marked/i },
+  { category: 'Restrictions', label: 'CC&Rs or HOA mentioned', re: /\b(?:cc&?rs?|covenants?|hoa|homeowners association)\b/i },
+  { category: 'Restrictions', label: 'Manufactured homes mentioned', re: /manufactured\s+homes?\s+(?:are\s+)?(?:allowed|permitted|not allowed|prohibited)/i },
+  { category: 'Financing', label: 'Owner financing mentioned', re: /owner\s+(?:will\s+)?financ(?:e|ing)|seller\s+financ(?:e|ing)/i },
+  { category: 'Improvements', label: 'Existing structure mentioned', re: /(?:shop|barn|garage|cabin|outbuilding)\s+(?:is\s+)?(?:on (?:the )?property|included|already built|in place)/i },
+  { category: 'Utilities', label: 'Utilities unverified', re: /buyer\s+to\s+verify\s+(?:all\s+)?utilities|utilities\s+(?:are\s+)?unknown/i }
 ];
 
 function json(body, status = 200, cache = 'public, max-age=300, s-maxage=86400') {
@@ -194,94 +208,90 @@ async function zoningPermits(request) {
 }
 
 function clean(v = '') { return String(v).replace(/\s+/g, ' ').trim(); }
-const LISTING_PATTERNS = [
-  { category: 'Power', re: /power\s+(?:is\s+)?(?:available|at|along|near|to)\s+(?:the\s+)?(?:road|property|lot|site)/i, label: 'Power nearby' },
-  { category: 'Power', re: /(?:electricity|electrical service|electric service)\s+(?:is\s+)?available/i, label: 'Electric service available' },
-  { category: 'Power', re: /power\s+(?:is\s+)?(?:on[- ]?site|on\s+(?:the\s+)?property|installed|connected)/i, label: 'Power onsite' },
-  { category: 'Power', re: /(?:meter|transformer)\s+(?:is\s+)?(?:installed|on[- ]?site|on\s+(?:the\s+)?property|nearby|at\s+(?:the\s+)?road)/i, label: 'Electrical equipment mentioned' },
-  { category: 'Power', re: /off[- ]?grid|no\s+(?:power|electricity)|power\s+not\s+available/i, label: 'Power limitation' },
-  { category: 'Water', re: /(?:private|shared|community)?\s*well\s+(?:is\s+)?(?:installed|drilled|on[- ]?site|on\s+(?:the\s+)?property|produces?|tested)/i, label: 'Well mentioned' },
-  { category: 'Water', re: /(?:water\s+rights?|irrigation\s+rights?|public\s+water|community\s+water)/i, label: 'Water service or rights mentioned' },
-  { category: 'Septic', re: /septic\s+(?:is\s+)?(?:installed|approved|permitted|designed|on[- ]?site)|perc(?:olation)?\s+test/i, label: 'Septic or perc information' },
-  { category: 'Access', re: /(?:paved|gravel|private|county[- ]maintained)\s+(?:road|access)|legal\s+access|easement|driveway\s+(?:is\s+)?(?:installed|cut\s+in)/i, label: 'Access information' },
-  { category: 'Site', re: /(?:building|home)\s+site\s+(?:is\s+)?(?:cleared|prepared|graded|level)|level\s+building\s+site|site\s+prep/i, label: 'Building-site work mentioned' },
-  { category: 'Improvements', re: /(?:shop|barn|garage|outbuilding|fence|gate)\s+(?:is\s+)?(?:included|installed|built|on\s+(?:the\s+)?property)/i, label: 'Existing improvement mentioned' },
-  { category: 'Restrictions', re: /(?:cc&rs?|covenants?|hoa|no\s+manufactured\s+homes?|buyer\s+to\s+verify\s+(?:all\s+)?utilities|utilities\s+unknown)/i, label: 'Restriction or verification language' }
-];
-function extractClaims(text, source = {}) {
+function normalizeIdentity(v = '') { return clean(v).toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function addressParts(address = '') {
+  const parts = clean(address).split(',').map(clean).filter(Boolean);
+  const street = parts[0] || '';
+  const number = (street.match(/^\s*(\d+[A-Z]?)/i) || [])[1] || '';
+  const streetWords = street.replace(/^\s*\d+[A-Z]?\s*/i, '').replace(/\b(?:N|S|E|W|NE|NW|SE|SW|ROAD|RD|STREET|ST|AVENUE|AVE|LANE|LN|DRIVE|DR|COURT|CT|HIGHWAY|HWY|ROUTE|RT)\b/gi, ' ').split(/\s+/).filter(w => w.length > 2);
+  const zip = (address.match(/\b\d{5}(?:-\d{4})?\b/) || [])[0] || '';
+  return { number, streetWords, zip };
+}
+function extractClaims(text) {
   const claims = [];
-  for (const p of LISTING_PATTERNS) {
-    const m = text.match(p.re);
-    if (!m) continue;
-    const i = Math.max(0, m.index - 120), j = Math.min(text.length, m.index + m[0].length + 180);
-    claims.push({ category: p.category, classification: p.label, evidence: clean(text.slice(i, j)), ...source });
+  for (const pattern of LISTING_CLAIM_PATTERNS) {
+    const match = text.match(pattern.re);
+    if (!match) continue;
+    const i = Math.max(0, match.index - 120), j = Math.min(text.length, match.index + match[0].length + 180);
+    claims.push({ category: pattern.category, label: pattern.label, evidence: clean(text.slice(i, j)) });
   }
   return claims;
 }
-function htmlToText(html) {
-  return clean(String(html || '')
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'"));
+function scoreListingMatch(item, { parcelId, address, county }) {
+  const text = clean(`${item.title || ''} ${item.snippet || ''} ${item.displayLink || ''}`);
+  const normalized = normalizeIdentity(text);
+  const parcelNorm = normalizeIdentity(parcelId);
+  const { number, streetWords, zip } = addressParts(address);
+  let score = 0;
+  const signals = [];
+  if (parcelNorm && parcelNorm.length >= 6 && normalized.includes(parcelNorm)) { score += 55; signals.push('Parcel number match'); }
+  if (number && new RegExp(`\\b${number.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i').test(text)) { score += 18; signals.push('Street number match'); }
+  const wordHits = streetWords.filter(w => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i').test(text)).length;
+  if (streetWords.length && wordHits === streetWords.length) { score += 24; signals.push('Street name match'); }
+  else if (wordHits >= Math.max(1, Math.ceil(streetWords.length / 2))) { score += 12; signals.push('Partial street match'); }
+  if (zip && text.includes(zip)) { score += 12; signals.push('ZIP match'); }
+  if (county && new RegExp(`\\b${county.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i').test(text)) { score += 6; signals.push('County match'); }
+  const label = score >= 65 ? 'Strong match' : score >= 42 ? 'Probable match' : score >= 25 ? 'Possible match' : 'Weak match';
+  return { score: Math.min(score, 100), label, signals };
 }
-function safeListingUrl(raw) {
-  if (!raw) return null;
-  const u = new URL(raw);
-  if (!['http:', 'https:'].includes(u.protocol)) throw new Error('Listing URL must use http or https.');
-  const h = u.hostname.toLowerCase();
-  if (h === 'localhost' || h.endsWith('.local') || /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) throw new Error('Private-network listing URLs are not allowed.');
-  return u;
+async function googleSearch(env, query) {
+  if (!env.GOOGLE_SEARCH_API_KEY || !env.GOOGLE_SEARCH_ENGINE_ID) return null;
+  const u = new URL('https://www.googleapis.com/customsearch/v1');
+  u.searchParams.set('key', env.GOOGLE_SEARCH_API_KEY); u.searchParams.set('cx', env.GOOGLE_SEARCH_ENGINE_ID);
+  u.searchParams.set('q', query); u.searchParams.set('num', '10');
+  const r = await fetchWithTimeout(u, {}, 20000); const data = await r.json();
+  if (!r.ok) throw new Error(data.error?.message || `Google search returned ${r.status}`);
+  return data.items || [];
 }
-async function fetchListingContext(rawUrl) {
-  const u = safeListingUrl(rawUrl);
-  if (!u) return null;
-  const r = await fetchWithTimeout(u, { headers: { 'User-Agent': 'AcresX/0.6 Listing Context' }, redirect: 'follow' }, 15000);
-  if (!r.ok) throw new Error(`Listing page returned ${r.status}`);
-  const type = r.headers.get('content-type') || '';
-  if (!type.includes('text/html') && !type.includes('text/plain')) throw new Error('Listing URL did not return a readable webpage.');
-  const html = (await r.text()).slice(0, 750000);
-  const title = clean((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [,''])[1]);
-  const description = clean((html.match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([^"']+)/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["'](?:description|og:description)["']/i) || [,''])[1]);
-  const text = `${description} ${htmlToText(html)}`.slice(0, 120000);
-  const source = { title: title || u.hostname, url: u.href, source: u.hostname.replace(/^www\./, ''), confidence: 'Listing supplied' };
-  return { source, claims: extractClaims(text, source) };
+async function serperSearch(env, query) {
+  if (!env.SERPER_API_KEY) return null;
+  const r = await fetchWithTimeout('https://google.serper.dev/search', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-KEY': env.SERPER_API_KEY }, body: JSON.stringify({ q: query, num: 10 }) }, 20000);
+  const data = await r.json(); if (!r.ok) throw new Error(data.message || `Serper search returned ${r.status}`);
+  return (data.organic || []).map(x => ({ title: x.title, link: x.link, snippet: x.snippet, displayLink: x.displayLink || '' }));
 }
-
 async function listingEvidence(request, env) {
   const body = await request.json();
-  const parcelId = clean(body.parcelId), address = clean(body.address), county = clean(body.county), listingUrl = clean(body.listingUrl);
-  if (!parcelId && !address && !listingUrl) return json({ error: 'Parcel identifier, address, or listing URL required' }, 400);
-  const allClaims = [];
-  let supplied = null, suppliedError = '';
-  if (listingUrl) {
-    try { supplied = await fetchListingContext(listingUrl); allClaims.push(...(supplied?.claims || [])); }
-    catch (e) { suppliedError = e.message || 'Listing page could not be read.'; }
+  const parcelId = clean(body.parcelId), address = clean(body.address), county = clean(body.county);
+  if (!parcelId && !address) return json({ error: 'Parcel identifier or address required' }, 400);
+  if (!address) return json({ status: 'none', summary: 'No situs address available', confidence: 'Low', matchQuality: 'No reliable match', claims: [], matches: [] });
+  const identity = [`"${address}"`, parcelId ? `"${parcelId}"` : '', county ? `${county} Washington` : ''].filter(Boolean).join(' ');
+  const query = `${identity} (land OR acreage OR parcel OR property OR listing OR "for sale")`;
+  let items = await serperSearch(env, query);
+  let provider = 'Serper';
+  if (!items) { items = await googleSearch(env, query); provider = 'Google Custom Search'; }
+  if (!items) return json({ status: 'unavailable', error: 'Set SERPER_API_KEY or GOOGLE_SEARCH_API_KEY plus GOOGLE_SEARCH_ENGINE_ID in Cloudflare.', claims: [], matches: [] }, 503, 'no-store');
+  const candidates = [];
+  for (const item of items) {
+    if (!item.link) continue;
+    let source = '';
+    try { source = new URL(item.link).hostname.replace(/^www\./, ''); } catch { continue; }
+    const combined = clean(`${item.title || ''}. ${item.snippet || ''}`);
+    const match = scoreListingMatch(item, { parcelId, address, county });
+    if (match.score < 25) continue;
+    const claims = extractClaims(combined);
+    candidates.push({ title: clean(item.title), url: item.link, source, snippet: clean(item.snippet), matchScore: match.score, matchQuality: match.label, matchSignals: match.signals, claims });
   }
-  const matches = [];
-  if (env.GOOGLE_SEARCH_API_KEY && env.GOOGLE_SEARCH_ENGINE_ID && (parcelId || address)) {
-    const identity = [parcelId ? `"${parcelId}"` : '', address ? `"${address}"` : '', county ? `${county} Washington` : ''].filter(Boolean).join(' OR ');
-    const terms = '(power OR electricity OR well OR septic OR access OR easement OR "building site" OR utilities)';
-    const u = new URL('https://www.googleapis.com/customsearch/v1');
-    u.searchParams.set('key', env.GOOGLE_SEARCH_API_KEY); u.searchParams.set('cx', env.GOOGLE_SEARCH_ENGINE_ID); u.searchParams.set('q', `${identity} ${terms}`); u.searchParams.set('num', '10');
-    const r = await fetchWithTimeout(u, {}, 15000); const data = await r.json();
-    if (r.ok) for (const item of data.items || []) {
-      const source = { title: clean(item.title), url: item.link, source: new URL(item.link).hostname.replace(/^www\./, ''), snippet: clean(item.snippet), confidence: 'Moderate' };
-      const claims = extractClaims(clean(`${item.title || ''}. ${item.snippet || ''}`), source);
-      allClaims.push(...claims); matches.push(...claims);
-    }
+  candidates.sort((a, b) => b.matchScore - a.matchScore || b.claims.length - a.claims.length);
+  const reliable = candidates.filter(x => x.matchScore >= 42).slice(0, 5);
+  const claimMap = new Map();
+  for (const source of reliable) for (const claim of source.claims) {
+    const key = `${claim.category}|${claim.label}`;
+    if (!claimMap.has(key)) claimMap.set(key, { ...claim, sourceTitle: source.title, source: source.source, url: source.url, matchQuality: source.matchQuality, matchScore: source.matchScore });
   }
-  const unique = []; const seen = new Set();
-  for (const c of allClaims) { const k = `${c.category}|${c.classification}|${c.url || ''}`; if (!seen.has(k)) { seen.add(k); unique.push(c); } }
-  const powerClaims = unique.filter(c => c.category === 'Power');
-  const status = unique.length ? 'found' : (listingUrl && supplied ? 'none' : (!env.GOOGLE_SEARCH_API_KEY && !listingUrl ? 'unavailable' : 'none'));
-  return json({
-    status,
-    summary: powerClaims[0]?.classification || (unique.length ? `${unique.length} listing claim${unique.length === 1 ? '' : 's'} found` : 'No listing context found'),
-    confidence: supplied ? 'Listing supplied' : (unique.length ? 'Moderate' : 'Low'),
-    matches: powerClaims.slice(0, 5), claims: unique.slice(0, 20), listing: supplied?.source || null,
-    suppliedError, searchConfigured: Boolean(env.GOOGLE_SEARCH_API_KEY && env.GOOGLE_SEARCH_ENGINE_ID)
-  }, 200, 'no-store');
+  const claims = [...claimMap.values()];
+  if (!reliable.length) return json({ status: 'none', summary: 'No reliable listing found', confidence: 'Low', matchQuality: candidates[0]?.matchQuality || 'No reliable match', provider, searchedAddress: address, claims: [], matches: candidates.slice(0, 3) });
+  const top = reliable[0];
+  return json({ status: 'found', summary: claims.length ? `${claims.length} listing claim${claims.length === 1 ? '' : 's'} identified` : 'Matching listing found', confidence: top.matchScore >= 65 ? 'High' : 'Moderate', matchQuality: top.matchQuality, matchScore: top.matchScore, provider, searchedAddress: address, claims, matches: reliable });
 }
 
 function geometryBounds(geometry) {
