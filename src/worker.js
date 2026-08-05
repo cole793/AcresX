@@ -181,13 +181,136 @@ function permitList(profile) {
   ];
 }
 
+
+
+const SPOKANE_GIS = {
+  zoningBase: 'https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer',
+  permittingBase: 'https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer',
+  permitsLayer: 'https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/BPPublic/MapServer/5',
+  scoutUrl: 'https://cp.spokanecounty.org/scout/propertyinformation/'
+};
+
+function attrValue(attrs, candidates) {
+  const hit = normalizedField(attrs, candidates);
+  return hit?.value || '';
+}
+
+async function queryOfficialLayer(layerUrl, { lat, lon, geometry, outFields = '*', where = '1=1', limit = 100 } = {}) {
+  const q = new URL(`${layerUrl.replace(/\/$/, '')}/query`);
+  q.searchParams.set('f', 'json');
+  q.searchParams.set('where', where);
+  if (geometry) {
+    q.searchParams.set('geometry', JSON.stringify(geoJsonToEsriPolygon(geometry)));
+    q.searchParams.set('geometryType', 'esriGeometryPolygon');
+  } else {
+    q.searchParams.set('geometry', `${lon},${lat}`);
+    q.searchParams.set('geometryType', 'esriGeometryPoint');
+  }
+  q.searchParams.set('inSR', '4326');
+  q.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
+  q.searchParams.set('outFields', outFields);
+  q.searchParams.set('returnGeometry', 'false');
+  q.searchParams.set('resultRecordCount', String(limit));
+  const r = await fetchWithTimeout(q, { cf: { cacheTtl: 86400, cacheEverything: true } }, 20000);
+  if (!r.ok) throw new Error(`Spokane County GIS returned ${r.status}`);
+  const data = await r.json();
+  if (data.error) throw new Error(data.error.message || 'Spokane County GIS query failed');
+  return data.features || [];
+}
+
+function permitRecord(attrs = {}) {
+  const number = attrValue(attrs, ['PERMITNUM','PERMIT_NO','PERMITNUMBER','PERMIT_NUMBER','RECORDNO','RECORD_NO','CASE_NO','CASENO','APPLICATIONNO']);
+  const type = attrValue(attrs, ['PERMITTYPE','PERMIT_TYPE','RECORDTYPE','RECORD_TYPE','WORKTYPE','WORK_TYPE','TYPE','DESCRIPTION']);
+  const status = attrValue(attrs, ['STATUS','PERMITSTATUS','PERMIT_STATUS','RECORDSTATUS','RECORD_STATUS']);
+  const address = attrValue(attrs, ['ADDRESS','SITEADDRESS','SITE_ADDRESS','SITUSADDRESS','SITUS_ADDRESS','LOCATION']);
+  const issuedRaw = attrValue(attrs, ['ISSUEDDATE','ISSUED_DATE','ISSUED','DATEISSUED','DATE_ISSUED']);
+  const appliedRaw = attrValue(attrs, ['APPLIEDDATE','APPLIED_DATE','APPLICATIONDATE','APPLICATION_DATE','FILEDATE','FILE_DATE']);
+  const description = attrValue(attrs, ['WORKDESCRIPTION','WORK_DESCRIPTION','PROJECTDESCRIPTION','PROJECT_DESCRIPTION','DESCRIPTION','COMMENTS']);
+  const url = attrValue(attrs, ['URL','LINK','PERMITURL','PERMIT_URL']);
+  const dateValue = v => {
+    if (!v) return '';
+    const n = Number(v); const d = Number.isFinite(n) ? new Date(n) : new Date(v);
+    return Number.isNaN(d.getTime()) ? String(v) : d.toISOString().slice(0,10);
+  };
+  return { number, type: type || 'Permit record', status: status || 'Recorded', address, issuedDate: dateValue(issuedRaw), appliedDate: dateValue(appliedRaw), description, url };
+}
+
+async function spokaneCountyIntelligence(body, profile) {
+  const lat = Number(body.lat), lon = Number(body.lon);
+  const geometry = body.geometry || null;
+  const [zoningR, compR, ugaR, jurisdictionR, permitsR] = await Promise.allSettled([
+    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/3`, { lat, lon, outFields: 'ZONECLASS,ZONEDESC,ZFILENUM,COMMENTS,URL,DevFileNum,DevURL' }),
+    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/4`, { lat, lon, outFields: 'LANDUSECODE,LANDUSEDESC,COMMENTS,DevFileNum,DevURL' }),
+    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/2`, { lat, lon, outFields: 'NAME,TYPE' }),
+    queryOfficialLayer(`${SPOKANE_GIS.permittingBase}/0`, { lat, lon, outFields: '*' }),
+    queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100 })
+  ]);
+
+  const zAttrs = zoningR.status === 'fulfilled' ? zoningR.value[0]?.attributes || {} : {};
+  const cAttrs = compR.status === 'fulfilled' ? compR.value[0]?.attributes || {} : {};
+  const uAttrs = ugaR.status === 'fulfilled' ? ugaR.value[0]?.attributes || {} : {};
+  const jAttrs = jurisdictionR.status === 'fulfilled' ? jurisdictionR.value[0]?.attributes || {} : {};
+  const zoningCode = attrValue(zAttrs, ['ZONECLASS']);
+  const zoningName = attrValue(zAttrs, ['ZONEDESC']);
+  const jurisdictionName = attrValue(jAttrs, ['JURISDICTION','JURIS_NAME','NAME','AGENCY','SERVICEPROVIDER','SERVICE_PROVIDER','DESCRIPTION']) || profile.jurisdiction || 'Spokane County';
+  const permitHistory = permitsR.status === 'fulfilled'
+    ? permitsR.value.map(f => permitRecord(f.attributes || {})).filter((x, i, arr) => (x.number || x.type || x.description) && arr.findIndex(y => `${y.number}|${y.type}|${y.address}` === `${x.number}|${x.type}|${x.address}`) === i).slice(0,50)
+    : [];
+
+  return {
+    available: true,
+    county: 'Spokane',
+    parcelId: body.parcelId || '',
+    address: body.address || '',
+    jurisdiction: jurisdictionName,
+    countyStatus: 'official_adapter',
+    source: 'Spokane County SCOUT / Building & Planning GIS',
+    sourceUrl: SPOKANE_GIS.scoutUrl,
+    zoning: zoningCode ? {
+      status: 'gis_match', code: zoningCode, name: zoningName, label: 'Official mapped zoning',
+      note: 'Mapped directly from Spokane County SCOUT zoning. Verify allowed uses, density, setbacks and overlays with Spokane County or the applicable city.',
+      url: SPOKANE_GIS.scoutUrl, sourceUrl: `${SPOKANE_GIS.zoningBase}/3`, sourceField: 'ZONECLASS',
+      zoneFileNumber: attrValue(zAttrs, ['ZFILENUM']), developmentAgreement: attrValue(zAttrs, ['DevFileNum']), developmentAgreementUrl: attrValue(zAttrs, ['DevURL'])
+    } : {
+      status: 'no_match', code: null, name: '', label: 'No mapped zoning result',
+      note: zoningR.status === 'rejected' ? `Spokane zoning service error: ${zoningR.reason?.message || 'unavailable'}` : 'The official Spokane zoning layer returned no intersecting designation for the parcel center.',
+      url: SPOKANE_GIS.scoutUrl
+    },
+    comprehensivePlan: {
+      available: Boolean(attrValue(cAttrs, ['LANDUSECODE','LANDUSEDESC'])),
+      code: attrValue(cAttrs, ['LANDUSECODE']), name: attrValue(cAttrs, ['LANDUSEDESC']),
+      developmentAgreement: attrValue(cAttrs, ['DevFileNum']), developmentAgreementUrl: attrValue(cAttrs, ['DevURL']),
+      sourceUrl: `${SPOKANE_GIS.zoningBase}/4`
+    },
+    urbanGrowthArea: {
+      intersects: Boolean(Object.keys(uAttrs).length), name: attrValue(uAttrs, ['NAME']), type: attrValue(uAttrs, ['TYPE']), sourceUrl: `${SPOKANE_GIS.zoningBase}/2`
+    },
+    permitJurisdiction: { name: jurisdictionName, attributes: jAttrs, sourceUrl: `${SPOKANE_GIS.permittingBase}/0` },
+    permitHistory,
+    permitHistoryStatus: permitsR.status === 'fulfilled' ? (permitHistory.length ? 'found' : 'none') : 'unavailable',
+    permitHistoryError: permitsR.status === 'rejected' ? permitsR.reason?.message || 'Permit service unavailable' : '',
+    agencies: profile,
+    permits: permitList(profile)
+  };
+}
+
 async function zoningPermits(request) {
   const body = await request.json();
-  const county = String(body.county || '').trim();
+  const county = String(body.county || '').replace(/\s+County$/i, '').trim();
   if (!county) return json({ error: 'County is required' }, 400);
   const profile = getZoningProfile(county);
+  const hasPoint = Number.isFinite(Number(body.lat)) && Number.isFinite(Number(body.lon));
+  if (/^spokane$/i.test(county) && hasPoint) {
+    try {
+      const result = await spokaneCountyIntelligence(body, profile);
+      return json(result, 200, 'public, max-age=3600, s-maxage=86400');
+    } catch (error) {
+      // Fall through to the shared discovery adapter so a temporary county outage does not blank the panel.
+      console.warn('Spokane official adapter failed', error);
+    }
+  }
   let hit = null;
-  if (Number.isFinite(Number(body.lat)) && Number.isFinite(Number(body.lon))) hit = await queryZoningCatalog(county, Number(body.lat), Number(body.lon), profile);
+  if (hasPoint) hit = await queryZoningCatalog(county, Number(body.lat), Number(body.lon), profile);
   return json({
     available: true, county, parcelId: body.parcelId || '', address: body.address || '', jurisdiction: profile.jurisdiction || `${county} County`, countyStatus: profile.status,
     zoning: hit ? {
@@ -195,15 +318,11 @@ async function zoningPermits(request) {
       note: `Mapped zoning returned from ${hit.sourceTitle}. Verify permitted uses and dimensional standards with the county.`,
       url: profile.zoningMapUrl, sourceUrl: hit.sourceUrl, sourceField: hit.field
     } : {
-      status: profile.status === 'configured' ? 'no_match' : 'not_configured',
-      code: null,
-      name: '',
+      status: profile.status === 'configured' ? 'no_match' : 'not_configured', code: null, name: '',
       label: profile.status === 'configured' ? 'No mapped result' : 'Source not configured',
-      note: profile.status === 'configured'
-        ? `${county} County is configured, but no intersecting zoning value was returned. Open the official zoning source and confirm the parcel designation.`
-        : `${county} County uses the shared zoning adapter, but its authoritative GIS source has not been configured yet.`,
+      note: profile.status === 'configured' ? `${county} County is configured, but no intersecting zoning value was returned.` : `${county} County has not received a dedicated official adapter yet.`,
       url: profile.zoningMapUrl
-    }, agencies: profile, permits: permitList(profile)
+    }, agencies: profile, permits: permitList(profile), permitHistory: [], permitHistoryStatus: 'not_configured'
   }, 200, 'public, max-age=3600, s-maxage=86400');
 }
 
