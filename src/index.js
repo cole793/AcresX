@@ -30,6 +30,7 @@ async function maybeInjectUiPolish(request, response) {
   const scripts = [];
   if (!html.includes('/ui-polish.js')) scripts.push('<script src="/ui-polish.js"></script>');
   if (!html.includes('/parcel-preview.js')) scripts.push('<script src="/parcel-preview.js"></script>');
+  if (!html.includes('/score-cost.js')) scripts.push('<script src="/score-cost.js"></script>');
 
   if (!scripts.length) return new Response(html, response);
 
