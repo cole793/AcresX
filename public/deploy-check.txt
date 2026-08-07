@@ -1,0 +1,2 @@
+AcresX automatic deployment check — 2026-08-07
+If this file is reachable from the deployed site, GitHub Actions → Cloudflare deployment is working.
