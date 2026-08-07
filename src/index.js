@@ -27,11 +27,13 @@ async function maybeInjectUiPolish(request, response) {
   if (!contentType.includes('text/html')) return response;
 
   const html = await response.text();
-  if (html.includes('/ui-polish.js')) {
-    return new Response(html, response);
-  }
+  const scripts = [];
+  if (!html.includes('/ui-polish.js')) scripts.push('<script src="/ui-polish.js"></script>');
+  if (!html.includes('/parcel-preview.js')) scripts.push('<script src="/parcel-preview.js"></script>');
 
-  const polished = html.replace('</body>', '<script src="/ui-polish.js"></script>\n</body>');
+  if (!scripts.length) return new Response(html, response);
+
+  const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
   const headers = new Headers(response.headers);
   headers.delete('Content-Length');
 
