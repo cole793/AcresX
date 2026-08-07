@@ -2,6 +2,7 @@ import legacyWorker from './worker.js';
 import { getZoningProfile } from './zoning-counties.js';
 import { getSpokaneCountyIntelligence } from './counties/spokane.js';
 import { handleLandAnalysis } from './services/land-analysis.js';
+import { handlePowerIntelligence } from './services/power-intelligence.js';
 import { json } from './shared/http.js';
 
 async function handleZoningPermits(request) {
@@ -48,6 +49,10 @@ export default {
     try {
       if (request.method === 'POST' && url.pathname === '/api/land-analysis') {
         return await handleLandAnalysis(request);
+      }
+
+      if (request.method === 'POST' && url.pathname === '/api/power-intelligence') {
+        return await handlePowerIntelligence(request);
       }
 
       if (request.method === 'POST' && url.pathname === '/api/zoning-permits') {
