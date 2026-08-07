@@ -16,6 +16,31 @@ async function handleZoningPermits(request) {
   return json(result, 200, 'public, max-age=3600, s-maxage=86400');
 }
 
+async function maybeInjectUiPolish(request, response) {
+  if (request.method !== 'GET') return response;
+
+  const url = new URL(request.url);
+  if (url.pathname !== '/' && url.pathname !== '/index.html') return response;
+
+  const contentType = response.headers.get('Content-Type') || '';
+  if (!contentType.includes('text/html')) return response;
+
+  const html = await response.text();
+  if (html.includes('/ui-polish.js')) {
+    return new Response(html, response);
+  }
+
+  const polished = html.replace('</body>', '<script src="/ui-polish.js"></script>\n</body>');
+  const headers = new Headers(response.headers);
+  headers.delete('Content-Length');
+
+  return new Response(polished, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -34,7 +59,8 @@ export default {
         }
       }
 
-      return await legacyWorker.fetch(request, env, ctx);
+      const response = await legacyWorker.fetch(request, env, ctx);
+      return await maybeInjectUiPolish(request, response);
     } catch (error) {
       return json({ error: error?.message || 'Request failed' }, 502, 'no-store');
     }
