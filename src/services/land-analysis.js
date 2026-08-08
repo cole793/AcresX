@@ -75,7 +75,9 @@ async function terrainAnalysis(geometry) {
   })));
 
   const elevations = samples.map(sample => sample.elevation);
-  const reliefFt = Math.max(...elevations) - Math.min(...elevations);
+  const minFt = Math.min(...elevations);
+  const maxFt = Math.max(...elevations);
+  const reliefFt = maxFt - minFt;
   const centerSample = samples[0];
   const grades = samples.slice(1).map(sample =>
     Math.abs(sample.elevation - centerSample.elevation) / Math.max(distanceFeet(centerSample, sample), 1) * 100
@@ -85,6 +87,9 @@ async function terrainAnalysis(geometry) {
     available: true,
     gradePct: grades.reduce((sum, grade) => sum + grade, 0) / grades.length,
     maxGradePct: Math.max(...grades),
+    minFt,
+    maxFt,
+    centerFt: centerSample.elevation,
     reliefFt,
     sampleCount: samples.length,
     source: 'USGS Elevation Point Query Service'
