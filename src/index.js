@@ -29,6 +29,7 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/parcel-preview.js')) scripts.push('<script src="/parcel-preview.js"></script>');
   if (!html.includes('/score-cost.js')) scripts.push('<script src="/score-cost.js"></script>');
   if (!html.includes('/zoning-potential.js')) scripts.push('<script src="/zoning-potential.js"></script>');
+  if (!html.includes('/snapshot-accordion.js')) scripts.push('<script src="/snapshot-accordion.js"></script>');
   if (!scripts.length) return new Response(html, response);
 
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
