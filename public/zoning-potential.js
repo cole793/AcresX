@@ -20,6 +20,8 @@
       .zone-use strong{display:block;font-size:11px;line-height:1.3}.zone-use span{display:block;color:var(--muted);font-size:9px;margin-top:2px;text-transform:capitalize}
       .zone-context{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
       .zone-context-pill{border-radius:999px;background:#eef2ef;padding:6px 9px;font-size:10px;font-weight:800;color:var(--ink)}
+      .zone-private-warning{margin-top:12px;padding:11px 12px;border-radius:10px;background:#fff8e8;border:1px solid #ead8aa;font-size:10px;line-height:1.5;color:var(--ink)}
+      .zone-private-warning strong{display:block;font-size:10px;margin-bottom:2px}
       .zone-source{font-size:10px;color:var(--muted);line-height:1.5;margin-top:12px}
       .zone-source a{color:var(--green);font-weight:800;text-decoration:none}
       @media(max-width:700px){.zone-use-grid{grid-template-columns:1fr}}
@@ -96,6 +98,7 @@
       <div class="zone-use-grid">
         ${uses.map(use => `<div class="zone-use"><span class="zone-use-dot ${esc(use.status)}"></span><div><strong>${esc(use.label)}</strong><span>${esc(statusLabel(use.status))}</span></div></div>`).join('')}
       </div>
+      <div class="zone-private-warning"><strong>Private restrictions may apply</strong>County zoning eligibility does not override recorded CC&Rs, HOA rules, deed restrictions, plat conditions, or other private covenants. Review title documents and applicable association rules before relying on a listed use, especially for manufactured homes and additional dwellings.</div>
       <div class="zone-source">${esc(power.disclaimer || '')}<br><a href="${esc(power.sourceUrl || '#')}" target="_blank" rel="noopener">Spokane County Zoning Code ↗</a></div>
     `;
     root.appendChild(block);
