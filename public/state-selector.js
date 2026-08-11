@@ -15,6 +15,13 @@
   stateEl.innerHTML = '<option value="" selected>Select a state</option><option value="WA">Washington</option><option value="MT">Montana (Beta)</option>';
   form.insertBefore(stateEl, countyEl);
 
+  function updateHeroLabel() {
+    const searchCard = document.querySelector('.search-card');
+    if (!searchCard) return;
+    const eyebrow = searchCard.querySelector('.eyebrow');
+    if (eyebrow) eyebrow.textContent = 'Parcel Research';
+  }
+
   function updateBetaLabels() {
     const stateName = stateEl.value === 'MT' ? 'Montana' : stateEl.value === 'WA' ? 'Washington' : 'AcresX';
     const sideNote = document.querySelector('.sidebar .side-note');
@@ -25,6 +32,7 @@
 
     const version = document.querySelector('.version');
     if (version) version.textContent = 'AcresX Multi-State Beta';
+    updateHeroLabel();
   }
 
   function populateCounties() {
