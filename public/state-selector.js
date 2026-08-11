@@ -5,6 +5,8 @@
 
   const WA_COUNTIES = Array.from(countyEl.options).map(option => option.value).filter(Boolean);
   const oldFindParcel = typeof findParcel === 'function' ? findParcel : null;
+  const oldFindWells = typeof findWells === 'function' ? findWells : null;
+  const oldFindUtility = typeof findUtility === 'function' ? findUtility : null;
 
   const stateEl = document.createElement('select');
   stateEl.id = 'state';
@@ -45,6 +47,52 @@
       const data = await response.json();
       if (!response.ok || !data?.parcel) throw new Error(data?.error || `Montana parcel service returned ${response.status}`);
       return data.parcel;
+    };
+  }
+
+  if (oldFindWells) {
+    window.findWells = async function (parcel) {
+      if (stateEl.value !== 'MT') return oldFindWells(parcel);
+      const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
+      const response = await fetch('/api/well-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'MT', county: countyEl.value, lat, lon })
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.available) throw new Error(data?.error || `Montana well service returned ${response.status}`);
+
+      const boundary = turf.polygonToLine(parcel);
+      const wells = Array.isArray(data.wells) ? data.wells : [];
+      wells.forEach(well => {
+        try {
+          well.properties = well.properties || {};
+          well.properties._distance = turf.pointToLineDistance(well, boundary, { units: 'miles' });
+        } catch {
+          well.properties._distance = Number.POSITIVE_INFINITY;
+        }
+      });
+      return wells.sort((a, b) => Number(a.properties?._distance) - Number(b.properties?._distance)).slice(0, 5);
+    };
+  }
+
+  if (oldFindUtility) {
+    window.findUtility = async function (parcel) {
+      if (stateEl.value !== 'MT') return oldFindUtility(parcel);
+      const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
+      try {
+        const response = await fetch('/api/utility-territory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: 'MT', county: countyEl.value, lat, lon })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || `Utility territory service returned ${response.status}`);
+        return Array.isArray(data.providers) ? data.providers : [];
+      } catch (error) {
+        console.warn('Montana utility territory lookup failed', error);
+        return [];
+      }
     };
   }
 
