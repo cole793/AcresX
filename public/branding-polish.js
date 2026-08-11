@@ -47,6 +47,15 @@
         }
       }
     }
+
+    document.querySelectorAll('.sidebar .version').forEach((el) => {
+      const text = (el.textContent || '').trim();
+      if (/washington\s+beta/i.test(text)) {
+        el.textContent = text.replace(/washington\s+beta/ig, 'Beta');
+      } else if (/washington/i.test(text) && /beta/i.test(text)) {
+        el.textContent = 'Beta';
+      }
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', updateBranding);
