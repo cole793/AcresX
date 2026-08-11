@@ -3,6 +3,7 @@ import { fetchWithTimeout } from '../../shared/http.js';
 // Yellowstone County's tax parcel layer exposes the identifiers buyers/realtors actually use:
 // GEOCODE (17 chars), TAX_ID/TAXID, PROP_ID and FULLADD.
 const YELLOWSTONE_TAX_PARCEL = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1';
+const YELLOWSTONE_PROPERTY_SEARCH = 'https://www.yellowstonecountymt.gov/Treasurer/PropertySearch/';
 
 function normalize(value) {
   return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -46,7 +47,9 @@ function normalizeFeature(feature, requestedId) {
       SITUS_ADDRESS: street,
       SITUS_CITY_NM: '',
       SITUS_ZIP_NR: '',
-      DATA_LINK: 'https://gis.yellowstonecountymt.gov/'
+      // Link to the official Yellowstone County Treasurer property-record search.
+      // The prior generic GIS host is not a valid public property-record landing page.
+      DATA_LINK: YELLOWSTONE_PROPERTY_SEARCH
     }
   };
 }
