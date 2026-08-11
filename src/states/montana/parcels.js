@@ -1,56 +1,26 @@
 import { fetchWithTimeout } from '../../shared/http.js';
 
-const YELLOWSTONE_OWNER_PARCEL = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/YCO_DATA_OwnerParcel/MapServer/0';
+// Yellowstone County's tax parcel layer exposes the identifiers buyers/realtors actually use:
+// GEOCODE (17 chars), TAX_ID/TAXID, PROP_ID and FULLADD.
+const YELLOWSTONE_TAX_PARCEL = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1';
 
 function normalize(value) {
-  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
 function sql(value) {
-  return String(value || '').replaceAll("'", "''");
+  return String(value ?? '').replaceAll("'", "''");
 }
 
-function findField(fields, candidates) {
-  const list = Array.isArray(fields) ? fields : [];
-  for (const candidate of candidates) {
-    const wanted = normalize(candidate);
-    const match = list.find(field => normalize(field.name) === wanted || normalize(field.alias) === wanted);
-    if (match) return match.name;
-  }
-  return null;
-}
-
-function valueFrom(attrs, candidates) {
-  const keys = Object.keys(attrs || {});
-  for (const candidate of candidates) {
-    const wanted = normalize(candidate);
-    const key = keys.find(name => normalize(name) === wanted);
-    if (key && attrs[key] != null && String(attrs[key]).trim()) return String(attrs[key]).trim();
-  }
-  return '';
-}
-
-async function metadata() {
-  const response = await fetchWithTimeout(`${YELLOWSTONE_OWNER_PARCEL}?f=json`, {
-    cf: { cacheTtl: 86400, cacheEverything: true }
-  }, 15000);
-  if (!response.ok) throw new Error(`Yellowstone parcel metadata returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Yellowstone parcel metadata unavailable');
-  return data;
-}
-
-async function query(where) {
-  const url = new URL(`${YELLOWSTONE_OWNER_PARCEL}/query`);
+async function query(where, count = 20) {
+  const url = new URL(`${YELLOWSTONE_TAX_PARCEL}/query`);
   url.searchParams.set('f', 'geojson');
   url.searchParams.set('where', where);
   url.searchParams.set('outFields', '*');
   url.searchParams.set('returnGeometry', 'true');
   url.searchParams.set('outSR', '4326');
-  url.searchParams.set('resultRecordCount', '20');
-  const response = await fetchWithTimeout(url, {
-    cf: { cacheTtl: 3600, cacheEverything: true }
-  }, 20000);
+  url.searchParams.set('resultRecordCount', String(count));
+  const response = await fetchWithTimeout(url, { cf: { cacheTtl: 3600, cacheEverything: true } }, 20000);
   if (!response.ok) throw new Error(`Yellowstone parcel service returned ${response.status}`);
   const data = await response.json();
   if (data.error) throw new Error(data.error.message || 'Yellowstone parcel search failed');
@@ -59,12 +29,8 @@ async function query(where) {
 
 function normalizeFeature(feature, requestedId) {
   const attrs = feature.properties || {};
-  const parcelId = valueFrom(attrs, [
-    'GEOCODE','PARCELID','PARCEL_ID','PARCEL_ID_NR','PROPERTYID','PROPERTY_ID','TAXID','TAX_ID','PID','ACCOUNT','ACCOUNTNO','ACCOUNT_NO'
-  ]) || requestedId;
-  const street = valueFrom(attrs, ['SITUS_ADDRESS','SITUSADDR','SITEADDRESS','SITE_ADDRESS','ADDRESS','PROPADDR','PROPERTY_ADDRESS']);
-  const city = valueFrom(attrs, ['SITUS_CITY','SITUSCITY','CITY','CITYNAME','CITY_NAME']);
-  const zip = valueFrom(attrs, ['SITUS_ZIP','SITUSZIP','ZIP','ZIPCODE','ZIP_CODE']);
+  const parcelId = String(attrs.GEOCODE || attrs.GEO_CODE || attrs.TAX_ID || attrs.TAXID || requestedId || '').trim();
+  const street = String(attrs.FULLADD || attrs.ADDR || '').trim();
 
   return {
     type: 'Feature',
@@ -78,8 +44,8 @@ function normalizeFeature(feature, requestedId) {
       _stateCode: 'MT',
       _stateDisplay: 'Montana',
       SITUS_ADDRESS: street,
-      SITUS_CITY_NM: city,
-      SITUS_ZIP_NR: zip,
+      SITUS_CITY_NM: '',
+      SITUS_ZIP_NR: '',
       DATA_LINK: 'https://gis.yellowstonecountymt.gov/'
     }
   };
@@ -87,32 +53,42 @@ function normalizeFeature(feature, requestedId) {
 
 export async function findYellowstoneParcel(parcelInput) {
   const raw = String(parcelInput || '').trim();
-  if (!raw) throw new Error('Parcel number is required.');
-
-  const meta = await metadata();
-  const fields = meta.fields || [];
-  const idCandidates = [
-    'GEOCODE','PARCELID','PARCEL_ID','PROPERTYID','PROPERTY_ID','TAXID','TAX_ID','PID','ACCOUNT','ACCOUNTNO','ACCOUNT_NO'
-  ];
-  const idFields = idCandidates.map(name => findField(fields, [name])).filter((value, index, arr) => value && arr.indexOf(value) === index);
-  if (!idFields.length) throw new Error('Yellowstone parcel ID field could not be identified from the county GIS schema.');
-
-  const escaped = sql(raw.toUpperCase());
   const compact = normalize(raw);
-  const exact = idFields.map(field => `UPPER(${field})='${escaped}'`).join(' OR ');
-  let features = await query(`(${exact})`);
+  if (!compact) throw new Error('Parcel number is required.');
 
-  if (!features.length && compact) {
-    const like = idFields.map(field => `UPPER(${field}) LIKE '%${sql(compact)}%'`).join(' OR ');
-    const candidates = await query(`(${like})`);
-    features = candidates.filter(feature => idFields.some(field => normalize(feature.properties?.[field]) === compact));
+  // Exact matching only. The prior broad LIKE fallback could return several ownership
+  // polygons and incorrectly report "multiple matches" for a valid 17-digit geocode.
+  // GEOCODE is the primary Montana cadastral identifier shown in Yellowstone's tax layer.
+  const candidates = [
+    `UPPER(GEOCODE)='${sql(compact)}'`,
+    `UPPER(GEO_CODE)='${sql(compact)}'`,
+    `UPPER(TAX_ID)='${sql(compact)}'`,
+    `UPPER(TAXID)='${sql(compact)}'`
+  ];
+  if (/^\d+$/.test(compact)) candidates.push(`PROP_ID=${Number(compact)}`);
+
+  const features = await query(`(${candidates.join(' OR ')})`, 10);
+  if (!features.length) {
+    throw new Error('Parcel not found in Yellowstone County. Enter the county GEOCODE or tax ID shown on the property record.');
   }
 
-  if (features.length !== 1) {
-    throw new Error(features.length
-      ? 'Multiple Yellowstone County parcel matches were found. Use the exact parcel/geocode format shown by the county.'
-      : 'Parcel not found in Yellowstone County. Confirm the parcel/geocode number.');
+  // Some county records can duplicate the same tax parcel. Collapse identical geocodes
+  // before deciding that the user's identifier is ambiguous.
+  const exact = features.filter(feature => {
+    const p = feature.properties || {};
+    return [p.GEOCODE, p.GEO_CODE, p.TAX_ID, p.TAXID, p.PROP_ID].some(value => normalize(value) === compact);
+  });
+  const pool = exact.length ? exact : features;
+  const unique = new Map();
+  for (const feature of pool) {
+    const p = feature.properties || {};
+    const key = normalize(p.GEOCODE || p.GEO_CODE || p.TAX_ID || p.TAXID || p.PROP_ID || JSON.stringify(feature.geometry));
+    if (!unique.has(key)) unique.set(key, feature);
   }
 
-  return normalizeFeature(features[0], raw);
+  if (unique.size > 1) {
+    throw new Error('Multiple Yellowstone County tax parcels use that identifier. Try the full 17-digit GEOCODE shown by the county.');
+  }
+
+  return normalizeFeature([...unique.values()][0], raw);
 }
