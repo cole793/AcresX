@@ -37,6 +37,8 @@
     return {
       county: zp.county || last?.parcel?.properties?._countyDisplay || last?.parcel?.properties?.COUNTY_NM || '',
       zoneCode: z.code,
+      zoneName: z.name || '',
+      jurisdiction: zp.jurisdiction || zp.permitJurisdiction?.name || '',
       uga: Boolean(zp.urbanGrowthArea?.intersects),
       developmentAgreement: z.developmentAgreement || zp.comprehensivePlan?.developmentAgreement || ''
     };
@@ -44,8 +46,12 @@
 
   async function loadPotential() {
     const identity = currentZoningIdentity();
-    if (!identity || !/^spokane$/i.test(String(identity.county).replace(/\s+County$/i, '').trim())) return null;
-    if (last?.zoningDevelopmentPotential?.code === identity.zoneCode) return last.zoningDevelopmentPotential;
+    if (!identity) return null;
+    const county = String(identity.county).replace(/\s+County$/i, '').trim();
+    if (!/^(spokane|yellowstone)$/i.test(county)) return null;
+
+    const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
+    if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;
 
     const requestId = ++zoningRequestId;
     try {
@@ -57,10 +63,11 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `Zoning rules returned ${response.status}`);
       if (requestId !== zoningRequestId || typeof last === 'undefined') return null;
+      data._cacheKey = cacheKey;
       last.zoningDevelopmentPotential = data;
       return data;
     } catch (error) {
-      if (typeof last !== 'undefined') last.zoningDevelopmentPotential = { available: false, error: error.message };
+      if (typeof last !== 'undefined') last.zoningDevelopmentPotential = { available: false, error: error.message, _cacheKey: cacheKey };
       return null;
     }
   }
@@ -68,7 +75,7 @@
   function statusLabel(value) {
     if (value === 'permitted') return 'Permitted';
     if (value === 'limited') return 'Limited / standards apply';
-    if (value === 'conditional') return 'Conditional use';
+    if (value === 'conditional') return 'Special / conditional review';
     if (value === 'not_permitted') return 'Not permitted';
     return value || 'Verify';
   }
@@ -80,11 +87,11 @@
     if (!root || root.querySelector('.zone-potential')) return;
 
     const uses = Array.isArray(power.uses) ? power.uses : [];
-    const context = [
-      power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA',
-      power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged',
-      `Code ${power.sourceChapter}`
-    ];
+    const county = String(power.county || '').toLowerCase();
+    const context = county === 'yellowstone'
+      ? [power.jurisdiction || 'Yellowstone County', power.sourceChapter || 'Zoning regulations']
+      : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
+    const sourceLabel = county === 'yellowstone' ? `${power.jurisdiction || 'Yellowstone County'} zoning regulations` : 'Spokane County Zoning Code';
 
     const block = document.createElement('div');
     block.className = 'zone-potential';
@@ -94,12 +101,12 @@
         <span class="zone-family">${esc(power.family || 'Zoning')}</span>
       </div>
       <div class="zone-density"><span>Residential / development intensity</span><strong>${esc(power.density || 'Verify project-specific density standards')}</strong></div>
-      <div class="zone-context">${context.map(x => `<span class="zone-context-pill">${esc(x)}</span>`).join('')}</div>
+      <div class="zone-context">${context.filter(Boolean).map(x => `<span class="zone-context-pill">${esc(x)}</span>`).join('')}</div>
       <div class="zone-use-grid">
-        ${uses.map(use => `<div class="zone-use"><span class="zone-use-dot ${esc(use.status)}"></span><div><strong>${esc(use.label)}</strong><span>${esc(statusLabel(use.status))}</span></div></div>`).join('')}
+        ${uses.map(use => `<div class="zone-use"><span class="zone-use-dot ${esc(use.status)}"></span><div><strong>${esc(use.label)}</strong><span>${esc(statusLabel(use.status))}</span>${use.note ? `<span style="text-transform:none;line-height:1.35">${esc(use.note)}</span>` : ''}</div></div>`).join('')}
       </div>
-      <div class="zone-private-warning"><strong>Private restrictions may apply</strong>County zoning eligibility does not override recorded CC&Rs, HOA rules, deed restrictions, plat conditions, or other private covenants. Review title documents and applicable association rules before relying on a listed use, especially for manufactured homes and additional dwellings.</div>
-      <div class="zone-source">${esc(power.disclaimer || '')}<br><a href="${esc(power.sourceUrl || '#')}" target="_blank" rel="noopener">Spokane County Zoning Code ↗</a></div>
+      <div class="zone-private-warning"><strong>Private restrictions may apply</strong>Zoning eligibility does not override recorded CC&Rs, HOA rules, deed restrictions, plat conditions, or other private covenants. Review title documents and applicable association rules before relying on a listed use, especially for manufactured homes and additional dwellings.</div>
+      <div class="zone-source">${esc(power.disclaimer || '')}<br><a href="${esc(power.sourceUrl || '#')}" target="_blank" rel="noopener">${esc(sourceLabel)} ↗</a></div>
     `;
     root.appendChild(block);
   }
