@@ -5,6 +5,7 @@ import { getYellowstoneCountyIntelligence } from './counties/yellowstone.js';
 import { findYellowstoneParcel } from './states/montana/parcels.js';
 import { findMontanaWells } from './states/montana/wells.js';
 import { handleLandAnalysis } from './services/land-analysis.js';
+import { handleSlopeGrid } from './services/slope-grid.js';
 import { handlePowerIntelligence } from './services/power-intelligence.js';
 import { handleUtilityTerritory } from './services/utility-territory.js';
 import { handleZoningRules } from './services/zoning-rules.js';
@@ -67,6 +68,7 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/zoning-potential.js')) scripts.push('<script src="/zoning-potential.js"></script>');
   if (!html.includes('/snapshot-accordion.js')) scripts.push('<script src="/snapshot-accordion.js"></script>');
   if (!html.includes('/state-selector.js')) scripts.push('<script src="/state-selector.js"></script>');
+  if (!html.includes('/slope-map.js')) scripts.push('<script src="/slope-map.js"></script>');
   if (!scripts.length) return new Response(html, response);
 
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
@@ -83,6 +85,7 @@ export default {
       if (request.method === 'POST' && url.pathname === '/api/well-search') return await handleWellSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/utility-territory') return await handleUtilityTerritory(request);
       if (request.method === 'POST' && url.pathname === '/api/land-analysis') return await handleLandAnalysis(request);
+      if (request.method === 'POST' && url.pathname === '/api/slope-grid') return await handleSlopeGrid(request);
       if (request.method === 'POST' && url.pathname === '/api/power-intelligence') return await handlePowerIntelligence(request);
       if (request.method === 'POST' && url.pathname === '/api/zoning-rules') return await handleZoningRules(request);
       if (request.method === 'POST' && url.pathname === '/api/zoning-permits') {
