@@ -15,6 +15,28 @@
   stateEl.innerHTML = '<option value="WA">Washington</option><option value="MT">Montana (Beta)</option>';
   form.insertBefore(stateEl, countyEl);
 
+  function updateBetaLabels() {
+    const stateName = stateEl.value === 'MT' ? 'Montana' : 'Washington';
+    const disclaimer = document.querySelector('.disclaimer');
+    if (disclaimer) {
+      const heading = disclaimer.querySelector('strong, b');
+      if (heading) heading.textContent = `${stateName} beta`;
+      else {
+        const walker = document.createTreeWalker(disclaimer, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (/washington\s+beta|montana\s+beta|^\s*beta\s*$/i.test(node.nodeValue || '')) {
+            node.nodeValue = (node.nodeValue || '').replace(/washington\s+beta|montana\s+beta|beta/i, `${stateName} beta`);
+            break;
+          }
+        }
+      }
+    }
+
+    const version = document.querySelector('.version');
+    if (version) version.textContent = 'AcresX Multi-State Beta';
+  }
+
   function populateCounties() {
     const state = stateEl.value;
     countyEl.innerHTML = '';
@@ -30,6 +52,7 @@
     if (parcel) parcel.placeholder = state === 'MT'
       ? 'Enter Yellowstone parcel / geocode number'
       : 'Enter assessor parcel number';
+    updateBetaLabels();
   }
 
   stateEl.addEventListener('change', populateCounties);
@@ -104,7 +127,4 @@
     @media(max-width:700px){.search-form{grid-template-columns:1fr!important}.search-form .search-btn{grid-column:auto}}
   `;
   document.head.appendChild(style);
-
-  const version = document.querySelector('.version');
-  if (version) version.textContent = 'AcresX Multi-State Beta';
 })();
