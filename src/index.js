@@ -1,10 +1,25 @@
 import legacyWorker from './worker.js';
 import { getZoningProfile } from './zoning-counties.js';
 import { getSpokaneCountyIntelligence } from './counties/spokane.js';
+import { findYellowstoneParcel } from './states/montana/parcels.js';
 import { handleLandAnalysis } from './services/land-analysis.js';
 import { handlePowerIntelligence } from './services/power-intelligence.js';
 import { handleZoningRules } from './services/zoning-rules.js';
 import { json } from './shared/http.js';
+
+async function handleParcelSearch(request) {
+  const body = await request.json();
+  const state = String(body.state || '').toUpperCase().trim();
+  const county = String(body.county || '').replace(/\s+County$/i, '').trim();
+  const parcelId = String(body.parcelId || '').trim();
+
+  if (state === 'MT' && /^yellowstone$/i.test(county)) {
+    const parcel = await findYellowstoneParcel(parcelId);
+    return json({ available: true, state: 'MT', county: 'Yellowstone', parcel }, 200, 'public, max-age=300, s-maxage=3600');
+  }
+
+  return json({ available: false, error: 'This state/county parcel adapter is not supported by the new router yet.' }, 400, 'no-store');
+}
 
 async function handleZoningPermits(request) {
   const body = await request.clone().json();
@@ -30,6 +45,7 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/score-cost.js')) scripts.push('<script src="/score-cost.js"></script>');
   if (!html.includes('/zoning-potential.js')) scripts.push('<script src="/zoning-potential.js"></script>');
   if (!html.includes('/snapshot-accordion.js')) scripts.push('<script src="/snapshot-accordion.js"></script>');
+  if (!html.includes('/state-selector.js')) scripts.push('<script src="/state-selector.js"></script>');
   if (!scripts.length) return new Response(html, response);
 
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
@@ -42,6 +58,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
+      if (request.method === 'POST' && url.pathname === '/api/parcel-search') return await handleParcelSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/land-analysis') return await handleLandAnalysis(request);
       if (request.method === 'POST' && url.pathname === '/api/power-intelligence') return await handlePowerIntelligence(request);
       if (request.method === 'POST' && url.pathname === '/api/zoning-rules') return await handleZoningRules(request);
