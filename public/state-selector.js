@@ -17,20 +17,10 @@
 
   function updateBetaLabels() {
     const stateName = stateEl.value === 'MT' ? 'Montana' : 'Washington';
-    const disclaimer = document.querySelector('.disclaimer');
-    if (disclaimer) {
-      const heading = disclaimer.querySelector('strong, b');
+    const sideNote = document.querySelector('.sidebar .side-note');
+    if (sideNote) {
+      const heading = sideNote.querySelector('strong, b');
       if (heading) heading.textContent = `${stateName} beta`;
-      else {
-        const walker = document.createTreeWalker(disclaimer, NodeFilter.SHOW_TEXT);
-        let node;
-        while ((node = walker.nextNode())) {
-          if (/washington\s+beta|montana\s+beta|^\s*beta\s*$/i.test(node.nodeValue || '')) {
-            node.nodeValue = (node.nodeValue || '').replace(/washington\s+beta|montana\s+beta|beta/i, `${stateName} beta`);
-            break;
-          }
-        }
-      }
     }
 
     const version = document.querySelector('.version');
