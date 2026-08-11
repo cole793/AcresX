@@ -12,15 +12,15 @@
   stateEl.id = 'state';
   stateEl.className = 'control';
   stateEl.setAttribute('aria-label', 'State');
-  stateEl.innerHTML = '<option value="WA">Washington</option><option value="MT">Montana (Beta)</option>';
+  stateEl.innerHTML = '<option value="" selected>Select a state</option><option value="WA">Washington</option><option value="MT">Montana (Beta)</option>';
   form.insertBefore(stateEl, countyEl);
 
   function updateBetaLabels() {
-    const stateName = stateEl.value === 'MT' ? 'Montana' : 'Washington';
+    const stateName = stateEl.value === 'MT' ? 'Montana' : stateEl.value === 'WA' ? 'Washington' : 'AcresX';
     const sideNote = document.querySelector('.sidebar .side-note');
     if (sideNote) {
       const heading = sideNote.querySelector('strong, b');
-      if (heading) heading.textContent = `${stateName} beta`;
+      if (heading) heading.textContent = stateEl.value ? `${stateName} beta` : 'Beta';
     }
 
     const version = document.querySelector('.version');
@@ -30,26 +30,50 @@
   function populateCounties() {
     const state = stateEl.value;
     countyEl.innerHTML = '';
-    if (state === 'MT') {
+
+    if (!state) {
+      countyEl.add(new Option('Select a state first', ''));
+      countyEl.disabled = true;
+    } else if (state === 'MT') {
+      countyEl.disabled = false;
       countyEl.add(new Option('Yellowstone', 'Yellowstone'));
       countyEl.value = 'Yellowstone';
     } else {
+      countyEl.disabled = false;
       WA_COUNTIES.forEach(county => countyEl.add(new Option(county, county)));
       countyEl.value = WA_COUNTIES.includes('Spokane') ? 'Spokane' : WA_COUNTIES[0] || '';
     }
 
     const parcel = document.getElementById('parcel');
-    if (parcel) parcel.placeholder = state === 'MT'
-      ? 'Enter Yellowstone parcel / geocode number'
-      : 'Enter assessor parcel number';
+    if (parcel) {
+      parcel.value = '';
+      parcel.disabled = !state;
+      parcel.placeholder = !state
+        ? 'Select a state first'
+        : state === 'MT'
+          ? 'Enter Yellowstone parcel / geocode number'
+          : 'Enter assessor parcel number';
+    }
+
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) searchBtn.disabled = !state;
+
     updateBetaLabels();
   }
 
   stateEl.addEventListener('change', populateCounties);
   populateCounties();
 
+  form.addEventListener('submit', event => {
+    if (!stateEl.value) {
+      event.preventDefault();
+      stateEl.focus();
+    }
+  }, true);
+
   if (oldFindParcel) {
     window.findParcel = async function (county, input) {
+      if (!stateEl.value) throw new Error('Select a state before searching a parcel.');
       if (stateEl.value !== 'MT') return oldFindParcel(county, input);
 
       const response = await fetch('/api/parcel-search', {
@@ -113,6 +137,7 @@
   style.id = 'stateSelectorStyles';
   style.textContent = `
     .search-form{grid-template-columns:160px 210px minmax(220px,1fr) 170px!important}
+    .control:disabled,.search-btn:disabled{opacity:.58;cursor:not-allowed}
     @media(max-width:900px){.search-form{grid-template-columns:1fr 1fr!important}.search-form .search-btn{grid-column:1/-1}}
     @media(max-width:700px){.search-form{grid-template-columns:1fr!important}.search-form .search-btn{grid-column:auto}}
   `;
