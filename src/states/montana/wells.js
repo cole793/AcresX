@@ -33,14 +33,14 @@ async function queryGwic(lat, lon, miles) {
 
   const url = new URL(`${GWIC_BOREHOLES}/query`);
   url.searchParams.set('f', 'json');
-  url.searchParams.set('where', "(total_depth_ft_bgs IS NOT NULL AND total_depth_ft_bgs > 0) AND (abandoned_flag IS NULL OR UPPER(abandoned_flag) NOT IN ('Y','YES','TRUE'))");
+  url.searchParams.set('where', 'total_depth_ft_bgs IS NOT NULL AND total_depth_ft_bgs > 0');
   url.searchParams.set('geometry', JSON.stringify(envelope));
   url.searchParams.set('geometryType', 'esriGeometryEnvelope');
   url.searchParams.set('inSR', '4326');
   url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('returnGeometry', 'true');
-  url.searchParams.set('outFields', 'gwicid,site_name,latitude,longitude,total_depth_ft_bgs,static_water_level_ft_bgs,date_completed,status,construction_type,site_type,report_link');
+  url.searchParams.set('outFields', 'gwicid,site_name,latitude,longitude,total_depth_ft_bgs,static_water_level_ft_bgs,date_completed,status,construction_type,site_type,abandoned_flag');
   url.searchParams.set('resultRecordCount', '2000');
 
   const response = await fetchWithTimeout(url, {
@@ -69,7 +69,8 @@ function normalizeFeature(feature) {
   const status = valueFrom(attrs, ['status']);
   const constructionType = valueFrom(attrs, ['construction_type']);
   const siteType = valueFrom(attrs, ['site_type']);
-  const reportLink = valueFrom(attrs, ['report_link', 'reportlink']);
+  const abandoned = String(valueFrom(attrs, ['abandoned_flag']) || '').trim().toUpperCase();
+  if (['Y', 'YES', 'TRUE'].includes(abandoned)) return null;
 
   return {
     type: 'Feature',
@@ -87,7 +88,7 @@ function normalizeFeature(feature) {
       WellProjectType: siteType ? String(siteType) : 'Groundwater well',
       WellSubType: constructionType ? String(constructionType) : '',
       Status: status ? String(status) : '',
-      ReportLink: reportLink ? String(reportLink) : (gwicId ? `https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=${encodeURIComponent(gwicId)}&agency=mbmg&reqby=M` : ''),
+      ReportLink: gwicId ? `https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=${encodeURIComponent(gwicId)}&agency=mbmg&reqby=M` : '',
       _source: 'Montana Bureau of Mines and Geology GWIC — Boreholes'
     }
   };
