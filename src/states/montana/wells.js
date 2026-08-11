@@ -1,7 +1,9 @@
 import { fetchWithTimeout } from '../../shared/http.js';
 
-const GWIC_LAYER_HTTPS = 'https://mbmgmap.mtech.edu/ArcGIS/rest/services/Water/GWIC_wells_map_service_250k_vis/MapServer/0';
-const GWIC_LAYER_HTTP = 'http://mbmgmap.mtech.edu/ArcGIS/rest/services/Water/GWIC_wells_map_service_250k_vis/MapServer/0';
+// Current Montana Bureau of Mines and Geology GWIC Boreholes layer.
+// This layer contains point geometry plus total depth, static water level,
+// completion date and GWIC identifiers in one queryable feature layer.
+const GWIC_BOREHOLES = 'https://mbmgmap.mtech.edu/server/rest/services/Water_Resources/GWIC_Database/FeatureServer/4';
 
 function number(value) {
   const n = Number(value);
@@ -18,7 +20,7 @@ function valueFrom(attrs, candidates) {
   return null;
 }
 
-async function queryEndpoint(base, lat, lon, miles) {
+async function queryGwic(lat, lon, miles) {
   const latPad = miles / 69;
   const lonPad = miles / (69 * Math.max(0.2, Math.cos(lat * Math.PI / 180)));
   const envelope = {
@@ -29,38 +31,27 @@ async function queryEndpoint(base, lat, lon, miles) {
     spatialReference: { wkid: 4326 }
   };
 
-  const url = new URL(`${base}/query`);
+  const url = new URL(`${GWIC_BOREHOLES}/query`);
   url.searchParams.set('f', 'json');
-  url.searchParams.set('where', '1=1');
+  url.searchParams.set('where', "(total_depth_ft_bgs IS NOT NULL AND total_depth_ft_bgs > 0) AND (abandoned_flag IS NULL OR UPPER(abandoned_flag) NOT IN ('Y','YES','TRUE'))");
   url.searchParams.set('geometry', JSON.stringify(envelope));
   url.searchParams.set('geometryType', 'esriGeometryEnvelope');
   url.searchParams.set('inSR', '4326');
   url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('returnGeometry', 'true');
-  url.searchParams.set('outFields', '*');
+  url.searchParams.set('outFields', 'gwicid,site_name,latitude,longitude,total_depth_ft_bgs,static_water_level_ft_bgs,date_completed,status,construction_type,site_type,report_link');
   url.searchParams.set('resultRecordCount', '2000');
 
   const response = await fetchWithTimeout(url, {
     headers: { 'User-Agent': 'AcresX/0.9 Montana Beta' },
     cf: { cacheTtl: 3600, cacheEverything: true }
   }, 20000);
-  if (!response.ok) throw new Error(`GWIC service returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'GWIC query failed');
-  return data.features || [];
-}
 
-async function queryGwic(lat, lon, miles) {
-  try {
-    return await queryEndpoint(GWIC_LAYER_HTTPS, lat, lon, miles);
-  } catch (httpsError) {
-    try {
-      return await queryEndpoint(GWIC_LAYER_HTTP, lat, lon, miles);
-    } catch {
-      throw httpsError;
-    }
-  }
+  if (!response.ok) throw new Error(`GWIC Boreholes service returned ${response.status}`);
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || 'GWIC Boreholes query failed');
+  return data.features || [];
 }
 
 function normalizeFeature(feature) {
@@ -71,9 +62,13 @@ function normalizeFeature(feature) {
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
 
   const gwicId = valueFrom(attrs, ['gwicid', 'gwic_id', 'id']);
-  const depth = number(valueFrom(attrs, ['total_depth', 'totaldepth', 'depth']));
-  const swl = number(valueFrom(attrs, ['swl', 'static_water_level', 'staticwaterlevel']));
+  const depth = number(valueFrom(attrs, ['total_depth_ft_bgs', 'total_depth', 'totaldepth', 'depth']));
+  const swl = number(valueFrom(attrs, ['static_water_level_ft_bgs', 'swl', 'static_water_level', 'staticwaterlevel']));
   const siteName = valueFrom(attrs, ['site_name', 'sitename']);
+  const completed = valueFrom(attrs, ['date_completed', 'completion_date', 'completed_date']);
+  const status = valueFrom(attrs, ['status']);
+  const constructionType = valueFrom(attrs, ['construction_type']);
+  const siteType = valueFrom(attrs, ['site_type']);
   const reportLink = valueFrom(attrs, ['report_link', 'reportlink']);
 
   return {
@@ -82,15 +77,18 @@ function normalizeFeature(feature) {
     properties: {
       ID: gwicId != null ? String(gwicId) : '',
       GWICId: gwicId != null ? String(gwicId) : '',
+      WellTagNr: gwicId != null ? String(gwicId) : '',
       ProjectName: siteName ? String(siteName) : 'Montana GWIC well',
+      FileName: gwicId != null ? `GWIC ${gwicId}` : '',
       CompletedDepth: depth,
       StaticWaterLvl: swl,
       FlowRateGPM: null,
-      WorkCompletionDate: null,
-      WellProjectType: 'Groundwater well',
-      WellSubType: '',
+      WorkCompletionDate: completed,
+      WellProjectType: siteType ? String(siteType) : 'Groundwater well',
+      WellSubType: constructionType ? String(constructionType) : '',
+      Status: status ? String(status) : '',
       ReportLink: reportLink ? String(reportLink) : (gwicId ? `https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=${encodeURIComponent(gwicId)}&agency=mbmg&reqby=M` : ''),
-      _source: 'Montana Bureau of Mines and Geology GWIC'
+      _source: 'Montana Bureau of Mines and Geology GWIC — Boreholes'
     }
   };
 }
@@ -104,7 +102,10 @@ export async function findMontanaWells({ lat, lon }) {
   let normalized = [];
   while (miles <= 64 && normalized.length < 5) {
     const rows = await queryGwic(lat, lon, miles);
-    normalized = rows.map(normalizeFeature).filter(Boolean).filter(feature => Number.isFinite(Number(feature.properties.CompletedDepth)) && Number(feature.properties.CompletedDepth) > 0);
+    normalized = rows
+      .map(normalizeFeature)
+      .filter(Boolean)
+      .filter(feature => Number.isFinite(Number(feature.properties.CompletedDepth)) && Number(feature.properties.CompletedDepth) > 0);
     miles *= 2;
   }
 
