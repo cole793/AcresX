@@ -71,6 +71,7 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/state-selector.js')) scripts.push('<script src="/state-selector.js"></script>');
   if (!html.includes('/slope-map.js')) scripts.push('<script src="/slope-map.js"></script>');
   if (!html.includes('/screening-refinements.js')) scripts.push('<script src="/screening-refinements.js"></script>');
+  if (!html.includes('/branding-polish.js')) scripts.push('<script src="/branding-polish.js"></script>');
   if (!scripts.length) return new Response(html, response);
 
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
