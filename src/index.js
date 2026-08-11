@@ -3,8 +3,10 @@ import { getZoningProfile } from './zoning-counties.js';
 import { getSpokaneCountyIntelligence } from './counties/spokane.js';
 import { getYellowstoneCountyIntelligence } from './counties/yellowstone.js';
 import { findYellowstoneParcel } from './states/montana/parcels.js';
+import { findMontanaWells } from './states/montana/wells.js';
 import { handleLandAnalysis } from './services/land-analysis.js';
 import { handlePowerIntelligence } from './services/power-intelligence.js';
+import { handleUtilityTerritory } from './services/utility-territory.js';
 import { handleZoningRules } from './services/zoning-rules.js';
 import { json } from './shared/http.js';
 
@@ -20,6 +22,14 @@ async function handleParcelSearch(request) {
   }
 
   return json({ available: false, error: 'This state/county parcel adapter is not supported by the new router yet.' }, 400, 'no-store');
+}
+
+async function handleWellSearch(request) {
+  const body = await request.json();
+  const state = String(body.state || '').toUpperCase().trim();
+  if (state !== 'MT') return json({ available: false, error: 'New well-search router currently supports Montana only.' }, 400, 'no-store');
+  const result = await findMontanaWells({ lat: body.lat, lon: body.lon });
+  return json(result, 200, 'public, max-age=3600, s-maxage=86400');
 }
 
 async function handleZoningPermits(request) {
@@ -70,6 +80,8 @@ export default {
     const url = new URL(request.url);
     try {
       if (request.method === 'POST' && url.pathname === '/api/parcel-search') return await handleParcelSearch(request);
+      if (request.method === 'POST' && url.pathname === '/api/well-search') return await handleWellSearch(request);
+      if (request.method === 'POST' && url.pathname === '/api/utility-territory') return await handleUtilityTerritory(request);
       if (request.method === 'POST' && url.pathname === '/api/land-analysis') return await handleLandAnalysis(request);
       if (request.method === 'POST' && url.pathname === '/api/power-intelligence') return await handlePowerIntelligence(request);
       if (request.method === 'POST' && url.pathname === '/api/zoning-rules') return await handleZoningRules(request);
