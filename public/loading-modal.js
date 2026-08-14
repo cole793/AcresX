@@ -101,12 +101,13 @@
     if(/not found|unable|failed|error|invalid|multiple .* matches/.test(l)) fail(t);
   }
 
-  form.addEventListener('submit', e=>{
+  // Run before the dashboard's existing submit handler so preventDefault() there does not suppress the loader.
+  form.addEventListener('submit', ()=>{
     const parcel=document.getElementById('parcel');
     const state=document.getElementById('state');
-    if(e.defaultPrevented || !parcel?.value?.trim() || (state && !state.value)) return;
+    if(!parcel?.value?.trim() || (state && !state.value)) return;
     show();
-  }, false);
+  }, true);
 
   if(status){
     new MutationObserver(()=>interpretStatus(status.textContent)).observe(status,{subtree:true,childList:true,characterData:true,attributes:true});
