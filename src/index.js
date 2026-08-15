@@ -10,6 +10,7 @@ import { handleWetlands } from './services/wetlands.js';
 import { handlePowerIntelligence } from './services/power-intelligence.js';
 import { handleUtilityTerritory } from './services/utility-territory.js';
 import { handleZoningRules } from './services/zoning-rules.js';
+import { handlePropertyTaxTest } from './services/property-tax-test.js';
 import { json } from './shared/http.js';
 
 async function handleParcelSearch(request) {
@@ -17,12 +18,10 @@ async function handleParcelSearch(request) {
   const state = String(body.state || '').toUpperCase().trim();
   const county = String(body.county || '').replace(/\s+County$/i, '').trim();
   const parcelId = String(body.parcelId || '').trim();
-
   if (state === 'MT' && /^yellowstone$/i.test(county)) {
     const parcel = await findYellowstoneParcel(parcelId);
     return json({ available: true, state: 'MT', county: 'Yellowstone', parcel }, 200, 'public, max-age=300, s-maxage=3600');
   }
-
   return json({ available: false, error: 'This state/county parcel adapter is not supported by the new router yet.' }, 400, 'no-store');
 }
 
@@ -39,18 +38,15 @@ async function handleZoningPermits(request) {
   const county = String(body.county || '').replace(/\s+County$/i, '').trim();
   const hasPoint = Number.isFinite(Number(body.lat)) && Number.isFinite(Number(body.lon));
   if (!hasPoint) return null;
-
   if (/^spokane$/i.test(county)) {
     const profile = getZoningProfile(county);
     const result = await getSpokaneCountyIntelligence(body, profile);
     return json(result, 200, 'public, max-age=3600, s-maxage=86400');
   }
-
   if (/^yellowstone$/i.test(county)) {
     const result = await getYellowstoneCountyIntelligence(body);
     return json(result, 200, 'public, max-age=3600, s-maxage=86400');
   }
-
   return null;
 }
 
@@ -60,7 +56,6 @@ async function maybeInjectUiPolish(request, response) {
   if (url.pathname !== '/' && url.pathname !== '/index.html') return response;
   const contentType = response.headers.get('Content-Type') || '';
   if (!contentType.includes('text/html')) return response;
-
   const html = await response.text();
   const scripts = [];
   if (!html.includes('/ui-polish.js')) scripts.push('<script src="/ui-polish.js"></script>');
@@ -75,7 +70,6 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/library-polish.js')) scripts.push('<script src="/library-polish.js"></script>');
   if (!html.includes('/loading-modal.js')) scripts.push('<script src="/loading-modal.js"></script>');
   if (!scripts.length) return new Response(html, response);
-
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
   const headers = new Headers(response.headers);
   headers.delete('Content-Length');
@@ -86,6 +80,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
+      if (request.method === 'POST' && url.pathname === '/api/property-tax-test') return await handlePropertyTaxTest(request);
       if (request.method === 'POST' && url.pathname === '/api/parcel-search') return await handleParcelSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/well-search') return await handleWellSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/utility-territory') return await handleUtilityTerritory(request);
@@ -104,9 +99,7 @@ export default {
         try {
           const response = await handleZoningPermits(request);
           if (response) return response;
-        } catch (error) {
-          console.warn('Modular county zoning adapter failed; using legacy fallback.', error);
-        }
+        } catch (error) { console.warn('Modular county zoning adapter failed; using legacy fallback.', error); }
       }
       const response = await legacyWorker.fetch(request, env, ctx);
       return await maybeInjectUiPolish(request, response);
