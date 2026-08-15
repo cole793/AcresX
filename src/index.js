@@ -88,6 +88,7 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/library-polish.js')) scripts.push('<script src="/library-polish.js"></script>');
   if (!html.includes('/loading-modal.js')) scripts.push('<script src="/loading-modal.js"></script>');
   if (!html.includes('/property-assessment.js')) scripts.push('<script src="/property-assessment.js"></script>');
+  if (!html.includes('/compact-overview.js')) scripts.push('<script src="/compact-overview.js"></script>');
   if (!scripts.length) return new Response(html, response);
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
   const headers = new Headers(response.headers);
