@@ -50,6 +50,24 @@ async function handleZoningPermits(request) {
   return null;
 }
 
+async function runPropertyTaxBrowserTest(request) {
+  const tests = [
+    { state: 'WA', county: 'Spokane', parcelId: '47174.9017' },
+    { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }
+  ];
+  const results = [];
+  for (const test of tests) {
+    const testRequest = new Request(request.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(test)
+    });
+    const response = await handlePropertyTaxTest(testRequest);
+    results.push(await response.json());
+  }
+  return json({ test: 'AcresX property tax / assessment sources', results }, 200, 'no-store');
+}
+
 async function maybeInjectUiPolish(request, response) {
   if (request.method !== 'GET') return response;
   const url = new URL(request.url);
@@ -80,7 +98,8 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
-      if (request.method === 'POST' && url.pathname === '/api/property-tax-test') return await handlePropertyTaxTest(request);
+      if (url.pathname === '/api/property-tax-test' && request.method === 'GET') return await runPropertyTaxBrowserTest(request);
+      if (url.pathname === '/api/property-tax-test' && request.method === 'POST') return await handlePropertyTaxTest(request);
       if (request.method === 'POST' && url.pathname === '/api/parcel-search') return await handleParcelSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/well-search') return await handleWellSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/utility-territory') return await handleUtilityTerritory(request);
