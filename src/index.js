@@ -87,6 +87,7 @@ async function maybeInjectUiPolish(request, response) {
   if (!html.includes('/branding-polish.js')) scripts.push('<script src="/branding-polish.js"></script>');
   if (!html.includes('/library-polish.js')) scripts.push('<script src="/library-polish.js"></script>');
   if (!html.includes('/loading-modal.js')) scripts.push('<script src="/loading-modal.js"></script>');
+  if (!html.includes('/property-assessment.js')) scripts.push('<script src="/property-assessment.js"></script>');
   if (!scripts.length) return new Response(html, response);
   const polished = html.replace('</body>', `${scripts.join('\n')}\n</body>`);
   const headers = new Headers(response.headers);
@@ -100,6 +101,7 @@ export default {
     try {
       if (url.pathname === '/api/property-tax-test' && request.method === 'GET') return await runPropertyTaxBrowserTest(request);
       if (url.pathname === '/api/property-tax-test' && request.method === 'POST') return await handlePropertyTaxTest(request);
+      if (url.pathname === '/api/property-assessment' && request.method === 'POST') return await handlePropertyTaxTest(request);
       if (request.method === 'POST' && url.pathname === '/api/parcel-search') return await handleParcelSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/well-search') return await handleWellSearch(request);
       if (request.method === 'POST' && url.pathname === '/api/utility-territory') return await handleUtilityTerritory(request);
