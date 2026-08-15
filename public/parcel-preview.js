@@ -73,6 +73,19 @@
     return { parcelId, address, county, utility };
   }
 
+  function averageNearbyWellDepth() {
+    if (typeof last === 'undefined' || !Array.isArray(last?.wells)) return null;
+    const depths = last.wells.slice(0, 5).map(w => Number(w?.properties?.CompletedDepth)).filter(d => Number.isFinite(d) && d > 0);
+    if (!depths.length) return null;
+    return { depth: Math.round(depths.reduce((sum, d) => sum + d, 0) / depths.length), count: depths.length };
+  }
+
+  function dominantSoil() {
+    const soil = typeof last !== 'undefined' ? last?.land?.soil : null;
+    if (!soil?.available) return null;
+    return soil.component || soil.mapUnit || null;
+  }
+
   function ensureOverviewCard() {
     addOverviewStyles();
     let section = document.getElementById('propertyOverviewSection');
@@ -107,7 +120,8 @@
             <div class="property-overview-fact"><span>Utility provider</span><strong id="overviewUtility">—</strong></div>
             <div class="property-overview-fact"><span>Flood screening</span><strong id="overviewFlood">—</strong></div>
             <div class="property-overview-fact"><span>Wetland screening</span><strong id="overviewWetlands">—</strong></div>
-            <div class="property-overview-fact"><span>Data basis</span><strong>Public parcel + GIS records</strong></div>
+            <div class="property-overview-fact"><span>Dominant soil</span><strong id="overviewSoil">—</strong></div>
+            <div class="property-overview-fact"><span>Avg. nearby well depth</span><strong id="overviewWellDepth">—</strong></div>
           </div>
           <div class="property-overview-foot">Mapped acreage is calculated from the public parcel boundary and may differ slightly from assessor-recorded acreage.</div>
         </div>
@@ -156,6 +170,8 @@
     const area = mappedArea(last.parcel);
     const flood = hazardLabel(last.flood, 'flood');
     const wetlands = hazardLabel(last.wetlands, 'wetlands');
+    const soil = dominantSoil();
+    const wellDepth = averageNearbyWellDepth();
 
     document.getElementById('overviewAddress').textContent = identity.address;
     document.getElementById('overviewLocation').textContent = `${identity.county} County, Washington`;
@@ -164,6 +180,8 @@
     document.getElementById('overviewUtility').textContent = identity.utility;
     setFact('overviewFlood', flood.text, flood.cls);
     setFact('overviewWetlands', wetlands.text, wetlands.cls);
+    setFact('overviewSoil', soil || 'Not available');
+    setFact('overviewWellDepth', wellDepth ? `${wellDepth.depth.toLocaleString()} ft · ${wellDepth.count} nearby log${wellDepth.count === 1 ? '' : 's'}` : 'Not available');
 
     if (area) {
       const decimals = area.acres >= 100 ? 1 : 2;
