@@ -3,6 +3,7 @@ import { getZoningProfile } from './zoning-counties.js';
 import { getSpokaneCountyIntelligence } from './counties/spokane.js';
 import { getYellowstoneCountyIntelligence } from './counties/yellowstone.js';
 import { getGallatinCountyIntelligence } from './counties/gallatin.js';
+import { getKootenaiCountyIntelligence } from './counties/kootenai.js';
 import { findYellowstoneParcel, findMontanaParcel } from './states/montana/parcels.js';
 import { findMontanaWells } from './states/montana/wells.js';
 import { findIdahoParcel } from './states/idaho/parcels.js';
@@ -33,6 +34,7 @@ async function handleZoningPermits(request) {
   if (/^spokane$/i.test(county)) { const profile = getZoningProfile(county); return json(await getSpokaneCountyIntelligence(body, profile), 200, 'public, max-age=3600, s-maxage=86400'); }
   if (/^yellowstone$/i.test(county)) return json(await getYellowstoneCountyIntelligence(body), 200, 'public, max-age=3600, s-maxage=86400');
   if (/^gallatin$/i.test(county)) return json(await getGallatinCountyIntelligence(body), 200, 'no-store');
+  if (/^kootenai$/i.test(county)) return json(await getKootenaiCountyIntelligence(body), 200, 'no-store');
   return null;
 }
 async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for (const test of tests) { const r = new Request(request.url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(test) }); results.push(await (await handlePropertyTaxTest(r)).json()); } return json({ test:'AcresX property tax / assessment sources', results },200,'no-store'); }
@@ -53,9 +55,12 @@ export default { async fetch(request,env,ctx) { const url=new URL(request.url); 
     const clone=request.clone();
     let county='';
     try { const body=await clone.json(); county=String(body?.county||'').replace(/\s+County$/i,'').trim(); } catch (_) {}
-    if(/^gallatin$/i.test(county)) {
+    if(/^(gallatin|kootenai)$/i.test(county)) {
       try { const response=await handleZoningPermits(request); if(response)return response; }
-      catch(error){ return json({available:false,county:'Gallatin',state:'MT',countyStatus:'gallatin-v2-error',jurisdiction:'Gallatin County',permitJurisdiction:{name:'Gallatin County'},zoning:{status:'unavailable',label:'Gallatin zoning lookup unavailable',note:error?.message||'Gallatin County GIS lookup failed.'},permits:[],error:error?.message||'Gallatin County GIS lookup failed.'},502,'no-store'); }
+      catch(error){
+        const isKootenai=/^kootenai$/i.test(county);
+        return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.'},502,'no-store');
+      }
     }
     try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}
   }
