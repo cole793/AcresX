@@ -24,7 +24,7 @@ async function handleZoningPermits(request) {
   const body = await request.clone().json(); const county = String(body.county || '').replace(/\s+County$/i, '').trim(); const hasPoint = Number.isFinite(Number(body.lat)) && Number.isFinite(Number(body.lon)); if (!hasPoint) return null;
   if (/^spokane$/i.test(county)) { const profile = getZoningProfile(county); return json(await getSpokaneCountyIntelligence(body, profile), 200, 'public, max-age=3600, s-maxage=86400'); }
   if (/^yellowstone$/i.test(county)) return json(await getYellowstoneCountyIntelligence(body), 200, 'public, max-age=3600, s-maxage=86400');
-  if (/^gallatin$/i.test(county)) return json(await getGallatinCountyIntelligence(body), 200, 'public, max-age=3600, s-maxage=86400');
+  if (/^gallatin$/i.test(county)) return json(await getGallatinCountyIntelligence(body), 200, 'no-store');
   return null;
 }
 async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for (const test of tests) { const r = new Request(request.url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(test) }); results.push(await (await handlePropertyTaxTest(r)).json()); } return json({ test:'AcresX property tax / assessment sources', results },200,'no-store'); }
@@ -41,6 +41,18 @@ export default { async fetch(request,env,ctx) { const url=new URL(request.url); 
   if(request.method==='POST'&&url.pathname==='/api/hazards'){const clone=request.clone();try{const body=await clone.json();if(body?.kind==='wetlands')return await handleWetlands(new Request(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(body)}));}catch(_){}}
   if(request.method==='POST'&&url.pathname==='/api/power-intelligence')return await handlePowerIntelligence(request);
   if(request.method==='POST'&&url.pathname==='/api/zoning-rules')return await handleZoningRules(request);
-  if(request.method==='POST'&&url.pathname==='/api/zoning-permits'){try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}}
+  if(request.method==='POST'&&url.pathname==='/api/zoning-permits'){
+    const clone=request.clone();
+    let county='';
+    try { const body=await clone.json(); county=String(body?.county||'').replace(/\s+County$/i,'').trim(); } catch (_) {}
+    // Gallatin is authoritative once selected: never allow the legacy discovery
+    // response to overwrite it. If the official GIS query fails, surface the
+    // real error so we can diagnose it instead of showing "Source not configured".
+    if(/^gallatin$/i.test(county)) {
+      try { const response=await handleZoningPermits(request); if(response)return response; }
+      catch(error){ return json({available:false,county:'Gallatin',state:'MT',countyStatus:'gallatin-v2-error',jurisdiction:'Gallatin County',permitJurisdiction:{name:'Gallatin County'},zoning:{status:'unavailable',label:'Gallatin zoning lookup unavailable',note:error?.message||'Gallatin County GIS lookup failed.'},permits:[],error:error?.message||'Gallatin County GIS lookup failed.'},502,'no-store'); }
+    }
+    try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}
+  }
   const response=await legacyWorker.fetch(request,env,ctx); return await maybeInjectUiPolish(request,response);
 } catch(error){return json({error:error?.message||'Request failed'},502,'no-store');} } };
