@@ -41,6 +41,19 @@
       };
     }
 
+    if (data.state === 'ID') {
+      const r = data.statewideRecords?.[0] || {};
+      const updated = r.UPDATED ? new Date(Number(r.UPDATED)) : null;
+      return {
+        totalValue: Number(r.VAL_TOTAL),
+        landValue: Number(r.VAL_LAND),
+        improvementValue: Number(r.VAL_IMPVTS),
+        year: updated && !Number.isNaN(updated.getTime()) ? updated.getFullYear() : null,
+        label: 'Assessor value',
+        source: 'Idaho Statewide Standardized Parcel Layer'
+      };
+    }
+
     return null;
   }
 
@@ -135,6 +148,7 @@
     if (!location) return;
     const county = document.getElementById('county')?.value || '';
     if (state === 'MT') location.textContent = `${county} County, Montana`;
+    else if (state === 'ID') location.textContent = `${county} County, Idaho`;
     else if (state === 'WA') location.textContent = `${county} County, Washington`;
   }
 
