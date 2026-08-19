@@ -5,6 +5,7 @@
 
   const WA_COUNTIES = Array.from(countyEl.options).map(option => option.value).filter(Boolean);
   const MT_COUNTIES = ['Beaverhead','Big Horn','Blaine','Broadwater','Carbon','Carter','Cascade','Chouteau','Custer','Daniels','Dawson','Deer Lodge','Fallon','Fergus','Flathead','Gallatin','Garfield','Glacier','Golden Valley','Granite','Hill','Jefferson','Judith Basin','Lake','Lewis and Clark','Liberty','Lincoln','Madison','McCone','Meagher','Mineral','Missoula','Musselshell','Park','Petroleum','Phillips','Pondera','Powder River','Powell','Prairie','Ravalli','Richland','Roosevelt','Rosebud','Sanders','Sheridan','Silver Bow','Stillwater','Sweet Grass','Teton','Toole','Treasure','Valley','Wheatland','Wibaux','Yellowstone'];
+  const ID_COUNTIES = ['Ada','Adams','Bannock','Bear Lake','Benewah','Bingham','Blaine','Boise','Bonner','Bonneville','Boundary','Butte','Camas','Canyon','Caribou','Cassia','Clark','Clearwater','Custer','Elmore','Franklin','Fremont','Gem','Gooding','Idaho','Jefferson','Jerome','Kootenai','Latah','Lemhi','Lewis','Lincoln','Madison','Minidoka','Nez Perce','Oneida','Owyhee','Payette','Power','Shoshone','Teton','Twin Falls','Valley','Washington'];
   const oldFindParcel = typeof findParcel === 'function' ? findParcel : null;
   const oldFindWells = typeof findWells === 'function' ? findWells : null;
   const oldFindUtility = typeof findUtility === 'function' ? findUtility : null;
@@ -13,7 +14,7 @@
   stateEl.id = 'state';
   stateEl.className = 'control';
   stateEl.setAttribute('aria-label', 'State');
-  stateEl.innerHTML = '<option value="" selected>Select a state</option><option value="WA">Washington</option><option value="MT">Montana</option>';
+  stateEl.innerHTML = '<option value="" selected>Select a state</option><option value="WA">Washington</option><option value="ID">Idaho</option><option value="MT">Montana</option>';
   form.insertBefore(stateEl, countyEl);
 
   function updateHeroLabel() {
@@ -24,14 +25,14 @@
   }
 
   function updateBetaLabels() {
-    const stateName = stateEl.value === 'MT' ? 'Montana' : stateEl.value === 'WA' ? 'Washington' : 'AcresX';
+    const stateName = stateEl.value === 'MT' ? 'Montana' : stateEl.value === 'ID' ? 'Idaho' : stateEl.value === 'WA' ? 'Washington' : 'AcresX';
     const sideNote = document.querySelector('.sidebar .side-note');
     if (sideNote) {
       const heading = sideNote.querySelector('strong, b');
       if (heading) heading.textContent = stateEl.value ? `${stateName} beta` : 'Beta';
     }
     const version = document.querySelector('.version');
-    if (version) version.textContent = 'AcresX Multi-State Beta';
+    if (version) version.textContent = 'AcresX Northwest Beta';
     updateHeroLabel();
   }
 
@@ -41,10 +42,11 @@
     if (!state) {
       countyEl.add(new Option('Select a state first', ''));
       countyEl.disabled = true;
-    } else if (state === 'MT') {
+    } else if (state === 'MT' || state === 'ID') {
       countyEl.disabled = false;
       countyEl.add(new Option('Select a county', ''));
-      MT_COUNTIES.forEach(county => countyEl.add(new Option(county, county)));
+      const counties = state === 'MT' ? MT_COUNTIES : ID_COUNTIES;
+      counties.forEach(county => countyEl.add(new Option(county, county)));
       countyEl.value = '';
     } else {
       countyEl.disabled = false;
@@ -56,7 +58,7 @@
     if (parcel) {
       parcel.value = '';
       parcel.disabled = !state;
-      parcel.placeholder = !state ? 'Select a state first' : state === 'MT' ? 'Enter Montana parcel geocode / assessment code' : 'Enter assessor parcel number';
+      parcel.placeholder = !state ? 'Select a state first' : state === 'MT' ? 'Enter Montana parcel geocode / assessment code' : state === 'ID' ? 'Enter Idaho assessor parcel number' : 'Enter assessor parcel number';
     }
     const searchBtn = document.getElementById('searchBtn');
     if (searchBtn) searchBtn.disabled = !state;
@@ -67,7 +69,7 @@
   populateCounties();
 
   form.addEventListener('submit', event => {
-    if (!stateEl.value || (stateEl.value === 'MT' && !countyEl.value)) {
+    if (!stateEl.value || ((stateEl.value === 'MT' || stateEl.value === 'ID') && !countyEl.value)) {
       event.preventDefault();
       (!stateEl.value ? stateEl : countyEl).focus();
     }
@@ -76,22 +78,22 @@
   if (oldFindParcel) {
     window.findParcel = async function (county, input) {
       if (!stateEl.value) throw new Error('Select a state before searching a parcel.');
-      if (stateEl.value !== 'MT') return oldFindParcel(county, input);
-      if (!county) throw new Error('Select a Montana county before searching.');
-      const response = await fetch('/api/parcel-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:'MT', county, parcelId:String(input || '').trim()}) });
+      if (stateEl.value === 'WA') return oldFindParcel(county, input);
+      if (!county) throw new Error(`Select a ${stateEl.value === 'ID' ? 'Idaho' : 'Montana'} county before searching.`);
+      const response = await fetch('/api/parcel-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county, parcelId:String(input || '').trim()}) });
       const data = await response.json();
-      if (!response.ok || !data?.parcel) throw new Error(data?.error || `Montana parcel service returned ${response.status}`);
+      if (!response.ok || !data?.parcel) throw new Error(data?.error || `Parcel service returned ${response.status}`);
       return data.parcel;
     };
   }
 
   if (oldFindWells) {
     window.findWells = async function (parcel) {
-      if (stateEl.value !== 'MT') return oldFindWells(parcel);
+      if (stateEl.value === 'WA') return oldFindWells(parcel);
       const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
-      const response = await fetch('/api/well-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:'MT', county:countyEl.value, lat, lon}) });
+      const response = await fetch('/api/well-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}) });
       const data = await response.json();
-      if (!response.ok || !data?.available) throw new Error(data?.error || `Montana well service returned ${response.status}`);
+      if (!response.ok || !data?.available) throw new Error(data?.error || `Well service returned ${response.status}`);
       const boundary = turf.polygonToLine(parcel);
       const wells = Array.isArray(data.wells) ? data.wells : [];
       wells.forEach(well => { try { well.properties = well.properties || {}; well.properties._distance = turf.pointToLineDistance(well, boundary, {units:'miles'}); } catch { well.properties._distance = Number.POSITIVE_INFINITY; } });
@@ -101,14 +103,14 @@
 
   if (oldFindUtility) {
     window.findUtility = async function (parcel) {
-      if (stateEl.value !== 'MT') return oldFindUtility(parcel);
+      if (stateEl.value === 'WA') return oldFindUtility(parcel);
       const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
       try {
-        const response = await fetch('/api/utility-territory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:'MT', county:countyEl.value, lat, lon}) });
+        const response = await fetch('/api/utility-territory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}) });
         const data = await response.json();
         if (!response.ok) throw new Error(data?.error || `Utility territory service returned ${response.status}`);
         return Array.isArray(data.providers) ? data.providers : [];
-      } catch (error) { console.warn('Montana utility territory lookup failed', error); return []; }
+      } catch (error) { console.warn('Utility territory lookup failed', error); return []; }
     };
   }
 
