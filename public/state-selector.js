@@ -13,7 +13,7 @@
   stateEl.id = 'state';
   stateEl.className = 'control';
   stateEl.setAttribute('aria-label', 'State');
-  stateEl.innerHTML = '<option value="" selected>Select a state</option><option value="WA">Washington</option><option value="MT">Montana (Beta)</option>';
+  stateEl.innerHTML = '<option value="" selected>Select a state</option><option value="WA">Washington</option><option value="MT">Montana</option>';
   form.insertBefore(stateEl, countyEl);
 
   function updateHeroLabel() {
