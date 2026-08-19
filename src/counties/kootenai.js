@@ -1,7 +1,5 @@
 import { fetchWithTimeout } from '../shared/http.js';
 
-// Current public Kootenai County zoning view. The previous KC_Dynamic_Layers/24
-// endpoint no longer reliably intersects current parcel locations.
 const KC_ZONING = 'https://services9.arcgis.com/G9tkBzRKbAqaotWr/ArcGIS/rest/services/Zoning_County/FeatureServer/9';
 const KC_PLANNING = 'https://www.kcgov.us/230/Planning';
 
@@ -22,22 +20,35 @@ function usefulZoneValue(attrs) {
   const values = Object.entries(attrs || {}).filter(([key,value]) => !ignored.test(key) && value != null).map(([,value]) => String(value).trim()).filter(value => value.length > 1 && value.length < 120);
   return values.find(value => /^(COUNTY[-\s])|\b(AG|AGRICULT|RURAL|COMMERCIAL|INDUSTRIAL|RESIDENTIAL|SUBURBAN)\b/i.test(value)) || values[0] || '';
 }
+
+// ArcGIS hosted feature services are more reliable when geometry is sent as a
+// JSON point with an explicit WKID. The service itself is Web Mercator (3857),
+// while AcresX parcel centroids are WGS84 lon/lat (4326); inSR tells ArcGIS to
+// project the input before applying the spatial intersection.
 async function queryPoint(lon, lat) {
   const url = new URL(`${KC_ZONING}/query`);
-  url.searchParams.set('f','json'); url.searchParams.set('where','1=1');
-  url.searchParams.set('geometry',`${lon},${lat}`); url.searchParams.set('geometryType','esriGeometryPoint');
-  url.searchParams.set('inSR','4326'); url.searchParams.set('spatialRel','esriSpatialRelIntersects');
-  url.searchParams.set('outFields','*'); url.searchParams.set('returnGeometry','false'); url.searchParams.set('resultRecordCount','10');
-  const response = await fetchWithTimeout(url,{cf:{cacheTtl:1800,cacheEverything:true}},20000);
+  url.searchParams.set('f','json');
+  url.searchParams.set('where','1=1');
+  url.searchParams.set('geometry', JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }));
+  url.searchParams.set('geometryType','esriGeometryPoint');
+  url.searchParams.set('inSR','4326');
+  url.searchParams.set('spatialRel','esriSpatialRelIntersects');
+  url.searchParams.set('outFields','*');
+  url.searchParams.set('returnGeometry','false');
+  url.searchParams.set('resultRecordCount','10');
+  const response = await fetchWithTimeout(url,{cf:{cacheTtl:300,cacheEverything:true}},20000);
   if(!response.ok) throw new Error(`Kootenai County zoning service returned ${response.status}`);
-  const data=await response.json(); if(data.error) throw new Error(data.error.message||'Kootenai County zoning query failed');
+  const data=await response.json();
+  if(data.error) throw new Error(data.error.message||'Kootenai County zoning query failed');
   return data.features||[];
 }
+
 export async function getKootenaiCountyIntelligence(body) {
   const lat=Number(body.lat), lon=Number(body.lon);
   if(!Number.isFinite(lat)||!Number.isFinite(lon)) throw new Error('Kootenai zoning requires parcel coordinates.');
   const features=await queryPoint(lon,lat);
-  if(!features.length) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-v2',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'The current Kootenai County zoning service returned no polygon at the parcel center. Verify with Community Development.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable'};
-  const attrs=features[0].attributes||{}; const zone=usefulZoneValue(attrs);
-  return {available:Boolean(zone),county:'Kootenai',state:'ID',countyStatus:'kootenai-v2',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:zone?'gis_match':'unavailable',code:zone,name:zone,label:zone||'Mapped zoning result unavailable',note:zone?'Mapped zoning designation from Kootenai County’s current public zoning layer using the parcel center.':'The zoning polygon intersected the parcel, but AcresX could not identify a meaningful zoning field.',sourceUrl:KC_ZONING,url:KC_PLANNING},comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'Zoning_County',layerId:9,matchMethod:'parcel center',attributes:attrs}};
+  if(!features.length) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'Kootenai County’s current zoning layer returned no polygon at the parcel center. Verify with Community Development.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable'};
+  const attrs=features[0].attributes||{};
+  const zone=usefulZoneValue(attrs);
+  return {available:Boolean(zone),county:'Kootenai',state:'ID',countyStatus:'kootenai-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:zone?'gis_match':'unavailable',code:zone,name:zone,label:zone||'Mapped zoning result unavailable',note:zone?'Mapped zoning designation from Kootenai County’s current official public zoning layer using the parcel center.':'The zoning polygon intersected the parcel, but AcresX could not identify a meaningful zoning field.',sourceUrl:KC_ZONING,url:KC_PLANNING},comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'Zoning_County',layerId:9,matchMethod:'parcel center / WGS84 point projected by ArcGIS',attributes:attrs}};
 }
