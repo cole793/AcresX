@@ -3,7 +3,7 @@ import { fetchWithTimeout } from '../shared/http.js';
 const KC_PARCELS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
 const KC_ZONING = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21';
 const KC_PLANNING = 'https://www.kcgov.us/230/Planning';
-const KC_CODE_RESIDENTIAL = 'https://codelibrary.amlegal.com/codes/kootenaiid/latest/kootenai_id/0-0-0-3950';
+const KC_CODE_RESIDENTIAL = 'https://codelibrary.amlegal.com/codes/kootenaicountyid/latest/kootenaicounty_id/0-0-0-3664';
 
 function sql(value) { return String(value || '').replaceAll("'", "''"); }
 function requestedParcelId(body) {
@@ -29,19 +29,47 @@ function centerFromGeometry(geometry) {
   let sx=0,sy=0,n=0; for(const p of rings[0]) if(Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])) { sx+=p[0]; sy+=p[1]; n++; }
   return n ? [sx/n,sy/n] : null;
 }
-function residentialGuidance(zoneRaw) {
+
+// Mirrors Kootenai County Code Table 2-1101 (Residential Uses).
+// P = permitted; A = administrative permit; S = special notice permit;
+// C = conditional use permit; X = specifically prohibited; blank = not listed/permitted.
+function buildingUsesForZone(zoneRaw) {
   const z=String(zoneRaw||'').toUpperCase().replace(/^COUNTY[-\s]*/,'').trim();
-  const base={title:'Residential Use',sourceUrl:KC_CODE_RESIDENTIAL,disclaimer:'Planning summary only. Parcel size, frontage, legal nonconforming status, overlays, septic, access, building/fire code and other requirements can change what is actually approvable.'};
-  const rows=(single,duplex,adu,manufactured,multi)=>[
-    {use:'Single-family home',status:single},{use:'Duplex / two-family',status:duplex},{use:'Accessory living unit / ADU',status:adu},{use:'Manufactured home',status:manufactured},{use:'Multi-family (3+ units)',status:multi}
+  const aliases={
+    'AG':'A','AGRICULTURE':'A','AGRICULTURAL':'A','A':'A',
+    'RU':'R','RURAL':'R','R':'R',
+    'AS':'AS','AG-SUBURBAN':'AS','AG SUBURBAN':'AS','AGRICULTURAL-SUBURBAN':'AS',
+    'RR':'RR','RURAL RESIDENTIAL':'RR','RURAL-RESIDENTIAL':'RR',
+    'HDR':'HDR','HIGH DENSITY RESIDENTIAL':'HDR','HIGH-DENSITY RESIDENTIAL':'HDR',
+    'C':'C','COMMERCIAL':'C','M':'M','MINING':'M','LI':'LI','LIGHT INDUSTRIAL':'LI','I':'I','INDUSTRIAL':'I'
+  };
+  const zone=aliases[z]||z;
+  const matrix={
+    A:{single:'P',duplex:'P',multi:'',manufactured:'P',adu:'A',accessory:'P',storage:'P'},
+    R:{single:'P',duplex:'P',multi:'',manufactured:'P',adu:'A',accessory:'P',storage:'P'},
+    AS:{single:'P',duplex:'P',multi:'S',manufactured:'S',adu:'A',accessory:'P',storage:'P'},
+    RR:{single:'P',duplex:'P',multi:'',manufactured:'S',adu:'A',accessory:'P',storage:'P'},
+    HDR:{single:'P',duplex:'P',multi:'P',manufactured:'P',adu:'A',accessory:'P',storage:'C'},
+    C:{single:'P',duplex:'P',multi:'P',manufactured:'',adu:'',accessory:'P',storage:''},
+    M:{single:'',duplex:'',multi:'',manufactured:'',adu:'',accessory:'',storage:''},
+    LI:{single:'',duplex:'',multi:'',manufactured:'',adu:'',accessory:'',storage:''},
+    I:{single:'',duplex:'',multi:'',manufactured:'',adu:'',accessory:'',storage:''}
+  };
+  const m=matrix[zone];
+  if(!m) return {title:'Allowed Buildings / Dwelling Types',zone:zoneRaw,sourceUrl:KC_CODE_RESIDENTIAL,status:'not_mapped',uses:[],note:'This zoning designation has not yet been mapped to the Kootenai County residential-use table. Verify with Community Development.'};
+  const label={P:'Permitted',A:'Administrative permit',S:'Special notice permit',C:'Conditional use permit',X:'Prohibited','':'Not permitted / not listed'};
+  const uses=[
+    {use:'Site-built single-family dwelling',code:m.single,status:label[m.single]},
+    {use:'Manufactured home (Class B)',code:m.manufactured,status:label[m.manufactured],note:zone==='HDR'?'Class A or B manufactured home requires at least 6,000 sq ft and public-road frontage.':'Subject to manufactured-home and zone-specific standards.'},
+    {use:'Two-family dwelling / duplex',code:m.duplex,status:label[m.duplex],note:zone==='RR'?'Minimum parcel size 9,900 sq ft.':undefined},
+    {use:'Multi-family dwelling',code:m.multi,status:label[m.multi],note:zone==='HDR'?'Minimum 12,000 sq ft, public-road frontage, and 3,000 sq ft of land per dwelling unit.':undefined},
+    {use:'Accessory living unit / ADU',code:m.adu,status:label[m.adu],note:m.adu?'Accessory use after establishment of a primary use; separate standards apply.':undefined},
+    {use:'Accessory building / shop',code:m.accessory,status:label[m.accessory],note:m.accessory?'Generally accessory to an established primary use; special conditions can apply.':undefined},
+    {use:'Personal storage building',code:m.storage,status:label[m.storage],note:['A','R','AS','RR'].includes(zone)?'One may be allowed before a primary use; special notice permit required if parcel is under 2 acres; maximum 2,000 sq ft under that condition.':undefined}
   ];
-  if(['AG','A','AGRICULTURE','AGRICULTURAL'].includes(z)) return {...base,zone:'Agriculture (AG)',summary:'Residential uses are possible, subject to Agriculture-zone site standards.',uses:rows('Permitted','Permitted','Special approval','Permitted subject to standards','Not permitted'),siteNotes:['Verify minimum parcel size and street frontage before relying on a residential entitlement.']};
-  if(['RU','R','RURAL'].includes(z)) return {...base,zone:'Rural (RU)',summary:'Residential uses are possible on qualifying Rural-zone parcels.',uses:rows('Permitted','Permitted','Special approval','Permitted subject to standards','Not permitted'),siteNotes:['Generally requires at least 5 acres and 75 ft of street frontage for the listed residential uses; legal nonconforming parcels require separate review.']};
-  if(['R-S','RS','RURAL-SUBURBAN','RURAL SUBURBAN','RURAL-SUBURBAN TRANSITION'].includes(z)) return {...base,zone:'Rural-Suburban (R-S)',summary:'Single- and two-family residential uses are possible on qualifying parcels.',uses:rows('Permitted','Permitted','Special approval','Permitted subject to standards','Not permitted'),siteNotes:['Generally requires at least 1 acre and 75 ft of street frontage for the listed residential uses; legal nonconforming parcels require separate review.']};
-  if(/^R-?1$/.test(z)||z==='RESIDENTIAL') return {...base,zone:'Residential (R-1)',summary:'Primarily residential zoning.',uses:rows('Permitted','Permitted on qualifying lot','Permitted on qualifying lot; special approval may apply to nonconforming lots','Permitted subject to standards','Not generally permitted'),siteNotes:['Duplex and ADU eligibility depends on lot/site standards.']};
-  if(['M-F','MF','MULTI-FAMILY','MULTIFAMILY'].includes(z)) return {...base,zone:'Multi-Family (M-F)',summary:'Allows a broader range of dwelling types, subject to lot size/frontage and use-specific standards.',uses:rows('Permitted','Permitted','Approval/standards apply','Permitted subject to standards','Permitted or special approval depending on unit count'),siteNotes:['Minimum site area and frontage increase with dwelling count.']};
-  return {...base,zone:zoneRaw,summary:'AcresX has identified the zoning district, but residential-use guidance has not yet been mapped for this designation.',uses:[],siteNotes:['Use the county regulations link to verify permitted residential uses.']};
+  return {title:'Allowed Buildings / Dwelling Types',zone:zoneRaw,sourceUrl:KC_CODE_RESIDENTIAL,status:'mapped_from_county_code',legend:{P:'Permitted',A:'Administrative permit',S:'Special notice permit',C:'Conditional use permit',X:'Prohibited'},uses,disclaimer:'Planning summary from Kootenai County Code Table 2-1101. Parcel size, frontage, overlays, nonconforming status, septic, access, fire/building code and use-specific standards can affect approval.'};
 }
+
 export async function getKootenaiCountyIntelligence(body) {
   const parcelId=requestedParcelId(body); let parcelFeatures=[];
   try { parcelFeatures=await queryParcel(parcelId); } catch(e) { console.warn('Kootenai ownership parcel lookup failed',e); }
@@ -50,6 +78,7 @@ export async function getKootenaiCountyIntelligence(body) {
   let zoningFeatures=[]; if(Number.isFinite(lon)&&Number.isFinite(lat)) zoningFeatures=await queryZoningByPoint(lon,lat);
   const parcelAttrs=parcelFeatures[0]?.attributes||{}, zoningAttrs=zoningFeatures[0]?.attributes||{};
   const zone=String(zoningAttrs.LABEL||zoningAttrs.ZONE_NAME||parcelAttrs.ZONING||'').trim();
-  if(!zone) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v2',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'The current Kootenai County Data_Layers zoning service returned no polygon at this parcel location.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
-  return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v2',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:'Mapped zoning designation from Kootenai County KCEarth/Data_Layers.',sourceUrl:KC_ZONING,url:KC_PLANNING},residentialUse:residentialGuidance(zone),comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod:'parcel location',attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
+  if(!zone) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'The current Kootenai County Data_Layers zoning service returned no polygon at this parcel location.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
+  const allowedBuildings=buildingUsesForZone(zone);
+  return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:'Mapped zoning designation from Kootenai County KCEarth/Data_Layers.',sourceUrl:KC_ZONING,url:KC_PLANNING},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod:'parcel location',attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
 }
