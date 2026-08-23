@@ -53,10 +53,6 @@ function buildingUsesForZone(zoneRaw) {
   ];
   return {title:'Allowed Buildings / Dwelling Types',zone:zoneRaw,sourceUrl:KC_CODE_RESIDENTIAL,status:'mapped_from_county_code',legend:{P:'Permitted',A:'Administrative permit',S:'Special notice permit',C:'Conditional use permit',X:'Prohibited'},uses,disclaimer:'Planning summary from Kootenai County Code Table 2-1101. Parcel size, frontage, overlays, nonconforming status, septic, access, fire/building code and use-specific standards can affect approval.'};
 }
-function allowedUsesSummary(allowedBuildings) {
-  if (!allowedBuildings?.uses?.length) return allowedBuildings?.note || '';
-  return 'Allowed buildings / dwelling types: ' + allowedBuildings.uses.map(item => `${item.use} — ${item.status}`).join(' • ');
-}
 
 export async function getKootenaiCountyIntelligence(body) {
   const parcelId=requestedParcelId(body); let parcelFeatures=[];
@@ -68,6 +64,5 @@ export async function getKootenaiCountyIntelligence(body) {
   const zone=String(zoningAttrs.LABEL||zoningAttrs.ZONE_NAME||parcelAttrs.ZONING||'').trim();
   if(!zone) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'The current Kootenai County Data_Layers zoning service returned no polygon at this parcel location.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
   const allowedBuildings=buildingUsesForZone(zone);
-  const useSummary=allowedUsesSummary(allowedBuildings);
-  return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:`Mapped zoning designation from Kootenai County KCEarth/Data_Layers. ${useSummary}`,sourceUrl:KC_ZONING,url:KC_PLANNING},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod:'parcel location',attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
+  return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:'Mapped zoning designation from Kootenai County KCEarth/Data_Layers.',sourceUrl:KC_ZONING,url:KC_PLANNING},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod:'parcel location',attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
 }
