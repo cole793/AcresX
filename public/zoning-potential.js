@@ -48,7 +48,7 @@
     const identity = currentZoningIdentity();
     if (!identity) return null;
     const county = String(identity.county).replace(/\s+County$/i, '').trim();
-    if (!/^(spokane|yellowstone)$/i.test(county)) return null;
+    if (!/^(spokane|yellowstone|kootenai)$/i.test(county)) return null;
 
     const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
     if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;
@@ -74,9 +74,9 @@
 
   function statusLabel(value) {
     if (value === 'permitted') return 'Permitted';
-    if (value === 'limited') return 'Limited / standards apply';
-    if (value === 'conditional') return 'Special / conditional review';
-    if (value === 'not_permitted') return 'Not permitted';
+    if (value === 'limited') return 'Limited / Standards Apply';
+    if (value === 'conditional') return 'Special / Conditional Review';
+    if (value === 'not_permitted') return 'Not Permitted';
     return value || 'Verify';
   }
 
@@ -90,8 +90,14 @@
     const county = String(power.county || '').toLowerCase();
     const context = county === 'yellowstone'
       ? [power.jurisdiction || 'Yellowstone County', power.sourceChapter || 'Zoning regulations']
-      : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
-    const sourceLabel = county === 'yellowstone' ? `${power.jurisdiction || 'Yellowstone County'} zoning regulations` : 'Spokane County Zoning Code';
+      : county === 'kootenai'
+        ? [power.jurisdiction || 'Kootenai County', power.sourceChapter || 'County zoning code']
+        : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
+    const sourceLabel = county === 'yellowstone'
+      ? `${power.jurisdiction || 'Yellowstone County'} zoning regulations`
+      : county === 'kootenai'
+        ? 'Kootenai County Zoning Code'
+        : 'Spokane County Zoning Code';
 
     const block = document.createElement('div');
     block.className = 'zone-potential';
