@@ -37,8 +37,8 @@ async function handleZoningPermits(request) {
   if (/^kootenai$/i.test(county)) return json(await getKootenaiCountyIntelligence(body), 200, 'no-store');
   return null;
 }
-async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for (const test of tests) { const r = new Request(request.url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(test) }); results.push(await (await handlePropertyTaxTest(r)).json()); } return json({ test:'AcresX property tax / assessment sources', results },200,'no-store'); }
-async function maybeInjectUiPolish(request,response) { if(request.method!=='GET')return response; const url=new URL(request.url); if(url.pathname!=='/'&&url.pathname!=='/index.html')return response; const contentType=response.headers.get('Content-Type')||''; if(!contentType.includes('text/html'))return response; const html=await response.text(); const scripts=[]; for(const s of ['ui-polish','parcel-preview','score-cost','zoning-potential','snapshot-accordion','state-selector','slope-map','screening-refinements','branding-polish','library-polish','loading-modal','property-assessment','compact-overview','parcel-summary-insights']) if(!html.includes(`/${s}.js`))scripts.push(`<script src="/${s}.js"></script>`); if(!scripts.length)return new Response(html,response); const polished=html.replace('</body>',`${scripts.join('\n')}\n</body>`); const headers=new Headers(response.headers); headers.delete('Content-Length'); return new Response(polished,{status:response.status,statusText:response.statusText,headers}); }
+async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for(const test of tests){const r=new Request(request.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(test)});results.push(await(await handlePropertyTaxTest(r)).json());} return json({test:'AcresX property tax / assessment sources',results},200,'no-store'); }
+async function maybeInjectUiPolish(request,response) { if(request.method!=='GET')return response; const url=new URL(request.url); if(url.pathname!=='/'&&url.pathname!=='/index.html')return response; const contentType=response.headers.get('Content-Type')||''; if(!contentType.includes('text/html'))return response; const html=await response.text(); const scripts=[]; for(const s of ['ui-polish','parcel-preview','score-cost','zoning-potential','snapshot-accordion','state-selector','slope-map','screening-refinements','branding-polish','library-polish','loading-modal','property-assessment','compact-overview','parcel-summary-insights','map-polish']) if(!html.includes(`/${s}.js`))scripts.push(`<script src="/${s}.js"></script>`); if(!scripts.length)return new Response(html,response); const polished=html.replace('</body>',`${scripts.join('\n')}\n</body>`); const headers=new Headers(response.headers); headers.delete('Content-Length'); return new Response(polished,{status:response.status,statusText:response.statusText,headers}); }
 export default { async fetch(request,env,ctx) { const url=new URL(request.url); try {
   if(url.pathname==='/api/property-tax-test'&&request.method==='GET')return await runPropertyTaxBrowserTest(request);
   if(url.pathname==='/api/property-tax-test'&&request.method==='POST')return await handlePropertyTaxTest(request);
@@ -52,15 +52,11 @@ export default { async fetch(request,env,ctx) { const url=new URL(request.url); 
   if(request.method==='POST'&&url.pathname==='/api/power-intelligence')return await handlePowerIntelligence(request);
   if(request.method==='POST'&&url.pathname==='/api/zoning-rules')return await handleZoningRules(request);
   if(request.method==='POST'&&url.pathname==='/api/zoning-permits'){
-    const clone=request.clone();
-    let county='';
+    const clone=request.clone(); let county='';
     try { const body=await clone.json(); county=String(body?.county||'').replace(/\s+County$/i,'').trim(); } catch (_) {}
     if(/^(gallatin|kootenai)$/i.test(county)) {
       try { const response=await handleZoningPermits(request); if(response)return response; }
-      catch(error){
-        const isKootenai=/^kootenai$/i.test(county);
-        return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.'},502,'no-store');
-      }
+      catch(error){ const isKootenai=/^kootenai$/i.test(county); return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.'},502,'no-store'); }
     }
     try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}
   }
