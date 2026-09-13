@@ -14,20 +14,33 @@
     const style = document.createElement('style');
     style.id = 'demoHousekeepingStyles';
     style.textContent = `
-      .snapshot-icon{font-size:0!important;color:var(--green);border:1px solid rgba(29,93,58,.10)}
-      .snapshot-icon svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-      .snapshot-confidence{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 8px;font:800 9px/1 "DM Sans",sans-serif;letter-spacing:.035em;text-transform:uppercase;white-space:nowrap;border:1px solid transparent}
-      .snapshot-confidence:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-      .snapshot-confidence.confirmed{background:#e7f3eb;color:#267247;border-color:#c8e0d0}
-      .snapshot-confidence.screening{background:#eef2f0;color:#53665a;border-color:#d8e0db}
-      .snapshot-confidence.verify{background:#fff3dc;color:#8a5b13;border-color:#ead29e}
-      .snapshot-top .snapshot-confidence{margin-left:auto}
-      .zoning-grid .snapshot-confidence{grid-column:2;justify-self:start;margin-top:7px}
+      .snapshot-icon{font-size:0!important;color:var(--green);border:0!important;background:transparent!important;box-shadow:none!important;width:28px!important;height:28px!important;min-width:28px!important;padding:2px!important;display:flex!important;align-items:center;justify-content:center}
+      .snapshot-icon svg{width:21px;height:21px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+      .snapshot-confidence{display:inline-flex;align-items:center;gap:5px;font:800 9px/1 "DM Sans",sans-serif;letter-spacing:.045em;text-transform:uppercase;white-space:nowrap;background:transparent!important;border:0!important;padding:0!important}
+      .snapshot-confidence:before{content:"";width:6px;height:6px;min-width:6px;border-radius:50%;background:currentColor}
+      .snapshot-confidence.confirmed{color:#267247}
+      .snapshot-confidence.screening{color:#68776e}
+      .snapshot-confidence.verify{color:#986614}
+      .snapshot-card[data-detail] .snapshot-top{display:grid!important;grid-template-columns:minmax(0,1fr) 28px;grid-template-rows:auto auto;column-gap:10px;row-gap:8px;align-items:start!important}
+      .snapshot-card[data-detail] .snapshot-top .snapshot-title{grid-column:1;grid-row:1;margin:0!important;min-width:0}
+      .snapshot-card[data-detail] .snapshot-top .snapshot-icon{grid-column:2;grid-row:1;justify-self:end}
+      .snapshot-card[data-detail] .snapshot-top .snapshot-confidence{grid-column:1/-1;grid-row:2;justify-self:start;margin:0!important}
+      .zoning-grid .snapshot-card[data-detail]{grid-template-columns:48px minmax(0,1fr) auto!important;grid-template-rows:auto!important}
+      .zoning-grid .snapshot-card[data-detail]>.snapshot-icon{grid-column:1;align-self:center}
+      .zoning-grid .snapshot-card[data-detail] .snapshot-confidence{display:flex;margin-top:8px!important;justify-self:start;grid-column:auto}
       .parcel-card .parcel-card-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
       .parcel-new-search{border:1px solid #cfdad2;background:#f8faf8;color:var(--green);border-radius:9px;padding:8px 11px;font:800 11px/1 "DM Sans",sans-serif;white-space:nowrap;transition:.16s ease}
       .parcel-new-search:hover{background:#edf4ef;border-color:#9fb7a6;transform:translateY(-1px)}
       .parcel-new-search:focus-visible{outline:3px solid rgba(45,121,80,.2);outline-offset:2px}
-      @media(max-width:700px){.parcel-card .parcel-card-toolbar{align-items:flex-start}.parcel-new-search{padding:7px 9px}}
+      @media(max-width:1250px){
+        .snapshot-confidence{font-size:8.5px}
+        .snapshot-icon{width:26px!important;height:26px!important;min-width:26px!important}
+        .snapshot-icon svg{width:20px;height:20px}
+      }
+      @media(max-width:700px){
+        .parcel-card .parcel-card-toolbar{align-items:flex-start}.parcel-new-search{padding:7px 9px}
+        .snapshot-card[data-detail] .snapshot-top{grid-template-columns:minmax(0,1fr) 26px}
+      }
     `;
     document.head.appendChild(style);
   }
@@ -43,37 +56,12 @@
 
   function confidenceFor(detail) {
     if (typeof last === 'undefined' || !last?.parcel) return { label: 'Verify', cls: 'verify', note: 'No property analysis loaded' };
-    if (detail === 'wells') {
-      return Array.isArray(last.wells) && last.wells.length
-        ? { label: 'Confirmed', cls: 'confirmed', note: 'Public well records returned for this search' }
-        : { label: 'Verify', cls: 'verify', note: 'No nearby public well records returned' };
-    }
-    if (detail === 'soil') {
-      return last?.land?.soil?.available
-        ? { label: 'Screening', cls: 'screening', note: 'Derived from mapped USDA soil data; field verification required' }
-        : { label: 'Verify', cls: 'verify', note: 'Soil screening is not available for this parcel' };
-    }
-    if (detail === 'power') {
-      return Array.isArray(last.utility) && last.utility.length
-        ? { label: 'Screening', cls: 'screening', note: 'Likely utility territory; service availability requires provider verification' }
-        : { label: 'Verify', cls: 'verify', note: 'Serving utility has not been identified' };
-    }
-    if (detail === 'listing') {
-      return last?.evidence?.status === 'found'
-        ? { label: 'Verify', cls: 'verify', note: 'Public listing information should be independently verified' }
-        : { label: 'Verify', cls: 'verify', note: 'No reliable active listing was matched' };
-    }
-    if (detail === 'slope') {
-      return last?.land?.terrain?.available
-        ? { label: 'Screening', cls: 'screening', note: 'Estimated from elevation data; not a survey' }
-        : { label: 'Verify', cls: 'verify', note: 'Terrain screening is not available for this parcel' };
-    }
-    if (detail === 'zoning') {
-      const z = last?.zoningPermits?.zoning;
-      return z?.status === 'gis_match'
-        ? { label: 'Confirmed', cls: 'confirmed', note: 'Mapped county zoning record returned; permitted uses still require agency verification' }
-        : { label: 'Verify', cls: 'verify', note: 'Zoning record requires agency verification' };
-    }
+    if (detail === 'wells') return Array.isArray(last.wells) && last.wells.length ? { label: 'Confirmed', cls: 'confirmed', note: 'Public well records returned for this search' } : { label: 'Verify', cls: 'verify', note: 'No nearby public well records returned' };
+    if (detail === 'soil') return last?.land?.soil?.available ? { label: 'Screening', cls: 'screening', note: 'Derived from mapped USDA soil data; field verification required' } : { label: 'Verify', cls: 'verify', note: 'Soil screening is not available for this parcel' };
+    if (detail === 'power') return Array.isArray(last.utility) && last.utility.length ? { label: 'Screening', cls: 'screening', note: 'Likely utility territory; service availability requires provider verification' } : { label: 'Verify', cls: 'verify', note: 'Serving utility has not been identified' };
+    if (detail === 'listing') return last?.evidence?.status === 'found' ? { label: 'Verify', cls: 'verify', note: 'Public listing information should be independently verified' } : { label: 'Verify', cls: 'verify', note: 'No reliable active listing was matched' };
+    if (detail === 'slope') return last?.land?.terrain?.available ? { label: 'Screening', cls: 'screening', note: 'Estimated from elevation data; not a survey' } : { label: 'Verify', cls: 'verify', note: 'Terrain screening is not available for this parcel' };
+    if (detail === 'zoning') { const z = last?.zoningPermits?.zoning; return z?.status === 'gis_match' ? { label: 'Confirmed', cls: 'confirmed', note: 'Mapped county zoning record returned; permitted uses still require agency verification' } : { label: 'Verify', cls: 'verify', note: 'Zoning record requires agency verification' }; }
     if (detail === 'permits') return { label: 'Verify', cls: 'verify', note: 'Permit requirements depend on the proposed project and jurisdiction' };
     return { label: 'Verify', cls: 'verify', note: 'Verification recommended' };
   }
@@ -90,8 +78,7 @@
         if (top) top.appendChild(chip);
       } else {
         const content = card.querySelector(':scope > div');
-        if (content) content.appendChild(chip);
-        else card.appendChild(chip);
+        if (content) content.appendChild(chip); else card.appendChild(chip);
       }
     }
     chip.className = `snapshot-confidence ${state.cls}`;
@@ -100,58 +87,20 @@
     chip.setAttribute('aria-label', `${state.label}: ${state.note}`);
   }
 
-  function polishCards() {
-    document.querySelectorAll('.snapshot-card[data-detail]').forEach(card => {
-      setIcon(card);
-      setConfidence(card);
-    });
-  }
+  function polishCards() { document.querySelectorAll('.snapshot-card[data-detail]').forEach(card => { setIcon(card); setConfidence(card); }); }
 
   function addNewSearch() {
     const parcelCard = document.querySelector('.parcel-card');
     if (!parcelCard || parcelCard.querySelector('.parcel-new-search')) return;
-    const label = parcelCard.querySelector('.label');
-    if (!label) return;
-    const toolbar = document.createElement('div');
-    toolbar.className = 'parcel-card-toolbar';
-    label.parentNode.insertBefore(toolbar, label);
-    toolbar.appendChild(label);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'parcel-new-search';
-    button.textContent = 'New Search';
-    button.setAttribute('aria-label', 'Start a new parcel search');
-    button.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      setTimeout(() => {
-        const input = document.getElementById('parcel');
-        if (input) {
-          input.focus({ preventScroll: true });
-          input.select();
-        }
-      }, 450);
-    });
+    const label = parcelCard.querySelector('.label'); if (!label) return;
+    const toolbar = document.createElement('div'); toolbar.className = 'parcel-card-toolbar'; label.parentNode.insertBefore(toolbar, label); toolbar.appendChild(label);
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'parcel-new-search'; button.textContent = 'New Search'; button.setAttribute('aria-label', 'Start a new parcel search');
+    button.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => { const input = document.getElementById('parcel'); if (input) { input.focus({ preventScroll: true }); input.select(); } }, 450); });
     toolbar.appendChild(button);
   }
 
-  function refresh() {
-    addStyles();
-    addNewSearch();
-    polishCards();
-  }
-
+  function refresh() { addStyles(); addNewSearch(); polishCards(); }
   refresh();
-
-  if (typeof renderSummary === 'function') {
-    const baseRenderSummary = renderSummary;
-    renderSummary = function (...args) {
-      const result = baseRenderSummary.apply(this, args);
-      requestAnimationFrame(refresh);
-      return result;
-    };
-  }
-
-  const observer = new MutationObserver(() => requestAnimationFrame(polishCards));
-  const dashboard = document.getElementById('dashboard');
-  if (dashboard) observer.observe(dashboard, { childList: true, subtree: true });
+  if (typeof renderSummary === 'function') { const baseRenderSummary = renderSummary; renderSummary = function (...args) { const result = baseRenderSummary.apply(this, args); requestAnimationFrame(refresh); return result; }; }
+  const observer = new MutationObserver(() => requestAnimationFrame(polishCards)); const dashboard = document.getElementById('dashboard'); if (dashboard) observer.observe(dashboard, { childList: true, subtree: true });
 })();
