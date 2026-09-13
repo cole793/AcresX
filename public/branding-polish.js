@@ -8,7 +8,10 @@
       .sidebar .brand-logo-wrap{width:150px;background:transparent;border-radius:0;padding:0;box-shadow:none;display:flex;align-items:center;justify-content:flex-start}
       .sidebar .brand-logo{display:block!important;width:100%;height:auto;object-fit:contain;filter:brightness(0) invert(1);opacity:.98}
       .sidebar .brand-icon{display:none!important}
-      .topbar-brand{display:flex!important;flex-direction:row!important;align-items:center!important;gap:10px;justify-content:flex-start;min-width:0}
+      .topbar-brand{display:flex!important;flex-direction:row!important;align-items:center!important;gap:10px;justify-content:flex-start;min-width:0;cursor:pointer;border-radius:10px;padding:6px 8px;margin-left:-8px;transition:background .16s ease,transform .16s ease}
+      .topbar-brand:hover{background:rgba(29,93,58,.07)}
+      .topbar-brand:active{transform:translateY(1px)}
+      .topbar-brand:focus-visible{outline:3px solid rgba(45,121,80,.22);outline-offset:2px}
       .topbar-icon{display:block;width:28px;height:28px;object-fit:contain}
       .topbar-logo{display:none!important}
       .topbar-brand .eyebrow{display:none!important}
@@ -24,6 +27,14 @@
     document.head.appendChild(style);
   }
 
+  function goHome() {
+    if (window.location.pathname !== '/' || window.location.search || window.location.hash) {
+      window.location.assign('/');
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function updateBranding() {
     addBrandStyles();
 
@@ -32,6 +43,20 @@
       const left = topbar.firstElementChild;
       if (left) {
         left.classList.add('topbar-brand');
+        left.setAttribute('role', 'link');
+        left.setAttribute('tabindex', '0');
+        left.setAttribute('aria-label', 'Return to Property Dashboard home');
+        left.setAttribute('title', 'Property Dashboard home');
+        if (!left.dataset.homeLinkBound) {
+          left.dataset.homeLinkBound = 'true';
+          left.addEventListener('click', goHome);
+          left.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              goHome();
+            }
+          });
+        }
         left.querySelectorAll('.topbar-logo').forEach(el => el.remove());
         const eyebrow = left.querySelector('.eyebrow');
         if (eyebrow) eyebrow.remove();
