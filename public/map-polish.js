@@ -12,12 +12,15 @@
     });
   }
 
-  function fitParcelTightly() {
+  function fitParcel(comfortable = true) {
     if (typeof map === 'undefined' || typeof parcelLayer === 'undefined' || !parcelLayer?.getBounds) return;
     const bounds = parcelLayer.getBounds();
     if (!bounds?.isValid?.()) return;
     map.invalidateSize();
-    map.fitBounds(bounds, { padding: [42, 42], maxZoom: 18, animate: true });
+    map.fitBounds(bounds, { padding: comfortable ? [82, 82] : [58, 58], maxZoom: comfortable ? 17 : 18, animate: true });
+    if (comfortable) setTimeout(() => {
+      if (typeof map !== 'undefined' && map.getZoom() > 12) map.zoomOut(1, { animate: true });
+    }, 180);
   }
 
   const style = document.createElement('style');
@@ -30,11 +33,11 @@
       const shouldFit = args.length ? args[0] !== false : true;
       const result = baseRenderMap.apply(this, args);
       applyParcelStyle();
-      if (shouldFit) setTimeout(fitParcelTightly, 130);
+      if (shouldFit) setTimeout(() => fitParcel(true), 130);
       return result;
     };
   }
 
   const fitButton = document.getElementById('fitMapBtn');
-  if (fitButton) fitButton.addEventListener('click', () => setTimeout(fitParcelTightly, 140));
+  if (fitButton) fitButton.addEventListener('click', () => setTimeout(() => fitParcel(false), 140));
 })();
