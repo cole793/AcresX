@@ -12,6 +12,8 @@ function clean(v){ return String(v ?? '').trim(); }
 function normParcel(v){ return clean(v).toUpperCase().replace(/[^A-Z0-9]/g,''); }
 function escapeOData(v){ return clean(v).replace(/'/g,"''"); }
 function baseUrl(env){ return clean(env?.RESO_BASE_URL).replace(/\/$/,''); }
+function provider(env){ return clean(env?.RESO_PROVIDER).toLowerCase(); }
+function isBridge(env){ return provider(env)==='bridge' || /bridgedataoutput\.com/i.test(baseUrl(env)); }
 function hasStaticToken(env){ return Boolean(clean(env?.RESO_TOKEN)); }
 function hasClientCredentials(env){ return Boolean(clean(env?.RESO_TOKEN_URL)&&clean(env?.RESO_CLIENT_ID)&&clean(env?.RESO_CLIENT_SECRET)); }
 function configured(env){ return Boolean(baseUrl(env) && (hasStaticToken(env)||hasClientCredentials(env))); }
@@ -28,6 +30,7 @@ function normalize(r={}){
     display:{address:r.InternetAddressDisplayYN!==false,entireListing:r.InternetEntireListingDisplayYN!==false},raw:r
   };
 }
+
 async function accessToken(env){
   if(hasStaticToken(env)){const token=clean(env.RESO_TOKEN);return token.toLowerCase().startsWith('bearer ')?token.slice(7).trim():token;}
   const form=new URLSearchParams({grant_type:'client_credentials',client_id:clean(env.RESO_CLIENT_ID),client_secret:clean(env.RESO_CLIENT_SECRET)});
@@ -36,10 +39,16 @@ async function accessToken(env){
   if(!response.ok){const text=await response.text();throw new Error(`RESO OAuth returned ${response.status}: ${text.slice(0,180)}`);}
   const payload=await response.json();if(!payload?.access_token)throw new Error('RESO OAuth response did not include access_token.');return payload.access_token;
 }
-async function authHeaders(env){return {'Accept':'application/json','Authorization':`Bearer ${await accessToken(env)}`,'OData-Version':'4.0'};}
+
 async function providerFetch(env,path,accept='application/json'){
-  const headers=await authHeaders(env);headers.Accept=accept;
-  const response=await fetch(`${baseUrl(env)}/${String(path).replace(/^\//,'')}`,{headers});
+  const token=await accessToken(env);
+  const url=new URL(`${baseUrl(env)}/${String(path).replace(/^\//,'')}`);
+  const headers={'Accept':accept,'OData-Version':'4.0'};
+  // Bridge's RESO Web API authenticates server requests with access_token in the query string.
+  // Other RESO providers continue to use the standard Bearer header path.
+  if(isBridge(env)) url.searchParams.set('access_token',token);
+  else headers.Authorization=`Bearer ${token}`;
+  const response=await fetch(url.toString(),{headers});
   if(!response.ok){const text=await response.text();throw new Error(`RESO provider returned ${response.status}: ${text.slice(0,180)}`);}
   return response;
 }
@@ -48,14 +57,15 @@ async function metadata(env){return (await providerFetch(env,'$metadata','applic
 function chooseMatches(records,parcelId){const target=normParcel(parcelId);return records.map(normalize).sort((a,b)=>{const ap=normParcel(a.parcelNumber)===target?1:0,bp=normParcel(b.parcelNumber)===target?1:0;if(ap!==bp)return bp-ap;const active=s=>/^(active|activeundercontract|pending)$/i.test(clean(s));if(active(a.status)!==active(b.status))return active(b.status)?1:-1;return new Date(b.modified||b.listingDate||0)-new Date(a.modified||a.listingDate||0);});}
 
 export async function handleResoListings(request,env){
-  if(!configured(env))return json({available:false,configured:false,status:'not_configured',label:'RESO adapter is installed. Configure a service root plus either a bearer token or OAuth client credentials.',required:['RESO_BASE_URL','RESO_TOKEN or RESO_TOKEN_URL + RESO_CLIENT_ID + RESO_CLIENT_SECRET'],optional:['RESO_SCOPE','RESO_PROVIDER','RESO_PROPERTY_FIELDS']},200,'no-store');
+  if(!configured(env))return json({available:false,configured:false,status:'not_configured',label:'RESO adapter is installed. Configure a service root plus either a server token or OAuth client credentials.',required:['RESO_BASE_URL','RESO_TOKEN or RESO_TOKEN_URL + RESO_CLIENT_ID + RESO_CLIENT_SECRET'],optional:['RESO_SCOPE','RESO_PROVIDER','RESO_PROPERTY_FIELDS']},200,'no-store');
   const body=await request.json();const parcelId=clean(body.parcelId),listingKey=clean(body.listingKey);
   try{
     if(body.metadata===true){const xml=await metadata(env);return new Response(xml,{status:200,headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'no-store'}});}
     if(!parcelId&&!listingKey)return json({available:false,error:'parcelId or listingKey is required.'},400,'no-store');
-    const fields=clean(env.RESO_PROPERTY_FIELDS)||DEFAULT_FIELDS.join(',');const filter=listingKey?`ListingKey eq '${escapeOData(listingKey)}'`:`ParcelNumber eq '${escapeOData(parcelId)}'`;
+    const fields=clean(env.RESO_PROPERTY_FIELDS)||DEFAULT_FIELDS.join(',');
+    const filter=listingKey?`ListingKey eq '${escapeOData(listingKey)}'`:`ParcelNumber eq '${escapeOData(parcelId)}'`;
     const params=new URLSearchParams({'$filter':filter,'$select':fields,'$orderby':'ModificationTimestamp desc','$top':'25'});
     const payload=await query(env,`Property?${params.toString()}`),records=Array.isArray(payload?.value)?payload.value:[],matches=chooseMatches(records,parcelId);
-    return json({available:true,configured:true,provider:clean(env.RESO_PROVIDER)||'RESO Web API',authMode:hasStaticToken(env)?'bearer':'client_credentials',query:{parcelId:parcelId||null,listingKey:listingKey||null},matchCount:matches.length,best:matches[0]||null,listings:matches,methodology:'Queries the RESO Property resource using ParcelNumber as the primary AcresX join key. Provider metadata can be inspected through the metadata mode before enabling production display.',caution:'Listing display and downstream use remain subject to the MLS/data-provider license and display rules.'},200,'private, max-age=60');
-  }catch(error){return json({available:false,configured:true,status:'provider_error',error:error?.message||'RESO query failed.'},502,'no-store');}
+    return json({available:true,configured:true,provider:clean(env.RESO_PROVIDER)||'RESO Web API',dataset:baseUrl(env).split('/').pop()||null,authMode:isBridge(env)?'bridge_server_token':'bearer',query:{parcelId:parcelId||null,listingKey:listingKey||null},matchCount:matches.length,best:matches[0]||null,listings:matches,methodology:'Queries the RESO Property resource using ParcelNumber as the primary AcresX join key. Provider metadata can be inspected through metadata mode before enabling production display.',caution:'Listing display and downstream use remain subject to the MLS/data-provider license and display rules.'},200,'private, max-age=60');
+  }catch(error){return json({available:false,configured:true,status:'provider_error',provider:clean(env.RESO_PROVIDER)||'RESO Web API',error:error?.message||'RESO query failed.'},502,'no-store');}
 }
