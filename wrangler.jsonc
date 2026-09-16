@@ -9,5 +9,9 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": true
   },
+  "vars": {
+    "RESO_BASE_URL": "https://api.bridgedataoutput.com/api/v2/OData/test",
+    "RESO_PROVIDER": "bridge"
+  },
   "observability": { "enabled": true }
 }
