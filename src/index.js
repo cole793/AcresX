@@ -16,6 +16,7 @@ import { handleUtilityTerritory } from './services/utility-territory.js';
 import { handleZoningRules } from './services/zoning-rules.js';
 import { handlePropertyTaxTest } from './services/property-tax-test.js';
 import { handleExistingWell } from './services/existing-well.js';
+import { handleResoListings } from './services/reso-listings.js';
 import { json } from './shared/http.js';
 
 async function handleParcelSearch(request) {
@@ -47,6 +48,7 @@ export default { async fetch(request,env,ctx) { const url=new URL(request.url); 
   if(request.method==='POST'&&url.pathname==='/api/parcel-search')return await handleParcelSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/well-search')return await handleWellSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/existing-well')return await handleExistingWell(request);
+  if(request.method==='POST'&&url.pathname==='/api/reso-listings')return await handleResoListings(request,env);
   if(request.method==='POST'&&url.pathname==='/api/utility-territory')return await handleUtilityTerritory(request);
   if(request.method==='POST'&&url.pathname==='/api/land-analysis')return await handleLandAnalysis(request);
   if(request.method==='POST'&&url.pathname==='/api/slope-grid')return await handleSlopeGrid(request);
