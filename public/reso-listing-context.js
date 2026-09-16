@@ -25,13 +25,13 @@
       if(p.status)p.status.textContent=`${money(best.listPrice)}${best.daysOnMarket!=null?` · ${best.daysOnMarket} DOM`:''}`;
       card.title=`RESO listing match · ${result.matchConfidence||'verified'} confidence`;
     } else {
-      if(p.value)p.value.textContent='No match';
-      if(p.status)p.status.textContent=result?.configured===false?'Listing source not configured':'No listing match in connected dataset';
+      if(p.value)p.value.textContent='No Listing Match';
+      if(p.status)p.status.textContent=result?.configured===false?'Listing source not configured':'No matching listing found in the connected listing dataset';
       card.title='This does not mean the property is not listed; no sufficiently strong match was found in the connected dataset.';
     }
   }
   function detailHtml(result){
-    const best=result?.best; if(!best)return `<div class="notice"><strong>No listing match in connected dataset.</strong><br>This does not mean the property is not listed. AcresX did not find a sufficiently strong match in the currently connected RESO dataset.</div>`;
+    const best=result?.best; if(!best)return `<div class="notice"><strong>No Listing Match</strong><br>No matching listing found in the connected listing dataset. This does not mean the property is not listed; AcresX did not find a sufficiently strong match in the currently connected RESO dataset.</div>`;
     const evidence=(result.matchEvidence||[]).map(x=>x.replaceAll('_',' ')).join(', ')||'RESO record';
     return `<div class="result-item"><div class="result-top"><h4>${esc(best.address||'Listing Context')}</h4><span class="badge">${esc(best.status||'RESO')}</span></div><div class="data-grid"><div class="datum"><span>List Price</span><strong>${money(best.listPrice)}</strong></div><div class="datum"><span>Days on Market</span><strong>${best.daysOnMarket??'—'}</strong></div><div class="datum"><span>MLS / Listing ID</span><strong>${esc(best.listingId||'—')}</strong></div><div class="datum"><span>Parcel Number</span><strong>${esc(best.parcelNumber||'—')}</strong></div><div class="datum"><span>Match Confidence</span><strong>${esc(result.matchConfidence||'—')}</strong></div><div class="datum"><span>Match Evidence</span><strong>${esc(evidence)}</strong></div></div>${best.publicRemarks?`<div class="notice">${esc(best.publicRemarks)}</div>`:''}<div class="notice">Listing data is supplied through the connected RESO dataset and remains subject to provider/MLS display rules. Verify listing details with the authorized MLS source.</div></div>`;
   }
