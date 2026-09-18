@@ -3,7 +3,7 @@
   const text = v => String(v ?? '').trim();
   const money = v => Number.isFinite(Number(v)) ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(v)) : '—';
   const esc = v => text(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function last(){ return window.__acresxLast || window.last || null; }
+  function last(){ try{ if(typeof globalThis.last!=='undefined'&&globalThis.last?.parcel)return globalThis.last; }catch(_){} try{ if(typeof last!=='undefined'&&last?.parcel)return last; }catch(_){} return window.__acresxLast || window.last || null; }
   function parcelId(d){ return text(d?.parcelId || d?.parcel?.parcelId || d?.parcel?.properties?.PID_NUM || d?.parcel?.properties?.PARCELID || d?.parcel?.properties?.ParcelNumber || document.getElementById('parcelFact')?.textContent); }
   function address(d){ return text(d?.address || d?.parcel?.address || d?.parcel?.properties?.site_address || d?.parcel?.properties?.SITE_ADDRESS || d?.parcel?.properties?.SitusAddress || document.querySelector('.parcel-address')?.textContent); }
   function point(d){
