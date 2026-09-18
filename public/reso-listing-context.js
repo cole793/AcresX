@@ -3,7 +3,7 @@
   const text = v => String(v ?? '').trim();
   const money = v => Number.isFinite(Number(v)) ? new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(v)) : '—';
   const esc = v => text(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function last(){ try{ if(typeof globalThis.last!=='undefined'&&globalThis.last?.parcel)return globalThis.last; }catch(_){} try{ if(typeof last!=='undefined'&&last?.parcel)return last; }catch(_){} return window.__acresxLast || window.last || null; }
+  function getLast(){ try{ if(typeof last!=='undefined'&&last?.parcel)return last; }catch(_){} return window.__acresxLast || window.last || null; }
   function parcelId(d){ return text(d?.parcelId || d?.parcel?.parcelId || d?.parcel?.properties?.PID_NUM || d?.parcel?.properties?.PARCELID || d?.parcel?.properties?.ParcelNumber || document.getElementById('parcelFact')?.textContent); }
   function address(d){ return text(d?.address || d?.parcel?.address || d?.parcel?.properties?.site_address || d?.parcel?.properties?.SITE_ADDRESS || d?.parcel?.properties?.SitusAddress || document.querySelector('.parcel-address')?.textContent); }
   function point(d){
@@ -38,11 +38,11 @@
   function wireDetails(){
     if(typeof window.renderResults!=='function'||window.renderResults.__resoWrapped)return;
     const base=window.renderResults;
-    const wrapped=function(...args){ const out=base.apply(this,args); try{ const d=last(); if(typeof activeTab!=='undefined'&&activeTab==='listing'&&d?.resoListings){ const box=document.querySelector('#detailCard .results-scroll'); if(box)box.innerHTML=detailHtml(d.resoListings); } }catch(_){} return out; };
+    const wrapped=function(...args){ const out=base.apply(this,args); try{ const d=getLast(); if(typeof activeTab!=='undefined'&&activeTab==='listing'&&d?.resoListings){ const box=document.querySelector('#detailCard .results-scroll'); if(box)box.innerHTML=detailHtml(d.resoListings); } }catch(_){} return out; };
     wrapped.__resoWrapped=true; window.renderResults=wrapped;
   }
   async function lookup(){
-    const d=last(); if(!d)return; const id=parcelId(d); const addr=address(d); const pt=point(d); if(!id&&!addr&&!Number.isFinite(pt.lat))return;
+    const d=getLast(); if(!d)return; const id=parcelId(d); const addr=address(d); const pt=point(d); if(!id&&!addr&&!Number.isFinite(pt.lat))return;
     const mine=++seq;
     try{
       const response=await fetch('/api/reso-listings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parcelId:id||undefined,address:addr||undefined,lat:pt.lat,lon:pt.lon})});
@@ -60,5 +60,5 @@
   }
   const dashboard=document.querySelector('.dashboard');
   if(dashboard)new MutationObserver(()=>{ if(dashboard.classList.contains('show'))schedule(); }).observe(dashboard,{attributes:true,attributeFilter:['class']});
-  document.addEventListener('click',e=>{ if(e.target.closest('.snapshot-card[data-detail="listing"] .snapshot-details-btn'))setTimeout(()=>{ const d=last(); if(d?.resoListings){const box=document.querySelector('#detailCard .results-scroll');if(box)box.innerHTML=detailHtml(d.resoListings);}},0); },true);
+  document.addEventListener('click',e=>{ if(e.target.closest('.snapshot-card[data-detail="listing"] .snapshot-details-btn'))setTimeout(()=>{ const d=getLast(); if(d?.resoListings){const box=document.querySelector('#detailCard .results-scroll');if(box)box.innerHTML=detailHtml(d.resoListings);}},0); },true);
 })();
