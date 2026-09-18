@@ -14,5 +14,12 @@
     "RESO_PROVIDER": "mlsgrid",
     "RESO_ORIGINATING_SYSTEM_NAME": "sarmls"
   },
+  "d1_databases": [
+    {
+      "binding": "MLS_DB",
+      "database_name": "acresx-mls",
+      "database_id": "976c0bbe-4831-498b-a464-dabf2901363f"
+    }
+  ],
   "observability": { "enabled": true }
 }
