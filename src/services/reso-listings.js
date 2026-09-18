@@ -17,7 +17,7 @@ function provider(env){return clean(env?.RESO_PROVIDER).toLowerCase();}
 function isMlsGrid(env){return provider(env)==='mlsgrid'||/mlsgrid\.com/i.test(baseUrl(env));}
 function originatingSystem(env){return clean(env?.RESO_ORIGINATING_SYSTEM_NAME||env?.MLSGRID_ORIGINATING_SYSTEM_NAME);}
 function isBridge(env){return provider(env)==='bridge'||/bridgedataoutput\.com/i.test(baseUrl(env));}
-function staticToken(env){return isMlsGrid(env)?clean(env?.MLSGRID_TOKEN||env?.RESO_TOKEN):clean(env?.RESO_TOKEN);}
+function staticToken(env){return isMlsGrid(env)?clean(env?.MLSGRID_TOKEN||env?.MLSGRID_Token||env?.RESO_TOKEN):clean(env?.RESO_TOKEN);}
 function hasStaticToken(env){return Boolean(staticToken(env));}
 function hasClientCredentials(env){return Boolean(clean(env?.RESO_TOKEN_URL)&&clean(env?.RESO_CLIENT_ID)&&clean(env?.RESO_CLIENT_SECRET));}
 function configured(env){return Boolean(baseUrl(env)&&(hasStaticToken(env)||hasClientCredentials(env)));}
