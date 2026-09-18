@@ -11,7 +11,8 @@
   },
   "vars": {
     "RESO_BASE_URL": "https://api-demo.mlsgrid.com/v2",
-    "RESO_PROVIDER": "mlsgrid"
+    "RESO_PROVIDER": "mlsgrid",
+    "RESO_ORIGINATING_SYSTEM_NAME": "sarmls"
   },
   "observability": { "enabled": true }
 }
