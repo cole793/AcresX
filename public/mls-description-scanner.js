@@ -167,10 +167,141 @@
       console.warn('[AcresX MLS scanner] Well note unavailable', error);
     }
   }
+  // Separate, presentation-only septic/power evidence; never changes the RESO resolver or scores.
+  function infrastructureReport(category) {
+    const listing = window.__acresxLast?.resoListings;
+    const remarks = listing?.best?.publicRemarks || listing?.best?.PublicRemarks || '';
+    if (!remarks) return null;
+    const found = scan(remarks)[category] || [];
+    const positive = category === 'septic'
+      ? found.filter(x => x.claim === 'septic_installed' || x.claim === 'perc_test')
+      : found.filter(x => x.claim === 'power_connected' || x.claim === 'power_nearby' || x.claim.startsWith('provider_'));
+    if (!positive.length) return null;
+    // Avoid interpreting negated or future improvements as already installed.
+    const blocked = category === 'septic'
+      ? /\b(?:no|without|needs?|requires?|proposed|future)\s+(?:existing\s+)?septic\b|\bseptic\s+(?:not\s+installed|to\s+be\s+installed)\b/i
+      : /\b(?:no|without|needs?|requires?)\s+(?:existing\s+)?(?:power|electricity|electrical service)\b|\b(?:power|electricity)\s+(?:not\s+connected|to\s+be\s+installed)\b/i;
+    if (blocked.test(remarks)) return null;
+    const signature = String(listing.best.listingId || '') + ':' + remarks;
+    return { listing, remarks, positive, signature };
+  }
+  function infrastructureLabel(category, report) {
+    if (category === 'septic') {
+      const installed = report.positive.some(x => x.claim === 'septic_installed');
+      return installed ? 'Septic reported in listing' : 'Perc test reported';
+    }
+    if (report.positive.some(x => x.claim === 'power_connected')) return 'Power reported on property';
+    if (report.positive.some(x => x.claim === 'power_nearby')) return 'Power reported nearby';
+    const provider = report.positive.find(x => x.claim.startsWith('provider_'));
+    return provider ? provider.phrase + ' reported' : 'Power mentioned in listing';
+  }
+  function updateInfrastructureCard(category) {
+    const detail = category === 'septic' ? 'soil' : 'power';
+    const card = document.querySelector('.snapshot-card[data-detail="' + detail + '"]');
+    const value = document.getElementById(category === 'septic' ? 'soilMetric' : 'utilityMetric');
+    const status = document.getElementById(category === 'septic' ? 'soilStatus' : 'powerStatus');
+    if (!card || !value || !status) return;
+    const key = '__mls_' + category + '_presentation';
+    const previous = card[key];
+    const report = infrastructureReport(category);
+    if (!report) {
+      if (previous) {
+        value.textContent = previous.value;
+        status.textContent = previous.status;
+        previous.note.remove();
+        card.classList.remove('mls-' + category + '-reported');
+        delete card[key];
+      }
+      return;
+    }
+    if (previous?.signature === report.signature) return;
+    if (previous) {
+      value.textContent = previous.value;
+      status.textContent = previous.status;
+      previous.note.remove();
+    }
+    const baseline = { signature: report.signature, value: value.textContent, status: status.textContent };
+    const note = document.createElement('div');
+    note.className = 'mls-infrastructure-card-note';
+    note.textContent = category === 'septic'
+      ? 'Soil screening: ' + baseline.value
+      : 'Mapped utility territory: ' + baseline.value;
+    const button = card.querySelector('.snapshot-details-btn');
+    if (button) card.insertBefore(note, button);
+    else card.appendChild(note);
+    baseline.note = note;
+    card[key] = baseline;
+    card.classList.add('mls-' + category + '-reported');
+    value.textContent = infrastructureLabel(category, report);
+    status.textContent = 'Matched listing statement · Verify ' +
+      (category === 'septic' ? 'permit and system status' : 'service and connection');
+  }
+  function showInfrastructureDetail(category) {
+    const detail = category === 'septic' ? 'soil' : 'power';
+    const panel = document.getElementById('detailCard');
+    const root = panel?.querySelector('.results-scroll');
+    if (!root) return;
+    const attr = 'data-mls-' + category + '-note';
+    const existing = root.querySelector('[' + attr + ']');
+    const open = panel.classList.contains('show') &&
+      typeof activeTab !== 'undefined' && activeTab === detail;
+    const report = open ? infrastructureReport(category) : null;
+    if (!report) { existing?.remove(); return; }
+    if (existing?.dataset.signature === report.signature) return;
+    existing?.remove();
+    const notice = document.createElement('div');
+    notice.className = 'notice mls-infrastructure-detail';
+    notice.setAttribute(attr, 'true');
+    notice.dataset.signature = report.signature;
+    const heading = document.createElement('strong');
+    heading.textContent = infrastructureLabel(category, report).toUpperCase() + ' · LISTING REPORTED';
+    const description = document.createElement('p');
+    description.textContent = 'Matched listing description mentions: ' +
+      report.positive.map(x => '“' + x.phrase + '”').join('; ') +
+      (category === 'septic'
+        ? '. Verify permits, installation, capacity and condition with the health department.'
+        : '. Verify provider, line location, meter and connection availability directly with the utility.');
+    notice.append(heading, description);
+    root.prepend(notice);
+  }
+  function updateAdditionalInfrastructure() {
+    try {
+      for (const category of ['septic', 'power']) {
+        updateInfrastructureCard(category);
+        showInfrastructureDetail(category);
+      }
+    } catch (error) {
+      console.warn('[AcresX MLS scanner] Infrastructure presentation unavailable', error);
+    }
+  }
+  function addInfrastructureStyles() {
+    if (document.getElementById('acresxMlsInfrastructureStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'acresxMlsInfrastructureStyles';
+    style.textContent = `
+      .snapshot-card.mls-septic-reported,.snapshot-card.mls-power-reported{
+        border-color:#93c7a4;background:#f0faf3}
+      .snapshot-card.mls-septic-reported .snapshot-top:after,
+      .snapshot-card.mls-power-reported .snapshot-top:after{
+        content:"LISTING REPORTED · VERIFY";position:absolute;top:52px;left:18px;
+        font:800 10px/1.2 "DM Sans",sans-serif;color:#155b36;
+        background:#d5f4df;border-radius:999px;padding:5px 8px}
+      .snapshot-card.mls-septic-reported .snapshot-value,
+      .snapshot-card.mls-power-reported .snapshot-value{margin-top:36px;font-size:19px;line-height:1.25}
+      .mls-infrastructure-card-note{font-size:11px;line-height:1.45;color:#42634d;
+        padding-top:9px;margin:10px 0;border-top:1px solid #c7dfce}
+      .mls-infrastructure-detail{background:#edf9f2;border:1px solid #c5e7d1;color:#244b32;
+        padding:16px;border-radius:12px}
+      .mls-infrastructure-detail strong{color:#155b36;font-size:13px}
+    `;
+    document.head.appendChild(style);
+  }
   window.__acresxScanMlsRemarks = scan;
   addWellStyles();
-  window.setInterval(() => { inspect(); updateWellCard(); showWellEvidence(); }, 750);
+  addInfrastructureStyles();
+  window.setInterval(() => { inspect(); updateWellCard(); showWellEvidence(); updateAdditionalInfrastructure(); }, 750);
   inspect();
   updateWellCard();
   showWellEvidence();
+  updateAdditionalInfrastructure();
 })();
