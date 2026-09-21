@@ -55,7 +55,46 @@
       console.warn('[AcresX MLS scanner diagnostic] scan failed', error);
     }
   }
+  // Read-only Well detail annotation. Do not wrap listing lookup or dashboard renderers.
+  function showWellEvidence() {
+    try {
+      const detail = document.getElementById('detailCard');
+      const root = detail?.querySelector('.results-scroll');
+      if (!root) return;
+      const existing = root.querySelector('[data-mls-well-note]');
+      const isWellOpen = detail.classList.contains('show') &&
+        typeof activeTab !== 'undefined' && activeTab === 'wells';
+      const data = window.__acresxLast;
+      const listing = data?.resoListings;
+      const remarks = listing?.best?.publicRemarks || listing?.best?.PublicRemarks || '';
+      const claims = isWellOpen && remarks ? scan(remarks).well : [];
+      if (!claims.length) {
+        existing?.remove();
+        return;
+      }
+      // Avoid presenting a listing statement as a verified on-parcel well.
+      const signature = String(listing.best.listingId || '') + ':' + remarks;
+      if (existing?.dataset.signature === signature) return;
+      existing?.remove();
+      const notice = document.createElement('div');
+      notice.className = 'notice';
+      notice.dataset.mlsWellNote = 'true';
+      notice.dataset.signature = signature;
+      const heading = document.createElement('strong');
+      heading.textContent = 'LISTING REPORTED · Well';
+      notice.appendChild(heading);
+      const description = document.createElement('p');
+      description.textContent = 'Matched listing description mentions: ' +
+        claims.map(item => '“' + item.phrase + '”').join('; ') +
+        '. Seller/broker statement only; confirm the well location, ownership, yield and records independently.';
+      notice.appendChild(description);
+      root.prepend(notice);
+    } catch (error) {
+      console.warn('[AcresX MLS scanner] Well note unavailable', error);
+    }
+  }
   window.__acresxScanMlsRemarks = scan;
-  window.setInterval(inspect, 750);
+  window.setInterval(() => { inspect(); showWellEvidence(); }, 750);
   inspect();
+  showWellEvidence();
 })();
