@@ -26,6 +26,15 @@
       address: address || 'No situs address',
       acreage: text('acreageValue') || text('parcelAcreage') || '',
       score: text('scoreMetric') || '',
+      // Save a parcel location for the optional Saved Properties map.
+      // Existing saved entries without coordinates remain available in List view.
+      location: (() => {
+        try {
+          const center = turf.centroid(parcel).geometry.coordinates;
+          return center.length === 2 && center.every(Number.isFinite)
+            ? { lat: center[1], lng: center[0] } : null;
+        } catch { return null; }
+      })(),
       savedAt: new Date().toISOString()
     };
   }
@@ -117,8 +126,64 @@
     setTimeout(()=>{county.value=item.county; parcel.value=item.parcelId; const form=$('searchForm'); if(form)form.requestSubmit();},50);
   }
 
+  let savedViewMode = 'list';
+  let savedMap = null;
+  function showSavedMap(items, view) {
+    const container = view.querySelector('#savedPropertiesMap');
+    if (!container) return;
+    const located = items.filter(item => item.location &&
+      Number.isFinite(item.location.lat) && Number.isFinite(item.location.lng) &&
+      Math.abs(item.location.lat) <= 90 && Math.abs(item.location.lng) <= 180);
+    if (typeof L === 'undefined') {
+      container.textContent = 'Map unavailable. Your saved properties remain in List view.';
+      return;
+    }
+    if (!located.length) {
+      container.textContent = items.length
+        ? 'These properties were saved before map locations were recorded. Open each property and save it again to add it to the map.'
+        : 'Save a property to see it on the map.';
+      return;
+    }
+    savedMap = L.map(container, { scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(savedMap);
+    const bounds = [];
+    located.forEach(item => {
+      const point = [item.location.lat, item.location.lng];
+      bounds.push(point);
+      const marker = L.marker(point).addTo(savedMap);
+      const popup = document.createElement('div');
+      const heading = document.createElement('strong');
+      heading.textContent = item.name || 'Untitled property';
+      const detail = document.createElement('div');
+      detail.textContent = item.county + ' County · Parcel ' + item.parcelId;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Open property';
+      button.className = 'ghost';
+      button.style.marginTop = '8px';
+      button.onclick = () => openSavedProperty(item);
+      popup.append(heading, detail, button);
+      marker.bindPopup(popup);
+    });
+    if (bounds.length === 1) savedMap.setView(bounds[0], 13);
+    else savedMap.fitBounds(bounds, { padding: [35, 35], maxZoom: 13 });
+    requestAnimationFrame(() => savedMap?.invalidateSize());
+    const missing = items.length - located.length;
+    if (missing) {
+      const notice = document.createElement('p');
+      notice.className = 'saved-map-note';
+      notice.textContent = missing + ' older saved ' + (missing === 1 ? 'property has' : 'properties have') +
+        ' no stored map location. Open and save ' + (missing === 1 ? 'it' : 'them') + ' again to add ' +
+        (missing === 1 ? 'it' : 'them') + ' to the map.';
+      container.after(notice);
+    }
+  }
+
   function renderLibrary(type){
     const view=ensureLibraryView(); if(!view)return;
+    if (savedMap) { savedMap.remove(); savedMap = null; }
     pageNodes().forEach(n=>n.style.display='none'); view.style.display='block'; setActiveNav(type==='saved'?'Saved Properties':'Reports');
     const items=read(type==='saved'?SAVED_KEY:REPORTS_KEY);
     const title=type==='saved'?'Saved Properties':'Reports';
@@ -126,6 +191,31 @@
     view.innerHTML=`<div class="library-head"><div><div class="eyebrow">Beta workspace</div><h2>${title}</h2><p>${subtitle}</p></div><button type="button" class="ghost" id="libraryBack">Back to Dashboard</button></div><div class="library-list">${items.length?'':`<div class="library-empty">No ${type==='saved'?'saved properties':'reports'} yet.</div>`}</div>`;
     $('libraryBack').onclick=showDashboard;
     const list=view.querySelector('.library-list');
+    if (type === 'saved') {
+      const controls = document.createElement('div');
+      controls.className = 'saved-view-controls';
+      controls.setAttribute('role', 'group');
+      controls.setAttribute('aria-label', 'Saved properties view');
+      ['list', 'map'].forEach(mode => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ghost' + (savedViewMode === mode ? ' saved-view-active' : '');
+        button.textContent = mode === 'list' ? 'List view' : 'Map view';
+        button.setAttribute('aria-pressed', String(savedViewMode === mode));
+        button.onclick = () => { savedViewMode = mode; renderLibrary('saved'); };
+        controls.appendChild(button);
+      });
+      list.before(controls);
+      if (savedViewMode === 'map') {
+        list.style.display = 'none';
+        const map = document.createElement('div');
+        map.id = 'savedPropertiesMap';
+        map.className = 'saved-properties-map';
+        controls.after(map);
+        showSavedMap(items, view);
+        return;
+      }
+    }
     items.forEach(item=>{
       const card=document.createElement('article'); card.className='library-card';
       card.innerHTML=`<div class="library-card-main"><div class="library-name">${esc(item.name || 'Untitled property')}</div><div class="library-meta">${esc(stateName(item.state))} · ${esc(item.county)} County${item.acreage?` · ${esc(item.acreage)}`:''}${item.score?` · Score ${esc(item.score)}`:''}</div><div class="library-address">${esc(item.address || 'No situs address')}</div><div class="library-parcel">Parcel ${esc(item.parcelId)}</div><div class="library-date">${type==='saved'?'Saved':'Generated'} ${esc(humanDate(type==='saved'?item.savedAt:item.generatedAt))}</div></div><div class="library-actions"><button type="button" class="ghost open-item">Open property</button><button type="button" class="ghost remove-item">Remove</button></div>`;
@@ -154,6 +244,7 @@
     const style=document.createElement('style'); style.textContent=`
       #propertyActionToast{position:fixed;right:24px;bottom:24px;background:#174f34;color:white;padding:12px 16px;border-radius:10px;font-weight:800;box-shadow:0 10px 30px #0003;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s;z-index:99999}#propertyActionToast.show{opacity:1;transform:none}
       #propertyNameModal{position:fixed;inset:0;background:rgba(13,30,20,.45);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;z-index:99998}#propertyNameModal.show{display:flex}.name-dialog{width:min(480px,100%);background:#fff;border-radius:18px;padding:28px;box-shadow:0 30px 80px #0004}.name-kicker{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#2d7950}.name-dialog h2{font:800 24px Manrope;margin:5px 0 8px}.name-dialog p{color:#66736b;font-size:13px;line-height:1.5;margin:0 0 20px}.name-dialog label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}.name-dialog input{width:100%;border:1px solid #cfdad2;border-radius:11px;padding:13px 14px;font:inherit;outline:none}.name-dialog input:focus{border-color:#2d7950;box-shadow:0 0 0 3px rgba(45,121,80,.12)}.name-dialog input.invalid{border-color:#b8463f}.name-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+      .saved-view-controls{display:flex;gap:8px;margin:0 0 14px}.saved-view-controls .saved-view-active{background:#185b3a;color:#fff;border-color:#185b3a}.saved-properties-map{height:min(65vh,580px);min-height:340px;width:100%;border:1px solid #dce4de;border-radius:16px;overflow:hidden;background:#f2f6f2}.saved-map-note{font-size:12px;color:#66736b;margin-top:12px}
       .property-library{max-width:1200px;margin:0 auto}.library-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}.library-head h2{font:800 28px Manrope;margin:4px 0}.library-head p{margin:0;color:#66736b}.library-list{display:grid;gap:12px}.library-card{background:#fff;border:1px solid #dce4de;border-radius:16px;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:0 8px 28px rgba(28,55,38,.05)}.library-name{font:800 18px Manrope}.library-meta,.library-address,.library-parcel,.library-date{font-size:12px;color:#66736b;margin-top:4px}.library-meta{color:#2d7950;font-weight:700}.library-actions{display:flex;gap:8px;flex-shrink:0}.library-empty{background:#fff;border:1px dashed #cbd7ce;border-radius:16px;padding:50px;text-align:center;color:#66736b}@media(max-width:700px){.library-head,.library-card{align-items:flex-start;flex-direction:column}.library-actions{width:100%}.library-actions button{flex:1}}
     `; document.head.appendChild(style);
   }
