@@ -128,7 +128,6 @@
 
   let savedViewMode = 'split';
   let savedMarkers = new Map();
-  let savedBasemap = 'street';
   let savedMap = null;
   async function backfillSavedLocations(items, view) {
     const missing = items.filter(item => !item.location &&
@@ -183,67 +182,10 @@
     }
     savedMap = L.map(container, { scrollWheelZoom: true });
     savedMarkers = new Map();
-    const esriAttribution = 'Tiles &copy; Esri and its data providers';
-    const imagery = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 19, maxNativeZoom: 19, attribution: esriAttribution }
-    );
-    const labels = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 19, maxNativeZoom: 19, attribution: esriAttribution }
-    );
-    const street = L.tileLayer(
+    L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }
-    );
-    // The legacy Esri imagery endpoint can return an API-access tile instead
-    // of an image. Fall back to the working street basemap rather than
-    // displaying that tile across the saved-property map.
-    let imageryUnavailable = false;
-    let imageryErrorCount = 0;
-    imagery.on('tileerror', () => {
-      if (++imageryErrorCount < 2 || imageryUnavailable) return;
-      imageryUnavailable = true;
-      setBasemap('street');
-      toast('Satellite imagery needs provider access. Showing Street view instead.');
-    });
-    function setBasemap(mode) {
-      [imagery, labels, street].forEach(layer => savedMap.removeLayer(layer));
-      if (mode === 'street' || imageryUnavailable) {
-        mode = 'street';
-        street.addTo(savedMap);
-        if (imageryUnavailable) {
-          const hybridButton = container.querySelector('[data-basemap="hybrid"]');
-          if (hybridButton) {
-            hybridButton.disabled = true;
-            hybridButton.title = 'Satellite imagery requires a licensed map provider';
-          }
-        }
-      } else { imagery.addTo(savedMap); labels.addTo(savedMap); }
-      savedBasemap = mode;
-      container.querySelectorAll('.saved-basemap-btn').forEach(button => {
-        const selected = button.dataset.basemap === mode;
-        button.classList.toggle('saved-basemap-active', selected);
-        button.setAttribute('aria-pressed', String(selected));
-      });
-    }
-    const basemapControls = document.createElement('div');
-    basemapControls.className = 'saved-basemap-controls';
-    basemapControls.setAttribute('role', 'group');
-    basemapControls.setAttribute('aria-label', 'Map style');
-    [['hybrid', 'Hybrid'], ['street', 'Street']].forEach(([mode, label]) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'saved-basemap-btn';
-      button.dataset.basemap = mode;
-      button.textContent = label;
-      button.onclick = () => setBasemap(mode);
-      basemapControls.appendChild(button);
-    });
-    container.appendChild(basemapControls);
-    L.DomEvent.disableClickPropagation(basemapControls);
-    L.DomEvent.disableScrollPropagation(basemapControls);
-    setBasemap(savedBasemap);
+    ).addTo(savedMap);
     const bounds = [];
     located.forEach(item => {
       const point = [item.location.lat, item.location.lng];
