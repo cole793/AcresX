@@ -127,6 +127,7 @@
   }
 
   let savedViewMode = 'list';
+  let savedBasemap = 'hybrid';
   let savedMap = null;
   async function backfillSavedLocations(items, view) {
     const missing = items.filter(item => !item.location &&
@@ -179,10 +180,48 @@
       if (items.length) backfillSavedLocations(items, view);
       return;
     }
-    savedMap = L.map(container, { scrollWheelZoom: false });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(savedMap);
+    savedMap = L.map(container, { scrollWheelZoom: true });
+    const esriAttribution = 'Tiles &copy; Esri and its data providers';
+    const imagery = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, maxNativeZoom: 19, attribution: esriAttribution }
+    );
+    const labels = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, maxNativeZoom: 19, attribution: esriAttribution }
+    );
+    const street = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }
+    );
+    function setBasemap(mode) {
+      [imagery, labels, street].forEach(layer => savedMap.removeLayer(layer));
+      if (mode === 'street') street.addTo(savedMap);
+      else { imagery.addTo(savedMap); labels.addTo(savedMap); }
+      savedBasemap = mode;
+      container.querySelectorAll('.saved-basemap-btn').forEach(button => {
+        const selected = button.dataset.basemap === mode;
+        button.classList.toggle('saved-basemap-active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+    const basemapControls = document.createElement('div');
+    basemapControls.className = 'saved-basemap-controls';
+    basemapControls.setAttribute('role', 'group');
+    basemapControls.setAttribute('aria-label', 'Map style');
+    [['hybrid', 'Hybrid'], ['street', 'Street']].forEach(([mode, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'saved-basemap-btn';
+      button.dataset.basemap = mode;
+      button.textContent = label;
+      button.onclick = () => setBasemap(mode);
+      basemapControls.appendChild(button);
+    });
+    container.appendChild(basemapControls);
+    L.DomEvent.disableClickPropagation(basemapControls);
+    L.DomEvent.disableScrollPropagation(basemapControls);
+    setBasemap(savedBasemap);
     const bounds = [];
     located.forEach(item => {
       const point = [item.location.lat, item.location.lng];
@@ -279,7 +318,7 @@
     const style=document.createElement('style'); style.textContent=`
       #propertyActionToast{position:fixed;right:24px;bottom:24px;background:#174f34;color:white;padding:12px 16px;border-radius:10px;font-weight:800;box-shadow:0 10px 30px #0003;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s;z-index:99999}#propertyActionToast.show{opacity:1;transform:none}
       #propertyNameModal{position:fixed;inset:0;background:rgba(13,30,20,.45);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;z-index:99998}#propertyNameModal.show{display:flex}.name-dialog{width:min(480px,100%);background:#fff;border-radius:18px;padding:28px;box-shadow:0 30px 80px #0004}.name-kicker{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#2d7950}.name-dialog h2{font:800 24px Manrope;margin:5px 0 8px}.name-dialog p{color:#66736b;font-size:13px;line-height:1.5;margin:0 0 20px}.name-dialog label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}.name-dialog input{width:100%;border:1px solid #cfdad2;border-radius:11px;padding:13px 14px;font:inherit;outline:none}.name-dialog input:focus{border-color:#2d7950;box-shadow:0 0 0 3px rgba(45,121,80,.12)}.name-dialog input.invalid{border-color:#b8463f}.name-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
-      .saved-view-controls{display:flex;gap:8px;margin:0 0 14px}.saved-view-controls .saved-view-active{background:#185b3a;color:#fff;border-color:#185b3a}.saved-properties-map{height:min(65vh,580px);min-height:340px;width:100%;border:1px solid #dce4de;border-radius:16px;overflow:hidden;background:#f2f6f2}.saved-map-note{font-size:12px;color:#66736b;margin-top:12px}
+      .saved-basemap-controls{position:absolute;top:12px;right:12px;z-index:800;display:flex;gap:4px;padding:4px;background:#fff;border-radius:10px;box-shadow:0 2px 12px #0003}.saved-basemap-btn{border:0;background:transparent;border-radius:7px;padding:8px 12px;font:700 12px Manrope,Arial,sans-serif;cursor:pointer;color:#365544}.saved-basemap-btn.saved-basemap-active{background:#185b3a;color:#fff}.saved-view-controls{display:flex;gap:8px;margin:0 0 14px}.saved-view-controls .saved-view-active{background:#185b3a;color:#fff;border-color:#185b3a}.saved-properties-map{height:min(65vh,580px);min-height:340px;width:100%;border:1px solid #dce4de;border-radius:16px;overflow:hidden;background:#f2f6f2}.saved-map-note{font-size:12px;color:#66736b;margin-top:12px}
       .property-library{max-width:1200px;margin:0 auto}.library-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}.library-head h2{font:800 28px Manrope;margin:4px 0}.library-head p{margin:0;color:#66736b}.library-list{display:grid;gap:12px}.library-card{background:#fff;border:1px solid #dce4de;border-radius:16px;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:0 8px 28px rgba(28,55,38,.05)}.library-name{font:800 18px Manrope}.library-meta,.library-address,.library-parcel,.library-date{font-size:12px;color:#66736b;margin-top:4px}.library-meta{color:#2d7950;font-weight:700}.library-actions{display:flex;gap:8px;flex-shrink:0}.library-empty{background:#fff;border:1px dashed #cbd7ce;border-radius:16px;padding:50px;text-align:center;color:#66736b}@media(max-width:700px){.library-head,.library-card{align-items:flex-start;flex-direction:column}.library-actions{width:100%}.library-actions button{flex:1}}
     `; document.head.appendChild(style);
   }
