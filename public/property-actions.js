@@ -126,7 +126,6 @@
     setTimeout(()=>{county.value=item.county; parcel.value=item.parcelId; const form=$('searchForm'); if(form)form.requestSubmit();},50);
   }
 
-  let savedViewMode = 'split';
   let savedMarkers = new Map();
   let savedMap = null;
   async function backfillSavedLocations(items, view) {
@@ -234,36 +233,19 @@
     $('libraryBack').onclick=showDashboard;
     const list=view.querySelector('.library-list');
     if (type === 'saved') {
-      const controls = document.createElement('div');
-      controls.className = 'saved-view-controls';
-      controls.setAttribute('role', 'group');
-      controls.setAttribute('aria-label', 'Saved properties view');
-      [['split', 'List + Map'], ['list', 'List only'], ['map', 'Map only']].forEach(([mode, label]) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'ghost' + (savedViewMode === mode ? ' saved-view-active' : '');
-        button.textContent = label;
-        button.setAttribute('aria-pressed', String(savedViewMode === mode));
-        button.onclick = () => { savedViewMode = mode; renderLibrary('saved'); };
-        controls.appendChild(button);
-      });
-      list.before(controls);
-      if (savedViewMode !== 'list') {
-        const layout = document.createElement('div');
-        layout.className = 'saved-split-layout' + (savedViewMode === 'map' ? ' saved-map-only' : '');
-        list.before(layout);
-        layout.appendChild(list);
-        const map = document.createElement('div');
-        map.id = 'savedPropertiesMap';
-        map.className = 'saved-properties-map';
-        layout.appendChild(map);
-        if (savedViewMode === 'map') list.style.display = 'none';
-      }
+      const layout = document.createElement('div');
+      layout.className = 'saved-split-layout';
+      list.before(layout);
+      layout.appendChild(list);
+      const map = document.createElement('div');
+      map.id = 'savedPropertiesMap';
+      map.className = 'saved-properties-map';
+      layout.appendChild(map);
     }
     items.forEach(item=>{
       const card=document.createElement('article'); card.className='library-card';
       card.innerHTML=`<div class="library-card-main"><div class="library-name">${esc(item.name || 'Untitled property')}</div><div class="library-meta">${esc(stateName(item.state))} · ${esc(item.county)} County${item.acreage?` · ${esc(item.acreage)}`:''}${item.score?` · Score ${esc(item.score)}`:''}</div><div class="library-address">${esc(item.address || 'No situs address')}</div><div class="library-parcel">Parcel ${esc(item.parcelId)}</div><div class="library-date">${type==='saved'?'Saved':'Generated'} ${esc(humanDate(type==='saved'?item.savedAt:item.generatedAt))}</div></div><div class="library-actions"><button type="button" class="ghost open-item">Open property</button><button type="button" class="ghost remove-item">Remove</button></div>`;
-      if (type === 'saved' && savedViewMode === 'split') {
+      if (type === 'saved') {
         card.classList.add('saved-compact-card');
         card.tabIndex = 0;
         card.setAttribute('aria-label', 'Locate ' + (item.name || item.parcelId) + ' on map');
@@ -287,7 +269,7 @@
       card.querySelector('.remove-item').onclick=()=>{const key=type==='saved'?SAVED_KEY:REPORTS_KEY;const remaining=read(key).filter(x=>(type==='saved'?x.key:x.id)!==(type==='saved'?item.key:item.id));write(key,remaining);renderLibrary(type)};
       list.appendChild(card);
     });
-    if (type === 'saved' && savedViewMode !== 'list') showSavedMap(items, view);
+    if (type === 'saved') showSavedMap(items, view);
   }
   function refreshLibraryIfOpen(){const v=$('propertyLibraryView');if(!v||v.style.display==='none')return;const active=[...document.querySelectorAll('.sidebar .nav button')].find(b=>b.classList.contains('active'));if((active?.textContent||'').includes('Saved'))renderLibrary('saved');else if((active?.textContent||'').includes('Reports'))renderLibrary('reports')}
 
