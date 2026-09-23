@@ -182,9 +182,12 @@
     }
     savedMap = L.map(container, { scrollWheelZoom: true });
     savedMarkers = new Map();
+    // OSM Standard tiles do not require a CARTO or Esri API key.
+    // Keep attribution visible and use the public tile service only during beta;
+    // move to a dedicated provider if usage grows beyond OSM's tile policy.
     L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO' }
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>' }
     ).addTo(savedMap);
     const bounds = [];
     located.forEach(item => {
