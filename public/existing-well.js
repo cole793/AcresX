@@ -62,6 +62,18 @@
     const confidence = String(data.confidence || 'Low').toLowerCase();
     el.className = `existing-well-summary ${confidence === 'high' ? 'high' : confidence === 'moderate' ? 'moderate' : 'low'}`;
     if (data.match) {
+      // The nearby-depth search and the on-parcel well match are independent sources.
+      // A matched well must take precedence over the generic "Not found" depth placeholder.
+      const metric = document.getElementById('wellMetric');
+      const status = document.getElementById('waterStatus');
+      const note = document.getElementById('wellNote');
+      const depth = Number(data.match.completedDepth);
+      if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
+        ? 'Existing well · ' + Math.round(depth) + ' ft'
+        : 'Existing well matched';
+      if (status) status.textContent = (data.confidence || 'Record') +
+        ' confidence · Assessor + well record match · Verify';
+      if (note) note.textContent = 'Matched on-parcel well record; nearby depth search is separate';
       el.innerHTML = `<strong>${escHtml(data.label)}</strong><br>${escHtml(data.confidence)} confidence from assessor + well records`;
     } else {
       el.innerHTML = '<strong>No existing well match found</strong><br>Nearby well records still shown below';
