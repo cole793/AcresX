@@ -128,6 +128,40 @@
 
   let savedViewMode = 'list';
   let savedMap = null;
+  async function backfillSavedLocations(items, view) {
+    const missing = items.filter(item => !item.location &&
+      item.parcelId && item.county && item.state === 'WA' &&
+      typeof countyCodes !== 'undefined' && countyCodes[item.county]);
+    if (!missing.length || typeof findParcel !== 'function' || typeof turf === 'undefined') return;
+    const notice = document.createElement('p');
+    notice.className = 'saved-map-note';
+    notice.textContent = 'Locating ' + missing.length + ' previously saved ' +
+      (missing.length === 1 ? 'parcel' : 'parcels') + '…';
+    view.querySelector('#savedPropertiesMap')?.after(notice);
+    let found = 0;
+    // Resolve the saved parcel IDs against the same county parcel source used by search.
+    // Never guess a location from the property name or a nearby address.
+    for (const item of missing) {
+      if (view.style.display === 'none' || !view.querySelector('#savedPropertiesMap')) break;
+      try {
+        const parcel = await findParcel(item.county, String(item.parcelId));
+        const center = turf.centroid(parcel).geometry.coordinates;
+        if (!center.every(Number.isFinite)) continue;
+        const saved = read(SAVED_KEY);
+        const target = saved.find(x => x.key === item.key);
+        if (!target || target.location) continue;
+        target.location = { lat: center[1], lng: center[0] };
+        write(SAVED_KEY, saved);
+        found++;
+      } catch (error) {
+        console.warn('[AcresX saved map] Could not locate saved parcel', item.key, error);
+      }
+    }
+    notice.remove();
+    if (found && view.style.display !== 'none' && view.querySelector('#savedPropertiesMap')) {
+      renderLibrary('saved');
+    }
+  }
   function showSavedMap(items, view) {
     const container = view.querySelector('#savedPropertiesMap');
     if (!container) return;
@@ -140,8 +174,9 @@
     }
     if (!located.length) {
       container.textContent = items.length
-        ? 'These properties were saved before map locations were recorded. Open each property and save it again to add it to the map.'
+        ? 'Locating previously saved parcels from their parcel IDs…'
         : 'Save a property to see it on the map.';
+      if (items.length) backfillSavedLocations(items, view);
       return;
     }
     savedMap = L.map(container, { scrollWheelZoom: false });
@@ -174,10 +209,10 @@
     if (missing) {
       const notice = document.createElement('p');
       notice.className = 'saved-map-note';
-      notice.textContent = missing + ' older saved ' + (missing === 1 ? 'property has' : 'properties have') +
-        ' no stored map location. Open and save ' + (missing === 1 ? 'it' : 'them') + ' again to add ' +
-        (missing === 1 ? 'it' : 'them') + ' to the map.';
+      notice.textContent = missing + ' saved ' + (missing === 1 ? 'property is' : 'properties are') +
+        ' not mapped yet. AcresX will look up supported parcel IDs automatically; unmatched parcels remain in List view.';
       container.after(notice);
+      backfillSavedLocations(items, view);
     }
   }
 
