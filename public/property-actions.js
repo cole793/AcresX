@@ -193,6 +193,22 @@
       const point = [item.location.lat, item.location.lng];
       bounds.push(point);
       const marker = L.marker(point).addTo(savedMap);
+      // Match the main property map: draw the saved parcel boundary when its
+      // geometry can be resolved from the existing county parcel lookup.
+      if (item.state === 'WA' && item.county && item.parcelId &&
+          typeof findParcel === 'function' && typeof countyCodes !== 'undefined' && countyCodes[item.county]) {
+        findParcel(item.county, String(item.parcelId)).then(parcel => {
+          if (!parcel?.geometry || !savedMap) return;
+          const boundary = L.geoJSON(parcel, {
+            style: { color: '#1d5d3a', weight: 3, fillColor: '#4b936b', fillOpacity: 0.18 }
+          }).addTo(savedMap);
+          boundary.on('click', () => marker.openPopup());
+          const layerBounds = boundary.getBounds();
+          if (layerBounds.isValid()) {
+            layerBounds.getNorthWest && bounds.push(layerBounds.getNorthWest(), layerBounds.getSouthEast());
+          }
+        }).catch(error => console.warn('[AcresX saved map] Could not draw parcel boundary', item.key, error));
+      }
       const popup = document.createElement('div');
       const heading = document.createElement('strong');
       heading.textContent = item.name || 'Untitled property';
