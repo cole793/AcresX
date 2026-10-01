@@ -55,28 +55,28 @@
 
     if (!data?.available) {
       el.className = 'existing-well-summary low';
-      el.innerHTML = '<strong>Existing well:</strong> matching not available for this county yet';
+      el.innerHTML = '<strong>Well-record association:</strong> matching not available for this county yet';
       return;
     }
 
     const confidence = String(data.confidence || 'Low').toLowerCase();
     el.className = `existing-well-summary ${confidence === 'high' ? 'high' : confidence === 'moderate' ? 'moderate' : 'low'}`;
     if (data.match) {
-      // The nearby-depth search and the on-parcel well match are independent sources.
-      // A matched well must take precedence over the generic "Not found" depth placeholder.
+      // A public-record association alone does not confirm that the selected parcel has a well.
+      // Keep the useful depth/evidence, but reserve "existing well" language for a separate confirming source.
       const metric = document.getElementById('wellMetric');
       const status = document.getElementById('waterStatus');
       const note = document.getElementById('wellNote');
       const depth = Number(data.match.completedDepth);
       if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
-        ? 'Existing well · ' + Math.round(depth) + ' ft'
-        : 'Existing well matched';
+        ? 'Nearby recorded well · ' + Math.round(depth) + ' ft'
+        : 'Nearby well record matched';
       if (status) status.textContent = (data.confidence || 'Record') +
-        ' confidence · Assessor + well record match · Verify';
-      if (note) note.textContent = 'Matched on-parcel well record; nearby depth search is separate';
-      el.innerHTML = `<strong>${escHtml(data.label)}</strong><br>${escHtml(data.confidence)} confidence from assessor + well records`;
+        ' confidence · Nearby public well record · Verify location';
+      if (note) note.textContent = 'Possible well-record association near parcel; does not confirm a well on this property';
+      el.innerHTML = `<strong>Possible nearby well-record association</strong><br>${escHtml(data.confidence)} confidence · verify whether record belongs to this parcel`;
     } else {
-      el.innerHTML = '<strong>No existing well match found</strong><br>Nearby well records still shown below';
+      el.innerHTML = '<strong>No parcel well confirmed</strong><br>Nearby well records still shown below';
     }
   }
 
@@ -91,21 +91,21 @@
     const block = document.createElement('div');
     block.className = 'existing-well-detail result-item';
     if (!data.available) {
-      block.innerHTML = `<div class="notice"><strong>Existing well screening</strong><br>${escHtml(data.label || 'Matching is not configured for this county yet.')}</div>`;
+      block.innerHTML = `<div class="notice"><strong>Well-record screening</strong><br>${escHtml(data.label || 'Matching is not configured for this county yet.')}</div>`;
       root.insertBefore(block, root.firstChild);
       return;
     }
 
     const m = data.match;
     if (!m) {
-      block.innerHTML = `<div class="notice"><strong>Existing well screening: no match found</strong><br>AcresX did not find a strong association between the current assessor parcel and nearby Ecology well records. This does not prove the parcel has no well.</div>`;
+      block.innerHTML = `<div class="notice"><strong>Well-record screening: no strong association found</strong><br>AcresX did not find a strong association between the current assessor parcel and nearby Ecology well records. This does not prove the parcel has no well.</div>`;
       root.insertBefore(block, root.firstChild);
       return;
     }
 
     const evidence = m.evidence || {};
     block.innerHTML = `
-      <div class="notice"><strong>${escHtml(data.label)}</strong><br>${escHtml(data.confidence)} confidence · match score ${Number(data.score || 0)}/100</div>
+      <div class="notice"><strong>Possible nearby well-record association</strong><br>${escHtml(data.confidence)} confidence · match score ${Number(data.score || 0)}/100 · not confirmation of an existing well on this parcel</div>
       <div class="data-grid">
         <div class="datum"><span>Current assessor owner</span><strong>${escHtml(data.currentOwner || 'Not returned')}</strong></div>
         <div class="datum"><span>Well record owner</span><strong>${escHtml(m.ownerName || 'Not reported')}</strong></div>
@@ -143,7 +143,7 @@
       renderWellDetails();
     } catch (error) {
       if (id !== requestId || typeof last === 'undefined') return;
-      last.existingWell = { available: false, label: 'Existing well screening unavailable', error: error.message };
+      last.existingWell = { available: false, label: 'Well-record screening unavailable', error: error.message };
       renderCard(last.existingWell);
     }
   }
