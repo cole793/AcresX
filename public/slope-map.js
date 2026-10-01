@@ -163,4 +163,49 @@
       return result;
     };
   }
+  // Phase 1 land-cover presentation. Read-only: does not change score or costs.
+  function renderLandCoverScreening() {
+    try {
+      if (typeof last === 'undefined') return;
+      const lc = last?.land?.landCover;
+      const note = document.getElementById('slopeNote');
+      if (note && lc?.available && !note.dataset.landCoverAdded) {
+        note.textContent += ' · ~' + lc.woodedPct + '% wooded';
+        note.dataset.landCoverAdded = 'true';
+      }
+      const detail = document.getElementById('detailCard');
+      const root = detail?.querySelector('.results-scroll');
+      const open = detail?.classList.contains('show') &&
+        typeof activeTab !== 'undefined' && activeTab === 'slope';
+      const existing = root?.querySelector('[data-land-cover-screening]');
+      if (!open || !lc?.available || !root) {
+        if (!lc?.available) existing?.remove();
+        return;
+      }
+      const signature = [lc.year, lc.woodedPct, lc.openPct, lc.sampleCount].join(':');
+      if (existing?.dataset.signature === signature) return;
+      existing?.remove();
+      const block = document.createElement('div');
+      block.className = 'notice';
+      block.dataset.landCoverScreening = 'true';
+      block.dataset.signature = signature;
+      const classes = (lc.topClasses || []).map(item => item.label + ' ' + item.pct + '%').join(' · ');
+      block.innerHTML =
+        '<strong>Tree cover & open area</strong><br>' +
+        'USDA satellite land-cover screening estimates <strong>~' + lc.woodedPct +
+        '% wooded</strong> and <strong>~' + lc.openPct + '% open/non-forest</strong>' +
+        (lc.otherPct ? ', with ~' + lc.otherPct + '% other/unclassified cover.' : '.') +
+        '<br><br><strong>Data year:</strong> ' + (lc.year || '—') +
+        ' · <strong>Samples:</strong> ' + (lc.sampleCount || 0) +
+        (classes ? '<br><strong>Dominant mapped cover:</strong> ' + classes : '') +
+        '<br><br><span style="color:#66736b">Source: USDA NASS Cropland Data Layer. Preliminary parcel-wide estimate; not a tree survey or clearing plan. Phase 1 does not affect the Buildability Score or cost estimate.</span>';
+      root.appendChild(block);
+    } catch (error) {
+      console.warn('[AcresX land cover] Presentation unavailable', error);
+    }
+  }
+
+  window.setInterval(renderLandCoverScreening, 700);
+  renderLandCoverScreening();
+
 })();
