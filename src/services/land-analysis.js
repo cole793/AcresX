@@ -115,39 +115,23 @@ function landCoverSamplePoints(geometry) {
   return points.slice(0, 36);
 }
 
-async function projectForCdl(points) {
-  const url = new URL('https://utility.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer/project');
-  url.searchParams.set('f', 'json');
-  url.searchParams.set('inSR', '4326');
-  url.searchParams.set('outSR', '5070');
-  url.searchParams.set('geometries', JSON.stringify({
-    geometryType: 'esriGeometryPoint',
-    geometries: points.map(p => ({ x: p.lon, y: p.lat }))
-  }));
-  const response = await fetchWithTimeout(url, {}, 15000);
-  if (!response.ok) throw new Error(`Coordinate projection returned ${response.status}`);
-  const data = await response.json();
-  if (!Array.isArray(data?.geometries) || !data.geometries.length) throw new Error('Coordinate projection unavailable');
-  return data.geometries;
-}
-
 async function cdlValueAt(point) {
+  // USDA CDL GetCDLValue accepts WGS84 longitude/latitude when wkid=4326.
+  // Querying it directly avoids the previous ArcGIS projection dependency.
   const url = new URL('https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLValue');
   url.searchParams.set('year', String(CDL_YEAR));
-  url.searchParams.set('x', String(point.x));
-  url.searchParams.set('y', String(point.y));
+  url.searchParams.set('x', String(point.lon));
+  url.searchParams.set('y', String(point.lat));
+  url.searchParams.set('wkid', '4326');
   const response = await fetchWithTimeout(url, { cf: { cacheTtl: 2592000, cacheEverything: true } }, 12000);
   if (!response.ok) throw new Error(`USDA CDL returned ${response.status}`);
   const text = await response.text();
-  // GetCDLValue returns the class code in an attribute on the <value> element
-  // (for example: <value value="142" category="Evergreen Forest" ... />).
-  // Prefer attributes; keep element-text parsing as a compatibility fallback.
-  const valueMatch = text.match(/<(?:\w+:)?value\b[^>]*\bvalue=["'](\d+)["']/i) ||
-    text.match(/<(?:\w+:)?value[^>]*>\s*(\d+)\s*<\//i);
-  const categoryAttribute = text.match(/<(?:\w+:)?value\b[^>]*\bcategory=["']([^"']+)["']/i);
+  const valueMatch = text.match(/<(?:\\w+:)?value\\b[^>]*\\bvalue=["'](\\d+)["']/i) ||
+    text.match(/<(?:\\w+:)?value[^>]*>\\s*(\\d+)\\s*<\\//i);
+  const categoryAttribute = text.match(/<(?:\\w+:)?value\\b[^>]*\\bcategory=["']([^"']+)["']/i);
   const categoryMatch = categoryAttribute ||
-    text.match(/<(?:\w+:)?category[^>]*>\s*([^<]+)\s*<\//i) ||
-    text.match(/<(?:\w+:)?name[^>]*>\s*([^<]+)\s*<\//i);
+    text.match(/<(?:\\w+:)?category[^>]*>\\s*([^<]+)\\s*<\\//i) ||
+    text.match(/<(?:\\w+:)?name[^>]*>\\s*([^<]+)\\s*<\\//i);
   const code = Number(valueMatch?.[1]);
   if (!Number.isFinite(code) || code === 0) throw new Error('USDA CDL sample could not be read');
   return { code, category: categoryMatch?.[1]?.trim() || null };
@@ -155,10 +139,9 @@ async function cdlValueAt(point) {
 
 async function landCoverAnalysis(geometry) {
   const geographic = landCoverSamplePoints(geometry);
-  const projected = await projectForCdl(geographic);
   const sampled = [];
-  for (let i = 0; i < projected.length; i += 6) {
-    const batch = await Promise.allSettled(projected.slice(i, i + 6).map(cdlValueAt));
+  for (let i = 0; i < geographic.length; i += 6) {
+    const batch = await Promise.allSettled(geographic.slice(i, i + 6).map(cdlValueAt));
     for (const result of batch) if (result.status === 'fulfilled') sampled.push(result.value);
   }
   if (sampled.length < Math.min(6, geographic.length)) {
