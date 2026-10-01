@@ -21,32 +21,35 @@ function distanceFeet(a, b) {
 }
 
 async function elevationAt(lon, lat) {
-  const url = new URL('https://epqs.nationalmap.gov/v1/json');
-  url.searchParams.set('x', String(lon));
-  url.searchParams.set('y', String(lat));
-  url.searchParams.set('wkid', '4326');
-  url.searchParams.set('units', 'Feet');
-  url.searchParams.set('includeDate', 'false');
+  // EPQS has become unreliable. Query the current USGS 3DEP ImageServer
+  // directly instead. 3DEP identify values are meters; AcresX reports feet.
+  const url = new URL('https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/identify');
+  url.searchParams.set('geometry', JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }));
+  url.searchParams.set('geometryType', 'esriGeometryPoint');
+  url.searchParams.set('sr', '4326');
+  url.searchParams.set('returnGeometry', 'false');
+  url.searchParams.set('returnCatalogItems', 'false');
+  url.searchParams.set('f', 'json');
 
   let lastError;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const response = await fetchWithTimeout(url, {
         cf: { cacheTtl: 2592000, cacheEverything: true }
-      }, 10000);
-      if (!response.ok) throw new Error(`USGS elevation service returned ${response.status}`);
+      }, 15000);
+      if (!response.ok) throw new Error(`USGS 3DEP elevation service returned ${response.status}`);
       const data = await response.json();
-      const value = Number(data.value ?? data.USGS_Elevation_Point_Query_Service?.Elevation_Query?.Elevation);
-      if (!Number.isFinite(value) || value < -10000) throw new Error('USGS elevation unavailable.');
-      return value;
+      if (data?.error) throw new Error(data.error.message || 'USGS 3DEP elevation service error');
+      const meters = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
+      if (!Number.isFinite(meters) || meters < -4000) throw new Error('USGS 3DEP elevation was unavailable.');
+      return meters * 3.280839895;
     } catch (error) {
       lastError = error;
-      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 150));
+      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
-  throw lastError || new Error('USGS elevation unavailable.');
+  throw lastError || new Error('USGS 3DEP elevation unavailable.');
 }
-
 function band(grade) {
   if (grade < 5) return 'flat';
   if (grade < 10) return 'moderate';
@@ -95,7 +98,7 @@ export async function handleSlopeGrid(request) {
     return json({
       available: false,
       error: 'Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.',
-      source: 'USGS Elevation Point Query Service',
+      source: 'USGS 3DEP Elevation Image Service',
       sampleCount: validSamples.length,
       requestedSamples: grid.length
     }, 200, 'no-store');
@@ -144,13 +147,13 @@ export async function handleSlopeGrid(request) {
     return json({
       available: false,
       error: 'Elevation samples were returned, but not enough adjacent samples were available to calculate slope cells.',
-      source: 'USGS Elevation Point Query Service'
+      source: 'USGS 3DEP Elevation Image Service'
     }, 200, 'no-store');
   }
 
   return json({
     available: true,
-    source: 'USGS Elevation Point Query Service',
+    source: 'USGS 3DEP Elevation Image Service',
     resolution: `${size - 1} x ${size - 1} parcel grid`,
     sampleCount: validSamples.length,
     requestedSamples: grid.length,
