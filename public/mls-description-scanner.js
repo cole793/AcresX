@@ -20,7 +20,9 @@
       ],
       power: [
         ['power_connected', /\b(?:power|electric(?:ity)?) (?:is )?(?:connected|installed|hooked up|on (?:the )?property)|\bmeter (?:is )?installed\b/i],
-        ['power_nearby', /\b(?:power|electric(?:ity)?) (?:is )?(?:at (?:the )?road|at (?:the )?property line|nearby|available nearby)\b/i],
+        ['power_property_line', /\b(?:power|electric(?:ity)?|electrical service) (?:is )?(?:available )?(?:at|to) (?:the )?property line\b|\bpower (?:available )?at prop(?:erty)? l(?:ine)?\b/i],
+        ['power_frontage', /\b(?:power|electric(?:ity)?|electrical service) (?:is )?(?:available )?(?:along|at) (?:the )?(?:front|frontage|road|roadway)\b/i],
+        ['power_nearby', /\b(?:power|electric(?:ity)?|electrical service) (?:is )?(?:nearby|available nearby|close by)\b/i],
         ['provider_inland', /\bInland Power(?:\s*(?:&|and)\s*Light)?\b/i],
         ['provider_avista', /\bAvista(?: Utilities)?\b/i],
         ['provider_vera', /\bVera (?:Water (?:and|&) )?Power\b/i]
@@ -175,7 +177,8 @@
     const found = scan(remarks)[category] || [];
     const positive = category === 'septic'
       ? found.filter(x => x.claim === 'septic_installed' || x.claim === 'perc_test')
-      : found.filter(x => x.claim === 'power_connected' || x.claim === 'power_nearby' || x.claim.startsWith('provider_'));
+      : found.filter(x => x.claim === 'power_connected' || x.claim === 'power_property_line' ||
+          x.claim === 'power_frontage' || x.claim === 'power_nearby' || x.claim.startsWith('provider_'));
     if (!positive.length) return null;
     // Avoid interpreting negated or future improvements as already installed.
     const blocked = category === 'septic'
@@ -191,6 +194,8 @@
       return installed ? 'Septic reported in listing' : 'Perc test reported';
     }
     if (report.positive.some(x => x.claim === 'power_connected')) return 'Power reported on property';
+    if (report.positive.some(x => x.claim === 'power_property_line')) return 'Power reported at property line';
+    if (report.positive.some(x => x.claim === 'power_frontage')) return 'Power reported along frontage';
     if (report.positive.some(x => x.claim === 'power_nearby')) return 'Power reported nearby';
     const provider = report.positive.find(x => x.claim.startsWith('provider_'));
     return provider ? provider.phrase + ' reported' : 'Power mentioned in listing';
@@ -260,7 +265,7 @@
       report.positive.map(x => '“' + x.phrase + '”').join('; ') +
       (category === 'septic'
         ? '. Verify permits, installation, capacity and condition with the health department.'
-        : '. Verify provider, line location, meter and connection availability directly with the utility.');
+        : '. Listing evidence can establish what the seller/broker reports, but not an exact service point. Verify provider, overhead/underground line location, transformer or meter, capacity, extension requirements and connection availability directly with the utility.');
     notice.append(heading, description);
     root.prepend(notice);
   }
