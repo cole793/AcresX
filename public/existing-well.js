@@ -82,12 +82,10 @@
         el.innerHTML = '<strong>Existing well identified</strong><br>' +
           (evidence.insideParcel ? 'Mapped well coordinates fall within parcel' : 'Well-record owner matches current assessor owner');
       } else {
-        if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
-          ? 'Nearby recorded well · ' + Math.round(depth) + ' ft'
-          : 'Nearby well record matched';
-        if (status) status.textContent = (data.confidence || 'Record') +
-          ' confidence · Nearby public well record · Verify location';
-        if (note) note.textContent = 'Possible well-record association near parcel; does not confirm a well on this property';
+        // Do not overwrite the card's closest-five average with a single nearby candidate.
+        // The association belongs in supporting copy/details only.
+        if (status) status.textContent = 'Nearby well records found · no existing well confirmed';
+        if (note && !note.textContent) note.textContent = 'Average depth based on closest recorded wells with depth data';
         el.innerHTML = `<strong>Possible nearby well-record association</strong><br>${escHtml(data.confidence)} confidence · verify whether record belongs to this parcel`;
       }
     } else {
