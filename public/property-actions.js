@@ -302,7 +302,7 @@
     const topActions = document.querySelector('.top-actions'); if (!topActions) return;
     const buttons = topActions.querySelectorAll('button'); const saveBtn=buttons[0], reportBtn=buttons[1];
     if (saveBtn) { saveBtn.disabled=false; saveBtn.id='savePropertyBtn'; saveBtn.addEventListener('click',saveCurrent); }
-    if (reportBtn) { reportBtn.disabled=false; reportBtn.id='generateReportBtn'; reportBtn.addEventListener('click',generateReport); }
+    if (reportBtn) { reportBtn.disabled=false; reportBtn.id='generateReportBtn'; /* Report generation is owned by property-report-v2.js. */ }
     initNav(); ensureLibraryView();
     const style=document.createElement('style'); style.textContent=`
       #propertyActionToast{position:fixed;right:24px;bottom:24px;background:#174f34;color:white;padding:12px 16px;border-radius:10px;font-weight:800;box-shadow:0 10px 30px #0003;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s;z-index:99999}#propertyActionToast.show{opacity:1;transform:none}
