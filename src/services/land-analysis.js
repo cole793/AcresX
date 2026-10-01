@@ -78,8 +78,8 @@ async function elevationAt(lon, lat) {
 }
 
 const CDL_YEAR = 2025;
-const CDL_FOREST_CODES = new Set([63, 64, 141, 142, 143]);
-const CDL_OPEN_CODES = new Set([36, 37, 60, 61, 62, 65, 81, 82, 87, 88, 111, 112, 121, 122, 123, 124, 131, 152, 176, 190, 195]);
+const CDL_FOREST_CODES = new Set([63, 141, 142, 143, 190]);
+const CDL_OPEN_CODES = new Set([36, 37, 60, 61, 62, 65, 81, 82, 87, 88, 111, 112, 121, 122, 123, 124, 131, 152, 176, 195]);
 
 function pointInRing(lon, lat, ring) {
   let inside = false;
@@ -139,12 +139,17 @@ async function cdlValueAt(point) {
   const response = await fetchWithTimeout(url, { cf: { cacheTtl: 2592000, cacheEverything: true } }, 12000);
   if (!response.ok) throw new Error(`USDA CDL returned ${response.status}`);
   const text = await response.text();
-  const valueMatch = text.match(/<(?:\w+:)?value[^>]*>\s*(\d+)\s*<\//i) ||
-    text.match(/(?:value|code)[^0-9]{0,20}(\d{1,3})/i);
-  const categoryMatch = text.match(/<(?:\w+:)?category[^>]*>\s*([^<]+)\s*<\//i) ||
+  // GetCDLValue returns the class code in an attribute on the <value> element
+  // (for example: <value value="142" category="Evergreen Forest" ... />).
+  // Prefer attributes; keep element-text parsing as a compatibility fallback.
+  const valueMatch = text.match(/<(?:\w+:)?value\b[^>]*\bvalue=["'](\d+)["']/i) ||
+    text.match(/<(?:\w+:)?value[^>]*>\s*(\d+)\s*<\//i);
+  const categoryAttribute = text.match(/<(?:\w+:)?value\b[^>]*\bcategory=["']([^"']+)["']/i);
+  const categoryMatch = categoryAttribute ||
+    text.match(/<(?:\w+:)?category[^>]*>\s*([^<]+)\s*<\//i) ||
     text.match(/<(?:\w+:)?name[^>]*>\s*([^<]+)\s*<\//i);
   const code = Number(valueMatch?.[1]);
-  if (!Number.isFinite(code)) throw new Error('USDA CDL sample could not be read');
+  if (!Number.isFinite(code) || code === 0) throw new Error('USDA CDL sample could not be read');
   return { code, category: categoryMatch?.[1]?.trim() || null };
 }
 
