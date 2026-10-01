@@ -77,9 +77,35 @@ async function elevationAt(lon, lat) {
   throw lastError || new Error('USGS elevation unavailable.');
 }
 
-const CDL_YEAR = 2025;
-const CDL_FOREST_CODES = new Set([63, 141, 142, 143, 190]);
-const CDL_OPEN_CODES = new Set([36, 37, 60, 61, 62, 65, 81, 82, 87, 88, 111, 112, 121, 122, 123, 124, 131, 152, 176, 195]);
+const TCC_YEAR = 2025;
+const TCC_SERVICE = 'https://imagery.geoplatform.gov/iipp/rest/services/Vegetation/USFS_EDW_NLCD_TCC_CONUS/ImageServer';
+
+async function treeCanopyAt(point) {
+  const url = new URL(TCC_SERVICE + '/identify');
+  url.searchParams.set('geometry', JSON.stringify({
+    x: point.lon,
+    y: point.lat,
+    spatialReference: { wkid: 4326 }
+  }));
+  url.searchParams.set('geometryType', 'esriGeometryPoint');
+  url.searchParams.set('sr', '4326');
+  url.searchParams.set('returnGeometry', 'false');
+  url.searchParams.set('returnCatalogItems', 'false');
+  url.searchParams.set('f', 'json');
+
+  const response = await fetchWithTimeout(url, {
+    cf: { cacheTtl: 2592000, cacheEverything: true }
+  }, 15000);
+  if (!response.ok) throw new Error(`USFS tree-canopy service returned ${response.status}`);
+  const data = await response.json();
+  if (data?.error) throw new Error(data.error.message || 'USFS tree-canopy service error');
+
+  const raw = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
+  if (!Number.isFinite(raw) || raw < 0 || raw > 100) {
+    throw new Error('USFS tree-canopy sample unavailable');
+  }
+  return raw;
+}
 
 function pointInRing(lon, lat, ring) {
   let inside = false;
@@ -111,66 +137,40 @@ function landCoverSamplePoints(geometry) {
       if (pointInGeometry(lon, lat, geometry)) points.push({ lon, lat });
     }
   }
-  if (!points.length) points.push({ lon: (b.minLon + b.maxLon) / 2, lat: (b.minLat + b.maxLat) / 2 });
+  if (!points.length) points.push({
+    lon: (b.minLon + b.maxLon) / 2,
+    lat: (b.minLat + b.maxLat) / 2
+  });
   return points.slice(0, 36);
 }
 
-async function cdlValueAt(point) {
-  // USDA CDL GetCDLValue accepts WGS84 longitude/latitude when wkid=4326.
-  // Querying it directly avoids the previous ArcGIS projection dependency.
-  const url = new URL('https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLValue');
-  url.searchParams.set('year', String(CDL_YEAR));
-  url.searchParams.set('x', String(point.lon));
-  url.searchParams.set('y', String(point.lat));
-  url.searchParams.set('wkid', '4326');
-  const response = await fetchWithTimeout(url, { cf: { cacheTtl: 2592000, cacheEverything: true } }, 12000);
-  if (!response.ok) throw new Error(`USDA CDL returned ${response.status}`);
-  const text = await response.text();
-  const valueMatch = text.match(/<(?:\\w+:)?value\\b[^>]*\\bvalue=["'](\\d+)["']/i) ||
-    text.match(/<(?:\\w+:)?value[^>]*>\\s*(\\d+)\\s*<\\//i);
-  const categoryAttribute = text.match(/<(?:\\w+:)?value\\b[^>]*\\bcategory=["']([^"']+)["']/i);
-  const categoryMatch = categoryAttribute ||
-    text.match(/<(?:\\w+:)?category[^>]*>\\s*([^<]+)\\s*<\\//i) ||
-    text.match(/<(?:\\w+:)?name[^>]*>\\s*([^<]+)\\s*<\\//i);
-  const code = Number(valueMatch?.[1]);
-  if (!Number.isFinite(code) || code === 0) throw new Error('USDA CDL sample could not be read');
-  return { code, category: categoryMatch?.[1]?.trim() || null };
-}
-
 async function landCoverAnalysis(geometry) {
-  const geographic = landCoverSamplePoints(geometry);
-  const sampled = [];
-  for (let i = 0; i < geographic.length; i += 6) {
-    const batch = await Promise.allSettled(geographic.slice(i, i + 6).map(cdlValueAt));
-    for (const result of batch) if (result.status === 'fulfilled') sampled.push(result.value);
+  const points = landCoverSamplePoints(geometry);
+  const samples = [];
+
+  for (let i = 0; i < points.length; i += 6) {
+    const batch = await Promise.allSettled(points.slice(i, i + 6).map(treeCanopyAt));
+    for (const result of batch) {
+      if (result.status === 'fulfilled') samples.push(result.value);
+    }
   }
-  if (sampled.length < Math.min(6, geographic.length)) {
-    throw new Error('Not enough USDA land-cover samples were returned.');
+
+  if (samples.length < Math.min(6, points.length)) {
+    throw new Error('Not enough USFS tree-canopy samples were returned.');
   }
-  let wooded = 0, open = 0, other = 0;
-  const classes = new Map();
-  for (const sample of sampled) {
-    if (CDL_FOREST_CODES.has(sample.code)) wooded++;
-    else if (CDL_OPEN_CODES.has(sample.code)) open++;
-    else other++;
-    const label = sample.category || `CDL class ${sample.code}`;
-    classes.set(label, (classes.get(label) || 0) + 1);
-  }
-  const total = sampled.length;
-  const topClasses = [...classes.entries()]
-    .sort((a, b) => b[1] - a[1]).slice(0, 4)
-    .map(([label, count]) => ({ label, pct: Math.round(count / total * 100) }));
+
+  const canopyPct = Math.round(samples.reduce((sum, value) => sum + value, 0) / samples.length);
   return {
     available: true,
-    year: CDL_YEAR,
-    woodedPct: Math.round(wooded / total * 100),
-    openPct: Math.round(open / total * 100),
-    otherPct: Math.max(0, 100 - Math.round(wooded / total * 100) - Math.round(open / total * 100)),
-    sampleCount: total,
-    requestedSamples: geographic.length,
-    topClasses,
-    source: 'USDA NASS Cropland Data Layer',
-    note: 'Preliminary satellite land-cover estimate; not a tree survey or clearing plan.'
+    year: TCC_YEAR,
+    woodedPct: canopyPct,
+    openPct: Math.max(0, 100 - canopyPct),
+    otherPct: 0,
+    sampleCount: samples.length,
+    requestedSamples: points.length,
+    topClasses: [],
+    source: 'USDA Forest Service NLCD Tree Canopy Cover',
+    note: 'Preliminary 30 m satellite tree-canopy estimate; not a tree survey or clearing plan.'
   };
 }
 
