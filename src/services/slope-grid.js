@@ -21,34 +21,50 @@ function distanceFeet(a, b) {
 }
 
 async function elevationAt(lon, lat) {
-  // EPQS has become unreliable. Query the current USGS 3DEP ImageServer
-  // directly instead. 3DEP identify values are meters; AcresX reports feet.
-  const url = new URL('https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/identify');
-  url.searchParams.set('geometry', JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }));
-  url.searchParams.set('geometryType', 'esriGeometryPoint');
-  url.searchParams.set('sr', '4326');
-  url.searchParams.set('returnGeometry', 'false');
-  url.searchParams.set('returnCatalogItems', 'false');
-  url.searchParams.set('f', 'json');
+  // Use USGS EPQS first: it is designed specifically for point elevations.
+  // Fall back to the 3DEP ImageServer when EPQS is temporarily unavailable.
+  const epqs = new URL('https://epqs.nationalmap.gov/v1/json');
+  epqs.searchParams.set('x', String(lon));
+  epqs.searchParams.set('y', String(lat));
+  epqs.searchParams.set('wkid', '4326');
+  epqs.searchParams.set('units', 'Feet');
+  epqs.searchParams.set('includeDate', 'false');
+
+  const image = new URL('https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/identify');
+  image.searchParams.set('geometry', JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }));
+  image.searchParams.set('geometryType', 'esriGeometryPoint');
+  image.searchParams.set('sr', '4326');
+  image.searchParams.set('returnGeometry', 'false');
+  image.searchParams.set('returnCatalogItems', 'false');
+  image.searchParams.set('f', 'json');
 
   let lastError;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await fetchWithTimeout(url, {
-        cf: { cacheTtl: 2592000, cacheEverything: true }
-      }, 15000);
-      if (!response.ok) throw new Error(`USGS 3DEP elevation service returned ${response.status}`);
-      const data = await response.json();
-      if (data?.error) throw new Error(data.error.message || 'USGS 3DEP elevation service error');
-      const meters = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
-      if (!Number.isFinite(meters) || meters < -4000) throw new Error('USGS 3DEP elevation was unavailable.');
-      return meters * 3.280839895;
-    } catch (error) {
-      lastError = error;
-      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 200));
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const source of ['epqs', 'image']) {
+      try {
+        const response = await fetchWithTimeout(source === 'epqs' ? epqs : image, {
+          cf: { cacheTtl: 2592000, cacheEverything: true }
+        }, 15000);
+        if (!response.ok) throw new Error(`USGS elevation service returned ${response.status}`);
+        const data = await response.json();
+        if (data?.error) throw new Error(data.error.message || 'USGS elevation service error');
+
+        if (source === 'epqs') {
+          const feet = Number(data?.value ?? data?.USGS_Elevation_Point_Query_Service?.Elevation_Query?.Elevation);
+          if (Number.isFinite(feet) && feet > -10000) return feet;
+          throw new Error('USGS EPQS elevation was unavailable.');
+        }
+
+        const meters = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
+        if (Number.isFinite(meters) && meters >= -4000) return meters * 3.280839895;
+        throw new Error('USGS 3DEP elevation was unavailable.');
+      } catch (error) {
+        lastError = error;
+      }
     }
+    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
   }
-  throw lastError || new Error('USGS 3DEP elevation unavailable.');
+  throw lastError || new Error('USGS elevation unavailable.');
 }
 function band(grade) {
   if (grade < 5) return 'flat';
@@ -98,7 +114,7 @@ export async function handleSlopeGrid(request) {
     return json({
       available: false,
       error: 'Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.',
-      source: 'USGS 3DEP Elevation Image Service',
+      source: 'USGS 3DEP / EPQS elevation',
       sampleCount: validSamples.length,
       requestedSamples: grid.length
     }, 200, 'no-store');
@@ -147,13 +163,13 @@ export async function handleSlopeGrid(request) {
     return json({
       available: false,
       error: 'Elevation samples were returned, but not enough adjacent samples were available to calculate slope cells.',
-      source: 'USGS 3DEP Elevation Image Service'
+      source: 'USGS 3DEP / EPQS elevation'
     }, 200, 'no-store');
   }
 
   return json({
     available: true,
-    source: 'USGS 3DEP Elevation Image Service',
+    source: 'USGS 3DEP / EPQS elevation',
     resolution: `${size - 1} x ${size - 1} parcel grid`,
     sampleCount: validSamples.length,
     requestedSamples: grid.length,
