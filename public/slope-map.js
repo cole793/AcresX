@@ -175,11 +175,20 @@
       }
       const detail = document.getElementById('detailCard');
       const root = detail?.querySelector('.results-scroll');
-      const open = detail?.classList.contains('show') &&
-        typeof activeTab !== 'undefined' && activeTab === 'slope';
+      const open = typeof activeTab !== 'undefined' && activeTab === 'slope';
       const existing = root?.querySelector('[data-land-cover-screening]');
-      if (!open || !lc?.available || !root) {
-        if (!lc?.available) existing?.remove();
+      if (!open || !root) return;
+      if (!lc?.available) {
+        if (existing?.dataset.signature === 'unavailable:' + (lc?.error || '')) return;
+        existing?.remove();
+        const block = document.createElement('div');
+        block.className = 'notice';
+        block.dataset.landCoverScreening = 'true';
+        block.dataset.signature = 'unavailable:' + (lc?.error || '');
+        block.innerHTML = '<strong>Tree cover & open area</strong><br>' +
+          (lc?.error || 'USDA land-cover screening is unavailable for this parcel.') +
+          '<br><span style="color:#66736b">Slope results are unaffected. Tree cover is not included in the score or cost estimate.</span>';
+        root.appendChild(block);
         return;
       }
       const signature = [lc.year, lc.woodedPct, lc.openPct, lc.sampleCount].join(':');
