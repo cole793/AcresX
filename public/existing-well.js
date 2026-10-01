@@ -62,19 +62,34 @@
     const confidence = String(data.confidence || 'Low').toLowerCase();
     el.className = `existing-well-summary ${confidence === 'high' ? 'high' : confidence === 'moderate' ? 'moderate' : 'low'}`;
     if (data.match) {
-      // A public-record association alone does not confirm that the selected parcel has a well.
-      // Keep the useful depth/evidence, but reserve "existing well" language for a separate confirming source.
+      const evidence = data.match.evidence || {};
+      // Existing-well language is reserved for strong on-parcel evidence:
+      // mapped coordinates inside the parcel, or a strong owner-linked well record.
+      // Listing-confirmed wells are handled independently by the MLS scanner.
+      const confirmedExisting = Boolean(evidence.insideParcel || evidence.ownerMatch);
       const metric = document.getElementById('wellMetric');
       const status = document.getElementById('waterStatus');
       const note = document.getElementById('wellNote');
       const depth = Number(data.match.completedDepth);
-      if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
-        ? 'Nearby recorded well · ' + Math.round(depth) + ' ft'
-        : 'Nearby well record matched';
-      if (status) status.textContent = (data.confidence || 'Record') +
-        ' confidence · Nearby public well record · Verify location';
-      if (note) note.textContent = 'Possible well-record association near parcel; does not confirm a well on this property';
-      el.innerHTML = `<strong>Possible nearby well-record association</strong><br>${escHtml(data.confidence)} confidence · verify whether record belongs to this parcel`;
+      if (confirmedExisting) {
+        if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
+          ? 'Existing well · ' + Math.round(depth) + ' ft'
+          : 'Existing well';
+        if (status) status.textContent = evidence.insideParcel
+          ? 'Well coordinates mapped within parcel · Verify record'
+          : 'Well record owner matches assessor owner · Verify record';
+        if (note) note.textContent = 'Strong public-record evidence of an existing well on this property';
+        el.innerHTML = '<strong>Existing well identified</strong><br>' +
+          (evidence.insideParcel ? 'Mapped well coordinates fall within parcel' : 'Well-record owner matches current assessor owner');
+      } else {
+        if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
+          ? 'Nearby recorded well · ' + Math.round(depth) + ' ft'
+          : 'Nearby well record matched';
+        if (status) status.textContent = (data.confidence || 'Record') +
+          ' confidence · Nearby public well record · Verify location';
+        if (note) note.textContent = 'Possible well-record association near parcel; does not confirm a well on this property';
+        el.innerHTML = `<strong>Possible nearby well-record association</strong><br>${escHtml(data.confidence)} confidence · verify whether record belongs to this parcel`;
+      }
     } else {
       el.innerHTML = '<strong>No parcel well confirmed</strong><br>Nearby well records still shown below';
     }
@@ -104,8 +119,11 @@
     }
 
     const evidence = m.evidence || {};
+    const confirmedExisting = Boolean(evidence.insideParcel || evidence.ownerMatch);
     block.innerHTML = `
-      <div class="notice"><strong>Possible nearby well-record association</strong><br>${escHtml(data.confidence)} confidence · match score ${Number(data.score || 0)}/100 · not confirmation of an existing well on this parcel</div>
+      <div class="notice"><strong>${confirmedExisting ? 'Existing well identified' : 'Possible nearby well-record association'}</strong><br>${confirmedExisting
+        ? (evidence.insideParcel ? 'Well coordinates map within the selected parcel' : 'Well-record owner matches the current assessor owner') + ' · verify record and current well status'
+        : escHtml(data.confidence) + ' confidence · match score ' + Number(data.score || 0) + '/100 · not confirmation of an existing well on this parcel'}</div>
       <div class="data-grid">
         <div class="datum"><span>Current assessor owner</span><strong>${escHtml(data.currentOwner || 'Not returned')}</strong></div>
         <div class="datum"><span>Well record owner</span><strong>${escHtml(m.ownerName || 'Not reported')}</strong></div>
