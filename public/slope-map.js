@@ -186,7 +186,7 @@
         block.dataset.landCoverScreening = 'true';
         block.dataset.signature = 'unavailable:' + (lc?.error || '');
         block.innerHTML = '<strong>Tree cover & open area</strong><br>' +
-          (lc?.error || 'USDA land-cover screening is unavailable for this parcel.') +
+          (lc?.error || 'USDA Forest Service tree-canopy screening is unavailable for this parcel.') +
           '<br><span style="color:#66736b">Slope results are unaffected. Tree cover is not included in the score or cost estimate.</span>';
         root.appendChild(block);
         return;
@@ -201,13 +201,13 @@
       const classes = (lc.topClasses || []).map(item => item.label + ' ' + item.pct + '%').join(' · ');
       block.innerHTML =
         '<strong>Tree cover & open area</strong><br>' +
-        'USDA satellite land-cover screening estimates <strong>~' + lc.woodedPct +
-        '% wooded</strong> and <strong>~' + lc.openPct + '% open/non-forest</strong>' +
+        'USDA Forest Service tree-canopy screening estimates <strong>~' + lc.woodedPct +
+        '% tree canopy</strong> and <strong>~' + lc.openPct + '% non-canopy</strong>' +
         (lc.otherPct ? ', with ~' + lc.otherPct + '% other/unclassified cover.' : '.') +
         '<br><br><strong>Data year:</strong> ' + (lc.year || '—') +
         ' · <strong>Samples:</strong> ' + (lc.sampleCount || 0) +
         (classes ? '<br><strong>Dominant mapped cover:</strong> ' + classes : '') +
-        '<br><br><span style="color:#66736b">Source: USDA NASS Cropland Data Layer. Preliminary parcel-wide estimate; not a tree survey or clearing plan. Phase 1 does not affect the Buildability Score or cost estimate.</span>';
+        '<br><br><span style="color:#66736b">Source: USDA Forest Service NLCD Tree Canopy Cover. Preliminary 30 m satellite estimate; not a tree survey or clearing plan. Phase 1 does not affect the Buildability Score or cost estimate.</span>';
       root.appendChild(block);
     } catch (error) {
       console.warn('[AcresX land cover] Presentation unavailable', error);
