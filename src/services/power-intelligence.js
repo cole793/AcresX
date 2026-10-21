@@ -1,4 +1,5 @@
 import { getAvistaPowerIntelligence, isAvistaProvider } from '../utilities/avista.js';
+import { getInlandPowerIntelligence, isInlandPowerProvider } from '../utilities/inland-power.js';
 import { getOsmPowerProximity } from '../utilities/osm-power.js';
 import { json } from '../shared/http.js';
 
@@ -53,6 +54,23 @@ export async function handlePowerIntelligence(request) {
         note: proximity.note
       };
     }
+    return json(result, 200, 'public, max-age=3600, s-maxage=86400');
+  }
+
+  if (isInlandPowerProvider(provider)) {
+    const result = getInlandPowerIntelligence({
+      provider,
+      parcelId: body.parcelId,
+      address: body.address
+    });
+    result.proximity = proximity;
+    result.distribution = {
+      status: proximity.available && Number.isFinite(proximity.estimatedDistanceFt) ? 'osm_mapped_proximity' : 'no_verified_distance',
+      estimatedDistanceFt: proximity.estimatedDistanceFt ?? null,
+      confidence: proximity.confidence || 'low',
+      infrastructure: proximity.infrastructure || 'unknown',
+      note: 'Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route.'
+    };
     return json(result, 200, 'public, max-age=3600, s-maxage=86400');
   }
 
