@@ -107,7 +107,7 @@
         <span class="zone-family">${esc(power.family || 'Zoning')}</span>
       </div>
       <div class="zone-density"><span>Residential / development intensity</span><strong>${esc(power.density || 'Verify project-specific density standards')}</strong></div>
-      <div class="zone-context">${context.filter(Boolean).map(x => `<span class="zone-context-pill">${esc(x)}</span>`).join('')}</div>
+      <div class="zone-context">${[...(power.setback ? [`General structural setback: ${power.setback}`] : []), ...(power.buildingHeight ? [`Building height: ${power.buildingHeight}`] : []), ...context].filter(Boolean).map(x => `<span class="zone-context-pill">${esc(x)}</span>`).join('')}</div>
       <div class="zone-use-grid">
         ${uses.map(use => `<div class="zone-use"><span class="zone-use-dot ${esc(use.status)}"></span><div><strong>${esc(use.label)}</strong><span>${esc(statusLabel(use.status))}</span>${use.note ? `<span style="text-transform:none;line-height:1.35">${esc(use.note)}</span>` : ''}</div></div>`).join('')}
       </div>
