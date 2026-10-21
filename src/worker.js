@@ -171,7 +171,8 @@ async function queryZoningCatalog(county, lat, lon, profile) {
   return null;
 }
 function permitList(profile) {
-  return [
+  const stevens = /^stevens$/i.test(profile.county || '');
+  const permits = [
     { name: 'Land-use / zoning verification', agency: profile.planningAgency, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: profile.zoningMapUrl },
     { name: 'Building permit', agency: profile.planningAgency, status: 'Likely', reason: 'Normally required for a new residence, shop or other permitted structure.', url: profile.permitUrl },
     { name: 'On-site septic approval', agency: profile.healthAgency, status: 'Likely', reason: 'Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.', url: profile.septicUrl },
@@ -179,6 +180,15 @@ function permitList(profile) {
     { name: 'Driveway / road approach permit', agency: profile.roadAgency, status: 'Possible', reason: 'Often required for a new or modified connection to a county or state road.', url: profile.planningUrl },
     { name: 'Critical-areas review', agency: profile.planningAgency, status: 'Possible', reason: 'Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.', url: profile.planningUrl }
   ];
+  if (stevens) {
+    permits.push(
+      { name: 'Existing septic as-built / permit record search', agency: 'Northeast Tri County Health District', status: 'Not verified', reason: 'Search the public NETCHD portal by parcel or address. A missing online result does not prove no system exists; request a staff search when necessary.', url: 'https://www.netchd.org/227/Sewage-Permit-Record-Search' },
+      { name: 'Septic soil / site evaluation', agency: 'Northeast Tri County Health District', status: 'Possible', reason: 'For new on-site sewage systems, obtain site evaluation and design/permit approval. Existing records do not confirm system condition or capacity.', url: 'https://www.netchd.org/226/Applications-Forms-Resources' },
+      { name: 'Residential site analysis', agency: 'Stevens County Land Services — Planning', status: 'Verify', reason: 'Determine whether a site analysis and critical-area/shoreline review is needed before building or placing a manufactured home.', url: 'https://www.stevenscountywa.gov/21344' },
+      { name: 'Manufactured/mobile home placement permit', agency: 'Stevens County Land Services — Building', status: 'If applicable', reason: 'Manufactured and mobile homes use a placement permit, not the standard residential building permit for IRC modular homes.', url: 'https://www.stevenscountywa.gov/20898/Building-Permit' }
+    );
+  }
+  return permits;
 }
 
 
