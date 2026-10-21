@@ -48,7 +48,7 @@
     const identity = currentZoningIdentity();
     if (!identity) return null;
     const county = String(identity.county).replace(/\s+County$/i, '').trim();
-    if (!/^(spokane|yellowstone|kootenai)$/i.test(county)) return null;
+    if (!/^(spokane|stevens|yellowstone|kootenai)$/i.test(county)) return null;
 
     const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
     if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;
@@ -88,12 +88,12 @@
 
     const uses = Array.isArray(power.uses) ? power.uses : [];
     const county = String(power.county || '').toLowerCase();
-    const context = county === 'yellowstone'
+    const context = county === 'stevens' ? ['Stevens County land-use screening', `Code ${power.sourceChapter || '3.03.020'}`] : county === 'yellowstone'
       ? [power.jurisdiction || 'Yellowstone County', power.sourceChapter || 'Zoning regulations']
       : county === 'kootenai'
         ? [power.jurisdiction || 'Kootenai County', power.sourceChapter || 'County zoning code']
         : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
-    const sourceLabel = county === 'yellowstone'
+    const sourceLabel = county === 'stevens' ? 'Stevens County Title 3 zoning regulations' : county === 'yellowstone'
       ? `${power.jurisdiction || 'Yellowstone County'} zoning regulations`
       : county === 'kootenai'
         ? 'Kootenai County Zoning Code'
