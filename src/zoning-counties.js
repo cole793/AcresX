@@ -51,6 +51,31 @@ ZONING_COUNTIES.Spokane = {
   nameFields: ['ZONE_NAME','ZONING_NAME','DESCRIPTION','ZONE_DESC','ZONING_DESC','DESIGNATION']
 };
 
+// Stevens County's own maintained zoning map. A mapped district is a screening
+// result only: Title 3 use/density rules still require a separate verified adapter.
+ZONING_COUNTIES.Stevens = {
+  ...ZONING_COUNTIES.Stevens,
+  status: 'configured',
+  jurisdiction: 'Stevens County (unincorporated areas)',
+  serviceCandidates: [
+    { url: 'https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer', title: 'Stevens County GIS — official zoning districts' }
+  ],
+  catalogQueries: [
+    'Stevens County GIS zoning Washington',
+    'Stevens County Washington zoning districts'
+  ],
+  preferredOwners: ['Stevens County GIS'],
+  planningAgency: 'Stevens County Land Services — Planning Division',
+  healthAgency: 'Northeast Tri County Health District',
+  roadAgency: 'Stevens County Public Works',
+  planningUrl: 'https://www.stevenscountywa.gov/20841/land-services',
+  zoningMapUrl: 'https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer',
+  permitUrl: 'https://www.stevenscountywa.gov/20841/land-services',
+  septicUrl: 'https://www.stevenscountywa.gov/20841/land-services',
+  codeFields: ['ZONE','ZONING','ZONE_CODE','ZONING_CODE','ZONINGDISTRICT','ZONING_DISTRICT','DESIGNATION'],
+  nameFields: ['ZONE_NAME','ZONING_NAME','ZONE_DESC','DESCRIPTION','DISTRICT','DESIGNATION']
+};
+
 export function getZoningProfile(county) {
   return ZONING_COUNTIES[county] || baseProfile(county || 'Unknown');
 }
