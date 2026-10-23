@@ -165,6 +165,7 @@
     constraint.textContent = `Primary screening constraint: ${result.constraint.label}`;
   }
 
+  window.__acresxGeneralCostEstimate = () => rangeForCosts();
   function renderCost() {
     const card = ensureCostCard();
     if (!card) return;
