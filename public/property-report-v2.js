@@ -11,7 +11,27 @@ function aerial(parcel){const r=ring(parcel);if(!r)return `<div class="aerial-fa
 function area(parcel,p){let a=Number(p?.ACRES||p?.ACREAGE||p?.GIS_ACRES||p?.Acres||p?.acres);if(Number.isFinite(a)&&a>0)return `${a>=100?a.toFixed(1):a.toFixed(2)} acres`;try{if(typeof turf!=='undefined'&&parcel){a=turf.area(parcel)/4046.8564224;if(Number.isFinite(a)&&a>0)return `${a>=100?a.toFixed(1):a.toFixed(2)} acres`}}catch{}return val('overviewAcres','acreageValue','parcelAcreage')?`${val('overviewAcres','acreageValue','parcelAcreage').replace(/\s*acres?$/i,'')} acres`:''}
 function assessment(data){const d=data?.propertyAssessment||{};if(!d.available)return{};if(d.state==='WA'){const r=d.records?.[0]||{};const land=Number(r.land_value);return{total:money(land),land:money(land),year:r.tax_year||r.asmt_year||''}}if(d.state==='MT'){const r=d.statewideRecords?.[0]||{};return{total:money(r.TotalValue),land:money(r.TotalLandValue),year:r.TaxYear||''}}if(d.state==='ID'){const r=d.statewideRecords?.[0]||{};return{total:money(r.VAL_TOTAL)||money(r.VAL_LAND),land:money(r.VAL_LAND),year:r.UPDATED?new Date(Number(r.UPDATED)).getFullYear():''}}return{}}
 function detailText(id){const el=$(id);if(!el)return'';return clean(el.querySelector('.notice,.cost-note,.snapshot-note,.metric-note,p')?.textContent)||clean(el.textContent)?.slice(0,220)||''}
-function costRows(){const panel=$('spokaneCostDetail');if(!panel)return'';return [...panel.querySelectorAll('.result-item')].slice(0,6).map(x=>{const n=clean(x.querySelector('h4')?.textContent),v=clean(x.querySelector('.badge')?.textContent),d=clean(x.querySelector('.notice')?.textContent);return n?`<div class="cost-row"><div><span>${esc(n)}</span>${d?`<small>${esc(d)}</small>`:''}</div><strong>${esc(v||'Included')}</strong></div>`:''}).join('')}
+function costRows(){
+  // Read the same calculation that powers the dashboard, without requiring the
+  // expandable details panel to be opened or even mounted in the DOM.
+  const data=reportState()||{};
+  const county=String(data.parcel?.properties?._countyDisplay||data.parcel?.properties?.COUNTY_NM||document.getElementById('county')?.value||'').replace(/\\s+County$/i,'').trim();
+  const calculator=/^spokane$/i.test(county)?window.__acresxSpokaneCostEstimate:window.__acresxGeneralCostEstimate;
+  let estimate=null;
+  try{estimate=typeof calculator==='function'?calculator():null;}catch(e){console.warn('Report cost calculation unavailable',e);}
+  const components=estimate?.components;
+  if(components&&Object.keys(components).length){
+    const labels={well:'Well / water',septic:'Septic',electric:'Power',power:'Power',driveway:'Driveway / access',sitework:'Site work',permits:'Permits / testing'};
+    return Object.entries(components).slice(0,6).map(([key,item])=>`<div class="cost-row"><div><span>${esc(labels[key]||key)}</span>${item.basis?`<small>${esc(item.basis)}</small>`:''}</div><strong>${esc(money(item.low)||'—')}–${esc(money(item.high)||'—')}</strong></div>`).join('');
+  }
+  // Backward compatibility for an older report page that already has a detail panel.
+  const panel=$('spokaneCostDetail')||$('detailCard');
+  if(!panel)return'';
+  return [...panel.querySelectorAll('.result-item')].slice(0,6).map(x=>{
+    const n=clean(x.querySelector('h4')?.textContent),v=clean(x.querySelector('.badge')?.textContent),d=clean(x.querySelector('.notice')?.textContent);
+    return n?`<div class="cost-row"><div><span>${esc(n)}</span>${d?`<small>${esc(d)}</small>`:''}</div><strong>${esc(v||'Included')}</strong></div>`:'';
+  }).join('');
+}
 function zoningBlock(data,code){const z=data?.zoningDevelopmentPotential||{},uses=Array.isArray(z.uses)?z.uses:[];if(!z.available)return `<div class="note">${esc(code||'Zoning')} identified. Detailed permitted-use rules were not available when this report was generated; verify with the jurisdiction.</div>`;const labels={permitted:'Permitted',limited:'Limited / Standards Apply',conditional:'Special / Conditional Review',not_permitted:'Not Permitted'};return `<div class="zoning-head"><div><strong>${esc(z.name||code||z.code||'Zoning')}</strong><span>${esc(z.code||code||'')}</span></div><div>${esc(z.density||'Verify project-specific density standards')}</div></div><div class="use-grid">${uses.map(u=>`<div class="use-item"><i class="${esc(u.status||'verify')}"></i><div><strong>${esc(u.label)}</strong><span>${esc(labels[u.status]||'Verify')}${u.note?` · ${esc(u.note)}`:''}</span></div></div>`).join('')}</div><div class="zoning-note">Zoning eligibility does not override setbacks, overlays, recorded covenants, plat conditions, HOA rules or other private restrictions. Verify the intended use with the jurisdiction.</div>`}
 function makeReport(name){const data=reportState()||{},parcel=data.parcel||{},p=parcel.properties||{},state=$('state')?.value||p.STATE||'WA',county=$('county')?.value||p._countyDisplay||p.COUNTY_NM||'',pid=p.ORIG_PARCEL_ID||p.PARCEL_ID_NR||p.PARCEL_ID||p.PID_NUM||val('parcelFact')||$('parcel')?.value||'',address=val('parcelTitle','overviewAddress')||[p.SITUS_ADDRESS,p.SITUS_CITY_NM,p.SITUS_ZIP_NR].filter(Boolean).join(', ')||`Parcel ${pid}`,acreage=area(parcel,p),score=val('scoreMetric'),estimate=val('developmentCostValue')||textFrom('#developmentCostCard .cost-value')||textFrom('#developmentCostCard .value'),assess=assessment(data),zoning=val('zoningMetric')||data?.zoningPermits?.zoning?.code||textFrom('.zoning-potential h3,.zoning-title')||'';
 const ex=data.existingWell||{},bestWell=ex.best||ex.match||{},wellDetail=[ex.label,bestWell.completedDepth?`${bestWell.completedDepth} ft mapped well depth`:'',val('wellMetric')?`Nearby wells: ${val('wellMetric')}`:''].filter(Boolean).join(' · ');
