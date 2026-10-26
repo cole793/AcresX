@@ -201,8 +201,12 @@ export const interpret = {
   flood(data) {
     if (!data.available) return unavailable('flood screening not available');
     const zones = Array.isArray(data.zones) ? data.zones : [];
-    return ok(data.high ? `high-risk zone (${zones.join(', ')})` : zones.length ? `zones ${zones.join(', ')}` : 'no mapped FEMA zone', {
-      high: Boolean(data.high), intersects: Boolean(data.intersects), zones
+    const provider = text(data.source?.provider) || null;
+    // emptyResult: FEMA's final answer had no features but could not be confirmed (src/services/flood.js).
+    const emptyResult = data.source?.emptyResult === true ? true : null;
+    const via = emptyResult ? ` (${provider || 'FEMA'} returned empty; unconfirmed)` : provider ? ` (via ${provider})` : '';
+    return ok(`${data.high ? `high-risk zone (${zones.join(', ')})` : zones.length ? `zones ${zones.join(', ')}` : 'no mapped FEMA zone'}${via}`, {
+      high: Boolean(data.high), intersects: Boolean(data.intersects), zones, provider, emptyResult
     });
   },
   wetlands(data) {

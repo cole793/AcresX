@@ -207,6 +207,32 @@ test('expected values: matches, mismatches and ranges', async () => {
   assert.equal(summary.layerCounts.mismatch, 3);
 });
 
+test('flood values record source provider and emptyResult', () => {
+  const via = interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: true, high: false, zones: ['X'], source: { provider: 'FEMA NFHL', url: 'https://x' } } });
+  assert.equal(via.values.provider, 'FEMA NFHL');
+  assert.equal(via.values.emptyResult, null);
+  assert.equal(via.detail, 'zones X (via FEMA NFHL)');
+  const emptyRes = interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: false, high: false, zones: [], source: { provider: 'FEMA NFHL', emptyResult: true } } });
+  assert.equal(emptyRes.status, 'ok');
+  assert.equal(emptyRes.values.emptyResult, true);
+  assert.equal(emptyRes.detail, 'no mapped FEMA zone (FEMA NFHL returned empty; unconfirmed)');
+  const legacy = interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: false, high: false, zones: [] } });
+  assert.deepEqual([legacy.detail, legacy.values.provider, legacy.values.emptyResult], ['no mapped FEMA zone', null, null]);
+});
+
+test('markdown flood detail shows the provider and the empty-result flag', async () => {
+  for (const [source, pattern] of [
+    [{ provider: 'FEMA NFHL', url: 'https://x' }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(via FEMA NFHL\) \[.*provider=FEMA NFHL/],
+    [{ provider: 'FEMA NFHL', emptyResult: true }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(FEMA NFHL returned empty; unconfirmed\) \[.*emptyResult=true/]
+  ]) {
+    const responses = happyResponses();
+    responses.flood = { ...responses.flood, source };
+    globalThis.fetch = stubFetch(responses);
+    const report = await validateCounty({ county: 'Kootenai', state: 'ID' }, { parcels: [{ parcelId: 'TESTPIN1' }], baseUrl: BASE, delayMs: 0, requestDelayMs: 0 });
+    assert.match(buildMarkdown(report), pattern);
+  }
+});
+
 test('markdown has a parcels x layers table and per-parcel details', async () => {
   globalThis.fetch = stubFetch(happyResponses());
   const report = await validateCounty({ county: 'Kootenai', state: 'ID' }, {
