@@ -5,8 +5,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import {
-  FEMA_NFHL_FLOOD_LAYER, ESRI_USA_FLOOD_HAZARD_LAYER, FEMA_PROVIDER, ESRI_PROVIDER, ESRI_FALLBACK_ENABLED,
-  FEMA_TIMEOUT_MS, FEMA_RETRY_TIMEOUT_MS, FEMA_RETRY_BACKOFF_MS, FALLBACK_TIMEOUT_MS, floodScreening
+  FEMA_NFHL_FLOOD_LAYER, ESRI_USA_FLOOD_HAZARD_LAYER, FEMA_PROVIDER, ESRI_PROVIDER, ESRI_FALLBACK_ENABLED, ESRI_COVERAGE,
+  FEMA_TIMEOUT_MS, FEMA_RETRY_TIMEOUT_MS, FEMA_RETRY_BACKOFF_MS, FALLBACK_TIMEOUT_MS, MAX_GET_URL_LENGTH,
+  floodScreening, buildQueryRequest
 } from '../src/services/flood.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8'));
@@ -14,6 +15,13 @@ const femaSample = fixture('fema-nfhl-flood.json');
 const legacySnapshot = fixture('flood-legacy-snapshot.json');
 
 const geometry = { type: 'Polygon', coordinates: [[[-116.8, 47.7], [-116.79, 47.7], [-116.79, 47.71], [-116.8, 47.71], [-116.8, 47.7]]] };
+// A detailed boundary (400 vertices) whose GET URL is far over the limit.
+const bigGeometry = { type: 'Polygon', coordinates: [Array.from({ length: 401 }, (_, i) => {
+  const a = (i % 400) / 400 * 2 * Math.PI;
+  return [-116.8 + 0.01 * Math.cos(a) + i * 1e-7, 47.7 + 0.01 * Math.sin(a)];
+})] };
+bigGeometry.coordinates[0][400] = bigGeometry.coordinates[0][0];
+
 const realFetch = globalThis.fetch;
 const realCaches = globalThis.caches;
 let calls;
@@ -23,17 +31,19 @@ const empty = () => jsonResponse({ features: [] });
 const status = code => () => new Response('', { status: code });
 const isFema = url => url.startsWith(`${FEMA_NFHL_FLOOD_LAYER}/query`);
 const isEsri = url => url.startsWith(`${ESRI_USA_FLOOD_HAZARD_LAYER}/query`);
+const esriAE = () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'AE', ZONE_SUBTY: null, SFHA_TF: 'T', esri_symbology: '1% Annual Chance Flood Hazard' } }] });
 
 // Each handler gets the URL and returns a Response or throws. Handlers are used in call order.
 function stubFetch(...handlers) {
-  globalThis.fetch = async input => {
+  globalThis.fetch = async (input, init = {}) => {
     const url = String(input instanceof Request ? input.url : input);
-    calls.push(url);
+    calls.push({ url, method: init.method || 'GET', body: init.body, headers: init.headers || {} });
     const handler = handlers[calls.length - 1];
     if (!handler) throw new Error(`unexpected upstream call #${calls.length}: ${url}`);
     return handler(url);
   };
 }
+const urls = () => calls.map(c => c.url);
 
 function fakeCache() {
   const store = new Map();
@@ -58,9 +68,6 @@ async function floodCall(body = { kind: 'flood', geometry }, ctx = { waitUntil()
   return { response, body: await response.json() };
 }
 
-// Direct service call with the Esri fallback switched on (it is off in production).
-const withFallback = () => floodScreening(geometry, {}, { esriFallback: true });
-
 // --- FEMA primary ----------------------------------------------------------------------------
 
 test('flood: FEMA success returns the legacy shape plus source', async () => {
@@ -82,6 +89,19 @@ test('flood: success keys and values match the legacy snapshot (only source adde
   assert.deepEqual(rest, legacySnapshot.body);
 });
 
+test('flood: FEMA empty answer is authoritative: one request, no flag, cached', async () => {
+  const store = fakeCache();
+  const pending = [];
+  stubFetch(empty);
+  const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
+  await Promise.all(pending);
+  assert.equal(response.status, 200);
+  assert.deepEqual(body, { available: true, intersects: false, high: false, zones: [], source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } });
+  assert.equal(response.headers.get('Cache-Control'), legacySnapshot.cacheControl);
+  assert.equal(calls.length, 1, 'no retry on an empty FEMA answer');
+  assert.equal(store.size, 1);
+});
+
 test('flood: FEMA 525 then retry success', async () => {
   stubFetch(status(525), () => jsonResponse(femaSample));
   const { response, body } = await floodCall();
@@ -89,7 +109,7 @@ test('flood: FEMA 525 then retry success', async () => {
   assert.equal(body.source.provider, FEMA_PROVIDER);
   assert.deepEqual(body.zones, ['AE', 'X']);
   assert.equal(calls.length, 2);
-  assert.ok(calls.every(isFema));
+  assert.ok(urls().every(isFema));
 });
 
 test('flood: FEMA timeout then retry success', async () => {
@@ -100,143 +120,127 @@ test('flood: FEMA timeout then retry success', async () => {
   assert.equal(calls.length, 2);
 });
 
-// --- empty-answer protection -----------------------------------------------------------------
-
-test('flood: FEMA empty then retry with features uses the features', async () => {
-  stubFetch(empty, () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'D', SFHA_TF: 'F' } }] }));
-  const { response, body } = await floodCall();
-  assert.equal(response.status, 200);
-  assert.deepEqual(body, { available: true, intersects: true, high: false, zones: ['D'], source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } });
+test('flood: FEMA 525 then empty retry is an authoritative empty answer', async () => {
+  stubFetch(status(525), empty);
+  const { body } = await floodCall();
+  assert.deepEqual(body.source, { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER });
+  assert.equal(body.intersects, false);
   assert.equal(calls.length, 2);
-  assert.ok(calls.every(isFema));
 });
 
-test('flood: FEMA empty twice gives the no-intersection shape, flagged emptyResult, not cached', async () => {
+// --- Esri fallback ---------------------------------------------------------------------------
+
+test('flood: Esri fallback points at the official esri_landscapes layer and is on', () => {
+  assert.equal(ESRI_USA_FLOOD_HAZARD_LAYER, 'https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis/rest/services/USA_Flood_Hazard_Areas_view/FeatureServer/0');
+  assert.equal(ESRI_FALLBACK_ENABLED, true);
+  assert.equal(ESRI_COVERAGE, 'high-and-moderate-risk-only');
+});
+
+test('flood: FEMA fails twice, Esri AE is high risk, carries coverage, and is cached', async () => {
   const store = fakeCache();
   const pending = [];
-  stubFetch(empty, empty);
+  stubFetch(status(525), () => { throw new TypeError('fetch failed'); }, url => { assert.ok(isEsri(url)); return esriAE(); });
+  const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
+  await Promise.all(pending);
+  assert.equal(response.status, 200);
+  assert.deepEqual(body, { available: true, intersects: true, high: true, zones: ['AE'], source: { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE } });
+  assert.equal(calls.length, 3);
+  assert.equal(store.size, 1);
+});
+
+test('flood: Esri empty answer keeps the no-intersection shape, flagged, no-store, not cached', async () => {
+  const store = fakeCache();
+  const pending = [];
+  stubFetch(status(525), status(525), empty);
   const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
   await Promise.all(pending);
   assert.equal(response.status, 200);
   const { source, ...rest } = body;
   assert.deepEqual(rest, { available: true, intersects: false, high: false, zones: [] });
-  assert.deepEqual(source, { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER, emptyResult: true });
+  assert.deepEqual(source, { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE, emptyResult: true });
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
-  assert.equal(store.size, 0, 'empty results must never be cached');
-  assert.equal(calls.length, 2);
+  assert.equal(store.size, 0, 'Esri empty answers must never be cached');
 });
 
-test('flood: FEMA empty then 525 is treated as an unconfirmed empty answer, not cached', async () => {
-  const store = fakeCache();
-  stubFetch(empty, status(525));
-  const { response, body } = await floodCall(undefined, {});
-  assert.equal(response.status, 200);
-  assert.equal(body.available, true);
-  assert.equal(body.intersects, false);
-  assert.equal(body.source.emptyResult, true);
-  assert.equal(store.size, 0);
-  assert.equal(calls.length, 2);
-});
-
-test('flood: FEMA 525 then empty is also flagged emptyResult', async () => {
-  stubFetch(status(525), empty);
+test('flood: Esri maps lowercase fields and missing SFHA_TF', async () => {
+  stubFetch(status(503), status(503), () => jsonResponse({ features: [
+    { attributes: { fld_zone: 'A', zone_subty: null, esri_symbology: '1% Annual Chance Flood Hazard' } },
+    { attributes: { Fld_Zone: 'X', esri_symbology: '0.2% Annual Chance Flood Hazard' } }
+  ] }));
   const { body } = await floodCall();
-  assert.equal(body.intersects, false);
-  assert.equal(body.source.emptyResult, true);
+  assert.deepEqual([body.high, body.intersects, body.zones], [true, true, ['A', 'X']]);
 });
 
-test('flood: a later call after an empty result goes upstream again', async () => {
-  fakeCache();
-  stubFetch(empty, empty, () => jsonResponse(femaSample));
-  await floodCall(undefined, {});
-  const { body } = await floodCall(undefined, {});
-  assert.deepEqual(body.zones, ['AE', 'X']);
-  assert.equal(calls.length, 3);
+test('flood: Esri shaded X only, without SFHA_TF, is not high risk', async () => {
+  stubFetch(status(503), status(503), () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD' } }] }));
+  const { body } = await floodCall();
+  assert.deepEqual([body.high, body.intersects, body.zones], [false, true, ['X']]);
 });
 
-// --- Esri fallback (off by default) ------------------------------------------------------------
+test('flood: FEMA 4xx skips the retry and goes to Esri', async () => {
+  stubFetch(status(400), url => { assert.ok(isEsri(url)); return esriAE(); });
+  const { body } = await floodCall();
+  assert.equal(body.source.provider, ESRI_PROVIDER);
+  assert.equal(calls.length, 2);
+});
 
-test('flood: Esri fallback is off by default; both-fail error names only FEMA', async () => {
-  assert.equal(ESRI_FALLBACK_ENABLED, false);
-  stubFetch(status(525), status(525));
+test('flood: both sources fail returns the unavailable shape naming both sources', async () => {
+  stubFetch(status(525), status(525), () => jsonResponse({ error: { code: 499, message: 'Token Required' } }));
   const { response, body } = await floodCall();
   assert.equal(response.status, 502);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.deepEqual({ ...body, error: undefined }, { available: false, intersects: false, high: false, zones: [], error: undefined, source: null });
   assert.match(body.error, /FEMA NFHL/);
-  assert.doesNotMatch(body.error, /Esri/);
-  assert.equal(calls.length, 2);
-  assert.ok(calls.every(isFema));
-});
-
-test('flood (fallback on): FEMA fails twice, Esri maps lowercase fields and missing SFHA_TF', async () => {
-  stubFetch(
-    status(525),
-    () => { throw new TypeError('fetch failed'); },
-    url => {
-      assert.ok(isEsri(url));
-      return jsonResponse({ features: [
-        { attributes: { fld_zone: 'A', zone_subty: null, esri_symbology: '1% Annual Chance Flood Hazard' } },
-        { attributes: { Fld_Zone: 'X', esri_symbology: '0.2% Annual Chance Flood Hazard' } }
-      ] });
-    }
-  );
-  const { status: code, body } = await withFallback();
-  assert.equal(code, 200);
-  assert.deepEqual(body, { available: true, intersects: true, high: true, zones: ['A', 'X'], source: { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER } });
-  assert.equal(calls.length, 3);
-});
-
-test('flood (fallback on): X-only zones without SFHA_TF are not high risk', async () => {
-  stubFetch(status(503), status(503), () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'X' } }] }));
-  const { body } = await withFallback();
-  assert.deepEqual([body.high, body.intersects, body.zones], [false, true, ['X']]);
-});
-
-test('flood (fallback on): FEMA 4xx skips the retry and goes to the fallback', async () => {
-  stubFetch(status(400), url => { assert.ok(isEsri(url)); return jsonResponse({ features: [] }); });
-  const { body } = await withFallback();
-  assert.equal(body.source.provider, ESRI_PROVIDER);
-  assert.equal(calls.length, 2);
-});
-
-test('flood (fallback on): FEMA empty twice, Esri features win', async () => {
-  stubFetch(empty, empty, () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'AE' } }] }));
-  const { body } = await withFallback();
-  assert.deepEqual([body.high, body.zones, body.source.provider], [true, ['AE'], ESRI_PROVIDER]);
-  assert.equal(calls.length, 3);
-});
-
-test('flood (fallback on): FEMA empty twice and Esri empty keeps the FEMA emptyResult', async () => {
-  stubFetch(empty, empty, empty);
-  const { body } = await withFallback();
-  assert.equal(body.source.provider, FEMA_PROVIDER);
-  assert.equal(body.source.emptyResult, true);
-});
-
-test('flood (fallback on): both sources fail names both sources', async () => {
-  stubFetch(status(525), status(525), () => jsonResponse({ error: { code: 499, message: 'Token Required' } }));
-  const { status: code, body } = await withFallback();
-  assert.equal(code, 502);
-  assert.equal(body.available, false);
-  assert.deepEqual(body.zones, []);
-  assert.match(body.error, /FEMA NFHL/);
   assert.match(body.error, /Esri USA Flood Hazard Areas/);
   assert.equal(calls.length, 3);
 });
 
+test('flood: with the fallback switched off, the error names only FEMA', async () => {
+  stubFetch(status(525), status(525));
+  const { status: code, body } = await floodScreening(geometry, {}, { esriFallback: false });
+  assert.equal(code, 502);
+  assert.doesNotMatch(body.error, /Esri/);
+  assert.equal(calls.length, 2);
+});
+
+// --- GET vs POST -----------------------------------------------------------------------------
+
+test('flood: short queries use GET with the params in the URL', async () => {
+  const req = buildQueryRequest(FEMA_NFHL_FLOOD_LAYER, geometry, 'FLD_ZONE');
+  assert.equal(req.init.method, 'GET');
+  assert.ok(req.url.length <= MAX_GET_URL_LENGTH);
+  stubFetch(() => jsonResponse(femaSample));
+  await floodCall();
+  assert.equal(calls[0].method, 'GET');
+  assert.match(calls[0].url, /\/query\?f=json&/);
+  assert.equal(calls[0].body, undefined);
+});
+
+test('flood: long queries use a form-encoded POST for FEMA and Esri', async () => {
+  const getLength = `${FEMA_NFHL_FLOOD_LAYER}/query?${new URLSearchParams({ geometry: JSON.stringify(bigGeometry.coordinates) })}`.length;
+  assert.ok(getLength > MAX_GET_URL_LENGTH, `test geometry must be long (${getLength})`);
+  stubFetch(status(525), status(525), esriAE);
+  const { body } = await floodCall({ kind: 'flood', geometry: bigGeometry });
+  assert.equal(body.available, true);
+  assert.equal(calls.length, 3);
+  for (const call of calls) {
+    assert.equal(call.method, 'POST');
+    assert.ok(call.url.endsWith('/query'), call.url);
+    assert.equal(call.headers['Content-Type'], 'application/x-www-form-urlencoded');
+    const params = new URLSearchParams(call.body);
+    assert.equal(params.get('f'), 'json');
+    assert.equal(params.get('geometryType'), 'esriGeometryPolygon');
+    assert.equal(params.get('returnGeometry'), 'false');
+    assert.equal(JSON.parse(params.get('geometry')).rings[0].length, 401);
+  }
+  assert.ok(isFema(calls[0].url) && isEsri(calls[2].url));
+});
+
 // --- budget ------------------------------------------------------------------------------------
 
-test('flood: never more than 3 upstream requests (2 with the fallback off)', async () => {
-  globalThis.fetch = async input => { calls.push(String(input)); throw new TypeError('fetch failed'); };
+test('flood: never more than 3 upstream requests', async () => {
+  globalThis.fetch = async input => { calls.push({ url: String(input) }); throw new TypeError('fetch failed'); };
   assert.equal((await floodCall()).body.available, false);
-  assert.equal(calls.length, 2);
-  calls = [];
-  assert.equal((await withFallback()).body.available, false);
-  assert.equal(calls.length, 3);
-  calls = [];
-  globalThis.fetch = async input => { calls.push(String(input)); return empty(); };
-  await withFallback();
   assert.equal(calls.length, 3);
 });
 
@@ -262,7 +266,7 @@ test('flood: works when caches is undefined (Node)', async () => {
   assert.equal(calls.length, 2, 'no cache, so each call goes upstream');
 });
 
-test('flood: caches.default stores non-empty successes and serves repeat calls', async () => {
+test('flood: caches.default stores successes and serves repeat calls', async () => {
   const store = fakeCache();
   const pending = [];
   const ctx = { waitUntil(p) { pending.push(p); } };
@@ -270,7 +274,7 @@ test('flood: caches.default stores non-empty successes and serves repeat calls',
   const first = await floodCall(undefined, ctx);
   await Promise.all(pending);
   assert.equal(store.size, 1);
-  assert.match([...store.keys()][0], /^https:\/\/acresx\.internal\/cache\/flood\/v2\/[0-9a-f]{64}$/);
+  assert.match([...store.keys()][0], /^https:\/\/acresx\.internal\/cache\/flood\/v3\/[0-9a-f]{64}$/);
   // Tiny coordinate noise below the rounding precision hits the same key.
   const jittered = { type: 'Polygon', coordinates: [geometry.coordinates[0].map(([x, y]) => [x + 1e-9, y])] };
   const second = await floodCall({ kind: 'flood', geometry: jittered }, ctx);
@@ -283,9 +287,9 @@ test('flood: a cached emptyResult entry is ignored', async () => {
   stubFetch(() => jsonResponse(femaSample));
   await floodCall(undefined, {});
   const key = [...store.keys()][0];
-  store.set(key, jsonResponse({ available: true, intersects: false, high: false, zones: [], source: { provider: FEMA_PROVIDER, emptyResult: true } }));
-  stubFetch(() => jsonResponse(femaSample));
+  store.set(key, jsonResponse({ available: true, intersects: false, high: false, zones: [], source: { provider: ESRI_PROVIDER, emptyResult: true } }));
   calls = [];
+  stubFetch(() => jsonResponse(femaSample));
   const { body } = await floodCall(undefined, {});
   assert.deepEqual(body.zones, ['AE', 'X']);
   assert.equal(calls.length, 1);
@@ -293,7 +297,7 @@ test('flood: a cached emptyResult entry is ignored', async () => {
 
 test('flood: failures are not cached', async () => {
   const store = fakeCache();
-  globalThis.fetch = async input => { calls.push(String(input)); throw new TypeError('fetch failed'); };
+  globalThis.fetch = async input => { calls.push({ url: String(input) }); throw new TypeError('fetch failed'); };
   await floodCall();
   assert.equal(store.size, 0);
 });
