@@ -1,0 +1,26 @@
+name: Feature idea
+description: Something new for the site, a new county, or an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should the site do? Plain language is fine.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Who is it for, and why?
+      description: Which users it helps (buyers, agents, builders…) and what problem it solves.
+  - type: textarea
+    id: done
+    attributes:
+      label: How will we know it's done?
+      description: What you'd check on the preview link before merging.
+  - type: textarea
+    id: sources
+    attributes:
+      label: Links or data sources
+      description: County GIS sites, example parcels, competitor screenshots, anything useful.

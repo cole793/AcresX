@@ -1,0 +1,44 @@
+name: Bug
+description: Something on the site is wrong, broken or confusing
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: parcel
+    attributes:
+      label: Parcel number and county
+      description: The parcel you were looking at, if it's about a specific property.
+      placeholder: "47174.9017, Spokane County WA"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the site?
+      options:
+        - Parcel search / map
+        - Zoning / permits
+        - Soils / slope / wetlands / hazards
+        - Wells / water
+        - Power / utilities
+        - Property tax / assessment
+        - MLS listing info
+        - Property report / PDF
+        - Something else
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - Phone
+        - Computer
+        - Both
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or anything else
+      description: Paste or drag screenshots here.

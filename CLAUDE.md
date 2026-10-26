@@ -45,7 +45,8 @@ Work runs through a small agent team adapted from the OpenRig rig-team kit:
 
 Team state lives in `handoff/` (`README.md` = current state and open work). Read it at the start
 of a session and update it at the end. Merging to `main`, `wrangler deploy`, Cloudflare/D1
-changes and deletions need the owner's explicit yes each time.
+changes and deletions need the owner's explicit yes each time. The owner can approve a merge in
+chat ("merge #12"); the lead then merges and reports the deploy (see `/team`, "Merging").
 
 ## Secrets (set in Cloudflare, never commit them)
 
@@ -84,9 +85,7 @@ are in `wrangler.jsonc` (`RESO_BASE_URL`, `RESO_PROVIDER`, `RESO_ORIGINATING_SYS
 - When an upstream source fails, degrade only that data layer. Never blank the whole report.
 - Results are screening info. Keep the "verify with the responsible agency" framing in the UI.
 
-## Known hazards
+## Work intake
 
-- `.github/workflows/restore-index.yml` overwrites `public/index.html` with a copy from commit
-  `bf6f4c4` and pushes to the branch. It runs on manual dispatch, or on any push that edits that
-  workflow file. It looks like a one-off ChatGPT-era fix. Don't trigger it. It's a candidate for
-  deletion.
+Bugs and feature ideas live in GitHub Issues (`.github/ISSUE_TEMPLATE/`: Bug, Feature idea). When
+working from an issue, link it in the PR ("Fixes #12") so merging closes it.
