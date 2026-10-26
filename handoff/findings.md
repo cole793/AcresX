@@ -2,6 +2,27 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-26: FEMA NFHL sometimes answers 200 with no features; Esri fallback URL is wrong
+
+- Preview validation run 40396618433 (PR #13 preview, `git show
+  origin/validation-results:latest/kootenai.json`, compared with
+  `history/2026-10-26/kootenai-40391761739.json`): flood went from 4/12 to 11/12 OK, all via FEMA.
+  The retry fixed most of the 525s.
+- 3 parcels came back `{available:true, intersects:false, zones:[]}` ("no mapped FEMA zone") where
+  the earlier run had zones (015270010070: D; 49N03W324950: X). The query was identical, so FEMA
+  returned 200 with an empty `features` array under load (those calls took about 7-15 s). A
+  false "no flood zone" is worse than an error.
+- Fix (`src/services/flood.js`): a 0-feature FEMA answer gets the one retry. If FEMA's final
+  answer is still empty (or empty and then an error), the response keeps the no-intersection
+  shape but adds `source.emptyResult: true`. It is sent with `Cache-Control: no-store` and never
+  written to the 7-day cache. The cache key moved to `flood/v2/` so `v1` entries that may hold
+  empty answers are dropped. Real no-zone parcels now always cost 2 FEMA requests.
+- The Esri fallback URL `https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0`
+  returned HTTP 404 in the same run. The fallback is off (`ESRI_FALLBACK_ENABLED = false`) until
+  a correct URL is found and verified in a preview run.
+- `scripts/validate-county.mjs` now records flood `provider` and `emptyResult` in the layer values
+  and shows "(via FEMA NFHL)" or "(FEMA NFHL returned empty; unconfirmed)" in the detail.
+
 ## 2026-10-26: FEMA NFHL flood queries fail intermittently from the Worker
 
 - Kootenai validation run 40391761739 (`git show origin/validation-results:latest/kootenai.md`):
@@ -13,7 +34,7 @@ Verified facts, decisions and gotchas, each with its source. Newest first.
   (8 s). Worst case is 22.5 s with at most 3 upstream requests. Successes are cached for 7 days in
   `caches.default`. If both sources fail, the route returns 502 with the usual unavailable shape.
 - The Esri fallback URL (`ESRI_USA_FLOOD_HAZARD_LAYER` in `src/services/flood.js`) was written
-  without internet access. Treat it as unverified until a preview validation run confirms it.
+  without internet access. It returned 404 in the next preview run (see the entry above).
 
 ## 2026-10-26: Kootenai parcel layer has no ZONING field
 

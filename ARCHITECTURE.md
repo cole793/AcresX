@@ -48,7 +48,7 @@ Coordinates soil and USGS terrain screening while preserving the existing `/api/
 Spokane County official-source adapter for SCOUT zoning, comprehensive plan, UGA, permit jurisdiction, and permit-history screening.
 
 ### `services/flood.js`
-FEMA flood-zone screening for `/api/hazards` (`kind: 'flood'`). Queries FEMA NFHL layer 28, retries once on 5xx/timeout/network errors, then falls back to Esri's Living Atlas "USA Flood Hazard Areas" layer. Successful answers are cached in `caches.default` for 7 days. The response shape matches the legacy handler (`available`, `intersects`, `high`, `zones`) plus `source`.
+FEMA flood-zone screening for `/api/hazards` (`kind: 'flood'`). Queries FEMA NFHL layer 28 and retries once on 5xx/timeout/network errors or an empty answer. A fallback to Esri's Living Atlas "USA Flood Hazard Areas" layer exists but is off (`ESRI_FALLBACK_ENABLED`) until its URL is verified. Non-empty answers are cached in `caches.default` for 7 days. An empty final answer is flagged `source.emptyResult` and never cached. The response shape matches the legacy handler (`available`, `intersects`, `high`, `zones`) plus `source`.
 
 ### `worker.js`
 Legacy implementation retained temporarily so unmigrated routes continue to work. New feature logic should not be added here unless needed for an emergency production fix.
