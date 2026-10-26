@@ -1,0 +1,21 @@
+{
+  "county": "Kootenai",
+  "state": "ID",
+  "baseUrl": "https://acresx.cole-groshens.workers.dev",
+  "startedAt": "2026-10-26T17:49:09.548Z",
+  "finishedAt": "2026-10-26T17:49:09.548Z",
+  "results": [],
+  "summary": {
+    "parcels": 0,
+    "failed": 0,
+    "layerCounts": {
+      "ok": 0,
+      "unavailable": 0,
+      "error": 0,
+      "mismatch": 0,
+      "skipped": 0
+    }
+  },
+  "discovered": true,
+  "seed": 2035579783
+}
