@@ -37,7 +37,7 @@ const esriAE = () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'AE', Z
 function stubFetch(...handlers) {
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input instanceof Request ? input.url : input);
-    calls.push({ url, method: init.method || 'GET', body: init.body, headers: init.headers || {} });
+    calls.push({ url, method: init.method || 'GET', body: init.body, headers: init.headers || {}, cf: init.cf });
     const handler = handlers[calls.length - 1];
     if (!handler) throw new Error(`unexpected upstream call #${calls.length}: ${url}`);
     return handler(url);
@@ -126,6 +126,27 @@ test('flood: FEMA 525 then empty retry is an authoritative empty answer', async 
   assert.deepEqual(body.source, { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER });
   assert.equal(body.intersects, false);
   assert.equal(calls.length, 2);
+});
+
+test('flood: FEMA invalid JSON then retry success', async () => {
+  stubFetch(() => new Response('<html>busy</html>', { status: 200 }), () => jsonResponse(femaSample));
+  const { body } = await floodCall();
+  assert.deepEqual(body.zones, ['AE', 'X']);
+  assert.equal(body.source.provider, FEMA_PROVIDER);
+  assert.equal(calls.length, 2);
+  assert.ok(urls().every(isFema));
+});
+
+test('flood: FEMA GETs edge-cache 2xx only; the Esri request has no cf cache options', async () => {
+  stubFetch(status(525), status(525), esriAE);
+  await floodCall();
+  for (const call of calls.slice(0, 2)) {
+    assert.deepEqual(call.cf, { cacheTtlByStatus: { '200-299': 86400, '400-599': 0 }, cacheEverything: true });
+    assert.equal('cacheTtl' in call.cf, false);
+  }
+  assert.ok(isEsri(calls[2].url));
+  assert.equal(calls[2].method, 'GET');
+  assert.equal(calls[2].cf, undefined, 'an Esri answer (possibly empty) must not be edge-cached');
 });
 
 // --- Esri fallback ---------------------------------------------------------------------------

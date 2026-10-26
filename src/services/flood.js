@@ -60,8 +60,13 @@ function esriPolygon(geometry) {
   return { rings: geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat(), spatialReference: { wkid: 4326 } };
 }
 
-// GET for short queries (edge-cacheable via `cf`), form-encoded POST when the URL is too long.
-export function buildQueryRequest(layerUrl, geometry, outFields) {
+// Edge-cache successful FEMA GETs only; never edge-cache error bodies.
+const FEMA_EDGE_CACHE = { cacheTtlByStatus: { '200-299': 86400, '400-599': 0 }, cacheEverything: true };
+
+// GET for short queries, form-encoded POST when the URL is too long. `cf` (edge cache options)
+// is only attached to GETs, and only when given: the Esri fallback passes none, because an
+// Esri-empty answer must not be edge-cached.
+export function buildQueryRequest(layerUrl, geometry, outFields, cf = null) {
   const params = new URLSearchParams({
     f: 'json', where: '1=1', geometry: JSON.stringify(esriPolygon(geometry)), geometryType: 'esriGeometryPolygon',
     inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields, returnGeometry: 'false', resultRecordCount: '100'
@@ -69,7 +74,7 @@ export function buildQueryRequest(layerUrl, geometry, outFields) {
   const headers = { 'User-Agent': 'AcresX/0.5.2' };
   const getUrl = `${layerUrl}/query?${params}`;
   if (getUrl.length <= MAX_GET_URL_LENGTH) {
-    return { url: getUrl, init: { method: 'GET', headers, cf: { cacheTtl: 86400, cacheEverything: true } } };
+    return { url: getUrl, init: cf ? { method: 'GET', headers, cf } : { method: 'GET', headers } };
   }
   return {
     url: `${layerUrl}/query`,
@@ -79,8 +84,8 @@ export function buildQueryRequest(layerUrl, geometry, outFields) {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function queryLayer(layerUrl, geometry, outFields, timeoutMs) {
-  const { url, init } = buildQueryRequest(layerUrl, geometry, outFields);
+async function queryLayer(layerUrl, geometry, outFields, timeoutMs, cf = null) {
+  const { url, init } = buildQueryRequest(layerUrl, geometry, outFields, cf);
   let response;
   try {
     response = await fetchWithTimeout(url, init, timeoutMs);
@@ -161,12 +166,12 @@ async function writeCache(cache, key, body, ctx) {
 async function fromFema(geometry) {
   const outFields = 'FLD_ZONE,ZONE_SUBTY,SFHA_TF';
   try {
-    return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_TIMEOUT_MS);
+    return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_TIMEOUT_MS, FEMA_EDGE_CACHE);
   } catch (error) {
     if (!error.retryable) throw error;
     await sleep(FEMA_RETRY_BACKOFF_MS);
     try {
-      return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS);
+      return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS, FEMA_EDGE_CACHE);
     } catch (retryError) {
       throw new UpstreamError(`${error.message}; retry ${retryError.message}`, false);
     }
