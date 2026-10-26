@@ -106,3 +106,96 @@ jobs:
           name: county-validation-${{ matrix.county }}
           path: validation-results/
           if-no-files-found: warn
+
+  # Commits every county's results to the `validation-results` branch so they can be read with
+  # `git fetch` (see validation/README.md). One job collects all matrix legs, so legs of the same
+  # run never race each other; the retry loop covers a different run pushing at the same time.
+  # This is the only job with write access, and it only ever pushes HEAD to
+  # refs/heads/validation-results (never main, never --force). Pushes made with GITHUB_TOKEN don't
+  # start other workflows, and deploy-cloudflare.yml only runs on main anyway.
+  publish:
+    needs: [counties, validate]
+    if: ${{ always() && needs.counties.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download results
+        # A run where every leg crashed has no artifacts; the commit step then warns per county.
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: county-validation-*
+          path: collected
+          merge-multiple: true
+
+      - name: Checkout repository (for git credentials only)
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          fetch-depth: 1
+
+      - name: Commit results to the validation-results branch
+        env:
+          COUNTIES: ${{ needs.counties.outputs.list }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          BRANCH=validation-results
+          COLLECTED="$GITHUB_WORKSPACE/collected"
+          RESULTS="$GITHUB_WORKSPACE/results"
+          DATE=$(date -u +%F)
+          cd repo
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # Rebuild the commits on top of the branch as it is on the remote right now.
+          build() {
+            git worktree remove --force "$RESULTS" 2>/dev/null || true
+            git worktree prune
+            git branch -D "$BRANCH-new" 2>/dev/null || true
+            set +e; git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; exists=$?; set -e
+            if [ "$exists" -eq 0 ]; then
+              git fetch -q --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+              git worktree add -q --detach "$RESULTS" "origin/$BRANCH"
+            elif [ "$exists" -eq 2 ]; then
+              echo "No $BRANCH branch yet; starting it as an orphan."
+              git worktree add -q --detach "$RESULTS" HEAD
+              git -C "$RESULTS" checkout -q --orphan "$BRANCH-new"
+              git -C "$RESULTS" rm -rfq .
+            else
+              echo "::error::Could not list remote branches (git ls-remote exit $exists)."
+              exit 1
+            fi
+            made=0
+            for county in $(echo "$COUNTIES" | jq -r '.[]'); do
+              case "$county" in *[!a-z0-9-]*|'') echo "Skipping invalid county name"; continue ;; esac
+              if [ ! -f "$COLLECTED/$county.json" ]; then
+                echo "::warning::No results for $county (its validation step failed before writing a report)."
+                continue
+              fi
+              mkdir -p "$RESULTS/latest" "$RESULTS/history/$DATE"
+              cp "$COLLECTED/$county.json" "$COLLECTED/$county.md" "$RESULTS/latest/"
+              if [ -f "$COLLECTED/$county-discovered.json" ]; then cp "$COLLECTED/$county-discovered.json" "$RESULTS/latest/"; fi
+              cp "$COLLECTED/$county.json" "$RESULTS/history/$DATE/$county-$RUN_ID.json"
+              failed=$(jq -r '.summary.failed // "unknown"' "$COLLECTED/$county.json")
+              git -C "$RESULTS" add -A latest history
+              if git -C "$RESULTS" diff --cached --quiet; then continue; fi
+              git -C "$RESULTS" commit -q -m "Validation $county $DATE run $RUN_ID: $failed failed"
+              made=$((made + 1))
+            done
+          }
+
+          for attempt in 1 2 3; do
+            build
+            if [ "$made" -eq 0 ]; then echo "Nothing to commit."; exit 0; fi
+            if git -C "$RESULTS" push origin "HEAD:refs/heads/$BRANCH"; then
+              echo "Pushed $made commit(s) to $BRANCH."
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt); another run probably pushed first. Retrying."
+            sleep $((attempt * 5 + RANDOM % 5))
+          done
+          echo "::error::Could not push to $BRANCH after 3 attempts."
+          exit 1
