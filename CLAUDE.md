@@ -16,11 +16,34 @@ workflow.
 - `src/index.js` is the entrypoint. `public/` is the static asset directory (`run_worker_first: true`).
 - D1 database `acresx-mls` (binding `MLS_DB`), schema in `migrations/`.
 - Cron `17 * * * *` runs an incremental RESO/MLS listing sync (`scheduled()` in `src/index.js`).
-- No build step, no framework, no tests. Plain ES modules on the Worker; plain scripts in the browser.
+- No build step, no framework. Plain ES modules on the Worker; plain scripts in the browser.
 - **Deploy = push to `main`.** `.github/workflows/deploy-cloudflare.yml` runs `wrangler deploy`
   using the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Every merge to `main`
   ships to production, so do your work on branches and open PRs.
 - Local dev: `npm install && npx wrangler dev`.
+
+## Tests
+
+- `npm test`: offline smoke tests in `test/` (Node 22, network stubbed). `npm run check`: tests
+  plus `wrangler deploy --dry-run`. CI runs `npm run check` on every PR and before every deploy.
+- Tests must not call live county or government servers. Stub `globalThis.fetch`. Details are in
+  `handoff/testing.md`.
+
+## Agent team
+
+Work runs through a small agent team adapted from the OpenRig rig-team kit:
+
+- **lead**: the main session. Follows `.claude/skills/team/SKILL.md` (`/team`) and talks to the
+  owner.
+- **builder** (`.claude/agents/builder.md`): makes code changes on `claude/*` branches with tests.
+- **verifier** (`.claude/agents/verifier.md`): checks each change at an exact SHA and reports
+  counts.
+- **reader** (`.claude/agents/reader.md`): researches data sources, with quoted sources.
+- Deploys happen through GitHub Actions when the owner merges to `main`.
+
+Team state lives in `handoff/` (`README.md` = current state and open work). Read it at the start
+of a session and update it at the end. Merging to `main`, `wrangler deploy`, Cloudflare/D1
+changes and deletions need the owner's explicit yes each time.
 
 ## Secrets (set in Cloudflare, never commit them)
 
