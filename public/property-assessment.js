@@ -8,6 +8,11 @@
     return Number.isFinite(n) ? `$${Math.round(n).toLocaleString()}` : '—';
   }
 
+  // Number(null) is 0; a missing value must stay missing (NaN), not show as $0.
+  function amount(value) {
+    return value === null || value === undefined || value === '' ? NaN : Number(value);
+  }
+
   function currentSearch() {
     const state = document.getElementById('state')?.value || '';
     const county = document.getElementById('county')?.value || '';
@@ -47,11 +52,11 @@
     if (data.state === 'ID' && Array.isArray(data.countyRecords) && data.countyRecords.length) {
       const r = data.countyRecords[0] || {};
       return {
-        totalValue: Number(r.totalValue),
-        landValue: Number(r.landValue),
-        improvementValue: Number(r.improvementValue),
-        homeownerExemption: Number(r.homeownerExemption),
-        netValue: Number(r.netValue),
+        totalValue: amount(r.totalValue),
+        landValue: amount(r.landValue),
+        improvementValue: amount(r.improvementValue),
+        homeownerExemption: amount(r.homeownerExemption),
+        netValue: amount(r.netValue),
         year: r.taxYear || null,
         propertyClass: classText(r),
         label: 'Assessor value',
@@ -103,7 +108,10 @@
       wrap.id = `${id}Wrap`;
       wrap.className = 'property-overview-fact';
       wrap.innerHTML = `<span>${label}</span><strong id="${id}">Checking…</strong>`;
-      grid.appendChild(wrap);
+      // Keep facts above the source line, so a fact added on a later search stays in place.
+      const source = document.getElementById('propertyAssessmentSource');
+      if (source && source.parentNode === grid) grid.insertBefore(wrap, source);
+      else grid.appendChild(wrap);
     }
     return document.getElementById(id);
   }
@@ -145,8 +153,9 @@
       return;
     }
 
-    if (valueEl) valueEl.textContent = money(Number.isFinite(result.totalValue) && result.totalValue > 0 ? result.totalValue : result.landValue);
-    if (landEl) landEl.textContent = money(result.landValue);
+    const shown = value => (Number.isFinite(value) ? money(value) : 'Not available');
+    if (valueEl) valueEl.textContent = shown(Number.isFinite(result.totalValue) && result.totalValue > 0 ? result.totalValue : result.landValue);
+    if (landEl) landEl.textContent = shown(result.landValue);
     if (yearEl) yearEl.textContent = result.year ? String(result.year) : '—';
 
     let source = document.getElementById('propertyAssessmentSource');

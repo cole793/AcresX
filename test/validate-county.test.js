@@ -250,6 +250,9 @@ test('assessment values: Kootenai county record carries values and the assessor 
   // Montana keeps reading the statewide record even when a Yellowstone county record is present.
   const mt = assessment({ available: true, state: 'MT', countyRecords: [{ GEOCODE: 'x' }], statewideSource: 'Montana Cadastral / ORION integration', statewideRecords: [{ TotalValue: 410000, TotalLandValue: 150000 }] });
   assert.deepEqual([mt.values.assessedValue, mt.values.propertyClass, mt.values.source], [410000, null, 'Montana Cadastral / ORION integration']);
+  // A Yellowstone county hit without a statewide record has no values: still unavailable.
+  const mtCountyOnly = assessment({ available: true, state: 'MT', county: 'Yellowstone', countySource: 'Yellowstone County TaxparcelOrion', countyRecords: [{ GEOCODE: '03-1033-23-1-01-01-0000', TAX_ID: 'A12345', FULLADD: '1 TEST LN' }], statewideRecords: [] });
+  assert.deepEqual([mtCountyOnly.status, mtCountyOnly.detail], ['unavailable', 'no assessment record found']);
 });
 
 test('markdown flood detail shows the provider and limited coverage', async () => {

@@ -10,7 +10,7 @@
 // fields, so every answer would carry owner names and mailing addresses. Query takes outFields,
 // and KC_ASSESSOR_FIELDS lists only non-personal fields. mapKootenaiAssessorRecord() also copies
 // named fields only, so owner data cannot reach the response even if the server sent it.
-import { fetchWithTimeout } from '../shared/http.js';
+// (Not shared/http.js fetchWithTimeout: each request here also needs a shared cancel signal.)
 
 export const KC_ASSESSOR = 'https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer';
 export const KC_ASSESSOR_LAYERS = [5, 6, 7, 8, 9, 10, 11];
@@ -34,14 +34,25 @@ export function kootenaiAssessorWhere(parcelId) {
   return `PIN='${id}' OR PID='${id}'`;
 }
 
-async function queryLayer(layerId, where) {
+// One layer query. It stops at TIMEOUT_MS (including reading the body) or as soon as `cancel`
+// aborts, which getKootenaiAssessment() does once another layer has found the record.
+async function queryLayer(layerId, where, cancel) {
   const url = new URL(`${KC_ASSESSOR}/${layerId}/query`);
   for (const [k, v] of Object.entries({ where, outFields: KC_ASSESSOR_FIELDS, returnGeometry: 'false', f: 'json' })) url.searchParams.set(k, v);
-  const response = await fetchWithTimeout(url, { cf: { cacheTtl: 900, cacheEverything: true } }, TIMEOUT_MS);
-  if (!response.ok) throw new Error(`Kootenai County Assessor layer ${layerId} returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(`Kootenai County Assessor layer ${layerId}: ${data.error.message || 'query failed'}`);
-  return data.features || [];
+  const controller = new AbortController();
+  const onCancel = () => controller.abort();
+  cancel.addEventListener('abort', onCancel);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { cf: { cacheTtl: 900, cacheEverything: true }, signal: controller.signal });
+    if (!response.ok) throw new Error(`Kootenai County Assessor layer ${layerId} returned ${response.status}`);
+    const data = await response.json();
+    if (data.error) throw new Error(`Kootenai County Assessor layer ${layerId}: ${data.error.message || 'query failed'}`);
+    return data.features || [];
+  } finally {
+    clearTimeout(timer);
+    cancel.removeEventListener('abort', onCancel);
+  }
 }
 
 // AssessValue_Date is an integer yyyymmdd (20260101).
@@ -57,6 +68,8 @@ function classDescription(code, descr) {
 }
 
 // Raw layer attributes -> the fields AcresX returns. Named fields only (no spread of attrs).
+// Missing values (null, undefined, '') stay null, never 0; totalValue is null only when both
+// land and improvement values are missing.
 export function mapKootenaiAssessorRecord(attrs = {}, layerId = null) {
   const land = num(attrs.AssessValue_Land), imp = num(attrs.AssessValue_Imp);
   const { date, year } = assessmentDate(attrs.AssessValue_Date);
@@ -73,24 +86,32 @@ export function mapKootenaiAssessorRecord(attrs = {}, layerId = null) {
   };
 }
 
+function errorMessage(failures) {
+  const reason = failures[0];
+  const detail = String(reason?.message || 'query failed');
+  const message = reason?.name === 'AbortError' ? 'Kootenai County Assessor timed out'
+    : detail.startsWith('Kootenai County Assessor') ? detail : `Kootenai County Assessor unavailable: ${detail}`;
+  return failures.length > 1 ? `${message} (${failures.length} of ${KC_ASSESSOR_LAYERS.length} layers failed)` : message;
+}
+
 // { status: 'found', record } | { status: 'not_found' } | { status: 'error', error }.
-// A layer that fails while no other layer has the PIN makes the answer an error, because the
-// PIN may be in the failed layer.
-export async function getKootenaiAssessment(parcelId) {
+// The first layer that returns a record wins at once, and the other layer requests are aborted,
+// so one slow layer does not delay a found answer. With no hit, it waits for every layer: a layer
+// that failed makes the answer an error, because the PIN may be in that layer.
+export function getKootenaiAssessment(parcelId) {
   const where = kootenaiAssessorWhere(parcelId);
-  const settled = await Promise.allSettled(KC_ASSESSOR_LAYERS.map(async layerId => ({ layerId, features: await queryLayer(layerId, where) })));
-  for (const s of settled) {
-    if (s.status === 'fulfilled' && s.value.features.length) {
-      return { status: 'found', record: mapKootenaiAssessorRecord(s.value.features[0].attributes || {}, s.value.layerId) };
+  const cancel = new AbortController();
+  const failures = [];
+  let pending = KC_ASSESSOR_LAYERS.length, done = false;
+  return new Promise(resolve => {
+    const finish = result => { if (done) return; done = true; cancel.abort(); resolve(result); };
+    for (const layerId of KC_ASSESSOR_LAYERS) {
+      queryLayer(layerId, where, cancel.signal).then(
+        features => { if (features.length) finish({ status: 'found', record: mapKootenaiAssessorRecord(features[0].attributes || {}, layerId) }); },
+        error => { if (!done) failures.push(error); }
+      ).finally(() => {
+        if (--pending === 0) finish(failures.length ? { status: 'error', error: errorMessage(failures) } : { status: 'not_found' });
+      });
     }
-  }
-  const failures = settled.filter(s => s.status === 'rejected');
-  if (failures.length) {
-    const reason = failures[0].reason;
-    const detail = String(reason?.message || 'query failed');
-    const message = reason?.name === 'AbortError' ? 'Kootenai County Assessor timed out'
-      : detail.startsWith('Kootenai County Assessor') ? detail : `Kootenai County Assessor unavailable: ${detail}`;
-    return { status: 'error', error: failures.length > 1 ? `${message} (${failures.length} of ${KC_ASSESSOR_LAYERS.length} layers failed)` : message };
-  }
-  return { status: 'not_found' };
+  });
 }

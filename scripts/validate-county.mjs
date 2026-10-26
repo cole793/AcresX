@@ -252,10 +252,12 @@ export const interpret = {
     });
   },
   assessment(data) {
-    // Montana answers carry both statewide and (Yellowstone) county records; the statewide one has
-    // the values there. Kootenai answers carry only countyRecords (src/counties/kootenai-assessor.js).
+    // Kootenai (Idaho) answers carry their values in countyRecords (src/counties/kootenai-assessor.js).
+    // Montana's Yellowstone countyRecords hold only ids and address (no values), so Montana reads
+    // only its statewide record, as before.
+    const countyRecord = data.state === 'ID' && Array.isArray(data.countyRecords) ? data.countyRecords[0] : null;
     const record = (Array.isArray(data.statewideRecords) && data.statewideRecords[0]) || (Array.isArray(data.records) && data.records[0])
-      || (Array.isArray(data.countyRecords) && data.countyRecords[0]) || null;
+      || countyRecord || null;
     if (!data.available || !record) return unavailable('no assessment record found');
     const pick = keys => { for (const k of keys) { const v = finite(record[k]); if (v != null) return v; } return null; };
     const total = pick(['VAL_TOTAL', 'TotalValue', 'total_value', 'totalValue']);

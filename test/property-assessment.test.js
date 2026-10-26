@@ -12,10 +12,10 @@ const ctx = { waitUntil() {} };
 const realFetch = globalThis.fetch;
 let requested = [];
 function stubFetch(handler) {
-  globalThis.fetch = async (input) => {
+  globalThis.fetch = async (input, init = {}) => {
     const url = new URL(String(input instanceof Request ? input.url : input));
     requested.push(url);
-    return handler(url);
+    return handler(url, init);
   };
 }
 beforeEach(() => { requested = []; globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; });
@@ -77,9 +77,9 @@ function assertNoPersonalData(body) {
 const layerOf = url => Number(/MapServer\/(\d+)\/query/.exec(url.pathname)?.[1]);
 // Answers like the live county server: the hit layer returns `hitBody`, every other layer misses.
 function kootenaiUpstream({ hitLayer = 10, hitBody = recorded.hit, other = () => arcgisJson(recorded.miss) } = {}) {
-  return url => {
+  return (url, init) => {
     if (url.hostname !== 'map.kcgov.us') throw new Error(`unexpected upstream ${url.hostname}`);
-    return layerOf(url) === hitLayer ? arcgisJson(hitBody) : other(url);
+    return layerOf(url) === hitLayer ? arcgisJson(hitBody) : other(url, init);
   };
 }
 const kootenai = parcelId => assess({ state: 'ID', county: 'Kootenai', parcelId });
@@ -163,6 +163,46 @@ test('kootenai assessment: a failing layer does not hide a hit in another layer'
   const { body } = await kootenai('47N03W052200');
   assert.equal(body.available, true);
   assert.equal(body.countyRecords[0].pin, '47N03W052200');
+});
+
+test('kootenai assessment: the first hit answers at once and the other layer requests are aborted', async () => {
+  const signals = {};
+  stubFetch(kootenaiUpstream({
+    hitLayer: 5,
+    other: (url, init) => {
+      signals[layerOf(url)] = init.signal;
+      // Layer 9 hangs until it is aborted (the 10 s timeout would be the only other way out).
+      if (layerOf(url) === 9) return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
+      return new Promise(resolve => setTimeout(() => resolve(arcgisJson(recorded.miss)), 50));
+    }
+  }));
+  const started = Date.now();
+  const { body } = await kootenai('47N03W052200');
+  const elapsed = Date.now() - started;
+  assert.equal(body.available, true);
+  assert.equal(body.countyRecords[0].layerId, 5);
+  assert.ok(elapsed < 500, `answered in ${elapsed} ms`);
+  assert.equal(signals[9].aborted, true, 'the hanging layer request was aborted');
+  assert.equal(signals[6].aborted, true, 'other pending layer requests were aborted');
+});
+
+test('kootenai assessment: with no hit, a hanging-then-failing layer still makes it an error, not not-found', async () => {
+  stubFetch(kootenaiUpstream({
+    hitLayer: -1,
+    other: url => (layerOf(url) === 9 ? new Promise((_, reject) => setTimeout(() => reject(new Error('socket hang up')), 30)) : arcgisJson(recorded.miss))
+  }));
+  const { body } = await kootenai('47N03W052200');
+  assert.equal(body.available, false);
+  assert.equal(body.error, 'Kootenai County Assessor unavailable: socket hang up');
+});
+
+test('kootenai assessment: null, empty and missing values map to null, never 0', async () => {
+  const blank = { features: [{ attributes: { ...recorded.hit.features[0].attributes, AssessValue_Land: null, AssessValue_Imp: '', HO_Exemption: null, AssessValue_Net: undefined, PclArea_Acres: null, AssessValue_Date: null } }] };
+  stubFetch(kootenaiUpstream({ hitBody: blank }));
+  const { body } = await kootenai('47N03W052200');
+  const r = body.countyRecords[0];
+  assert.deepEqual([r.landValue, r.improvementValue, r.totalValue, r.homeownerExemption, r.netValue, r.assessorAcres, r.assessmentDate, r.taxYear], [null, null, null, null, null, null, null, null]);
+  assert.equal(r.propertyClass, '512');
 });
 
 test('kootenai assessment: quotes in the parcel number are escaped', async () => {

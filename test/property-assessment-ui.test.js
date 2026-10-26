@@ -12,7 +12,9 @@ const reportSource = read('public/property-report-v2.js');
 
 class El {
   constructor(tag) { this.tagName = tag.toUpperCase(); this.children = []; this.parent = null; this.id = ''; this.className = ''; this._text = ''; this._html = ''; this.listeners = {}; }
+  get parentNode() { return this.parent; }
   appendChild(child) { child.remove(); child.parent = this; this.children.push(child); return child; }
+  insertBefore(child, ref) { if (!ref) return this.appendChild(child); child.remove(); child.parent = this; this.children.splice(this.children.indexOf(ref), 0, child); return child; }
   remove() { if (this.parent) { this.parent.children = this.parent.children.filter(c => c !== this); this.parent = null; } }
   replaceWith(other) { const p = this.parent; if (!p) return; const i = p.children.indexOf(this); other.remove(); other.parent = p; p.children[i] = other; this.parent = null; }
   cloneNode() { const c = new El(this.tagName); c.id = this.id; c.className = this.className; c._text = this._text; return c; }
@@ -98,6 +100,29 @@ test('overview: counties without an assessor class show no class fact, and a sta
   A.renderAssessment(null);
   assert.equal(document.getElementById('overviewAssessorClassWrap'), null);
   assert.equal(fact('overviewAssessorValue'), 'Not available');
+});
+
+test('overview: missing Kootenai values show "Not available", never $0', () => {
+  const { A, fact, document } = page();
+  const nulls = { ...kootenai, countyRecords: [{ ...kootenai.countyRecords[0], landValue: null, improvementValue: null, totalValue: null, homeownerExemption: null, netValue: null }] };
+  A.renderAssessment(A.normalize(nulls));
+  assert.equal(fact('overviewAssessorValue'), 'Not available');
+  assert.equal(fact('overviewLandValue'), 'Not available');
+  assert.equal(fact('overviewAssessorClass'), '512 – Rural residential tract');
+  const source = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.ok(!source.includes('$0'), source);
+  assert.equal(source, '<strong>Assessment source:</strong> Kootenai County Assessor. Assessor values are informational and are not the current tax bill.');
+});
+
+test('overview: the assessor class fact stays above the source line across repeated searches', () => {
+  const { A, document } = page();
+  const grid = document.querySelector('.property-overview-facts');
+  const order = () => grid.children.map(c => c.id);
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('overviewAssessorClassWrap')?.remove(); // what loadAssessment() does on each search
+    A.renderAssessment(A.normalize(kootenai));
+    assert.deepEqual(order(), ['overviewAssessorValueWrap', 'overviewLandValueWrap', 'overviewAssessmentYearWrap', 'overviewAssessorClassWrap', 'propertyAssessmentSource']);
+  }
 });
 
 test('overview: class text formatting', () => {
