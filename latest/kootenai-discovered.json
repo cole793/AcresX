@@ -1,28 +1,229 @@
 {
   "county": "Kootenai",
   "state": "ID",
-  "seed": 2042541478,
-  "generatedAt": "2026-10-26T19:45:10.802Z",
-  "parcels": [],
+  "seed": 2043473300,
+  "generatedAt": "2026-10-26T20:00:41.816Z",
+  "parcels": [
+    {
+      "parcelId": "0L8210010030",
+      "label": "no locality, 4.79 ac",
+      "why": "Discovered sample: covers stratum \"1-5 ac | other/blank locality\"; first in locality (blank). Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 4.7857,
+        "zoning": null,
+        "city": null,
+        "address": null,
+        "stratum": "1-5 ac | other/blank locality"
+      }
+    },
+    {
+      "parcelId": "015270010070",
+      "label": "WORLEY, 10.01 ac",
+      "why": "Discovered sample: covers stratum \"5-40 ac | city-named locality\"; first in locality WORLEY. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 10.006,
+        "zoning": null,
+        "city": "WORLEY",
+        "address": "26402 S FARUP RD",
+        "stratum": "5-40 ac | city-named locality"
+      }
+    },
+    {
+      "parcelId": "C72150030040",
+      "label": "COEUR D ALENE, 0.27 ac",
+      "why": "Discovered sample: covers stratum \"under 1 ac | city-named locality\"; first in locality COEUR D ALENE. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 0.265,
+        "zoning": null,
+        "city": "COEUR D ALENE",
+        "address": "5811 N CHRISTOPHER DR",
+        "stratum": "under 1 ac | city-named locality"
+      }
+    },
+    {
+      "parcelId": "47N02W035500",
+      "label": "MEDIMONT, 51.64 ac",
+      "why": "Discovered sample: covers stratum \"40+ ac | other/blank locality\"; first in locality MEDIMONT. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 51.644,
+        "zoning": null,
+        "city": "MEDIMONT",
+        "address": "15047 E CAMERON RD",
+        "stratum": "40+ ac | other/blank locality"
+      }
+    },
+    {
+      "parcelId": "48N03W312100",
+      "label": "HARRISON, 65.33 ac",
+      "why": "Discovered sample: covers stratum \"40+ ac | city-named locality\"; first in locality HARRISON. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 65.328,
+        "zoning": null,
+        "city": "HARRISON",
+        "address": "1561 E BELL CANYON RD",
+        "stratum": "40+ ac | city-named locality"
+      }
+    },
+    {
+      "parcelId": "0K245001002B",
+      "label": "RATHDRUM, 1.62 ac",
+      "why": "Discovered sample: covers stratum \"1-5 ac | city-named locality\"; first in locality RATHDRUM. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 1.6158,
+        "zoning": null,
+        "city": "RATHDRUM",
+        "address": "22311 N BIRDSONG LN",
+        "stratum": "1-5 ac | city-named locality"
+      }
+    },
+    {
+      "parcelId": "49N03W324950",
+      "label": "no locality, 10 ac",
+      "why": "Discovered sample: covers stratum \"5-40 ac | other/blank locality\". Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 10,
+        "zoning": null,
+        "city": null,
+        "address": "178640 UNKNOWN",
+        "stratum": "5-40 ac | other/blank locality"
+      }
+    },
+    {
+      "parcelId": "007740020050",
+      "label": "no locality, 0.58 ac",
+      "why": "Discovered sample: covers stratum \"under 1 ac | other/blank locality\". Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 0.583,
+        "zoning": null,
+        "city": null,
+        "address": null,
+        "stratum": "under 1 ac | other/blank locality"
+      }
+    },
+    {
+      "parcelId": "0K2660010030",
+      "label": "ATHOL, 4.95 ac",
+      "why": "Discovered sample: first in locality ATHOL. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 4.95,
+        "zoning": null,
+        "city": "ATHOL",
+        "address": "25754 N CLASSIC DR",
+        "stratum": "1-5 ac | city-named locality"
+      }
+    },
+    {
+      "parcelId": "0153400A001A",
+      "label": "POST FALLS, 9.52 ac",
+      "why": "Discovered sample: first in locality POST FALLS. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 9.5188,
+        "zoning": null,
+        "city": "POST FALLS",
+        "address": "8109 N DAISY LN",
+        "stratum": "5-40 ac | city-named locality"
+      }
+    },
+    {
+      "parcelId": "47N02W040800",
+      "label": "ST MARIES, 99.74 ac",
+      "why": "Discovered sample: first in locality ST MARIES. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 99.7436,
+        "zoning": null,
+        "city": "ST MARIES",
+        "address": "31645 S HIGHWAY 3",
+        "stratum": "40+ ac | other/blank locality"
+      }
+    },
+    {
+      "parcelId": "C72150040140",
+      "label": "COEUR D ALENE, 0.23 ac",
+      "why": "Discovered sample: fills remaining sample slots. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {},
+      "countyAttributes": {
+        "acres": 0.229,
+        "zoning": null,
+        "city": "COEUR D ALENE",
+        "address": "5726 N CHRISTOPHER DR",
+        "stratum": "under 1 ac | city-named locality"
+      }
+    }
+  ],
   "diagnostics": [
     {
       "step": "probe layer metadata",
       "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0?f=json",
-      "ok": false,
+      "ok": true,
       "httpStatus": 200,
       "contentType": "application/json;charset=UTF-8",
-      "error": "missing fields: ZONING",
+      "error": null,
       "featureCount": null,
-      "ms": 353,
+      "ms": 251,
       "fieldsChecked": [
         "PIN",
         "Acres",
-        "ZONING",
         "Loc_City",
         "Loc_Addr"
       ],
-      "missingFields": [
-        "ZONING"
+      "missingFields": [],
+      "fieldNames": [
+        "OBJECTID",
+        "Serial",
+        "LRSN",
+        "PID",
+        "PIN",
+        "Name",
+        "Acres",
+        "Legal",
+        "Loc_Addr",
+        "Loc_City",
+        "Ex_Value",
+        "Net_Val",
+        "Gross_Val",
+        "SA_SW",
+        "temp",
+        "CityCD",
+        "Incorp",
+        "STCA",
+        "URD_TCA",
+        "KTCA_LABEL",
+        "KTCA",
+        "URD_NAME",
+        "CITY_1",
+        "SCHOOL",
+        "HWY",
+        "FIRE",
+        "WATER",
+        "SEWER",
+        "FLOOD",
+        "WATERSHED",
+        "COUNTY",
+        "COLLEGE",
+        "HOSPITAL",
+        "AMBULANCE",
+        "LIBRARY",
+        "CFL_BOND",
+        "SYMBOL",
+        "NON_LEVIED",
+        "TIF_SD",
+        "ID",
+        "PERIMETER",
+        "ACRES_1",
+        "Active",
+        "CITY_BOND",
+        "Shape"
       ]
     },
     {
@@ -32,25 +233,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 59495,
+      "ms": 128
+    },
+    {
+      "step": "under 1 ac | city-named locality (sample, offset 21121)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3C+1%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=21121",
+      "ok": true,
+      "httpStatus": 200,
+      "error": null,
+      "featureCount": 50,
       "ms": 127
-    },
-    {
-      "step": "under 1 ac | city-named locality (sample, offset 21273)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3C+1%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=21273",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 65
-    },
-    {
-      "step": "under 1 ac | city-named locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3C+1%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 65
     },
     {
       "step": "under 1 ac | other/blank locality (count)",
@@ -59,24 +251,15 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 7216,
-      "ms": 133
+      "ms": 110
     },
     {
-      "step": "under 1 ac | other/blank locality (sample, offset 5814)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3C+1%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=5814",
-      "ok": false,
+      "step": "under 1 ac | other/blank locality (sample, offset 374)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3C+1%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=374",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 119
-    },
-    {
-      "step": "under 1 ac | other/blank locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3C+1%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
+      "error": null,
+      "featureCount": 50,
       "ms": 76
     },
     {
@@ -86,25 +269,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 8314,
-      "ms": 133
+      "ms": 101
     },
     {
-      "step": "1-5 ac | city-named locality (sample, offset 7051)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+1+AND+Acres+%3C+5%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=7051",
-      "ok": false,
+      "step": "1-5 ac | city-named locality (sample, offset 3247)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+1+AND+Acres+%3C+5%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=3247",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 68
-    },
-    {
-      "step": "1-5 ac | city-named locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+1+AND+Acres+%3C+5%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 69
+      "error": null,
+      "featureCount": 50,
+      "ms": 97
     },
     {
       "step": "1-5 ac | other/blank locality (count)",
@@ -113,25 +287,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 2662,
-      "ms": 99
+      "ms": 105
     },
     {
-      "step": "1-5 ac | other/blank locality (sample, offset 1327)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+1+AND+Acres+%3C+5%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=1327",
-      "ok": false,
+      "step": "1-5 ac | other/blank locality (sample, offset 793)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+1+AND+Acres+%3C+5%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=793",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 66
-    },
-    {
-      "step": "1-5 ac | other/blank locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+1+AND+Acres+%3C+5%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 65
+      "error": null,
+      "featureCount": 50,
+      "ms": 89
     },
     {
       "step": "5-40 ac | city-named locality (count)",
@@ -140,25 +305,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 8483,
-      "ms": 109
+      "ms": 95
     },
     {
-      "step": "5-40 ac | city-named locality (sample, offset 6652)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+5+AND+Acres+%3C+40%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=6652",
-      "ok": false,
+      "step": "5-40 ac | city-named locality (sample, offset 281)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+5+AND+Acres+%3C+40%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=281",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 69
-    },
-    {
-      "step": "5-40 ac | city-named locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+5+AND+Acres+%3C+40%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 73
+      "error": null,
+      "featureCount": 50,
+      "ms": 77
     },
     {
       "step": "5-40 ac | other/blank locality (count)",
@@ -167,25 +323,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 5820,
-      "ms": 101
+      "ms": 87
     },
     {
-      "step": "5-40 ac | other/blank locality (sample, offset 2018)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+5+AND+Acres+%3C+40%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=2018",
-      "ok": false,
+      "step": "5-40 ac | other/blank locality (sample, offset 3012)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+5+AND+Acres+%3C+40%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=3012",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 68
-    },
-    {
-      "step": "5-40 ac | other/blank locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+5+AND+Acres+%3C+40%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 65
+      "error": null,
+      "featureCount": 50,
+      "ms": 92
     },
     {
       "step": "40+ ac | city-named locality (count)",
@@ -194,25 +341,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 491,
-      "ms": 122
+      "ms": 88
     },
     {
-      "step": "40+ ac | city-named locality (sample, offset 356)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+40%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=356",
-      "ok": false,
+      "step": "40+ ac | city-named locality (sample, offset 95)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+40%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=95",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 202
-    },
-    {
-      "step": "40+ ac | city-named locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+40%29+AND+%28UPPER%28Loc_City%29+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 66
+      "error": null,
+      "featureCount": 50,
+      "ms": 95
     },
     {
       "step": "40+ ac | other/blank locality (count)",
@@ -221,34 +359,16 @@
       "httpStatus": 200,
       "error": null,
       "featureCount": 2452,
-      "ms": 106
+      "ms": 100
     },
     {
-      "step": "40+ ac | other/blank locality (sample, offset 54)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+40%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=54",
-      "ok": false,
+      "step": "40+ ac | other/blank locality (sample, offset 112)",
+      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+40%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50&resultOffset=112",
+      "ok": true,
       "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 68
-    },
-    {
-      "step": "40+ ac | other/blank locality (sample, retry without offset)",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=%28PIN+IS+NOT+NULL%29+AND+%28Acres+%3E%3D+40%29+AND+%28%28Loc_City+IS+NULL+OR+UPPER%28Loc_City%29+NOT+IN+%28%27ATHOL%27%2C%27COEUR+D%27%27ALENE%27%2C%27COEUR+DALENE%27%2C%27COEUR+D+ALENE%27%2C%27DALTON+GARDENS%27%2C%27FERNAN+LAKE+VILLAGE%27%2C%27HARRISON%27%2C%27HAUSER%27%2C%27HAYDEN%27%2C%27HAYDEN+LAKE%27%2C%27HUETTER%27%2C%27POST+FALLS%27%2C%27RATHDRUM%27%2C%27SPIRIT+LAKE%27%2C%27STATE+LINE%27%2C%27WORLEY%27%29%29%29&outFields=PIN%2CAcres%2CZONING%2CLoc_City%2CLoc_Addr&returnGeometry=false&resultRecordCount=50",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 64
-    },
-    {
-      "step": "distinct-zoning",
-      "url": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=PIN+IS+NOT+NULL&outFields=ZONING&returnDistinctValues=true&returnGeometry=false&resultRecordCount=200",
-      "ok": false,
-      "httpStatus": 200,
-      "error": "ArcGIS error 400: Failed to execute query.",
-      "featureCount": null,
-      "ms": 63
+      "error": null,
+      "featureCount": 50,
+      "ms": 87
     }
   ]
 }
