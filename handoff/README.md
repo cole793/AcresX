@@ -21,6 +21,7 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 ## Waiting on the owner
 
 - Upload the ChatGPT history export for project context.
+- Live domain names (realtor test site, landing page), for `PRODUCT.md`.
 
 ## Approvals
 
