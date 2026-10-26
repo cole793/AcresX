@@ -29,6 +29,19 @@ sample response (save it under `test/fixtures/`) and a stubbed `fetch` that retu
 - `.github/workflows/test.yml` runs `npm run check` on every pull request.
 - `.github/workflows/deploy-cloudflare.yml` runs `npm run check` before `wrangler deploy`, so a
   failing gate blocks the deploy.
+- `.github/workflows/preview.yml` uploads every PR as a Cloudflare Worker version (not a
+  deployment) and comments its preview link on the PR, `https://pr-<number>-acresx.<subdomain>.workers.dev`.
+  The link updates on every push to the PR.
+
+## Preview links: what to know
+
+- Previews run the PR's code with the **live** secrets and the **live** `MLS_DB` database. Don't
+  run MLS syncs (`/api/reso-listings` with `sync: true`) or anything else that writes data from a
+  preview.
+- Cron triggers only run on the deployed (production) version, never on previews.
+- Preview links are public, like the live site.
+- `"preview_urls": true` in `wrangler.jsonc` turns preview URLs on for the Worker. It's applied
+  by the production deploy.
 
 ## Expected skips / flaky tests
 

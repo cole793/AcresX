@@ -26,6 +26,8 @@ workflow.
 
 - `npm test`: offline smoke tests in `test/` (Node 22, network stubbed). `npm run check`: tests
   plus `wrangler deploy --dry-run`. CI runs `npm run check` on every PR and before every deploy.
+- Every PR gets a preview link (`.github/workflows/preview.yml`). Previews use live secrets and the
+  live D1 database, so never trigger data writes from one.
 - Tests must not call live county or government servers. Stub `globalThis.fetch`. Details are in
   `handoff/testing.md`.
 
