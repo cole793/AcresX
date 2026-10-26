@@ -76,13 +76,17 @@ Output goes to `validation-results/` (`<county>.json`, `<county>.md`, and with `
 
 `--discover` queries the county's public ArcGIS parcel layer directly (not AcresX) and picks a
 varied sample: each acreage band crossed with "situs city is a named city" / "other or blank
-locality", then any ZONING values those queries missed. Each pick has a `label` and a `why`. The
+locality", then any ZONING values those queries missed (only when `zoningField` is set; without
+it, variety comes from acreage band and locality only). Each pick has a `label` and a `why`. The
 locality field is the situs city, so it doesn't prove a parcel is inside city limits; the zoning
 layer's `jurisdiction` value in the report is the better check. The seed is recorded, so
 `--seed` reproduces a sample.
 
 Discovery first fetches the layer's metadata (`<layerUrl>?f=json`) to check the server answers and
-that the configured field names exist. Every request it makes (that probe, then each count,
+that the configured field names exist. It records the layer's field names (`fieldNames`; the
+markdown lists the first 40). When the probe gets a field list, configured fields the layer lacks
+are left out of that run's queries, with a note in the diagnostics (a wrong-case name uses the
+layer's spelling); if `idField` is missing, discovery stops there. Every request it makes (that probe, then each count,
 sample and zoning query) is recorded in the `diagnostics` array of `<county>-discovered.json`,
 with the full URL, HTTP status, feature count, time and error (status, content type and the start
 of the body, the ArcGIS error code and details, or the network error cause). `<county>.md` has a
@@ -108,7 +112,8 @@ Create `validation/counties/<name>.json` (lowercase file name):
 }
 ```
 
-`county` and `state` are sent to the API exactly as the browser's dropdowns send them. The
+`zoningField` is optional: leave it out when the parcel layer has no zoning attribute (Kootenai's
+doesn't). `county` and `state` are sent to the API exactly as the browser's dropdowns send them. The
 harness follows the Idaho/Montana request path (`/api/parcel-search`); Washington counties use
 the legacy `/api/arcgis` parcel path in the browser and aren't supported by the harness yet.
 

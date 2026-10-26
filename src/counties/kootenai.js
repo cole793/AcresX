@@ -14,12 +14,25 @@ async function arcQuery(base, params) {
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
   const response=await fetchWithTimeout(url,{cf:{cacheTtl:900,cacheEverything:true}},20000);
   if(!response.ok) throw new Error(`Kootenai County GIS returned ${response.status}`);
-  const data=await response.json(); if(data.error) throw new Error(data.error.message||'Kootenai County GIS query failed');
+  const data=await response.json(); if(data.error) throw Object.assign(new Error(data.error.message||'Kootenai County GIS query failed'),{arcgisError:true});
   return data.features||[];
 }
+// The Ownership_Display parcel layer has no ZONING field (zoning comes from Data_Layers/21), and
+// ArcGIS fails the whole query when outFields or where names a field the layer lacks. Only PIN,
+// Acres, Loc_Addr and Loc_City are confirmed on the layer (validation run 40389472214), so an
+// ArcGIS error gets one retry that uses only those fields.
+const KC_PARCEL_FIELDS='PIN,PID,Acres,Legal,Loc_Addr,Loc_City,Ex_Value,Net_Val,Gross_Val,TCA';
+const KC_PARCEL_FIELDS_MINIMAL='PIN,Acres,Loc_Addr,Loc_City';
 async function queryParcel(parcelId) {
   const id=String(parcelId||'').trim().toUpperCase(); if(!id) return [];
-  return arcQuery(KC_PARCELS,{where:`UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`,outFields:'PIN,PID,Acres,Legal,Loc_Addr,Loc_City,Ex_Value,Net_Val,Gross_Val,TCA,ZONING',returnGeometry:'true',outSR:'4326'});
+  const params={returnGeometry:'true',outSR:'4326'};
+  try {
+    return await arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS});
+  } catch(e) {
+    if(!e?.arcgisError) throw e;
+    console.warn(`Kootenai ownership parcel query failed (${e.message}); retrying with minimal fields ${KC_PARCEL_FIELDS_MINIMAL}`);
+    return arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS_MINIMAL});
+  }
 }
 async function queryZoningByPoint(lon,lat) {
   return arcQuery(KC_ZONING,{where:'1=1',geometry:JSON.stringify({x:lon,y:lat,spatialReference:{wkid:4326}}),geometryType:'esriGeometryPoint',inSR:'4326',spatialRel:'esriSpatialRelIntersects',outFields:'ZONE_NAME,LABEL,ACRES',returnGeometry:'false'});
@@ -61,7 +74,7 @@ export async function getKootenaiCountyIntelligence(body) {
   if((!Number.isFinite(lon)||!Number.isFinite(lat)) && parcelFeatures.length) { const c=centerFromGeometry(parcelFeatures[0].geometry); if(c) [lon,lat]=c; }
   let zoningFeatures=[]; if(Number.isFinite(lon)&&Number.isFinite(lat)) zoningFeatures=await queryZoningByPoint(lon,lat);
   const parcelAttrs=parcelFeatures[0]?.attributes||{}, zoningAttrs=zoningFeatures[0]?.attributes||{};
-  const zone=String(zoningAttrs.LABEL||zoningAttrs.ZONE_NAME||parcelAttrs.ZONING||'').trim();
+  const zone=String(zoningAttrs.LABEL||zoningAttrs.ZONE_NAME||'').trim();
   if(!zone) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'The current Kootenai County Data_Layers zoning service returned no polygon at this parcel location.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
   const allowedBuildings=buildingUsesForZone(zone);
   return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:'Mapped zoning designation from Kootenai County KCEarth/Data_Layers.',sourceUrl:KC_ZONING,url:KC_PLANNING},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod:'parcel location',attributes:zoningAttrs,parcelAttributes:parcelAttrs}};

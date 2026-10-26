@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import {
   LAYERS, assertReadOnly, postJson, MAX_PER_QUERY, classifyResponse, interpretLayer, centroid, validateParcel, validateCounty,
   compareExpected, applyExpected, buildMarkdown, summarize, buildDiscoveryStrata, pickVaried, discoverParcels, parseArgs,
-  arcgisGet, probeLayer
+  arcgisGet, probeLayer, resolveDiscoverFields, MAX_FIELD_NAMES_SHOWN
 } from '../scripts/validate-county.mjs';
 
 const BASE = 'https://acresx.test';
@@ -249,7 +249,8 @@ test('discovery builds strata from county config and picks a varied sample', asy
     const features = Array.from({ length: 4 }, (_, i) => ({ attributes: { PIN: `P${n}-${i}`, Acres: 2 + i, ZONING: /Mining/.test(where) ? 'Mining' : zones[i], Loc_City: cities[i] } }));
     return new Response(JSON.stringify({ features }));
   };
-  const { parcels: picked, diagnostics } = await discoverParcels({ ...config, discover: { ...config.discover, delayMs: 0 } }, { count: 10, seed: 7 });
+  // The Kootenai layer has no ZONING field; this exercises the zoning path with one configured.
+  const { parcels: picked, diagnostics } = await discoverParcels({ ...config, discover: { ...config.discover, zoningField: 'ZONING', delayMs: 0 } }, { count: 10, seed: 7 });
   assert.equal(diagnostics.length, calls.length, 'one diagnostic per request');
   assert.equal(diagnostics[0].step, 'probe layer metadata');
   assert.equal(diagnostics[0].url, `${config.discover.layerUrl}?f=json`);
