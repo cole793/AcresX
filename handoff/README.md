@@ -14,7 +14,7 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/agent-team` | (see PR) | (pending) | Agent team setup and smoke tests. Waiting on owner review. |
+| `claude/agent-team` | `602ec38` | [cole793/AcresX#4](https://github.com/cole793/AcresX/pull/4) | Agent team setup and smoke tests. Waiting on owner review. |
 
 ## Waiting on the owner
 
