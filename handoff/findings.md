@@ -2,6 +2,30 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-26: Kootenai assessment now comes from the county assessor layers
+
+Owner-approved 2026-10-26 (branch `claude/kootenai-assessor`). Checked live by the builder.
+
+- `/api/property-assessment` for `ID` + `Kootenai` now queries
+  `map.kcgov.us/.../Assessor_Layers/MapServer` layers 5-11 in parallel
+  (`where=PIN='<id>' OR PID='<id>'`, 13 named `outFields`, 10 s timeout each, first hit wins) and
+  never calls the rate-limited statewide layer. Adapter: `src/counties/kootenai-assessor.js`.
+  Live: 12/12 validation parcels found (was 0/12), each in exactly one layer, ~350-900 ms.
+- **`find` works but was not used.** `MapServer/find?searchText=<PIN>&searchFields=PIN&layers=5,...,11`
+  answers in one request (~780 ms), but it cannot limit fields: every answer carries all 52
+  attributes, including owner names and mailing addresses. Query with `outFields` keeps that data
+  out of the Worker. There is no `Assessor_Layers/FeatureServer` (HTTP 200 with error 500).
+- All seven layers have the same 52 fields. Personal fields: `Owner_Primary`, `*Name_Primary`,
+  `OwnSfx_Primary`, `LegalPartyType_Primary`, `Recipient_Primary`, `AttentionLine_Primary`,
+  `DeliveryAddr_Primary`, `LastLine_Primary`, `City/State/PostalCd/Country_Primary`. None are
+  requested or returned.
+- **Net value is often far below land + improvements:** 0L8210010030 land $372,460, net $93,115;
+  49N03W324950 land $154,534, net $5,660 (exemptions other than the homeowner one, probably
+  ag/timber). The overview's "Assessor value" shows land + improvements (like the statewide
+  `VAL_TOTAL` before); net taxable and the homeowner exemption appear in the source line.
+- An upstream failure returns HTTP 200 `{available:false, countyRecords:[], error}` (only this
+  layer degrades). The validation tool counts that as `error`; not found counts as `unavailable`.
+
 ## 2026-10-26: Flood zones are scored by category, not by "any zone intersects"
 
 Owner-approved 2026-10-26 (branch `claude/flood-zone-scoring`).
