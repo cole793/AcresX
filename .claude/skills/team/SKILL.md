@@ -58,10 +58,14 @@ When the owner approves something, record it in `handoff/README.md` under "Appro
 
 The owner can approve a merge in chat instead of clicking Merge on GitHub. Chosen 2026-10-26.
 
-1. Report the PR with its preview link and the verifier's counts, and ask for a go-ahead naming
-   the PR.
-2. Merge only after an explicit yes for **that** PR ("merge #12", "yes, merge it" in reply to that
-   PR). A yes covers one PR. Silence, "looks good" or "sounds good" isn't a yes; ask.
+1. Report the PR with its preview link and the verifier's counts, then ask for the go-ahead with
+   **approval buttons**: use the `AskUserQuestion` tool with the options "Approve" (first) and
+   "Not now", and name the PR and what approving does in the question (e.g. "Merge #12? This puts
+   the Kootenai fix live."). The owner asked for buttons instead of typing (2026-10-26). Use the
+   same buttons for every other item on the approval list (deploys, deletions, workflow runs that
+   write, closing PRs). One question per action; never bundle several approvals into one button.
+2. Merge only after an explicit yes for **that** PR: "Approve" on its button, or a typed "merge
+   #12" / "yes, merge it" in reply to that PR. A yes covers one PR. Silence, "looks good" or "sounds good" isn't a yes; ask.
 3. Before merging, confirm the `check` and `preview` checks passed on the PR's head SHA and that
    nothing was pushed after the owner looked. Then merge with the REST API:
    `gh api -X PUT repos/cole793/acresx/pulls/<n>/merge -f merge_method=merge`
