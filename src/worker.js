@@ -1,5 +1,4 @@
 import { getZoningProfile } from './zoning-counties.js';
-const FEMA_URL = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
 const NWI_URL = 'https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/0/query';
 
 const LISTING_CLAIM_PATTERNS = [
@@ -63,12 +62,7 @@ function getField(attributes, suffix) {
 
 async function hazards(request) {
   const { kind, geometry } = await request.json();
-  if (kind === 'flood') {
-    const rows = (await queryArcGIS(FEMA_URL, geometry, 'FLD_ZONE,ZONE_SUBTY,SFHA_TF')).map(f => f.attributes || {});
-    const zones = [...new Set(rows.map(r => getField(r, 'FLD_ZONE')).filter(Boolean))];
-    const high = rows.some(r => String(getField(r, 'SFHA_TF') || '').toUpperCase() === 'T' || /^(A|V)/.test(String(getField(r, 'FLD_ZONE') || '').toUpperCase()));
-    return json({ available: true, intersects: rows.length > 0, high, zones });
-  }
+  // kind 'flood' is handled by src/services/flood.js, routed from src/index.js.
   if (kind === 'wetlands') {
     const rows = (await queryArcGIS(NWI_URL, geometry)).map(f => f.attributes || {});
     const types = [...new Set(rows.map(r => getField(r, 'WETLAND_TYPE') || getField(r, 'ATTRIBUTE')).filter(Boolean))];

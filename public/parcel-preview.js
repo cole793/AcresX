@@ -55,8 +55,10 @@
   function hazardLabel(result, kind) {
     if (!result?.available) return { text: 'Not verified', cls: 'warn' };
     if (kind === 'flood') {
-      if (result.high) return { text: 'High-risk zone mapped', cls: 'warn' };
-      if (result.intersects) return { text: 'Mapped flood zone', cls: 'warn' };
+      const FX = window.AcresXFlood;
+      if (FX.isLimited(result)) return { text: FX.LIMITED_LABEL, cls: 'warn' };
+      if (result.high) return { text: `High-risk zone mapped${FX.backupSuffix(result)}`, cls: 'warn' };
+      if (result.intersects) return { text: `Mapped flood zone${FX.backupSuffix(result)}`, cls: 'warn' };
       return { text: 'No mapped flood hazard', cls: 'good' };
     }
     if (result.intersects) return { text: 'Mapped wetlands present', cls: 'warn' };

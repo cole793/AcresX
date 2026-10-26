@@ -2,6 +2,57 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-26: False "no flood zone" answers came from the guessed Esri layer, not FEMA
+
+Checked live by the lead with open internet on 2026-10-26. This corrects an earlier entry that
+blamed FEMA empty answers, which was wrong.
+
+- Preview run 40396618433 (PR #13): flood went from 4/12 to 11/12 OK. 3 parcels came back
+  `{available:true, intersects:false, zones:[]}` where the earlier run had zones
+  (015270010070: D; 49N03W324950: X). Those answers came from the guessed Esri fallback
+  `https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0`.
+  That layer answers HTTP 200 but returns `features: []` at 015270010070 (47.430694, -116.844376),
+  where FEMA says zone D. The timing fits: 8 s FEMA timeout + 0.5 s + 6 s retry + ~0.4 s Esri,
+  about 14.9 s.
+- The one "404" was the 65-acre parcel, most likely because the GET URL with the full parcel
+  polygon was too long for ArcGIS Online.
+- FEMA NFHL is flaky from everywhere, not just the Worker (from the lead's sandbox: one 25 s
+  timeout, one TLS `SSL_ERROR_SYSCALL`). When it answers, it is correct: D at 015270010070, and
+  X "AREA OF MINIMAL FLOOD HAZARD" at C72150030040.
+- Esri's official layer is
+  `https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis/rest/services/USA_Flood_Hazard_Areas_view/FeatureServer/0`
+  (owner `esri_landscapes`, item "USA Flood Hazard Areas", last edit April 2026,
+  maxRecordCount 2000). Its fields are FEMA's (`FLD_ZONE`, `ZONE_SUBTY`, `SFHA_TF`,
+  `esri_symbology`, ...). At 48N03W312100 (47.462958, -116.763586) it returns AE / `SFHA_TF` T,
+  matching FEMA.
+- That layer only holds high- and moderate-risk areas. Counts: AE 892,618; A 423,181; X 3,293,637,
+  and every X subtype is 0.2-percent, levee or 1-percent. There is no "AREA OF MINIMAL FLOOD
+  HAZARD", and D has only 114 features nationally. So an empty Esri answer means "not in a mapped
+  high- or moderate-risk area", not "no flood zone", zone X-minimal or D.
+- Design now (`src/services/flood.js`):
+  - FEMA first, with one retry on errors. A FEMA answer is authoritative even when it is empty,
+    so it is cacheable and has no flag.
+  - The official Esri layer is used only if FEMA gives no answer. Its results carry
+    `source.coverage: 'high-and-moderate-risk-only'`. An empty Esri answer is also flagged
+    `source.emptyResult: true`, sent `no-store`, and never cached.
+  - Queries whose GET URL would exceed 3,500 characters go as a form-encoded POST.
+  - The cache key moved to `flood/v3/`. At most 3 requests, worst case 22.5 s.
+- `scripts/validate-county.mjs` records flood `provider`, `coverage` and `emptyResult`. It shows
+  "(via FEMA NFHL)" or "(via Esri USA Flood Hazard Areas, high/moderate-risk zones only)".
+
+## 2026-10-26: FEMA NFHL flood queries fail intermittently from the Worker
+
+- Kootenai validation run 40391761739 (`git show origin/validation-results:latest/kootenai.md`):
+  `/api/hazards {kind:'flood'}` failed for 8 of 12 parcels. Most were `HTTP 502: Upstream service
+  returned 525` (Cloudflare 525 = SSL handshake failure between the Worker and
+  `hazards.fema.gov`), one was `timeout after 30s`. The other 4 succeeded, so it is intermittent.
+- Flood now lives in `src/services/flood.js`: FEMA NFHL layer 28 (8 s timeout), one retry after
+  500 ms on 5xx/timeout/network error (6 s), then Esri Living Atlas "USA Flood Hazard Areas"
+  (8 s). Worst case is 22.5 s with at most 3 upstream requests. Successes are cached for 7 days in
+  `caches.default`. If both sources fail, the route returns 502 with the usual unavailable shape.
+- The Esri fallback URL (`ESRI_USA_FLOOD_HAZARD_LAYER` in `src/services/flood.js`) was written
+  without internet access. It was the wrong layer (see the entry above).
+
 ## 2026-10-26: Kootenai parcel layer has no ZONING field
 
 - The Kootenai parcel layer

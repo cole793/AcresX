@@ -207,6 +207,36 @@ test('expected values: matches, mismatches and ranges', async () => {
   assert.equal(summary.layerCounts.mismatch, 3);
 });
 
+const ESRI_LIMITED = { provider: 'Esri USA Flood Hazard Areas', url: 'https://e', coverage: 'high-and-moderate-risk-only' };
+
+test('flood values record source provider, coverage and emptyResult', () => {
+  const flood = data => interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: false, high: false, zones: [], ...data } });
+  const fema = flood({ intersects: true, zones: ['X'], source: { provider: 'FEMA NFHL', url: 'https://x' } });
+  assert.deepEqual([fema.detail, fema.values.provider, fema.values.coverage, fema.values.emptyResult], ['zones X (via FEMA NFHL)', 'FEMA NFHL', null, null]);
+  const esriHit = flood({ intersects: true, high: true, zones: ['AE'], source: ESRI_LIMITED });
+  assert.equal(esriHit.detail, 'high-risk zone (AE) (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)');
+  assert.equal(esriHit.values.coverage, 'high-and-moderate-risk-only');
+  const esriEmpty = flood({ source: { ...ESRI_LIMITED, emptyResult: true } });
+  assert.equal(esriEmpty.status, 'ok');
+  assert.equal(esriEmpty.values.emptyResult, true);
+  assert.equal(esriEmpty.detail, 'no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)');
+  const legacy = flood({});
+  assert.deepEqual([legacy.detail, legacy.values.provider, legacy.values.emptyResult], ['no mapped FEMA zone', null, null]);
+});
+
+test('markdown flood detail shows the provider and limited coverage', async () => {
+  for (const [source, pattern] of [
+    [{ provider: 'FEMA NFHL', url: 'https://x' }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(via FEMA NFHL\) \[.*provider=FEMA NFHL/],
+    [{ ...ESRI_LIMITED, emptyResult: true }, /- \*\*Flood\*\*: ok\. no high\/moderate-risk zone mapped \(via Esri USA Flood Hazard Areas, high\/moderate-risk zones only\) \[.*coverage=high-and-moderate-risk-only.*emptyResult=true/]
+  ]) {
+    const responses = happyResponses();
+    responses.flood = { ...responses.flood, source };
+    globalThis.fetch = stubFetch(responses);
+    const report = await validateCounty({ county: 'Kootenai', state: 'ID' }, { parcels: [{ parcelId: 'TESTPIN1' }], baseUrl: BASE, delayMs: 0, requestDelayMs: 0 });
+    assert.match(buildMarkdown(report), pattern);
+  }
+});
+
 test('markdown has a parcels x layers table and per-parcel details', async () => {
   globalThis.fetch = stubFetch(happyResponses());
   const report = await validateCounty({ county: 'Kootenai', state: 'ID' }, {
