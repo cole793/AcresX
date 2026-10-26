@@ -10,7 +10,7 @@ Verified facts, decisions and gotchas, each with its source. Newest first.
 - `src/index.js` handles new routes and falls back to the legacy `src/worker.js` router
   (`src/worker.js:464-476`) for anything else.
 - The Worker modules import cleanly in Node 22, which is how the offline tests run.
-- `.github/workflows/restore-index.yml` overwrites `public/index.html` from commit `bf6f4c4`. Not
-  run since the handoff, and proposed for deletion.
+- `.github/workflows/restore-index.yml` overwrote `public/index.html` from commit `bf6f4c4`. Deleted
+  with the owner's approval on 2026-10-26.
 - The repo contains no Netlify configuration. The Netlify checks on PRs come from a GitHub app
   installed on the account.

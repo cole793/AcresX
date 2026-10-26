@@ -48,7 +48,7 @@ These need the owner's explicit yes **each time**. Approval for one doesn't cove
 
 - merging to `main` (that deploys to production). Normally the owner merges it themselves.
 - running `wrangler deploy`, or changing Cloudflare settings, secrets, routes or the D1 database
-- running `restore-index.yml` or any workflow that writes to the repo
+- running any workflow that writes to the repo
 - deleting branches, files outside the task or anything on GitHub
 - anything that costs money or contacts someone
 

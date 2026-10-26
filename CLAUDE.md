@@ -84,9 +84,7 @@ are in `wrangler.jsonc` (`RESO_BASE_URL`, `RESO_PROVIDER`, `RESO_ORIGINATING_SYS
 - When an upstream source fails, degrade only that data layer. Never blank the whole report.
 - Results are screening info. Keep the "verify with the responsible agency" framing in the UI.
 
-## Known hazards
+## Work intake
 
-- `.github/workflows/restore-index.yml` overwrites `public/index.html` with a copy from commit
-  `bf6f4c4` and pushes to the branch. It runs on manual dispatch, or on any push that edits that
-  workflow file. It looks like a one-off ChatGPT-era fix. Don't trigger it. It's a candidate for
-  deletion.
+Bugs and feature ideas live in GitHub Issues (`.github/ISSUE_TEMPLATE/`: Bug, Feature idea). When
+working from an issue, link it in the PR ("Fixes #12") so merging closes it.
