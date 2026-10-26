@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   LAYERS, assertReadOnly, postJson, MAX_PER_QUERY, classifyResponse, interpretLayer, centroid, validateParcel, validateCounty,
-  compareExpected, applyExpected, buildMarkdown, summarize, buildDiscoveryStrata, pickVaried, discoverParcels, parseArgs
+  compareExpected, applyExpected, buildMarkdown, summarize, buildDiscoveryStrata, pickVaried, discoverParcels, parseArgs,
+  arcgisGet, probeLayer
 } from '../scripts/validate-county.mjs';
 
 const BASE = 'https://acresx.test';
@@ -45,6 +46,8 @@ function stubFetch(responses, overrides = {}) {
     return new Response(JSON.stringify(responses[key]), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
 }
+
+const kootenaiFields = ['OBJECTID', 'PIN', 'Acres', 'ZONING', 'Loc_City', 'Loc_Addr'].map(name => ({ name }));
 
 const realFetch = globalThis.fetch;
 beforeEach(() => { globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; });
@@ -236,6 +239,7 @@ test('discovery builds strata from county config and picks a varied sample', asy
   calls = [];
   globalThis.fetch = async url => {
     const u = new URL(url); calls.push(u);
+    if (u.origin + u.pathname === config.discover.layerUrl) return new Response(JSON.stringify({ fields: kootenaiFields }));
     assert.equal(u.origin + u.pathname, `${config.discover.layerUrl}/query`);
     const p = u.searchParams;
     if (p.get('returnCountOnly')) return new Response(JSON.stringify({ count: 500 }));
@@ -245,7 +249,16 @@ test('discovery builds strata from county config and picks a varied sample', asy
     const features = Array.from({ length: 4 }, (_, i) => ({ attributes: { PIN: `P${n}-${i}`, Acres: 2 + i, ZONING: /Mining/.test(where) ? 'Mining' : zones[i], Loc_City: cities[i] } }));
     return new Response(JSON.stringify({ features }));
   };
-  const picked = await discoverParcels({ ...config, discover: { ...config.discover, delayMs: 0 } }, { count: 10, seed: 7 });
+  const { parcels: picked, diagnostics } = await discoverParcels({ ...config, discover: { ...config.discover, delayMs: 0 } }, { count: 10, seed: 7 });
+  assert.equal(diagnostics.length, calls.length, 'one diagnostic per request');
+  assert.equal(diagnostics[0].step, 'probe layer metadata');
+  assert.equal(diagnostics[0].url, `${config.discover.layerUrl}?f=json`);
+  assert.deepEqual(diagnostics[0].missingFields, []);
+  assert.ok(diagnostics.every(x => x.ok && x.httpStatus === 200 && x.error === null && Number.isFinite(x.ms)));
+  assert.ok(diagnostics.some(x => x.step === 'distinct-zoning' && x.featureCount === 5));
+  assert.ok(diagnostics.some(x => /\(count\)$/.test(x.step) && x.featureCount === 500));
+  assert.ok(diagnostics.some(x => /\(sample/.test(x.step) && x.featureCount === 4 && x.url.startsWith(`${config.discover.layerUrl}/query?f=json`)));
+  assert.ok(diagnostics.some(x => x.step === 'zoning Mining' && x.featureCount === 4));
   assert.equal(picked.length, 10);
   assert.equal(new Set(picked.map(p => p.parcelId)).size, 10);
   assert.ok(picked.some(p => p.countyAttributes.zoning === 'Mining'), 'zoning missed by strata should be sampled');
@@ -260,7 +273,8 @@ test('discovery caps perQuery and pauses between count and sample queries', asyn
   const config = JSON.parse(readFileSync(new URL('../validation/counties/kootenai.json', import.meta.url), 'utf8'));
   const log = [];
   globalThis.fetch = async url => {
-    const p = new URL(url).searchParams;
+    const u = new URL(url), p = u.searchParams;
+    if (!u.pathname.endsWith('/query')) return new Response(JSON.stringify({ fields: kootenaiFields }));
     const kind = p.get('returnCountOnly') ? 'count' : p.get('returnDistinctValues') ? 'distinct' : 'sample';
     log.push({ kind, at: performance.now(), records: p.get('resultRecordCount') });
     if (kind === 'count') return new Response(JSON.stringify({ count: 100000 }));
@@ -286,4 +300,99 @@ test('pickVaried is deterministic for a seed and parseArgs validates input', () 
   assert.deepEqual(parseArgs(['--county', 'kootenai', '--discover', '--count', '4']).count, 4);
   assert.throws(() => parseArgs(['--county', '../etc']), /--county/);
   assert.throws(() => parseArgs(['--county', 'kootenai', '--bogus']), /Unknown argument/);
+});
+
+const tinyDiscover = { county: 'Testco', state: 'ID', discover: {
+  layerUrl: 'https://gis.test/arcgis/rest/services/Parcels/MapServer/0', idField: 'PIN', acresField: 'Acres', zoningField: 'ZONING',
+  cityField: 'Loc_City', addressField: 'Loc_Addr', cities: ['Athol'], acreBands: [{ label: 'any' }], perQuery: 5, delayMs: 0
+} };
+
+test('discovery diagnostics record HTTP 403 HTML, ArcGIS JSON errors and network errors', async () => {
+  const html = '<html>\n  <head><title>403 Forbidden</title></head>\n  <body>   Access denied by WAF   </body>\n</html>' + 'x'.repeat(400);
+  const fetchImpl = async url => {
+    const u = new URL(url), p = u.searchParams;
+    if (!u.pathname.endsWith('/query')) return new Response(JSON.stringify({ fields: kootenaiFields }), { headers: { 'Content-Type': 'application/json' } });
+    if (p.get('returnCountOnly')) return new Response(html, { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    if (p.get('returnDistinctValues')) {
+      const cause = Object.assign(new Error('getaddrinfo ENOTFOUND gis.test'), { code: 'ENOTFOUND' });
+      throw new TypeError('fetch failed', { cause });
+    }
+    return new Response(JSON.stringify({ error: { code: 400, message: 'Unable to complete operation.', details: ["'where' parameter is invalid"] } }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  const { parcels, diagnostics } = await discoverParcels(tinyDiscover, { count: 3, fetchImpl });
+  assert.deepEqual(parcels, []);
+  assert.deepEqual(diagnostics.map(x => x.step), ['probe layer metadata', 'any | city-named locality (count)', 'any | city-named locality (sample)', 'any | other/blank locality (count)', 'any | other/blank locality (sample)', 'distinct-zoning']);
+  assert.equal(diagnostics[0].ok, true);
+  assert.equal(diagnostics[0].contentType, 'application/json');
+
+  const forbidden = diagnostics[1];
+  assert.equal(forbidden.ok, false);
+  assert.equal(forbidden.httpStatus, 403);
+  assert.match(forbidden.error, /HTTP 403, content-type text\/html; charset=utf-8, body: <html> <head><title>403 Forbidden<\/title><\/head> <body> Access denied by WAF <\/body> <\/html>x/);
+  assert.ok(forbidden.error.length < 320, 'body is truncated to ~200 chars');
+  assert.equal(forbidden.featureCount, null);
+
+  const arcgis = diagnostics[2];
+  assert.equal(arcgis.ok, false);
+  assert.equal(arcgis.httpStatus, 200);
+  assert.equal(arcgis.error, "ArcGIS error 400: Unable to complete operation. (details: 'where' parameter is invalid)");
+
+  const network = diagnostics[5];
+  assert.equal(network.httpStatus, null);
+  assert.equal(network.error, 'network error: TypeError: fetch failed (cause: ENOTFOUND getaddrinfo ENOTFOUND gis.test)');
+  assert.ok(diagnostics.every(x => Number.isFinite(x.ms) && x.url.startsWith(tinyDiscover.discover.layerUrl)));
+});
+
+test('arcgisGet reports non-JSON 200 bodies, ArcGIS errors on non-OK responses and timeouts', async () => {
+  await assert.rejects(arcgisGet('https://gis.test/q', { fetchImpl: async () => new Response('  <html>Login</html> ', { status: 200, headers: { 'Content-Type': 'text/html' } }) }),
+    e => e.httpStatus === 200 && e.contentType === 'text/html' && e.message === 'ArcGIS returned non-JSON (HTTP 200, content-type text/html, body: <html>Login</html>)');
+  await assert.rejects(arcgisGet('https://gis.test/q', { fetchImpl: async () => new Response(JSON.stringify({ error: { code: 498, message: 'Invalid token.', details: [] } }), { status: 498 }) }),
+    e => e.httpStatus === 498 && e.message === 'ArcGIS returned HTTP 498: ArcGIS error 498: Invalid token.');
+  await assert.rejects(arcgisGet('https://gis.test/q', { fetchImpl: async () => { const e = new Error('The operation was aborted due to timeout'); e.name = 'TimeoutError'; throw e; } }),
+    e => e.httpStatus === null && /network error: TimeoutError: The operation was aborted due to timeout/.test(e.message));
+});
+
+test('layer probe lists missing and wrong-case field names', async () => {
+  const fields = ['OBJECTID', 'PIN', 'ACRES', 'Loc_City'].map(name => ({ name }));
+  let requested;
+  const probe = await probeLayer({ ...tinyDiscover.discover, layerUrl: tinyDiscover.discover.layerUrl + '/' }, { fetchImpl: async url => { requested = url; return new Response(JSON.stringify({ name: 'Parcels', fields }), { headers: { 'Content-Type': 'application/json' } }); } });
+  assert.equal(requested, `${tinyDiscover.discover.layerUrl}?f=json`);
+  assert.equal(probe.ok, false);
+  assert.equal(probe.httpStatus, 200);
+  assert.deepEqual(probe.fieldsChecked, ['PIN', 'Acres', 'ZONING', 'Loc_City', 'Loc_Addr']);
+  assert.deepEqual(probe.missingFields, ['Acres (layer has ACRES)', 'ZONING', 'Loc_Addr']);
+  assert.equal(probe.error, 'missing fields: Acres (layer has ACRES), ZONING, Loc_Addr');
+
+  const down = await probeLayer(tinyDiscover.discover, { fetchImpl: async () => new Response('Service Unavailable', { status: 503, headers: { 'Content-Type': 'text/plain' } }) });
+  assert.equal(down.ok, false);
+  assert.equal(down.httpStatus, 503);
+  assert.equal(down.contentType, 'text/plain');
+  assert.match(down.error, /HTTP 503, content-type text\/plain, body: Service Unavailable/);
+
+  const noFields = await probeLayer(tinyDiscover.discover, { fetchImpl: async () => new Response(JSON.stringify({ name: 'x' })) });
+  assert.equal(noFields.error, 'layer metadata has no fields list');
+  assert.deepEqual(noFields.missingFields, noFields.fieldsChecked);
+});
+
+test('markdown has a discovery diagnostics section when discovery ran, even with no parcels', async () => {
+  const diagnostics = [
+    { step: 'probe layer metadata', url: 'https://gis.test/0?f=json', ok: false, httpStatus: 200, contentType: 'application/json', error: 'missing fields: ZONING', featureCount: null, ms: 12, fieldsChecked: ['PIN', 'ZONING'], missingFields: ['ZONING'] },
+    { step: 'any | city-named locality (count)', url: 'https://gis.test/0/query?f=json', ok: false, httpStatus: 403, error: 'ArcGIS returned HTTP 403 | blocked', featureCount: null, ms: 40 },
+    { step: 'distinct-zoning', url: 'https://gis.test/0/query?f=json', ok: true, httpStatus: 200, error: null, featureCount: 7, ms: 9 }
+  ];
+  const report = { county: 'Testco', state: 'ID', baseUrl: BASE, startedAt: 'now', discovered: true, discoveryDiagnostics: diagnostics, results: [], summary: summarize([]) };
+  const md = buildMarkdown(report);
+  assert.match(md, /## Discovery diagnostics/);
+  assert.match(md, /Requests: 3, failed: 2\./);
+  assert.match(md, /- Layer probe: HTTP 200, content-type application\/json, fields checked: PIN, ZONING, missing: ZONING/);
+  assert.match(md, /\| Step \| HTTP \| Features \| ms \| Error \|/);
+  assert.match(md, /\| any \\\| city-named locality \(count\) \| 403 \| - \| 40 \| ArcGIS returned HTTP 403 \\\| blocked \|/);
+  assert.match(md, /\| distinct-zoning \| 200 \| 7 \| 9 \|  \|/);
+  assert.match(md, /No parcels to validate/);
+  assert.ok(md.indexOf('## Discovery diagnostics') < md.indexOf('No parcels to validate'));
+
+  globalThis.fetch = stubFetch(happyResponses());
+  const ran = await validateCounty({ county: 'Kootenai', state: 'ID' }, { parcels: [{ parcelId: 'TESTPIN1' }], baseUrl: BASE, delayMs: 0, requestDelayMs: 0 });
+  assert.doesNotMatch(buildMarkdown(ran), /Discovery diagnostics/, 'no section when discovery did not run');
+  assert.match(buildMarkdown({ ...ran, discoveryDiagnostics: diagnostics.slice(2) }), /## Discovery diagnostics[\s\S]*\| Parcel \|/);
 });

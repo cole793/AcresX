@@ -81,6 +81,13 @@ locality field is the situs city, so it doesn't prove a parcel is inside city li
 layer's `jurisdiction` value in the report is the better check. The seed is recorded, so
 `--seed` reproduces a sample.
 
+Discovery first fetches the layer's metadata (`<layerUrl>?f=json`) to check the server answers and
+that the configured field names exist. Every request it makes (that probe, then each count,
+sample and zoning query) is recorded in the `diagnostics` array of `<county>-discovered.json`,
+with the full URL, HTTP status, feature count, time and error (status, content type and the start
+of the body, the ArcGIS error code and details, or the network error cause). `<county>.md` has a
+"Discovery diagnostics" table whenever discovery ran, so an empty sample says why.
+
 ## Add a county
 
 Create `validation/counties/<name>.json` (lowercase file name):

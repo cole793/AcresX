@@ -411,6 +411,19 @@ function formatValue(v) {
   return String(v);
 }
 
+// One row per ArcGIS request discovery made. Full query URLs are in <county>-discovered.json.
+export function diagnosticsMarkdown(diagnostics) {
+  const lines = ['## Discovery diagnostics', ''];
+  const failed = diagnostics.filter(x => !x.ok).length;
+  lines.push(`Requests: ${diagnostics.length}, failed: ${failed}. Features is the feature count, or the row count for count queries. Full URLs are in the discovered JSON.`, '');
+  const probe = diagnostics.find(x => x.step === 'probe layer metadata');
+  if (probe) lines.push(`- Layer probe: HTTP ${probe.httpStatus ?? '-'}, content-type ${probe.contentType || '(none)'}, fields checked: ${(probe.fieldsChecked || []).join(', ') || '(none)'}, missing: ${(probe.missingFields || []).join(', ') || 'none'}`, '');
+  lines.push('| Step | HTTP | Features | ms | Error |', '|---|---|---|---|---|');
+  for (const x of diagnostics) lines.push(`| ${cell(x.step)} | ${x.httpStatus ?? '-'} | ${x.featureCount ?? '-'} | ${x.ms ?? '-'} | ${cell(x.error || '')} |`);
+  lines.push('');
+  return lines;
+}
+
 export function buildMarkdown(report) {
   const { county, state, baseUrl, startedAt, results, summary } = report;
   const lines = [];
@@ -419,6 +432,7 @@ export function buildMarkdown(report) {
   lines.push(`- Run: ${startedAt}${report.discovered ? ' (discovered sample)' : ''}`);
   lines.push(`- Parcels: ${summary.parcels}, with an error or mismatch: ${summary.failed}`);
   lines.push(`- Layer results: ${Object.entries(summary.layerCounts).map(([k, v]) => `${k} ${v}`).join(', ')}`, '');
+  if (Array.isArray(report.discoveryDiagnostics)) lines.push(...diagnosticsMarkdown(report.discoveryDiagnostics));
   if (!results.length) {
     lines.push('No parcels to validate. Add parcels to the county file or run with `--discover`.');
     return lines.join('\n') + '\n';
@@ -473,15 +487,57 @@ export function buildDiscoveryStrata(d) {
   return strata;
 }
 
-async function arcgisQuery(layerUrl, params, { fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+export function arcgisQueryUrl(layerUrl, params = {}) {
   const url = new URL(`${layerUrl.replace(/\/$/, '')}/query`);
   url.searchParams.set('f', 'json');
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
-  const response = await fetchImpl(url.href, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(timeoutMs) });
-  if (!response.ok) throw new Error(`ArcGIS returned HTTP ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'ArcGIS query failed');
-  return data;
+  return url.href;
+}
+
+const snippet = (body, max = 200) => String(body ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+
+// "TypeError: fetch failed (cause: ENOTFOUND getaddrinfo ENOTFOUND host)" and similar.
+export function describeNetworkError(error) {
+  const base = `${error?.name || 'Error'}: ${error?.message || String(error)}`;
+  const cause = error?.cause;
+  if (!cause) return base;
+  const causeText = [cause.code, cause.message].filter(Boolean).join(' ') || String(cause);
+  return `${base} (cause: ${causeText})`;
+}
+
+export function describeArcgisError(err) {
+  const details = (Array.isArray(err?.details) ? err.details : err?.details ? [err.details] : []).map(String).filter(Boolean);
+  return `ArcGIS error${err?.code != null ? ` ${err.code}` : ''}: ${err?.message || 'request failed'}${details.length ? ` (details: ${details.join('; ')})` : ''}`;
+}
+
+const tagged = (message, fields) => Object.assign(new Error(message), fields);
+
+// GET an ArcGIS REST URL with f=json. Returns { data, httpStatus, contentType }. Errors carry
+// httpStatus/contentType when a response arrived, and say what came back (status, content type,
+// start of the body, ArcGIS error code/details, or the network error cause).
+export async function arcgisGet(url, { fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  let response;
+  try {
+    response = await fetchImpl(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (error) {
+    throw tagged(`network error: ${describeNetworkError(error)}`, { httpStatus: null, contentType: null });
+  }
+  const httpStatus = response.status;
+  const contentType = response.headers?.get?.('content-type') || '';
+  let body;
+  try { body = await response.text(); }
+  catch (error) { throw tagged(`HTTP ${httpStatus}, body read failed: ${describeNetworkError(error)}`, { httpStatus, contentType }); }
+  const what = `HTTP ${httpStatus}, content-type ${contentType || '(none)'}, body: ${snippet(body) || '(empty)'}`;
+  if (!response.ok) {
+    let arcgis = null;
+    try { arcgis = JSON.parse(body)?.error || null; } catch { /* not JSON */ }
+    throw tagged(arcgis ? `ArcGIS returned HTTP ${httpStatus}: ${describeArcgisError(arcgis)}` : `ArcGIS returned ${what}`, { httpStatus, contentType });
+  }
+  let data;
+  try { data = JSON.parse(body); }
+  catch { throw tagged(`ArcGIS returned non-JSON (${what})`, { httpStatus, contentType }); }
+  if (data?.error) throw tagged(describeArcgisError(data.error), { httpStatus, contentType });
+  return { data, httpStatus, contentType };
 }
 
 // Caps on discovery query size, so a county config can't ask a county server for huge pages.
@@ -535,6 +591,35 @@ export function pickVaried(candidates, count, seed = 1) {
   return picked;
 }
 
+// Checks that the layer answers from here and that the configured field names exist on it.
+export async function probeLayer(d, { fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  const url = new URL(d.layerUrl.replace(/\/$/, ''));
+  url.searchParams.set('f', 'json');
+  const configured = ['idField', 'acresField', 'zoningField', 'cityField', 'addressField'].map(k => d[k]).filter(Boolean);
+  const entry = { step: 'probe layer metadata', url: url.href, ok: false, httpStatus: null, contentType: null, error: null, featureCount: null, ms: 0, fieldsChecked: configured, missingFields: [] };
+  const started = performance.now();
+  try {
+    const { data, httpStatus, contentType } = await arcgisGet(url.href, { fetchImpl, timeoutMs });
+    Object.assign(entry, { httpStatus, contentType });
+    const names = Array.isArray(data?.fields) ? data.fields.map(f => text(f?.name)).filter(Boolean) : null;
+    if (!names) {
+      entry.missingFields = configured;
+      entry.error = 'layer metadata has no fields list';
+    } else {
+      const lower = new Map(names.map(n => [n.toLowerCase(), n]));
+      entry.missingFields = configured.filter(f => !names.includes(f)).map(f => lower.has(f.toLowerCase()) ? `${f} (layer has ${lower.get(f.toLowerCase())})` : f);
+      entry.ok = !entry.missingFields.length;
+      if (!entry.ok) entry.error = `missing fields: ${entry.missingFields.join(', ')}`;
+    }
+  } catch (error) {
+    Object.assign(entry, { httpStatus: error.httpStatus ?? null, contentType: error.contentType ?? null, error: error.message });
+  }
+  entry.ms = Math.round(performance.now() - started);
+  return entry;
+}
+
+// Returns { parcels, diagnostics }. diagnostics has one entry per ArcGIS request (the layer
+// probe first), so a run that finds nothing still says why in the published results.
 export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS, log = () => {} } = {}) {
   const d = config.discover;
   if (!d?.layerUrl || !d.idField) throw new Error(`No discover config (layerUrl, idField) for ${config.county}.`);
@@ -544,12 +629,39 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
   const perQuery = Math.min(MAX_PER_QUERY, Math.max(1, Math.floor(Number(d.perQuery) || 50)));
   const delayMs = Number(d.delayMs ?? 300);
   const candidates = [];
+  const diagnostics = [];
+
+  const probe = await probeLayer(d, opts);
+  diagnostics.push(probe);
+  log(`discover: layer probe: HTTP ${probe.httpStatus ?? '-'}${probe.error ? `, ${probe.error}` : ', fields ok'}`);
+  await sleep(delayMs);
+
+  // One recorded ArcGIS query. It rethrows, so the discovery flow below is unchanged.
+  const query = async (step, params) => {
+    const url = arcgisQueryUrl(d.layerUrl, params);
+    const entry = { step, url, ok: false, httpStatus: null, error: null, featureCount: null, ms: 0 };
+    diagnostics.push(entry);
+    const started = performance.now();
+    try {
+      const { data, httpStatus } = await arcgisGet(url, opts);
+      entry.ok = true;
+      entry.httpStatus = httpStatus;
+      entry.featureCount = Array.isArray(data?.features) ? data.features.length : Number.isFinite(Number(data?.count)) ? Number(data.count) : null;
+      return data;
+    } catch (error) {
+      entry.httpStatus = error.httpStatus ?? null;
+      entry.error = error.message;
+      throw error;
+    } finally {
+      entry.ms = Math.round(performance.now() - started);
+    }
+  };
 
   for (const stratum of buildDiscoveryStrata(d)) {
     try {
       let offset = 0;
       try {
-        const counted = await arcgisQuery(d.layerUrl, { where: stratum.where, returnCountOnly: 'true' }, opts);
+        const counted = await query(`${stratum.id} (count)`, { where: stratum.where, returnCountOnly: 'true' });
         const total = Number(counted.count) || 0;
         if (!total) { log(`discover: ${stratum.id}: 0 parcels`); await sleep(delayMs); continue; }
         offset = Math.floor(rand() * Math.max(0, total - perQuery));
@@ -558,8 +670,8 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
       await sleep(delayMs);
       const params = { where: stratum.where, outFields, returnGeometry: 'false', resultRecordCount: perQuery };
       let data;
-      try { data = await arcgisQuery(d.layerUrl, offset ? { ...params, resultOffset: offset } : params, opts); }
-      catch (error) { if (!offset) throw error; data = await arcgisQuery(d.layerUrl, params, opts); }
+      try { data = await query(`${stratum.id} (sample${offset ? `, offset ${offset}` : ''})`, offset ? { ...params, resultOffset: offset } : params); }
+      catch (error) { if (!offset) throw error; data = await query(`${stratum.id} (sample, retry without offset)`, params); }
       for (const f of data.features || []) candidates.push(toCandidate(d, f.attributes || {}, stratum));
     } catch (error) { log(`discover: ${stratum.id}: query failed (${error.message})`); }
     await sleep(delayMs);
@@ -568,14 +680,14 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
   // Zoning values the strata missed: one small query each, so rarer zones get a chance.
   if (d.zoningField) {
     try {
-      const distinct = await arcgisQuery(d.layerUrl, { where: d.where || '1=1', outFields: d.zoningField, returnDistinctValues: 'true', returnGeometry: 'false', resultRecordCount: MAX_DISTINCT_ZONES }, opts);
+      const distinct = await query('distinct-zoning', { where: d.where || '1=1', outFields: d.zoningField, returnDistinctValues: 'true', returnGeometry: 'false', resultRecordCount: MAX_DISTINCT_ZONES });
       const zones = [...new Set((distinct.features || []).map(f => text(f.attributes?.[d.zoningField])).filter(Boolean))];
       const have = new Set(candidates.map(c => c.zoning));
       const missing = zones.filter(z => !have.has(z)).slice(0, count);
       log(`discover: ${zones.length} distinct ZONING values, ${missing.length} not yet sampled`);
       for (const zone of missing) {
         try {
-          const data = await arcgisQuery(d.layerUrl, { where: [d.where, `${d.zoningField} = ${sqlString(zone)}`].filter(Boolean).map(w => `(${w})`).join(' AND '), outFields, returnGeometry: 'false', resultRecordCount: 5 }, opts);
+          const data = await query(`zoning ${zone}`, { where: [d.where, `${d.zoningField} = ${sqlString(zone)}`].filter(Boolean).map(w => `(${w})`).join(' AND '), outFields, returnGeometry: 'false', resultRecordCount: 5 });
           for (const f of data.features || []) candidates.push(toCandidate(d, f.attributes || {}, { id: `zoning ${zone}`, band: null, place: null }));
         } catch (error) { log(`discover: zoning ${zone}: query failed (${error.message})`); }
         await sleep(delayMs);
@@ -584,7 +696,7 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
   }
 
   log(`discover: ${candidates.length} candidates`);
-  return pickVaried(candidates, count, seed);
+  return { parcels: pickVaried(candidates, count, seed), diagnostics };
 }
 
 // --- run -------------------------------------------------------------------------------------
@@ -635,17 +747,18 @@ async function main() {
 
   let parcels = config.parcels || [];
   let seed = null;
+  let diagnostics = null;
   if (args.discover) {
     seed = Number.isFinite(args.seed) && args.seed !== null ? args.seed : Date.now() % 2147483647;
-    parcels = await discoverParcels(config, { count: args.count, seed, log });
-    const discovered = { county: config.county, state: config.state, seed, generatedAt: new Date().toISOString(), parcels };
+    ({ parcels, diagnostics } = await discoverParcels(config, { count: args.count, seed, log }));
+    const discovered = { county: config.county, state: config.state, seed, generatedAt: new Date().toISOString(), parcels, diagnostics };
     const json = JSON.stringify(discovered, null, 2);
     await writeFile(path.join(args.out, `${args.county}-discovered.json`), json + '\n');
     console.log(json);
   }
 
   const report = await validateCounty(config, { parcels, baseUrl, delayMs: args.delayMs, log });
-  if (args.discover) { report.discovered = true; report.seed = seed; }
+  if (args.discover) { report.discovered = true; report.seed = seed; report.discoveryDiagnostics = diagnostics; }
   const markdown = buildMarkdown(report);
   await writeFile(path.join(args.out, `${args.county}.json`), JSON.stringify(report, null, 2) + '\n');
   await writeFile(path.join(args.out, `${args.county}.md`), markdown);
