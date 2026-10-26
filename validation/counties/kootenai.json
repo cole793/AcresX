@@ -6,7 +6,6 @@
     "layerUrl": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0",
     "idField": "PIN",
     "acresField": "Acres",
-    "zoningField": "ZONING",
     "cityField": "Loc_City",
     "addressField": "Loc_Addr",
     "where": "PIN IS NOT NULL",

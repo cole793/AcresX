@@ -411,13 +411,25 @@ function formatValue(v) {
   return String(v);
 }
 
+// Field names listed in the markdown probe line; the discovered JSON has them all.
+export const MAX_FIELD_NAMES_SHOWN = 40;
+
 // One row per ArcGIS request discovery made. Full query URLs are in <county>-discovered.json.
 export function diagnosticsMarkdown(diagnostics) {
   const lines = ['## Discovery diagnostics', ''];
   const failed = diagnostics.filter(x => !x.ok).length;
   lines.push(`Requests: ${diagnostics.length}, failed: ${failed}. Features is the feature count, or the row count for count queries. Full URLs are in the discovered JSON.`, '');
   const probe = diagnostics.find(x => x.step === 'probe layer metadata');
-  if (probe) lines.push(`- Layer probe: HTTP ${probe.httpStatus ?? '-'}, content-type ${probe.contentType || '(none)'}, fields checked: ${(probe.fieldsChecked || []).join(', ') || '(none)'}, missing: ${(probe.missingFields || []).join(', ') || 'none'}`, '');
+  if (probe) {
+    lines.push(`- Layer probe: HTTP ${probe.httpStatus ?? '-'}, content-type ${probe.contentType || '(none)'}, fields checked: ${(probe.fieldsChecked || []).join(', ') || '(none)'}, missing: ${(probe.missingFields || []).join(', ') || 'none'}`);
+    if (Array.isArray(probe.fieldNames)) {
+      const shown = probe.fieldNames.slice(0, MAX_FIELD_NAMES_SHOWN).join(', ');
+      const more = probe.fieldNames.length - MAX_FIELD_NAMES_SHOWN;
+      lines.push(`- Layer fields (${probe.fieldNames.length}): ${shown || '(none)'}${more > 0 ? `, ... (+${more} more, full list in the discovered JSON)` : ''}`);
+    }
+    for (const note of probe.notes || []) lines.push(`- Field check: ${note}`);
+    lines.push('');
+  }
   lines.push('| Step | HTTP | Features | ms | Error |', '|---|---|---|---|---|');
   for (const x of diagnostics) lines.push(`| ${cell(x.step)} | ${x.httpStatus ?? '-'} | ${x.featureCount ?? '-'} | ${x.ms ?? '-'} | ${cell(x.error || '')} |`);
   lines.push('');
@@ -472,15 +484,18 @@ function cityVariants(cities) {
   return [...out].filter(Boolean);
 }
 
-// One stratum per acreage band x (named city / other locality).
+// One stratum per acreage band x (named city / other locality). Without an acres field there is
+// one "any acreage" band; without a city field, one "any locality" place.
 export function buildDiscoveryStrata(d) {
   const cityList = cityVariants(d.cities).map(sqlString).join(',');
-  const inCity = `UPPER(${d.cityField}) IN (${cityList})`;
-  const notCity = `(${d.cityField} IS NULL OR UPPER(${d.cityField}) NOT IN (${cityList}))`;
+  const places = d.cityField
+    ? [['city-named locality', `UPPER(${d.cityField}) IN (${cityList})`], ['other/blank locality', `(${d.cityField} IS NULL OR UPPER(${d.cityField}) NOT IN (${cityList}))`]]
+    : [['any locality', null]];
+  const bands = d.acresField ? d.acreBands || [] : [{ label: 'any acreage' }];
   const strata = [];
-  for (const band of d.acreBands || []) {
+  for (const band of bands) {
     const acres = [band.min != null ? `${d.acresField} >= ${Number(band.min)}` : null, band.max != null ? `${d.acresField} < ${Number(band.max)}` : null].filter(Boolean).join(' AND ');
-    for (const [placeLabel, placeWhere] of [['city-named locality', inCity], ['other/blank locality', notCity]]) {
+    for (const [placeLabel, placeWhere] of places) {
       strata.push({ id: `${band.label} | ${placeLabel}`, band: band.label, place: placeLabel, where: [d.where, acres, placeWhere].filter(Boolean).map(w => `(${w})`).join(' AND ') });
     }
   }
@@ -547,17 +562,18 @@ export const MAX_DISTINCT_ZONES = 200;
 function toCandidate(d, attrs, stratum) {
   return {
     parcelId: text(attrs[d.idField]),
-    acres: finite(attrs[d.acresField]),
-    zoning: text(attrs[d.zoningField]) || null,
-    city: text(attrs[d.cityField]) || null,
+    acres: d.acresField ? finite(attrs[d.acresField]) : null,
+    zoning: d.zoningField ? text(attrs[d.zoningField]) || null : null,
+    city: d.cityField ? text(attrs[d.cityField]) || null : null,
     address: d.addressField ? text(attrs[d.addressField]) || null : null,
     stratum: stratum?.id || null, band: stratum?.band || null, place: stratum?.place || null
   };
 }
 
 // Greedy pick: each step takes the candidate that adds the most variety (new stratum, new
-// zoning value, new locality), ties broken by the seeded random order.
-export function pickVaried(candidates, count, seed = 1) {
+// zoning value, new locality), ties broken by the seeded random order. With zoning: false (no
+// zoning field configured) variety comes from stratum and locality only.
+export function pickVaried(candidates, count, seed = 1, { zoning: useZoning = true } = {}) {
   const rand = mulberry32(seed);
   const pool = candidates.filter(c => c.parcelId).map(c => ({ c, r: rand() }));
   const seen = { stratum: new Map(), zoning: new Map(), city: new Map(), id: new Set() };
@@ -567,14 +583,14 @@ export function pickVaried(candidates, count, seed = 1) {
     for (const item of pool) {
       const { c } = item;
       if (seen.id.has(c.parcelId)) continue;
-      const score = (seen.stratum.get(c.stratum) ? -seen.stratum.get(c.stratum) : 4) + (seen.zoning.get(c.zoning || '') ? 0 : 2) + (seen.city.get(normCity(c.city)) ? 0 : 1) + item.r * 0.5;
+      const score = (seen.stratum.get(c.stratum) ? -seen.stratum.get(c.stratum) : 4) + (!useZoning || seen.zoning.get(c.zoning || '') ? 0 : 2) + (seen.city.get(normCity(c.city)) ? 0 : 1) + item.r * 0.5;
       if (score > bestScore) { best = item; bestScore = score; }
     }
     if (!best) break;
     const c = best.c;
     const reasons = [];
     if (c.stratum && !seen.stratum.get(c.stratum)) reasons.push(`covers stratum "${c.stratum}"`);
-    if (!seen.zoning.get(c.zoning || '')) reasons.push(`first parcel with ZONING ${c.zoning || '(blank)'}`);
+    if (useZoning && !seen.zoning.get(c.zoning || '')) reasons.push(`first parcel with ZONING ${c.zoning || '(blank)'}`);
     if (!seen.city.get(normCity(c.city))) reasons.push(`first in locality ${c.city || '(blank)'}`);
     seen.id.add(c.parcelId);
     seen.stratum.set(c.stratum, (seen.stratum.get(c.stratum) || 0) + 1);
@@ -582,7 +598,7 @@ export function pickVaried(candidates, count, seed = 1) {
     seen.city.set(normCity(c.city), (seen.city.get(normCity(c.city)) || 0) + 1);
     picked.push({
       parcelId: c.parcelId,
-      label: `${c.city || 'no locality'}, ${c.acres != null ? `${round(c.acres, 2)} ac` : 'acres n/a'}, ZONING ${c.zoning || 'blank'}`,
+      label: `${c.city || 'no locality'}, ${c.acres != null ? `${round(c.acres, 2)} ac` : 'acres n/a'}${useZoning ? `, ZONING ${c.zoning || 'blank'}` : ''}`,
       why: `Discovered sample: ${reasons.length ? reasons.join('; ') : 'fills remaining sample slots'}. Locality is the parcel's situs city field, not proof it is inside city limits.`,
       expected: {},
       countyAttributes: { acres: c.acres, zoning: c.zoning, city: c.city, address: c.address, stratum: c.stratum }
@@ -596,12 +612,13 @@ export async function probeLayer(d, { fetchImpl = globalThis.fetch, timeoutMs = 
   const url = new URL(d.layerUrl.replace(/\/$/, ''));
   url.searchParams.set('f', 'json');
   const configured = ['idField', 'acresField', 'zoningField', 'cityField', 'addressField'].map(k => d[k]).filter(Boolean);
-  const entry = { step: 'probe layer metadata', url: url.href, ok: false, httpStatus: null, contentType: null, error: null, featureCount: null, ms: 0, fieldsChecked: configured, missingFields: [] };
+  const entry = { step: 'probe layer metadata', url: url.href, ok: false, httpStatus: null, contentType: null, error: null, featureCount: null, ms: 0, fieldsChecked: configured, missingFields: [], fieldNames: null };
   const started = performance.now();
   try {
     const { data, httpStatus, contentType } = await arcgisGet(url.href, { fetchImpl, timeoutMs });
     Object.assign(entry, { httpStatus, contentType });
     const names = Array.isArray(data?.fields) ? data.fields.map(f => text(f?.name)).filter(Boolean) : null;
+    entry.fieldNames = names;
     if (!names) {
       entry.missingFields = configured;
       entry.error = 'layer metadata has no fields list';
@@ -618,22 +635,48 @@ export async function probeLayer(d, { fetchImpl = globalThis.fetch, timeoutMs = 
   return entry;
 }
 
+const DISCOVER_FIELD_KEYS = ['idField', 'acresField', 'zoningField', 'cityField', 'addressField'];
+
+// Keeps only configured fields the layer has (fieldNames from probeLayer), so one missing field
+// doesn't fail every query. A wrong-case name uses the layer's spelling. Returns the config to
+// use, notes for the diagnostics, and an abort reason when idField is missing. Without a fields
+// list (the probe failed) the config is used as is.
+export function resolveDiscoverFields(d, fieldNames) {
+  const resolved = { ...d }, notes = [];
+  if (!Array.isArray(fieldNames)) return { discover: resolved, notes, abort: null };
+  const lower = new Map(fieldNames.map(n => [n.toLowerCase(), n]));
+  for (const key of DISCOVER_FIELD_KEYS) {
+    const name = d[key];
+    if (!name || fieldNames.includes(name)) continue;
+    const actual = lower.get(String(name).toLowerCase());
+    if (actual) { resolved[key] = actual; notes.push(`${key} ${name} is ${actual} on the layer; using ${actual}`); continue; }
+    if (key === 'idField') return { discover: resolved, notes, abort: `discovery stopped: idField ${name} is not on the layer, so no parcel ids can be sampled` };
+    delete resolved[key];
+    notes.push(`${key} ${name} is not on the layer; left out of this run's queries`);
+  }
+  return { discover: resolved, notes, abort: null };
+}
+
 // Returns { parcels, diagnostics }. diagnostics has one entry per ArcGIS request (the layer
 // probe first), so a run that finds nothing still says why in the published results.
 export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS, log = () => {} } = {}) {
-  const d = config.discover;
-  if (!d?.layerUrl || !d.idField) throw new Error(`No discover config (layerUrl, idField) for ${config.county}.`);
+  const configured = config.discover;
+  if (!configured?.layerUrl || !configured.idField) throw new Error(`No discover config (layerUrl, idField) for ${config.county}.`);
   const opts = { fetchImpl, timeoutMs };
   const rand = mulberry32(seed ^ 0x9e3779b9);
-  const outFields = [d.idField, d.acresField, d.zoningField, d.cityField, d.addressField].filter(Boolean).join(',');
-  const perQuery = Math.min(MAX_PER_QUERY, Math.max(1, Math.floor(Number(d.perQuery) || 50)));
-  const delayMs = Number(d.delayMs ?? 300);
+  const perQuery = Math.min(MAX_PER_QUERY, Math.max(1, Math.floor(Number(configured.perQuery) || 50)));
+  const delayMs = Number(configured.delayMs ?? 300);
   const candidates = [];
   const diagnostics = [];
 
-  const probe = await probeLayer(d, opts);
+  const probe = await probeLayer(configured, opts);
   diagnostics.push(probe);
   log(`discover: layer probe: HTTP ${probe.httpStatus ?? '-'}${probe.error ? `, ${probe.error}` : ', fields ok'}`);
+  const { discover: d, notes, abort } = resolveDiscoverFields(configured, probe.fieldNames);
+  if (notes.length || abort) probe.notes = abort ? [...notes, abort] : notes;
+  for (const note of probe.notes || []) log(`discover: ${note}`);
+  if (abort) { probe.aborted = true; return { parcels: [], diagnostics }; }
+  const outFields = DISCOVER_FIELD_KEYS.map(k => d[k]).filter(Boolean).join(',');
   await sleep(delayMs);
 
   // One recorded ArcGIS query. It rethrows, so the discovery flow below is unchanged.
@@ -696,7 +739,7 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
   }
 
   log(`discover: ${candidates.length} candidates`);
-  return { parcels: pickVaried(candidates, count, seed), diagnostics };
+  return { parcels: pickVaried(candidates, count, seed, { zoning: Boolean(d.zoningField) }), diagnostics };
 }
 
 // --- run -------------------------------------------------------------------------------------
