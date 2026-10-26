@@ -4,3 +4,4 @@ package-lock.json
 .dev.vars
 .claude/worktrees/
 .claude/settings.local.json
+validation-results/
