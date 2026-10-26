@@ -46,13 +46,32 @@ verifier never checks a change it wrote.
 Pushing a `claude/*` branch and opening a PR are fine without asking, since nothing goes live.
 These need the owner's explicit yes **each time**. Approval for one doesn't cover the next.
 
-- merging to `main` (that deploys to production). Normally the owner merges it themselves.
+- merging to `main` (that deploys to production). See "Merging (level 1)" below.
 - running `wrangler deploy`, or changing Cloudflare settings, secrets, routes or the D1 database
 - running any workflow that writes to the repo
 - deleting branches, files outside the task or anything on GitHub
 - anything that costs money or contacts someone
 
 When the owner approves something, record it in `handoff/README.md` under "Approvals".
+
+## Merging (level 1: owner approves in chat)
+
+The owner can approve a merge in chat instead of clicking Merge on GitHub. Chosen 2026-10-26.
+
+1. Report the PR with its preview link and the verifier's counts, and ask for a go-ahead naming
+   the PR.
+2. Merge only after an explicit yes for **that** PR ("merge #12", "yes, merge it" in reply to that
+   PR). A yes covers one PR. Silence, "looks good" or "sounds good" isn't a yes; ask.
+3. Before merging, confirm the `check` and `preview` checks passed on the PR's head SHA and that
+   nothing was pushed after the owner looked. Then merge with the REST API:
+   `gh api -X PUT repos/cole793/acresx/pulls/<n>/merge -f merge_method=merge`
+   (`gh pr merge` uses GraphQL, which is blocked in cloud sessions).
+4. Watch the `Deploy AcresX to Cloudflare` run for the merge commit and report the result. If it
+   fails, say so plainly with the failing step. The live site keeps the previous version.
+5. Record the merge in `handoff/README.md`.
+
+No auto-merge: every PR waits for the owner. Revisit level 2 (auto-merge for docs-only and
+fully-tested changes) once the tests cover real data.
 
 ## Keep `handoff/` current
 

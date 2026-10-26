@@ -45,7 +45,8 @@ Work runs through a small agent team adapted from the OpenRig rig-team kit:
 
 Team state lives in `handoff/` (`README.md` = current state and open work). Read it at the start
 of a session and update it at the end. Merging to `main`, `wrangler deploy`, Cloudflare/D1
-changes and deletions need the owner's explicit yes each time.
+changes and deletions need the owner's explicit yes each time. The owner can approve a merge in
+chat ("merge #12"); the lead then merges and reports the deploy (see `/team`, "Merging").
 
 ## Secrets (set in Cloudflare, never commit them)
 

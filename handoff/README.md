@@ -27,6 +27,8 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 Each entry: date, the exact action approved.
 
 - 2026-10-26: delete `.github/workflows/restore-index.yml`; add issue templates.
+- 2026-10-26: merge policy is level 1. The owner approves each merge in chat and the lead merges
+  it. This is standing policy, not approval for any particular PR.
 
 ## Next steps (offered, not approved)
 
