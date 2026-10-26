@@ -2,6 +2,25 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-26: Flood zones are scored by category, not by "any zone intersects"
+
+Owner-approved 2026-10-26 (branch `claude/flood-zone-scoring`).
+
+- Before: any FEMA zone intersection showed "Mapped zone" (amber, 55/58) and no zone showed
+  "Clear" (95/96). Unshaded zone X ("AREA OF MINIMAL FLOOD HAZARD"), the best outcome and most of
+  Kootenai, was flagged; an unmapped parcel looked proven safe; FEMA's `AREA NOT INCLUDED`
+  matched `/^(A|V)/` and counted as high risk.
+- Now the worst intersecting zone sets the category, ranked by score (lowest wins; on the 70 tie
+  a known hazard beats not mapped): high (SFHA / A* / V*) 20 > undetermined (D) 55 > moderate
+  (shaded X, B) 70 > not mapped (no zone, `AREA NOT INCLUDED`, `OPEN WATER`) 70 > minimal
+  (unshaded X, C) 96. An empty Esri-backup answer has `category: 'limited'`; limited and
+  unavailable stay 50.
+- `src/services/flood.js` adds `zoneDetails` and `category` (cache key `flood/v4/`) and no longer
+  sends `cf` edge-cache options (ArcGIS errors arrive as HTTP 200 bodies). `public/flood-status.js`
+  holds the labels and scores; every consumer still works if it has not loaded.
+- Shaded X subtypes other than 0.2 PCT (levee, 1 PCT depth/drainage, future conditions) count as
+  moderate. An Esri-backup X with no subtype counts as moderate, because that layer has no minimal X.
+
 ## 2026-10-26: Kootenai zoning vs Zillow "512", assessor source, Idaho parcel rate limit
 
 - **Zillow's "Zoning: 512 - Res Rural" is not zoning.** Parcel 47N03W052200 (2.9 ac near St. Maries):

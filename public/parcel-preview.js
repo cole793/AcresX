@@ -56,10 +56,15 @@
     if (!result?.available) return { text: 'Not verified', cls: 'warn' };
     if (kind === 'flood') {
       const FX = window.AcresXFlood;
-      if (FX.isLimited(result)) return { text: FX.LIMITED_LABEL, cls: 'warn' };
-      if (result.high) return { text: `High-risk zone mapped${FX.backupSuffix(result)}`, cls: 'warn' };
-      if (result.intersects) return { text: `Mapped flood zone${FX.backupSuffix(result)}`, cls: 'warn' };
-      return { text: 'No mapped flood hazard', cls: 'good' };
+      if (!FX) {
+        // flood-status.js not loaded yet: the older labels, without throwing.
+        if (result.source?.emptyResult) return { text: 'Limited flood data', cls: 'warn' };
+        if (result.high) return { text: 'High-risk zone mapped', cls: 'warn' };
+        if (result.intersects) return { text: 'Mapped flood zone', cls: 'warn' };
+        return { text: 'No mapped flood hazard', cls: 'good' };
+      }
+      const grade = FX.grade(result);
+      return { text: grade.overview, cls: grade.overviewCls };
     }
     if (result.intersects) return { text: 'Mapped wetlands present', cls: 'warn' };
     return { text: 'No mapped wetlands', cls: 'good' };

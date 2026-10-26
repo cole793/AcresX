@@ -7,7 +7,7 @@ import worker from '../src/index.js';
 import {
   FEMA_NFHL_FLOOD_LAYER, ESRI_USA_FLOOD_HAZARD_LAYER, FEMA_PROVIDER, ESRI_PROVIDER, ESRI_FALLBACK_ENABLED, ESRI_COVERAGE,
   FEMA_TIMEOUT_MS, FEMA_RETRY_TIMEOUT_MS, FEMA_RETRY_BACKOFF_MS, FALLBACK_TIMEOUT_MS, MAX_GET_URL_LENGTH,
-  floodScreening, buildQueryRequest
+  CACHE_KEY_PREFIX, FLOOD_CATEGORIES, floodScreening, buildQueryRequest, summarizeFloodRows
 } from '../src/services/flood.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8'));
@@ -74,17 +74,23 @@ test('flood: FEMA success returns the legacy shape plus source', async () => {
   stubFetch(url => { assert.ok(isFema(url)); return jsonResponse(femaSample); });
   const { response, body } = await floodCall();
   assert.equal(response.status, 200);
-  assert.deepEqual(body, { available: true, intersects: true, high: true, zones: ['AE', 'X'], source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } });
+  assert.deepEqual(body, {
+    available: true, intersects: true, high: true, zones: ['AE', 'X'],
+    zoneDetails: [{ zone: 'AE', subtype: null, sfha: true }, { zone: 'X', subtype: 'AREA OF MINIMAL FLOOD HAZARD', sfha: false }],
+    category: 'high', source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER }
+  });
   assert.equal(calls.length, 1);
 });
 
-test('flood: success keys and values match the legacy snapshot (only source added)', async () => {
+test('flood: success keys and values match the legacy snapshot (only source, zoneDetails, category added)', async () => {
   stubFetch(() => jsonResponse(femaSample));
   const { response, body } = await floodCall();
   assert.equal(response.status, legacySnapshot.status);
   assert.equal(response.headers.get('Cache-Control'), legacySnapshot.cacheControl);
-  const { source, ...rest } = body;
+  const { source, zoneDetails, category, ...rest } = body;
   assert.ok(source);
+  assert.ok(Array.isArray(zoneDetails));
+  assert.ok(FLOOD_CATEGORIES.includes(category));
   assert.deepEqual(Object.keys(rest), Object.keys(legacySnapshot.body));
   assert.deepEqual(rest, legacySnapshot.body);
 });
@@ -96,7 +102,7 @@ test('flood: FEMA empty answer is authoritative: one request, no flag, cached', 
   const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
   await Promise.all(pending);
   assert.equal(response.status, 200);
-  assert.deepEqual(body, { available: true, intersects: false, high: false, zones: [], source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } });
+  assert.deepEqual(body, { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'not_mapped', source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } });
   assert.equal(response.headers.get('Cache-Control'), legacySnapshot.cacheControl);
   assert.equal(calls.length, 1, 'no retry on an empty FEMA answer');
   assert.equal(store.size, 1);
@@ -137,16 +143,19 @@ test('flood: FEMA invalid JSON then retry success', async () => {
   assert.ok(urls().every(isFema));
 });
 
-test('flood: FEMA GETs edge-cache 2xx only; the Esri request has no cf cache options', async () => {
+test('flood: no upstream request carries cf edge-cache options (HTTP-200 error bodies must not be edge-cached)', async () => {
   stubFetch(status(525), status(525), esriAE);
   await floodCall();
-  for (const call of calls.slice(0, 2)) {
-    assert.deepEqual(call.cf, { cacheTtlByStatus: { '200-299': 86400, '400-599': 0 }, cacheEverything: true });
-    assert.equal('cacheTtl' in call.cf, false);
-  }
+  assert.equal(calls.length, 3);
+  for (const call of calls) assert.equal(call.cf, undefined, call.url);
   assert.ok(isEsri(calls[2].url));
   assert.equal(calls[2].method, 'GET');
-  assert.equal(calls[2].cf, undefined, 'an Esri answer (possibly empty) must not be edge-cached');
+  calls = [];
+  stubFetch(() => jsonResponse(femaSample));
+  await floodCall();
+  assert.equal(calls[0].cf, undefined);
+  assert.equal('cf' in buildQueryRequest(FEMA_NFHL_FLOOD_LAYER, geometry, 'FLD_ZONE').init, false);
+  assert.equal('cf' in buildQueryRequest(FEMA_NFHL_FLOOD_LAYER, bigGeometry, 'FLD_ZONE').init, false);
 });
 
 // --- Esri fallback ---------------------------------------------------------------------------
@@ -164,7 +173,10 @@ test('flood: FEMA fails twice, Esri AE is high risk, carries coverage, and is ca
   const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
   await Promise.all(pending);
   assert.equal(response.status, 200);
-  assert.deepEqual(body, { available: true, intersects: true, high: true, zones: ['AE'], source: { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE } });
+  assert.deepEqual(body, {
+    available: true, intersects: true, high: true, zones: ['AE'], zoneDetails: [{ zone: 'AE', subtype: null, sfha: true }], category: 'high',
+    source: { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE }
+  });
   assert.equal(calls.length, 3);
   assert.equal(store.size, 1);
 });
@@ -177,7 +189,7 @@ test('flood: Esri empty answer keeps the no-intersection shape, flagged, no-stor
   await Promise.all(pending);
   assert.equal(response.status, 200);
   const { source, ...rest } = body;
-  assert.deepEqual(rest, { available: true, intersects: false, high: false, zones: [] });
+  assert.deepEqual(rest, { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'limited' });
   assert.deepEqual(source, { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE, emptyResult: true });
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(store.size, 0, 'Esri empty answers must never be cached');
@@ -195,7 +207,82 @@ test('flood: Esri maps lowercase fields and missing SFHA_TF', async () => {
 test('flood: Esri shaded X only, without SFHA_TF, is not high risk', async () => {
   stubFetch(status(503), status(503), () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD' } }] }));
   const { body } = await floodCall();
-  assert.deepEqual([body.high, body.intersects, body.zones], [false, true, ['X']]);
+  assert.deepEqual([body.high, body.intersects, body.zones, body.category], [false, true, ['X'], 'moderate']);
+  assert.deepEqual(body.zoneDetails, [{ zone: 'X', subtype: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', sfha: null }]);
+});
+
+test('flood: an Esri X row with no subtype is moderate (that layer has no minimal X)', async () => {
+  stubFetch(status(503), status(503), () => jsonResponse({ features: [{ attributes: { FLD_ZONE: 'X' } }] }));
+  const { body } = await floodCall();
+  assert.deepEqual([body.high, body.category], [false, 'moderate']);
+});
+
+// --- zone categories (owner-approved table, 2026-10-26) ---------------------------------------
+
+const femaRows = (...attributes) => () => jsonResponse({ features: attributes.map(a => ({ attributes: a })) });
+
+const CATEGORY_CASES = [
+  ['X minimal', [{ FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }], 'minimal', false],
+  ['X no subtype', [{ FLD_ZONE: 'X', ZONE_SUBTY: null, SFHA_TF: 'F' }], 'minimal', false],
+  ['C', [{ FLD_ZONE: 'C', ZONE_SUBTY: null, SFHA_TF: 'F' }], 'minimal', false],
+  ['X 0.2 PCT', [{ FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' }], 'moderate', false],
+  ['X levee', [{ FLD_ZONE: 'X', ZONE_SUBTY: 'AREA WITH REDUCED FLOOD RISK DUE TO LEVEE', SFHA_TF: 'F' }], 'moderate', false],
+  ['B', [{ FLD_ZONE: 'B', ZONE_SUBTY: null, SFHA_TF: 'F' }], 'moderate', false],
+  ['D', [{ FLD_ZONE: 'D', ZONE_SUBTY: null, SFHA_TF: 'F' }], 'undetermined', false],
+  ['AE', [{ FLD_ZONE: 'AE', ZONE_SUBTY: null, SFHA_TF: 'T' }], 'high', true],
+  ['VE', [{ FLD_ZONE: 'VE', ZONE_SUBTY: null, SFHA_TF: 'T' }], 'high', true],
+  ['A99 without SFHA_TF', [{ FLD_ZONE: 'A99' }], 'high', true],
+  ['AE + X minimal (worst wins)', [{ FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }, { FLD_ZONE: 'AE', ZONE_SUBTY: null, SFHA_TF: 'T' }], 'high', true],
+  ['X 0.2 + X minimal', [{ FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }, { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' }], 'moderate', false],
+  ['D + X minimal', [{ FLD_ZONE: 'D', SFHA_TF: 'F' }, { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }], 'undetermined', false],
+  ['AREA NOT INCLUDED', [{ FLD_ZONE: 'AREA NOT INCLUDED', ZONE_SUBTY: null, SFHA_TF: 'F' }], 'not_mapped', false],
+  ['AREA NOT INCLUDED without SFHA_TF', [{ FLD_ZONE: 'AREA NOT INCLUDED' }], 'not_mapped', false],
+  ['OPEN WATER', [{ FLD_ZONE: 'OPEN WATER', SFHA_TF: 'F' }], 'not_mapped', false],
+  ['AREA NOT INCLUDED + X minimal (not mapped outranks minimal)', [{ FLD_ZONE: 'AREA NOT INCLUDED' }, { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }], 'not_mapped', false],
+  ['D + X 0.2 PCT (undetermined 55 outranks moderate 70)', [{ FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' }, { FLD_ZONE: 'D', SFHA_TF: 'F' }], 'undetermined', false],
+  ['A + D', [{ FLD_ZONE: 'D', SFHA_TF: 'F' }, { FLD_ZONE: 'A', SFHA_TF: 'T' }], 'high', true],
+  ['X 0.2 PCT + AREA NOT INCLUDED (known hazard wins the tie)', [{ FLD_ZONE: 'AREA NOT INCLUDED' }, { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' }], 'moderate', false],
+  ['rows without a zone', [{ FLD_ZONE: null }], 'not_mapped', false],
+  ['empty', [], 'not_mapped', false]
+];
+
+for (const [name, rows, category, high] of CATEGORY_CASES) {
+  test(`flood: category for FEMA ${name} is ${category} (high ${high})`, async () => {
+    stubFetch(femaRows(...rows));
+    const { body } = await floodCall();
+    assert.equal(body.category, category);
+    assert.equal(body.high, high);
+    assert.equal(body.intersects, rows.length > 0, 'intersects keeps its meaning: any row');
+    assert.equal(body.source.provider, FEMA_PROVIDER);
+  });
+}
+
+test('flood: FLOOD_CATEGORIES ranks by score and includes limited', () => {
+  assert.deepEqual(FLOOD_CATEGORIES, ['high', 'undetermined', 'moderate', 'not_mapped', 'minimal', 'limited']);
+});
+
+test('flood: zoneDetails are deduped and keep zone, subtype and SFHA flag', () => {
+  const summary = summarizeFloodRows([
+    { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' },
+    { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' },
+    { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' },
+    { 'S_FLD_HAZ_AR.FLD_ZONE': 'AE', 'S_FLD_HAZ_AR.SFHA_TF': 'T' },
+    { FLD_ZONE: '' }
+  ]);
+  assert.deepEqual(summary.zones, ['X', 'AE']);
+  assert.deepEqual(summary.zoneDetails, [
+    { zone: 'X', subtype: 'AREA OF MINIMAL FLOOD HAZARD', sfha: false },
+    { zone: 'X', subtype: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', sfha: false },
+    { zone: 'AE', subtype: null, sfha: true }
+  ]);
+  assert.equal(summary.category, 'high');
+});
+
+test('flood: FEMA requests ask for FLD_ZONE, ZONE_SUBTY and SFHA_TF; cache key is v4', async () => {
+  stubFetch(() => jsonResponse(femaSample));
+  await floodCall();
+  assert.equal(new URL(calls[0].url).searchParams.get('outFields'), 'FLD_ZONE,ZONE_SUBTY,SFHA_TF');
+  assert.equal(CACHE_KEY_PREFIX, 'https://acresx.internal/cache/flood/v4/');
 });
 
 test('flood: FEMA 4xx skips the retry and goes to Esri', async () => {
@@ -295,7 +382,7 @@ test('flood: caches.default stores successes and serves repeat calls', async () 
   const first = await floodCall(undefined, ctx);
   await Promise.all(pending);
   assert.equal(store.size, 1);
-  assert.match([...store.keys()][0], /^https:\/\/acresx\.internal\/cache\/flood\/v3\/[0-9a-f]{64}$/);
+  assert.match([...store.keys()][0], /^https:\/\/acresx\.internal\/cache\/flood\/v4\/[0-9a-f]{64}$/);
   // Tiny coordinate noise below the rounding precision hits the same key.
   const jittered = { type: 'Polygon', coordinates: [geometry.coordinates[0].map(([x, y]) => [x + 1e-9, y])] };
   const second = await floodCall({ kind: 'flood', geometry: jittered }, ctx);
