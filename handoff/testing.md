@@ -24,6 +24,12 @@ They don't check live county/government data. Those servers are outside our cont
 them would make tests slow and flaky. Changes to data parsing should add tests with a recorded
 sample response (save it under `test/fixtures/`) and a stubbed `fetch` that returns it.
 
+## Live county validation
+
+`scripts/validate-county.mjs` runs test parcels through the deployed API and reports per-layer
+status per county. It needs internet access, so it runs in GitHub Actions
+(`.github/workflows/county-validation.yml`), not in `npm test`. See `validation/README.md`.
+
 ## CI
 
 - `.github/workflows/test.yml` runs `npm run check` on every pull request.

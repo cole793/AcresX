@@ -1,0 +1,108 @@
+name: County validation
+
+# Runs test parcels through the deployed AcresX API and records per-layer status.
+# Read-only: the script never sends MLS sync requests or calls write/test endpoints.
+# See validation/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      county:
+        description: County file name in validation/counties/ (e.g. kootenai)
+        required: true
+        default: kootenai
+        type: string
+      discover:
+        description: Pick a fresh varied sample from the county parcel layer instead of the saved parcels
+        required: false
+        default: false
+        type: boolean
+      base_url:
+        description: AcresX base URL (blank = production)
+        required: false
+        default: ''
+        type: string
+  schedule:
+    - cron: '23 13 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: county-validation-${{ github.event_name }}-${{ inputs.county || 'all' }}
+  cancel-in-progress: false
+
+jobs:
+  counties:
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.list.outputs.list }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Choose counties
+        id: list
+        env:
+          EVENT: ${{ github.event_name }}
+          COUNTY: ${{ inputs.county }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            case "$COUNTY" in
+              *[!a-z0-9-]*|'') echo "Invalid county: $COUNTY" >&2; exit 1 ;;
+            esac
+            test -f "validation/counties/$COUNTY.json" || { echo "No validation/counties/$COUNTY.json" >&2; exit 1; }
+            list="[\"$COUNTY\"]"
+          else
+            list=$(ls validation/counties/*.json | xargs -n1 basename | sed 's/\.json$//' | jq -R . | jq -cs .)
+          fi
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "Counties: $list"
+
+  validate:
+    needs: counties
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        county: ${{ fromJson(needs.counties.outputs.list) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run validation
+        id: run
+        env:
+          COUNTY: ${{ matrix.county }}
+          DISCOVER: ${{ github.event_name == 'workflow_dispatch' && inputs.discover && 'true' || 'false' }}
+          ACRESX_BASE_URL: ${{ inputs.base_url }}
+        run: |
+          args="--county $COUNTY --out validation-results"
+          if [ "$DISCOVER" = "true" ]; then args="$args --discover"; fi
+          node scripts/validate-county.mjs $args
+
+      - name: Add summary
+        if: always()
+        env:
+          COUNTY: ${{ matrix.county }}
+        run: |
+          if [ -f "validation-results/$COUNTY.md" ]; then
+            cat "validation-results/$COUNTY.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No report was written for $COUNTY (the script failed; see the run log)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: county-validation-${{ matrix.county }}
+          path: validation-results/
+          if-no-files-found: warn
