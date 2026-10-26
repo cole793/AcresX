@@ -10,6 +10,7 @@ It uses a transitional strangler pattern:
 
 - `/api/land-analysis` runs through the modular land/soil services.
 - Spokane County `/api/zoning-permits` runs through the dedicated Spokane adapter.
+- `/api/hazards` with `kind: 'flood'` runs through `services/flood.js`, and `kind: 'wetlands'` through `services/wetlands.js`.
 - All other existing routes are delegated to the legacy `src/worker.js` implementation.
 
 This lets us migrate one route at a time without changing the public API contracts or forcing a full rewrite.
@@ -46,6 +47,9 @@ Coordinates soil and USGS terrain screening while preserving the existing `/api/
 ### `counties/spokane.js`
 Spokane County official-source adapter for SCOUT zoning, comprehensive plan, UGA, permit jurisdiction, and permit-history screening.
 
+### `services/flood.js`
+FEMA flood-zone screening for `/api/hazards` (`kind: 'flood'`). Queries FEMA NFHL layer 28, retries once on 5xx/timeout/network errors, then falls back to Esri's Living Atlas "USA Flood Hazard Areas" layer. Successful answers are cached in `caches.default` for 7 days. The response shape matches the legacy handler (`available`, `intersects`, `high`, `zones`) plus `source`.
+
 ### `worker.js`
 Legacy implementation retained temporarily so unmigrated routes continue to work. New feature logic should not be added here unless needed for an emergency production fix.
 
@@ -53,7 +57,7 @@ Legacy implementation retained temporarily so unmigrated routes continue to work
 
 1. Spokane zoning/permits — routed through adapter.
 2. Soil + terrain — routed through services.
-3. Hazard screening.
+3. Hazard screening — flood (`services/flood.js`) and wetlands (`services/wetlands.js`) routed through services.
 4. Parcel/well/utility proxy.
 5. Listing context.
 6. Retire `worker.js` when no routes depend on it.

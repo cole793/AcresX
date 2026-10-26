@@ -2,6 +2,19 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-26: FEMA NFHL flood queries fail intermittently from the Worker
+
+- Kootenai validation run 40391761739 (`git show origin/validation-results:latest/kootenai.md`):
+  `/api/hazards {kind:'flood'}` failed for 8 of 12 parcels. Most were `HTTP 502: Upstream service
+  returned 525` (Cloudflare 525 = SSL handshake failure between the Worker and
+  `hazards.fema.gov`), one was `timeout after 30s`. The other 4 succeeded, so it is intermittent.
+- Flood now lives in `src/services/flood.js`: FEMA NFHL layer 28 (8 s timeout), one retry after
+  500 ms on 5xx/timeout/network error (6 s), then Esri Living Atlas "USA Flood Hazard Areas"
+  (8 s). Worst case is 22.5 s with at most 3 upstream requests. Successes are cached for 7 days in
+  `caches.default`. If both sources fail, the route returns 502 with the usual unavailable shape.
+- The Esri fallback URL (`ESRI_USA_FLOOD_HAZARD_LAYER` in `src/services/flood.js`) was written
+  without internet access. Treat it as unverified until a preview validation run confirms it.
+
 ## 2026-10-26: Kootenai parcel layer has no ZONING field
 
 - The Kootenai parcel layer
