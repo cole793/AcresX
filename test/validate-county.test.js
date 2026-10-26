@@ -3,7 +3,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  LAYERS, assertReadOnly, classifyResponse, interpretLayer, centroid, validateParcel, validateCounty,
+  LAYERS, assertReadOnly, postJson, MAX_PER_QUERY, classifyResponse, interpretLayer, centroid, validateParcel, validateCounty,
   compareExpected, applyExpected, buildMarkdown, summarize, buildDiscoveryStrata, pickVaried, discoverParcels, parseArgs
 } from '../scripts/validate-county.mjs';
 
@@ -100,9 +100,37 @@ test('reso-listings is never called with sync options', async () => {
   assert.equal(reso.length, 2);
   for (const { body } of reso) { assert.equal('sync' in body, false); assert.equal('incremental' in body, false); assert.equal('cursor' in body, false); }
   assert.ok(!calls.some(x => x.route === '/api/property-tax-test' || x.route === '/api/listing-evidence'));
-  assert.throws(() => assertReadOnly('/api/reso-listings', { sync: true }), /live MLS database/);
+  for (const { body } of reso) assert.deepEqual(Object.keys(body).filter(k => !['parcelId', 'address', 'lat', 'lon'].includes(k)), []);
   assert.throws(() => assertReadOnly('/api/property-tax-test', {}), /allowlist/);
   assert.throws(() => assertReadOnly('/api/listing-evidence', {}), /allowlist/);
+});
+
+test('reso-listings guard allows only lookup keys', async () => {
+  assert.doesNotThrow(() => assertReadOnly('/api/reso-listings', { parcelId: 'A', address: '1 Test Rd', lat: 47.7, lon: -116.8 }));
+  assert.doesNotThrow(() => assertReadOnly('/api/reso-listings', {}));
+  // Known sync options and any key not on the allowlist are refused.
+  for (const body of [{ sync: true }, { parcelId: 'A', cursor: 'x' }, { incremental: true }, { parcelId: 'A', maxPages: 5 }, { parcelId: 'A', mode: 'sync' }, { since: '2026-01-01' }]) {
+    assert.throws(() => assertReadOnly('/api/reso-listings', body), /only parcelId, address, lat, lon are allowed/, JSON.stringify(body));
+  }
+  // The guard runs before any request leaves the script.
+  let fetched = 0;
+  const fetchImpl = async () => { fetched++; return new Response('{}'); };
+  await assert.rejects(postJson(BASE, '/api/reso-listings', { parcelId: 'A', pageSize: 100 }, { fetchImpl }), /pageSize/);
+  assert.equal(fetched, 0);
+  await postJson(BASE, '/api/reso-listings', { parcelId: 'A' }, { fetchImpl });
+  assert.equal(fetched, 1);
+});
+
+test('existing-well is not requested without a parcel number, like public/existing-well.js', async () => {
+  const responses = happyResponses();
+  const props = responses['/api/parcel-search'].parcel.properties;
+  delete props.ORIG_PARCEL_ID; delete props.PARCEL_ID_NR;
+  globalThis.fetch = stubFetch(responses);
+  const result = await run();
+  assert.equal(result.layers.parcel.status, 'ok');
+  assert.equal(result.layers.existingWell.status, 'unavailable');
+  assert.match(result.layers.existingWell.detail, /^not requested: parcel has no parcel number/);
+  assert.ok(!calls.some(x => x.route === '/api/existing-well'));
 });
 
 test('clean "not available" answers are unavailable, and the browser-skipped calls are not made', async () => {
@@ -224,6 +252,31 @@ test('discovery builds strata from county config and picks a varied sample', asy
   assert.equal(new Set(picked.slice(0, 8).map(p => p.countyAttributes.stratum)).size, 8, 'first picks cover each stratum');
   for (const p of picked) { assert.ok(p.label && p.why); assert.deepEqual(p.expected, {}); }
   assert.ok(calls.every(u => !u.searchParams.has('sync')));
+  const distinct = calls.find(u => u.searchParams.get('returnDistinctValues'));
+  assert.equal(distinct.searchParams.get('resultRecordCount'), '200');
+});
+
+test('discovery caps perQuery and pauses between count and sample queries', async () => {
+  const config = JSON.parse(readFileSync(new URL('../validation/counties/kootenai.json', import.meta.url), 'utf8'));
+  const log = [];
+  globalThis.fetch = async url => {
+    const p = new URL(url).searchParams;
+    const kind = p.get('returnCountOnly') ? 'count' : p.get('returnDistinctValues') ? 'distinct' : 'sample';
+    log.push({ kind, at: performance.now(), records: p.get('resultRecordCount') });
+    if (kind === 'count') return new Response(JSON.stringify({ count: 100000 }));
+    if (kind === 'distinct') return new Response(JSON.stringify({ features: [] }));
+    return new Response(JSON.stringify({ features: [{ attributes: { PIN: `P${log.length}`, Acres: 3, ZONING: 'Rural', Loc_City: 'Athol' } }] }));
+  };
+  await discoverParcels({ ...config, discover: { ...config.discover, perQuery: 5000, delayMs: 30 } }, { count: 2, seed: 1 });
+  const samples = log.filter(x => x.kind === 'sample');
+  assert.equal(samples.length, config.discover.acreBands.length * 2);
+  assert.equal(MAX_PER_QUERY, 200);
+  for (const s of samples) assert.equal(s.records, '200');
+  for (const [i, entry] of log.entries()) {
+    if (entry.kind !== 'sample') continue;
+    assert.equal(log[i - 1].kind, 'count');
+    assert.ok(entry.at - log[i - 1].at >= 25, `sample query came ${Math.round(entry.at - log[i - 1].at)} ms after its count query`);
+  }
 });
 
 test('pickVaried is deterministic for a seed and parseArgs validates input', () => {

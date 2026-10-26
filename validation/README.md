@@ -27,6 +27,37 @@ county, optionally tick `discover`, optionally give a base URL (for example a PR
 The run summary shows the table, and the `county-validation-<county>` artifact holds the JSON and
 Markdown. A scheduled run checks every county file daily at 13:23 UTC.
 
+## Where results live
+
+Every workflow run also commits its results to the `validation-results` branch, so anyone who can
+`git fetch` the repo can read them (no Actions artifact download needed):
+
+```sh
+git fetch origin validation-results
+git show origin/validation-results:latest/kootenai.md          # latest table and details
+git show origin/validation-results:latest/kootenai.json        # same run, full JSON
+git log --oneline origin/validation-results                    # one commit per county per run
+git ls-tree -r --name-only origin/validation-results history/  # every past run
+```
+
+Layout on that branch:
+
+| Path | Contents |
+|---|---|
+| `latest/<county>.json`, `latest/<county>.md` | The most recent run, overwritten each time. |
+| `latest/<county>-discovered.json` | The sample from the most recent `discover` run. A later run without discovery leaves it in place; check its `generatedAt`. |
+| `history/<YYYY-MM-DD>/<county>-<run_id>.json` | Every run's JSON report, kept (the date is UTC). |
+
+Commit messages read `Validation <county> <date> run <run_id>: <failed> failed`, so
+`git log origin/validation-results` is a quick pass/fail history. `<run_id>` is the GitHub Actions
+run id (`https://github.com/<owner>/<repo>/actions/runs/<run_id>`).
+
+The branch holds only results and shares no history with `main`. The workflow's `publish` job is
+the only job with write access, and it only pushes to `validation-results`. Pushing there doesn't
+deploy anything: the deploy workflow runs on `main` only, and pushes made with the workflow's
+token don't start other workflows. Don't merge `validation-results` into `main` or open a PR
+from it.
+
 Locally (needs internet access to the deployed site and the county servers):
 
 ```sh

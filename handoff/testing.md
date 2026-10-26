@@ -28,7 +28,10 @@ sample response (save it under `test/fixtures/`) and a stubbed `fetch` that retu
 
 `scripts/validate-county.mjs` runs test parcels through the deployed API and reports per-layer
 status per county. It needs internet access, so it runs in GitHub Actions
-(`.github/workflows/county-validation.yml`), not in `npm test`. See `validation/README.md`.
+(`.github/workflows/county-validation.yml`), not in `npm test`. Each run commits its results to
+the `validation-results` branch, so they can be read without Actions artifact access:
+`git fetch origin validation-results && git show origin/validation-results:latest/kootenai.md`.
+See `validation/README.md`.
 
 ## CI
 
