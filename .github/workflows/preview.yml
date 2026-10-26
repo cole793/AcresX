@@ -1,0 +1,84 @@
+name: Preview
+
+# Uploads each pull request as a Cloudflare Worker *version* (not a deployment) and comments a
+# preview link on the PR. Production keeps serving the deployed version until the PR is merged.
+# Previews share production secrets and the MLS_DB D1 database; cron triggers don't run on them.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    # Fork PRs don't get repository secrets, so they can't upload a preview.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Upload preview version
+        id: upload
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.json
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          alias="pr-${PR_NUMBER:-manual}"
+          npx wrangler versions upload --preview-alias "$alias" --message "Preview ${alias} at ${HEAD_SHA:0:7}"
+          out=$(jq -c 'select(.type == "version-upload")' "$WRANGLER_OUTPUT_FILE_PATH" | tail -1)
+          echo "alias_url=$(jq -r '.preview_alias_url // empty' <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "version_url=$(jq -r '.preview_url // empty' <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "version_id=$(jq -r '.version_id // empty' <<<"$out")" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview link on the PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ALIAS_URL: ${{ steps.upload.outputs.alias_url }}
+          VERSION_URL: ${{ steps.upload.outputs.version_url }}
+        run: |
+          marker='<!-- acresx-preview -->'
+          if [ -n "$ALIAS_URL" ]; then
+            body="${marker}
+          ### Preview
+          **${ALIAS_URL}**
+
+          Updates on every push to this PR. This commit only: ${VERSION_URL} (\`${HEAD_SHA:0:7}\`)
+
+          The live site is unchanged until this PR is merged. Previews use the live secrets and MLS database."
+          else
+            body="${marker}
+          ### Preview
+          A version was uploaded, but Cloudflare returned no preview URL. Preview URLs may be turned off
+          for the \`acresx\` Worker (Cloudflare dashboard → Workers → acresx → Settings → Domains & Routes → Preview URLs)."
+          fi
+          existing=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" -f body="$body" > /dev/null
+          else
+            gh api "repos/$REPO/issues/$PR_NUMBER/comments" -f body="$body" > /dev/null
+          fi

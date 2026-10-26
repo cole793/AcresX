@@ -72,6 +72,8 @@ Keep it short and plain:
 
 - **What changed** (for users of the site), and the branch and PR link.
 - **How it was checked:** test counts and build check from the verifier.
+- **Preview link:** the `pr-<number>` link the Preview workflow comments on the PR, so the owner
+  can try the change before merging. Point to the pages or features to click.
 - **What's waiting on you:** the exact action, e.g. "merge PR #5 to put it live".
 - **Not checked / risks**, if any.
 
