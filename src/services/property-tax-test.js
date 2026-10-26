@@ -1,4 +1,5 @@
 import { fetchWithTimeout, json } from '../shared/http.js';
+import { getKootenaiAssessment, KC_ASSESSOR, KC_ASSESSOR_SOURCE } from '../counties/kootenai-assessor.js';
 
 const SPOKANE = 'https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query';
 const YELLOWSTONE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query';
@@ -62,6 +63,16 @@ export async function handlePropertyTaxTest(request) {
       ...(countyRecords.length ? { countySource: 'Yellowstone County TaxparcelOrion', countyRecords: countyRecords.map(f => f.attributes || {}) } : {}),
       statewideSource: 'Montana Cadastral / ORION integration', statewideRecords: statewide.records.map(f => f.attributes || {})
     }, 200, 'no-store');
+  }
+
+  // Kootenai: the county assessor layers (the statewide layer found 0 of 12 validation parcels).
+  // Failure degrades to available:false for this layer only, never a 502.
+  if (state === 'ID' && /^kootenai$/i.test(county)) {
+    const result = await getKootenaiAssessment(parcelId);
+    const base = { state, county: 'Kootenai', parcelId, countySource: KC_ASSESSOR_SOURCE, countySourceUrl: KC_ASSESSOR };
+    if (result.status === 'found') return json({ available: true, ...base, countyRecords: [result.record] }, 200, 'no-store');
+    if (result.status === 'error') console.warn('Kootenai assessor lookup failed', result.error);
+    return json({ available: false, ...base, countyRecords: [], ...(result.status === 'error' ? { error: result.error } : { note: 'No Kootenai County Assessor record matched this parcel number.' }) }, 200, 'no-store');
   }
 
   if (state === 'ID') {
