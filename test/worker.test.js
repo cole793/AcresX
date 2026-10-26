@@ -64,6 +64,7 @@ const degradeCases = [
   ['/api/well-search', { state: 'ID', ...point }],
   ['/api/land-analysis', point],
   ['/api/slope-grid', point],
+  ['/api/hazards', { kind: 'flood', ...point }],
   ['/api/hazards', { kind: 'wetlands', ...point }],
   ['/api/power-intelligence', { state: 'WA', county: 'Spokane', ...point }],
   ['/api/utility-territory', { state: 'WA', county: 'Spokane', ...point }],

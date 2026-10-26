@@ -1,0 +1,6 @@
+{
+  "_note": "Captured 2026-10-26 from the legacy src/worker.js flood handler (main a54458c) with fetch stubbed to return fema-nfhl-flood.json.",
+  "status": 200,
+  "cacheControl": "public, max-age=300, s-maxage=86400",
+  "body": { "available": true, "intersects": true, "high": true, "zones": ["AE", "X"] }
+}
