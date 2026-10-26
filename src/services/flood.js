@@ -1,23 +1,29 @@
 // Flood hazard screening for POST /api/hazards { kind: 'flood', geometry }.
 //
 // Response shape (unchanged from the legacy src/worker.js handler, plus `source`):
-//   { available, intersects, high, zones, source: { provider, url } }
+//   { available, intersects, high, zones, source: { provider, url, emptyResult? } }
 // On failure of every source: HTTP 502 with
 //   { available: false, intersects: false, high: false, zones: [], error, source: null }
 //
-// Sources, in order (at most 3 upstream requests per call):
-//   1. FEMA NFHL layer 28 (Flood Hazard Zones), retried once on 5xx / network error / timeout.
-//   2. Esri Living Atlas "USA Flood Hazard Areas" (derived from FEMA NFHL), one attempt.
-// Successful answers are cached with the Workers Cache API for 7 days, keyed by a hash of the
+// Request plan (at most 3 upstream requests per call, worst case 22.5 s):
+//   1. FEMA NFHL layer 28 (Flood Hazard Zones).
+//   2. One FEMA retry if (1) failed with 5xx / network error / timeout, OR returned 0 features.
+//      Under load FEMA has answered 200 with no features for parcels that do intersect zones
+//      (preview validation run 40396618433), so an empty answer is not trusted on its own.
+//   3. Esri Living Atlas "USA Flood Hazard Areas" — only when ESRI_FALLBACK_ENABLED (off).
+// If FEMA's final answer is empty, the response is the usual no-intersection shape with
+// `source.emptyResult: true`, and it is never cached.
+// Non-empty answers are cached with the Workers Cache API for 7 days, keyed by a hash of the
 // rounded parcel geometry. The cache is skipped where `caches` does not exist (Node tests).
 import { fetchWithTimeout, json } from '../shared/http.js';
 
 export const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
 
-// UNVERIFIED: written from memory without internet access. Confirm it answers (and check its
-// field names) in the PR preview validation run before relying on it. If it is wrong, the
-// fallback simply fails and the response degrades to the FEMA error, as before this change.
+// WRONG / UNVERIFIED: this URL returned HTTP 404 in preview validation run 40396618433
+// (2026-10-26, "Esri USA Flood Hazard Areas returned 404"). Find the correct layer URL, verify
+// it in a preview run, then set ESRI_FALLBACK_ENABLED to true.
 export const ESRI_USA_FLOOD_HAZARD_LAYER = 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0';
+export const ESRI_FALLBACK_ENABLED = false;
 
 export const FEMA_PROVIDER = 'FEMA NFHL';
 export const ESRI_PROVIDER = 'Esri USA Flood Hazard Areas';
@@ -29,7 +35,8 @@ export const FEMA_RETRY_BACKOFF_MS = 500;
 export const FALLBACK_TIMEOUT_MS = 8000;
 
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
-const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v1/';
+// v2: v1 entries from the first preview may hold unconfirmed empty answers.
+const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v2/';
 const COORD_DECIMALS = 6;
 
 class UpstreamError extends Error {
@@ -121,7 +128,7 @@ async function readCache(cache, key) {
     const hit = await cache.match(key);
     if (!hit) return null;
     const body = await hit.json();
-    return body?.available === true ? body : null;
+    return body?.available === true && !body.source?.emptyResult ? body : null;
   } catch { return null; }
 }
 
@@ -134,25 +141,39 @@ async function writeCache(cache, key, body, ctx) {
   if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(put); else await put;
 }
 
+// FEMA with one retry. Resolves { rows } (non-empty), { rows: [], empty: true } (FEMA's final
+// answer was empty), or throws when FEMA gave no usable answer at all.
 async function fromFema(geometry) {
   const outFields = 'FLD_ZONE,ZONE_SUBTY,SFHA_TF';
+  let first;
   try {
-    return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_TIMEOUT_MS);
+    const rows = await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_TIMEOUT_MS);
+    if (rows.length) return { rows };
+    first = { empty: true };
   } catch (error) {
     if (!error.retryable) throw error;
-    await sleep(FEMA_RETRY_BACKOFF_MS);
-    try {
-      return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS);
-    } catch (retryError) {
-      throw new UpstreamError(`${error.message}; retry ${retryError.message}`, false);
-    }
+    first = { error };
+  }
+  await sleep(FEMA_RETRY_BACKOFF_MS);
+  try {
+    const rows = await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS);
+    return rows.length ? { rows } : { rows: [], empty: true };
+  } catch (retryError) {
+    // Empty, then an error on the retry: FEMA did answer, so report its (unconfirmed) empty
+    // result rather than an outage. It is flagged emptyResult and not cached.
+    if (first.empty) return { rows: [], empty: true };
+    throw new UpstreamError(`${first.error.message}; retry ${retryError.message}`, false);
   }
 }
 
+const unavailableBody = error => ({ available: false, intersects: false, high: false, zones: [], error, source: null });
+
 // Returns { status, body } and never throws, so src/index.js never falls through to legacy code.
-export async function floodScreening(geometry, ctx) {
+// options.esriFallback overrides ESRI_FALLBACK_ENABLED (used by tests).
+export async function floodScreening(geometry, ctx, options = {}) {
+  const esriFallback = options.esriFallback ?? ESRI_FALLBACK_ENABLED;
   try { esriPolygon(geometry); } catch (error) {
-    return { status: 400, body: { available: false, intersects: false, high: false, zones: [], error: error.message, source: null } };
+    return { status: 400, body: unavailableBody(error.message) };
   }
   const cache = edgeCache();
   let key = null;
@@ -160,31 +181,46 @@ export async function floodScreening(geometry, ctx) {
   const cached = key ? await readCache(cache, key) : null;
   if (cached) return { status: 200, body: cached };
 
+  const success = async (rows, provider, url) => {
+    const body = { ...summarizeFloodRows(rows), source: { provider, url } };
+    if (key) await writeCache(cache, key, body, ctx);
+    return { status: 200, body };
+  };
+
   const failures = [];
-  const attempts = [
-    { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER, run: () => fromFema(geometry) },
-    { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, run: () => queryLayer(ESRI_USA_FLOOD_HAZARD_LAYER, geometry, '*', FALLBACK_TIMEOUT_MS) }
-  ];
-  for (const attempt of attempts) {
+  let femaEmpty = false;
+  try {
+    const fema = await fromFema(geometry);
+    if (!fema.empty) return await success(fema.rows, FEMA_PROVIDER, FEMA_NFHL_FLOOD_LAYER);
+    femaEmpty = true;
+  } catch (error) {
+    failures.push(`${FEMA_PROVIDER} ${error?.message || 'failed'}`);
+    console.warn(`Flood source failed: ${FEMA_PROVIDER}`, error?.message);
+  }
+
+  if (esriFallback) {
     try {
-      const rows = await attempt.run();
-      const body = { ...summarizeFloodRows(rows), source: { provider: attempt.provider, url: attempt.url } };
-      if (key) await writeCache(cache, key, body, ctx);
-      return { status: 200, body };
+      const rows = await queryLayer(ESRI_USA_FLOOD_HAZARD_LAYER, geometry, '*', FALLBACK_TIMEOUT_MS);
+      // An empty Esri answer only stands in for a FEMA outage; it never overrides a FEMA empty.
+      if (rows.length || !femaEmpty) return await success(rows, ESRI_PROVIDER, ESRI_USA_FLOOD_HAZARD_LAYER);
     } catch (error) {
-      failures.push(`${attempt.provider} ${error?.message || 'failed'}`);
-      console.warn(`Flood source failed: ${attempt.provider}`, error?.message);
+      failures.push(`${ESRI_PROVIDER} ${error?.message || 'failed'}`);
+      console.warn(`Flood source failed: ${ESRI_PROVIDER}`, error?.message);
     }
   }
-  return {
-    status: 502,
-    body: { available: false, intersects: false, high: false, zones: [], error: `Flood data unavailable: ${failures.join('; ')}`, source: null }
-  };
+
+  if (femaEmpty) {
+    // Same shape as a real no-intersection answer (frontend unchanged), flagged and not cached.
+    return { status: 200, body: { ...summarizeFloodRows([]), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER, emptyResult: true } } };
+  }
+  return { status: 502, body: unavailableBody(`Flood data unavailable: ${failures.join('; ')}`) };
 }
 
 export async function handleFlood(request, env, ctx) {
   let body = {};
   try { body = await request.json(); } catch { body = {}; }
   const { status, body: result } = await floodScreening(body?.geometry, ctx);
+  // emptyResult answers are unconfirmed: don't let the browser or edge hold on to them.
+  if (status === 200 && result.source?.emptyResult) return json(result, 200, 'no-store');
   return status === 200 ? json(result) : json(result, status, 'no-store');
 }
