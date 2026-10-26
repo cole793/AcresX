@@ -59,7 +59,7 @@
     const water = wells ? (wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
     const soilScore = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
     const terrainScore = !terrain.available ? 50 : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
-    const floodScore = !flood.available ? 50 : flood.high ? 20 : flood.intersects ? 55 : 96;
+    const floodScore = window.AcresXFlood.score(flood, { high: 20, mapped: 55, clear: 96 });
     const wetlandsScore = !wetlands.available ? 50 : wetlands.intersects ? 42 : 96;
     const powerScore = last?.powerIntelligence?.territory?.confirmed ? 78 : utilityFound ? 70 : 45;
     const zoningScore = zoning.status === 'gis_match' ? 86 : zoning.status === 'no_match' ? 52 : 45;

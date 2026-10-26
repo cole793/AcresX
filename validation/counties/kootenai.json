@@ -1,7 +1,80 @@
 {
   "county": "Kootenai",
   "state": "ID",
-  "parcels": [],
+  "parcels": [
+    {
+      "parcelId": "0L8210010030",
+      "label": "no locality, 4.79 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"1-5 ac | other/blank locality\"; first in locality (blank). Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "015270010070",
+      "label": "WORLEY, 10.01 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"5-40 ac | city-named locality\"; first in locality WORLEY. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "C72150030040",
+      "label": "COEUR D ALENE, 0.27 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"under 1 ac | city-named locality\"; first in locality COEUR D ALENE. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "47N02W035500",
+      "label": "MEDIMONT, 51.64 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"40+ ac | other/blank locality\"; first in locality MEDIMONT. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "48N03W312100",
+      "label": "HARRISON, 65.33 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"40+ ac | city-named locality\"; first in locality HARRISON. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "0K245001002B",
+      "label": "RATHDRUM, 1.62 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"1-5 ac | city-named locality\"; first in locality RATHDRUM. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "49N03W324950",
+      "label": "no locality, 10 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"5-40 ac | other/blank locality\". Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "007740020050",
+      "label": "no locality, 0.58 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): covers stratum \"under 1 ac | other/blank locality\". Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "0K2660010030",
+      "label": "ATHOL, 4.95 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): first in locality ATHOL. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "0153400A001A",
+      "label": "POST FALLS, 9.52 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): first in locality POST FALLS. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "47N02W040800",
+      "label": "ST MARIES, 99.74 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): first in locality ST MARIES. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "C72150040140",
+      "label": "COEUR D ALENE, 0.23 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): fills remaining sample slots. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "expected": {}
+    }
+  ],
   "discover": {
     "layerUrl": "https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0",
     "idField": "PIN",
@@ -10,14 +83,40 @@
     "addressField": "Loc_Addr",
     "where": "PIN IS NOT NULL",
     "cities": [
-      "Athol", "Coeur d'Alene", "Dalton Gardens", "Fernan Lake Village", "Harrison", "Hauser",
-      "Hayden", "Hayden Lake", "Huetter", "Post Falls", "Rathdrum", "Spirit Lake", "State Line", "Worley"
+      "Athol",
+      "Coeur d'Alene",
+      "Dalton Gardens",
+      "Fernan Lake Village",
+      "Harrison",
+      "Hauser",
+      "Hayden",
+      "Hayden Lake",
+      "Huetter",
+      "Post Falls",
+      "Rathdrum",
+      "Spirit Lake",
+      "State Line",
+      "Worley"
     ],
     "acreBands": [
-      { "label": "under 1 ac", "max": 1 },
-      { "label": "1-5 ac", "min": 1, "max": 5 },
-      { "label": "5-40 ac", "min": 5, "max": 40 },
-      { "label": "40+ ac", "min": 40 }
+      {
+        "label": "under 1 ac",
+        "max": 1
+      },
+      {
+        "label": "1-5 ac",
+        "min": 1,
+        "max": 5
+      },
+      {
+        "label": "5-40 ac",
+        "min": 5,
+        "max": 40
+      },
+      {
+        "label": "40+ ac",
+        "min": 40
+      }
     ],
     "perQuery": 50,
     "delayMs": 300
