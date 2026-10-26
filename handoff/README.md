@@ -15,7 +15,7 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/quick-fixes` | (see PR) | (pending) | Delete restore-index.yml, add issue templates. Waiting on owner review. |
+| `claude/quick-fixes` | (see PR) | [cole793/AcresX#6](https://github.com/cole793/AcresX/pull/6) | Delete restore-index.yml, add issue templates. Waiting on owner review. |
 
 ## Waiting on the owner
 
