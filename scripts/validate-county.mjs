@@ -202,11 +202,16 @@ export const interpret = {
     if (!data.available) return unavailable('flood screening not available');
     const zones = Array.isArray(data.zones) ? data.zones : [];
     const provider = text(data.source?.provider) || null;
-    // emptyResult: FEMA's final answer had no features but could not be confirmed (src/services/flood.js).
+    // coverage 'high-and-moderate-risk-only': answer came from the Esri fallback, which holds only
+    // high/moderate-risk areas. emptyResult: that source found nothing (src/services/flood.js).
+    const coverage = text(data.source?.coverage) || null;
+    const limited = coverage === 'high-and-moderate-risk-only';
     const emptyResult = data.source?.emptyResult === true ? true : null;
-    const via = emptyResult ? ` (${provider || 'FEMA'} returned empty; unconfirmed)` : provider ? ` (via ${provider})` : '';
-    return ok(`${data.high ? `high-risk zone (${zones.join(', ')})` : zones.length ? `zones ${zones.join(', ')}` : 'no mapped FEMA zone'}${via}`, {
-      high: Boolean(data.high), intersects: Boolean(data.intersects), zones, provider, emptyResult
+    const via = provider ? ` (via ${provider}${limited ? ', high/moderate-risk zones only' : ''})` : '';
+    const summary = data.high ? `high-risk zone (${zones.join(', ')})` : zones.length ? `zones ${zones.join(', ')}`
+      : limited ? 'no high/moderate-risk zone mapped' : 'no mapped FEMA zone';
+    return ok(`${summary}${via}`, {
+      high: Boolean(data.high), intersects: Boolean(data.intersects), zones, provider, coverage, emptyResult
     });
   },
   wetlands(data) {

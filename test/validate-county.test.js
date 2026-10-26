@@ -207,23 +207,27 @@ test('expected values: matches, mismatches and ranges', async () => {
   assert.equal(summary.layerCounts.mismatch, 3);
 });
 
-test('flood values record source provider and emptyResult', () => {
-  const via = interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: true, high: false, zones: ['X'], source: { provider: 'FEMA NFHL', url: 'https://x' } } });
-  assert.equal(via.values.provider, 'FEMA NFHL');
-  assert.equal(via.values.emptyResult, null);
-  assert.equal(via.detail, 'zones X (via FEMA NFHL)');
-  const emptyRes = interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: false, high: false, zones: [], source: { provider: 'FEMA NFHL', emptyResult: true } } });
-  assert.equal(emptyRes.status, 'ok');
-  assert.equal(emptyRes.values.emptyResult, true);
-  assert.equal(emptyRes.detail, 'no mapped FEMA zone (FEMA NFHL returned empty; unconfirmed)');
-  const legacy = interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: false, high: false, zones: [] } });
+const ESRI_LIMITED = { provider: 'Esri USA Flood Hazard Areas', url: 'https://e', coverage: 'high-and-moderate-risk-only' };
+
+test('flood values record source provider, coverage and emptyResult', () => {
+  const flood = data => interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: false, high: false, zones: [], ...data } });
+  const fema = flood({ intersects: true, zones: ['X'], source: { provider: 'FEMA NFHL', url: 'https://x' } });
+  assert.deepEqual([fema.detail, fema.values.provider, fema.values.coverage, fema.values.emptyResult], ['zones X (via FEMA NFHL)', 'FEMA NFHL', null, null]);
+  const esriHit = flood({ intersects: true, high: true, zones: ['AE'], source: ESRI_LIMITED });
+  assert.equal(esriHit.detail, 'high-risk zone (AE) (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)');
+  assert.equal(esriHit.values.coverage, 'high-and-moderate-risk-only');
+  const esriEmpty = flood({ source: { ...ESRI_LIMITED, emptyResult: true } });
+  assert.equal(esriEmpty.status, 'ok');
+  assert.equal(esriEmpty.values.emptyResult, true);
+  assert.equal(esriEmpty.detail, 'no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)');
+  const legacy = flood({});
   assert.deepEqual([legacy.detail, legacy.values.provider, legacy.values.emptyResult], ['no mapped FEMA zone', null, null]);
 });
 
-test('markdown flood detail shows the provider and the empty-result flag', async () => {
+test('markdown flood detail shows the provider and limited coverage', async () => {
   for (const [source, pattern] of [
     [{ provider: 'FEMA NFHL', url: 'https://x' }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(via FEMA NFHL\) \[.*provider=FEMA NFHL/],
-    [{ provider: 'FEMA NFHL', emptyResult: true }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(FEMA NFHL returned empty; unconfirmed\) \[.*emptyResult=true/]
+    [{ ...ESRI_LIMITED, emptyResult: true }, /- \*\*Flood\*\*: ok\. no high\/moderate-risk zone mapped \(via Esri USA Flood Hazard Areas, high\/moderate-risk zones only\) \[.*coverage=high-and-moderate-risk-only.*emptyResult=true/]
   ]) {
     const responses = happyResponses();
     responses.flood = { ...responses.flood, source };
