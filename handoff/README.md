@@ -6,7 +6,11 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 ## Current state
 
 - Merged: #3 (CLAUDE.md), #4 (agent team, tests, deploy gate), #5 (per-PR preview links), #6 (removed restore-index.yml, issue forms,
-  level 1 merge policy; merged in chat on 2026-10-26, deploy succeeded).
+  level 1 merge policy), #7 (PRODUCT.md), #8 (county validation tool), #9 (results branch),
+  #10 (discovery diagnostics), #11 (Kootenai missing-ZONING fix). All merged in chat on 2026-10-26;
+  every deploy succeeded.
+- 2026-10-26: Cloudflare Workers Builds (Git integration) disconnected by the owner. GitHub
+  Actions is the only deploy path. PR #1 (Cloudflare autoconfig) closed unmerged.
 - Production: `main`, deployed to Cloudflare by `.github/workflows/deploy-cloudflare.yml` on every
   push. As of Oct 2026, every push to `main` is first gated by `npm run check`.
 - Coverage: Spokane (WA), Kootenai (ID), Gallatin and Yellowstone (MT).
@@ -28,11 +32,13 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 Each entry: date, the exact action approved.
 
 - 2026-10-26: delete `.github/workflows/restore-index.yml`; add issue templates.
+- 2026-10-26: approvals are asked with Approve / Not now buttons (AskUserQuestion).
 - 2026-10-26: merge policy is level 1. The owner approves each merge in chat and the lead merges
   it. This is standing policy, not approval for any particular PR.
 
 ## Next steps (offered, not approved)
 
 - Remove the Netlify GitHub app if Netlify isn't used.
+- Delete the leftover `cloudflare/workers-autoconfig` branch (from closed PR #1).
 - Continue the `ARCHITECTURE.md` migration: hazard screening, then the parcel/well/utility proxy,
   then listing context out of `src/worker.js`.
