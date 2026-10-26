@@ -48,13 +48,18 @@ export const READ_ONLY_ROUTES = new Set([
   '/api/zoning-permits', '/api/zoning-rules', '/api/property-assessment', '/api/reso-listings'
 ]);
 
+// /api/reso-listings accepts sync options (sync, cursor, incremental, ...) that write to the live
+// MLS database. Only these lookup keys may be sent; anything else is refused.
+export const RESO_LOOKUP_KEYS = new Set(['parcelId', 'address', 'lat', 'lon']);
+
 // The browser only asks for zoning rules in these counties (public/zoning-potential.js:51).
 const ZONING_RULES_COUNTIES = /^(spokane|stevens|yellowstone|kootenai)$/i;
 
 export function assertReadOnly(route, body = {}) {
   if (!READ_ONLY_ROUTES.has(route)) throw new Error(`Refusing to call ${route}: not on the read-only allowlist.`);
-  if (route === '/api/reso-listings' && body && (body.sync !== undefined || body.cursor !== undefined || body.incremental !== undefined)) {
-    throw new Error('Refusing to call /api/reso-listings with sync options: that writes to the live MLS database.');
+  if (route === '/api/reso-listings') {
+    const extra = Object.keys(body || {}).filter(k => !RESO_LOOKUP_KEYS.has(k));
+    if (extra.length) throw new Error(`Refusing to call /api/reso-listings with ${extra.join(', ')}: only ${[...RESO_LOOKUP_KEYS].join(', ')} are allowed (sync options write to the live MLS database).`);
   }
 }
 
@@ -309,7 +314,11 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
   layers.terrain = interpretLayer('terrain', landRes);
 
   // 3. Follow-up lookups the frontend modules make after the summary renders.
-  layers.existingWell = interpretLayer('existingWell', await call('/api/existing-well', { state, county: parcelCounty || county, parcelId: resolvedId || p.PARCEL_ID || '', address, geometry }));
+  // public/existing-well.js:146 skips the call without a parcel number or geometry.
+  const wellParcelId = resolvedId || p.PARCEL_ID || '';
+  layers.existingWell = !wellParcelId || !geometry
+    ? notRequested(`parcel has no ${!wellParcelId ? 'parcel number' : 'geometry'} (the browser skips this call too)`)
+    : interpretLayer('existingWell', await call('/api/existing-well', { state, county: parcelCounty || county, parcelId: wellParcelId, address, geometry }));
   // property-assessment.js sends the parcel number exactly as the user typed it.
   layers.assessment = interpretLayer('assessment', await call('/api/property-assessment', { state, county, parcelId }));
 
@@ -475,6 +484,10 @@ async function arcgisQuery(layerUrl, params, { fetchImpl = globalThis.fetch, tim
   return data;
 }
 
+// Caps on discovery query size, so a county config can't ask a county server for huge pages.
+export const MAX_PER_QUERY = 200;
+export const MAX_DISTINCT_ZONES = 200;
+
 function toCandidate(d, attrs, stratum) {
   return {
     parcelId: text(attrs[d.idField]),
@@ -528,7 +541,8 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
   const opts = { fetchImpl, timeoutMs };
   const rand = mulberry32(seed ^ 0x9e3779b9);
   const outFields = [d.idField, d.acresField, d.zoningField, d.cityField, d.addressField].filter(Boolean).join(',');
-  const perQuery = Number(d.perQuery) || 50;
+  const perQuery = Math.min(MAX_PER_QUERY, Math.max(1, Math.floor(Number(d.perQuery) || 50)));
+  const delayMs = Number(d.delayMs ?? 300);
   const candidates = [];
 
   for (const stratum of buildDiscoveryStrata(d)) {
@@ -537,23 +551,24 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
       try {
         const counted = await arcgisQuery(d.layerUrl, { where: stratum.where, returnCountOnly: 'true' }, opts);
         const total = Number(counted.count) || 0;
-        if (!total) { log(`discover: ${stratum.id}: 0 parcels`); continue; }
+        if (!total) { log(`discover: ${stratum.id}: 0 parcels`); await sleep(delayMs); continue; }
         offset = Math.floor(rand() * Math.max(0, total - perQuery));
         log(`discover: ${stratum.id}: ${total} parcels, sampling from offset ${offset}`);
       } catch (error) { log(`discover: ${stratum.id}: count failed (${error.message}); sampling from the start`); }
+      await sleep(delayMs);
       const params = { where: stratum.where, outFields, returnGeometry: 'false', resultRecordCount: perQuery };
       let data;
       try { data = await arcgisQuery(d.layerUrl, offset ? { ...params, resultOffset: offset } : params, opts); }
       catch (error) { if (!offset) throw error; data = await arcgisQuery(d.layerUrl, params, opts); }
       for (const f of data.features || []) candidates.push(toCandidate(d, f.attributes || {}, stratum));
     } catch (error) { log(`discover: ${stratum.id}: query failed (${error.message})`); }
-    await sleep(Number(d.delayMs ?? 300));
+    await sleep(delayMs);
   }
 
   // Zoning values the strata missed: one small query each, so rarer zones get a chance.
   if (d.zoningField) {
     try {
-      const distinct = await arcgisQuery(d.layerUrl, { where: d.where || '1=1', outFields: d.zoningField, returnDistinctValues: 'true', returnGeometry: 'false' }, opts);
+      const distinct = await arcgisQuery(d.layerUrl, { where: d.where || '1=1', outFields: d.zoningField, returnDistinctValues: 'true', returnGeometry: 'false', resultRecordCount: MAX_DISTINCT_ZONES }, opts);
       const zones = [...new Set((distinct.features || []).map(f => text(f.attributes?.[d.zoningField])).filter(Boolean))];
       const have = new Set(candidates.map(c => c.zoning));
       const missing = zones.filter(z => !have.has(z)).slice(0, count);
@@ -563,7 +578,7 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
           const data = await arcgisQuery(d.layerUrl, { where: [d.where, `${d.zoningField} = ${sqlString(zone)}`].filter(Boolean).map(w => `(${w})`).join(' AND '), outFields, returnGeometry: 'false', resultRecordCount: 5 }, opts);
           for (const f of data.features || []) candidates.push(toCandidate(d, f.attributes || {}, { id: `zoning ${zone}`, band: null, place: null }));
         } catch (error) { log(`discover: zoning ${zone}: query failed (${error.message})`); }
-        await sleep(Number(d.delayMs ?? 300));
+        await sleep(delayMs);
       }
     } catch (error) { log(`discover: distinct ZONING query failed (${error.message})`); }
   }
