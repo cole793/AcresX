@@ -1,7 +1,11 @@
 // Flood hazard screening for POST /api/hazards { kind: 'flood', geometry }.
 //
 // Response shape (unchanged from the legacy src/worker.js handler, plus `source`):
-//   { available, intersects, high, zones, source: { provider, url, coverage?, emptyResult? } }
+//   { available, intersects, high, zones, zoneDetails, category, source: { provider, url, coverage?, emptyResult? } }
+// zoneDetails: deduped [{ zone, subtype, sfha }] (sfha: SFHA_TF as true/false, null when absent).
+// category: the parcel's worst intersecting zone, one of FLOOD_CATEGORIES (see floodCategory()).
+// `high` keeps its legacy meaning (some row is a Special Flood Hazard Area), except that FEMA's
+// 'AREA NOT INCLUDED' no longer counts as an A zone. The same rules live in public/flood-status.js.
 // On failure of every source: HTTP 502 with
 //   { available: false, intersects: false, high: false, zones: [], error, source: null }
 //
@@ -45,7 +49,8 @@ export const MAX_GET_URL_LENGTH = 3500;
 
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 // v3: earlier entries may hold answers from the wrong Esri layer.
-const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v3/';
+// v4: answers gained zoneDetails and category, and 'AREA NOT INCLUDED' is no longer high.
+export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v4/';
 const COORD_DECIMALS = 6;
 
 class UpstreamError extends Error {
@@ -60,13 +65,10 @@ function esriPolygon(geometry) {
   return { rings: geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat(), spatialReference: { wkid: 4326 } };
 }
 
-// Edge-cache successful FEMA GETs only; never edge-cache error bodies.
-const FEMA_EDGE_CACHE = { cacheTtlByStatus: { '200-299': 86400, '400-599': 0 }, cacheEverything: true };
-
-// GET for short queries, form-encoded POST when the URL is too long. `cf` (edge cache options)
-// is only attached to GETs, and only when given: the Esri fallback passes none, because an
-// Esri-empty answer must not be edge-cached.
-export function buildQueryRequest(layerUrl, geometry, outFields, cf = null) {
+// GET for short queries, form-encoded POST when the URL is too long. No request carries `cf`
+// edge-cache options: ArcGIS sends errors as HTTP 200 bodies, which an edge cache would keep.
+// The Cache API layer below stores only validated answers.
+export function buildQueryRequest(layerUrl, geometry, outFields) {
   const params = new URLSearchParams({
     f: 'json', where: '1=1', geometry: JSON.stringify(esriPolygon(geometry)), geometryType: 'esriGeometryPolygon',
     inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields, returnGeometry: 'false', resultRecordCount: '100'
@@ -74,7 +76,7 @@ export function buildQueryRequest(layerUrl, geometry, outFields, cf = null) {
   const headers = { 'User-Agent': 'AcresX/0.5.2' };
   const getUrl = `${layerUrl}/query?${params}`;
   if (getUrl.length <= MAX_GET_URL_LENGTH) {
-    return { url: getUrl, init: cf ? { method: 'GET', headers, cf } : { method: 'GET', headers } };
+    return { url: getUrl, init: { method: 'GET', headers } };
   }
   return {
     url: `${layerUrl}/query`,
@@ -84,8 +86,8 @@ export function buildQueryRequest(layerUrl, geometry, outFields, cf = null) {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function queryLayer(layerUrl, geometry, outFields, timeoutMs, cf = null) {
-  const { url, init } = buildQueryRequest(layerUrl, geometry, outFields, cf);
+async function queryLayer(layerUrl, geometry, outFields, timeoutMs) {
+  const { url, init } = buildQueryRequest(layerUrl, geometry, outFields);
   let response;
   try {
     response = await fetchWithTimeout(url, init, timeoutMs);
@@ -113,18 +115,84 @@ function field(attributes, name) {
   return key === undefined ? undefined : attributes[key];
 }
 
-function isSfha(row) {
+// FEMA FLD_ZONE values that mean "no flood map here", not a flood zone. 'AREA NOT INCLUDED'
+// starts with A but is not an A zone.
+const NOT_MAPPED_ZONES = new Set(['AREA NOT INCLUDED', 'OPEN WATER']);
+
+// Worst first. A parcel's category is the worst category of any intersecting row.
+export const FLOOD_CATEGORIES = ['high', 'moderate', 'undetermined', 'minimal', 'not_mapped'];
+
+const zoneOf = row => String(field(row, 'FLD_ZONE') ?? '').trim().toUpperCase();
+
+function sfhaFlag(row) {
   const flag = field(row, 'SFHA_TF');
-  if (flag === true || /^(T|TRUE|Y|YES|1)$/i.test(String(flag ?? '').trim())) return true;
+  if (flag === true || flag === false) return flag;
+  const text = String(flag ?? '').trim();
+  if (/^(T|TRUE|Y|YES|1)$/i.test(text)) return true;
+  if (/^(F|FALSE|N|NO|0)$/i.test(text)) return false;
+  return null;
+}
+
+function isSfha(row) {
+  const zone = zoneOf(row);
+  if (NOT_MAPPED_ZONES.has(zone)) return false;
+  if (sfhaFlag(row) === true) return true;
   // Same zone-code rule as the legacy handler: A* and V* zones are Special Flood Hazard Areas.
-  if (/^(A|V)/.test(String(field(row, 'FLD_ZONE') || '').toUpperCase())) return true;
+  if (/^(A|V)/.test(zone)) return true;
   // Esri rows may carry only a symbology label ("1% Annual Chance Flood Hazard", "Regulatory Floodway").
   return /1%\s*annual|floodway/i.test(String(field(row, 'ESRI_SYMBOLOGY') || ''));
 }
 
-export function summarizeFloodRows(rows) {
+// One row's category. Shaded X (any subtype other than minimal: 0.2 PCT, levee, 1 PCT depth or
+// drainage area, future conditions) and B are moderate; unshaded X and C are minimal. With
+// options.backup (the Esri layer, which has no minimal X), an X row with no subtype or symbology
+// is moderate too. A zone code this list does not know is undetermined, never safe. A row
+// without a zone is ignored (null).
+export function rowCategory(row, options = {}) {
+  const zone = zoneOf(row);
+  if (NOT_MAPPED_ZONES.has(zone)) return 'not_mapped';
+  if (isSfha(row)) return 'high';
+  if (zone === 'B') return 'moderate';
+  if (zone === 'C') return 'minimal';
+  if (zone === 'D') return 'undetermined';
+  if (zone === 'X') {
+    const subtype = String(field(row, 'ZONE_SUBTY') ?? '').trim();
+    if (subtype) return /AREA OF MINIMAL FLOOD HAZARD/i.test(subtype) ? 'minimal' : 'moderate';
+    if (options.backup) return 'moderate';
+    return /0\.2\s*(%|PCT|PERCENT)/i.test(String(field(row, 'ESRI_SYMBOLOGY') ?? '')) ? 'moderate' : 'minimal';
+  }
+  return zone ? 'undetermined' : null;
+}
+
+// Worst category over all rows. No rows, or only not-mapped rows, is not_mapped.
+export function floodCategory(rows, options = {}) {
+  let worst = FLOOD_CATEGORIES.length - 1;
+  for (const row of rows) {
+    const index = FLOOD_CATEGORIES.indexOf(rowCategory(row, options));
+    if (index >= 0 && index < worst) worst = index;
+  }
+  return FLOOD_CATEGORIES[worst];
+}
+
+function zoneDetails(rows) {
+  const seen = new Map();
+  for (const row of rows) {
+    const zone = String(field(row, 'FLD_ZONE') ?? '').trim();
+    if (!zone) continue;
+    const detail = { zone, subtype: String(field(row, 'ZONE_SUBTY') ?? '').trim() || null, sfha: sfhaFlag(row) };
+    const key = JSON.stringify(detail);
+    if (!seen.has(key)) seen.set(key, detail);
+  }
+  return [...seen.values()];
+}
+
+// options.backup: rows come from the Esri fallback (see rowCategory).
+export function summarizeFloodRows(rows, options = {}) {
   const zones = [...new Set(rows.map(r => field(r, 'FLD_ZONE')).filter(Boolean).map(z => String(z).trim()).filter(Boolean))];
-  return { available: true, intersects: rows.length > 0, high: rows.some(isSfha), zones };
+  return {
+    available: true, intersects: rows.length > 0, high: rows.some(isSfha), zones,
+    zoneDetails: zoneDetails(rows), category: floodCategory(rows, options)
+  };
 }
 
 function roundCoords(value) {
@@ -166,12 +234,12 @@ async function writeCache(cache, key, body, ctx) {
 async function fromFema(geometry) {
   const outFields = 'FLD_ZONE,ZONE_SUBTY,SFHA_TF';
   try {
-    return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_TIMEOUT_MS, FEMA_EDGE_CACHE);
+    return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_TIMEOUT_MS);
   } catch (error) {
     if (!error.retryable) throw error;
     await sleep(FEMA_RETRY_BACKOFF_MS);
     try {
-      return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS, FEMA_EDGE_CACHE);
+      return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS);
     } catch (retryError) {
       throw new UpstreamError(`${error.message}; retry ${retryError.message}`, false);
     }
@@ -213,8 +281,8 @@ export async function floodScreening(geometry, ctx, options = {}) {
       const source = { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE };
       // Empty here means "not in a mapped high- or moderate-risk area", not "no flood zone":
       // keep the no-intersection shape for the frontend, flag it and never cache it.
-      if (!rows.length) return await answer({ ...summarizeFloodRows(rows), source: { ...source, emptyResult: true } }, false);
-      return await answer({ ...summarizeFloodRows(rows), source }, true);
+      if (!rows.length) return await answer({ ...summarizeFloodRows(rows, { backup: true }), source: { ...source, emptyResult: true } }, false);
+      return await answer({ ...summarizeFloodRows(rows, { backup: true }), source }, true);
     } catch (error) {
       failures.push(`${ESRI_PROVIDER} ${error?.message || 'failed'}`);
       console.warn(`Flood source failed: ${ESRI_PROVIDER}`, error?.message);
