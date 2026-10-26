@@ -211,7 +211,7 @@ export const interpret = {
     const summary = data.high ? `high-risk zone (${zones.join(', ')})` : zones.length ? `zones ${zones.join(', ')}`
       : limited ? 'no high/moderate-risk zone mapped' : 'no mapped FEMA zone';
     return ok(`${summary}${via}`, {
-      high: Boolean(data.high), intersects: Boolean(data.intersects), zones, provider, coverage, emptyResult
+      high: Boolean(data.high), intersects: Boolean(data.intersects), zones, category: text(data.category) || null, provider, coverage, emptyResult
     });
   },
   wetlands(data) {
@@ -252,15 +252,24 @@ export const interpret = {
     });
   },
   assessment(data) {
-    const record = (Array.isArray(data.statewideRecords) && data.statewideRecords[0]) || (Array.isArray(data.records) && data.records[0]) || null;
+    // Montana answers carry both statewide and (Yellowstone) county records; the statewide one has
+    // the values there. Kootenai answers carry only countyRecords (src/counties/kootenai-assessor.js).
+    const record = (Array.isArray(data.statewideRecords) && data.statewideRecords[0]) || (Array.isArray(data.records) && data.records[0])
+      || (Array.isArray(data.countyRecords) && data.countyRecords[0]) || null;
     if (!data.available || !record) return unavailable('no assessment record found');
     const pick = keys => { for (const k of keys) { const v = finite(record[k]); if (v != null) return v; } return null; };
-    const total = pick(['VAL_TOTAL', 'TotalValue', 'total_value']);
-    const land = pick(['VAL_LAND', 'TotalLandValue', 'land_value']);
+    const total = pick(['VAL_TOTAL', 'TotalValue', 'total_value', 'totalValue']);
+    const land = pick(['VAL_LAND', 'TotalLandValue', 'land_value', 'landValue']);
+    const propertyClass = text(record.propertyClass) || null;
+    const propertyClassDescription = text(record.propertyClassDescription) || null;
     // "Tax present" = the record carries a tax amount (not just a tax year).
     const taxPresent = Object.entries(record).some(([k, v]) => /tax/i.test(k) && !/year|_yr|id$|code|area|dist/i.test(k) && finite(v) > 0);
-    return ok(`assessed ${total != null ? `$${total.toLocaleString('en-US')}` : 'n/a'}${taxPresent ? ', tax amount present' : ', no tax amount'}`, {
-      assessedValue: total, landValue: land, improvementValue: pick(['VAL_IMPVTS', 'TotalBuildingValue']), taxPresent, source: data.statewideSource || data.source || null
+    const classText = propertyClass ? `, class ${propertyClass}${propertyClassDescription ? ` ${propertyClassDescription}` : ''}` : '';
+    return ok(`assessed ${total != null ? `$${total.toLocaleString('en-US')}` : 'n/a'}${classText}${taxPresent ? ', tax amount present' : ', no tax amount'}`, {
+      assessedValue: total, landValue: land, improvementValue: pick(['VAL_IMPVTS', 'TotalBuildingValue', 'improvementValue']), taxPresent,
+      netValue: pick(['netValue']), homeownerExemption: pick(['homeownerExemption']), taxYear: pick(['taxYear']),
+      propertyClass, propertyClassDescription,
+      source: data.statewideSource || data.source || data.countySource || null
     });
   },
   listing(data) {
