@@ -22,9 +22,19 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 |---|---|---|---|
 | (none) | | | |
 
+## Approved queue (in order)
+
+1. Flood reliability: cole793/AcresX#13 (in progress: frontend must not show backup-empty answers as "Clear").
+2. Flood labels and scoring: zone X minimal = good (~96); shaded X (0.2%) = moderate (~70); D = undetermined (~55); A/V = high (20). Needs ZONE_SUBTY passed through additively. Approved 2026-10-26.
+3. Kootenai assessor data from `Assessor_Layers` (values; assessor class shown next to zoning, labeled as a tax category, not zoning). Approved 2026-10-26.
+4. Batch terrain/slope/canopy elevation requests (USGS getSamples, one request) and cache. Approved 2026-10-26.
+
+Not yet approved (offer): Kootenai parcel search from the county layer instead of the rate-limited statewide service; wetlands retry; "AREA NOT INCLUDED" counted as high flood risk.
+
 ## Waiting on the owner
 
 - Upload the ChatGPT history export for project context.
+- Note: the session network is now open (owner allowed all domains on 2026-10-26).
 - Live domain names (realtor test site, landing page), for `PRODUCT.md`.
 
 ## Approvals

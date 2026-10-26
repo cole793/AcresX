@@ -2,6 +2,29 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-26: Kootenai zoning vs Zillow "512", assessor source, Idaho parcel rate limit
+
+- **Zillow's "Zoning: 512 - Res Rural" is not zoning.** Parcel 47N03W052200 (2.9 ac near St. Maries):
+  county zoning is **AGRICULTURE** in both `NewServices/Data_Layers/MapServer/21` (ZONE_NAME `AG`,
+  LABEL `AGRICULTURE`) and Community Development's `KCWEBMAP_CD/MapServer/1` (LABEL `AGRICULTURE`).
+  "512" is the assessor's **property class**: `Assessor_Layers/MapServer/10` returns
+  `property_class: '512'`, `Property_ClassDescr: '512- Rural residential tract'`. Zillow labels the
+  assessor class as "Zoning". AcresX was correct.
+- **Kootenai assessor source (fixes assessment 0/12):**
+  `https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer` layers 5-10 "TaxParcels D1-D6"
+  (by appraisal district) and 11 "TaxParcels Commercial". Fields include PIN, PID, AIN,
+  property_class, Property_ClassDescr, AssessValue_Land, AssessValue_Imp, AssessValue_Net,
+  HO_Exemption, AssessValue_Date, PclArea_Acres, TAG, neighborhood. Owner name/mailing fields exist
+  too; don't display or store owner personal data unless the owner of AcresX decides to.
+- **Kootenai parcel layer fields** (`Ownership_Display/MapServer/0`, 45 fields) include PIN, PID,
+  Acres, Legal, Loc_Addr, Loc_City, Ex_Value, Net_Val, Gross_Val, KTCA, SCHOOL, FIRE, WATER, SEWER,
+  FLOOD. There is no ZONING field (fixed in PR #11).
+- **Idaho statewide parcel service rate-limits.** Preview validation run 40400939399: 6 of 12
+  Kootenai parcels failed `/api/parcel-search` with "Unable to perform query. Too many requests."
+  from `services1.arcgis.com/CNPdEkvnGl65jCX8/.../Public_Idaho_Parcels_/FeatureServer/7`. The county's
+  own `Ownership_Display/MapServer/0` answered every query today and could be the primary source for
+  Kootenai.
+
 ## 2026-10-26: Kootenai parcel layer has no ZONING field
 
 - The Kootenai parcel layer
