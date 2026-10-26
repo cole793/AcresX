@@ -36,7 +36,11 @@ const zoneAE = fema([row('AE', null, 'T')]);
 const mixAX = fema([row('X', 'AREA OF MINIMAL FLOOD HAZARD', 'F'), row('AE', null, 'T')]);
 const notIncluded = fema([row('AREA NOT INCLUDED', null, 'F')]);
 const femaEmpty = fema([]);
-const limited = { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'not_mapped', source: { ...ESRI_SOURCE, emptyResult: true } };
+const limited = { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'limited', source: { ...ESRI_SOURCE, emptyResult: true } };
+const mixDX = fema([row('X', '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', 'F'), row('D', null, 'F')]);
+const mixDXmin = fema([row('X', 'AREA OF MINIMAL FLOOD HAZARD', 'F'), row('D', null, 'F')]);
+const mixAD = fema([row('D', null, 'F'), row('A', null, 'T')]);
+const mixXnotMapped = fema([row('AREA NOT INCLUDED', null, 'F'), row('X', '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', 'F')]);
 const unavailable = { available: false, intersects: false, high: false, zones: [], error: 'down' };
 // Older (pre-category) answers, as an earlier cache or browser could still hold them.
 const oldBackupAE = { available: true, intersects: true, high: true, zones: ['AE'], source: ESRI_SOURCE };
@@ -52,14 +56,19 @@ const EXPECTED = new Map([
   [xPointTwo, ['Moderate risk', 70, 'amber', 'Moderate flood hazard', 'warn', 'FEMA zone X (0.2% annual chance)']],
   [zoneD, ['Undetermined', 55, 'amber', 'Flood risk not determined', 'warn', 'FEMA zone D: flood risk undetermined, verify with FEMA']],
   [xMinimal, ['Minimal', 96, 'green', 'Minimal flood hazard', 'good', 'FEMA zone X (minimal flood hazard)']],
-  [femaEmpty, ['Not mapped', 70, 'amber', 'No FEMA flood map', 'warn', 'No FEMA flood map covers this parcel. Verify locally.']],
-  [notIncluded, ['Not mapped', 70, 'amber', 'No FEMA flood map', 'warn', 'No FEMA flood map covers this parcel. Verify locally.']],
-  [mixAX, ['High risk', 20, 'red', 'High-risk flood zone', 'warn', 'FEMA zone AE (1% annual chance, Special Flood Hazard Area); also zone X']],
+  [femaEmpty, ['Not mapped', 70, 'amber', 'No digital FEMA flood map', 'warn', 'No digital FEMA flood map (NFHL) covers this parcel. Verify with the county or FEMA.']],
+  [notIncluded, ['Not mapped', 70, 'amber', 'No digital FEMA flood map', 'warn', 'No digital FEMA flood map (NFHL) covers this parcel. Verify with the county or FEMA.']],
+  [mixAX, ['High risk', 20, 'red', 'High-risk flood zone', 'warn', 'FEMA zone AE (1% annual chance, Special Flood Hazard Area); also zone X (minimal flood hazard)']],
+  [mixDX, ['Undetermined', 55, 'amber', 'Flood risk not determined', 'warn', 'FEMA zone D: flood risk undetermined, verify with FEMA; also zone X (0.2% annual chance)']],
+  [mixDXmin, ['Undetermined', 55, 'amber', 'Flood risk not determined', 'warn', 'FEMA zone D: flood risk undetermined, verify with FEMA; also zone X (minimal flood hazard)']],
+  [mixAD, ['High risk', 20, 'red', 'High-risk flood zone', 'warn', 'FEMA zone A (1% annual chance, Special Flood Hazard Area); also zone D: flood risk undetermined, verify with FEMA']],
+  [mixXnotMapped, ['Moderate risk', 70, 'amber', 'Moderate flood hazard', 'warn', 'FEMA zone X (0.2% annual chance)']],
   [limited, ['Limited flood data', 50, 'amber', 'Limited flood data', 'warn', 'Not in a mapped high- or moderate-risk flood area (backup source; FEMA unavailable). Verify with FEMA.']],
   [unavailable, ['Unavailable', 50, 'amber', 'Not verified', 'warn', 'FEMA service unavailable']]
 ]);
 const NAMES = new Map([[zoneAE, 'AE'], [xPointTwo, 'X 0.2%'], [zoneD, 'D'], [xMinimal, 'X minimal'], [femaEmpty, 'FEMA empty'],
-  [notIncluded, 'AREA NOT INCLUDED'], [mixAX, 'AE + X'], [limited, 'limited'], [unavailable, 'unavailable']]);
+  [notIncluded, 'AREA NOT INCLUDED'], [mixAX, 'AE + X'], [mixDX, 'D + X 0.2%'], [mixDXmin, 'D + X minimal'], [mixAD, 'A + D'],
+  [mixXnotMapped, 'X 0.2% + AREA NOT INCLUDED'], [limited, 'limited'], [unavailable, 'unavailable']]);
 
 test('flood-status: grade, score and detail for every category', () => {
   for (const [flood, [label, score, cls, overview, overviewCls, detail]] of EXPECTED) {
@@ -73,14 +82,17 @@ test('flood-status: grade, score and detail for every category', () => {
 });
 
 test('flood-status: categories follow the backend category, limited and unavailable first', () => {
-  assert.deepEqual([zoneAE, xPointTwo, zoneD, xMinimal, femaEmpty, notIncluded, mixAX, limited, unavailable].map(FX.category),
-    ['high', 'moderate', 'undetermined', 'minimal', 'not_mapped', 'not_mapped', 'high', 'limited', 'unavailable']);
+  assert.deepEqual([zoneAE, xPointTwo, zoneD, xMinimal, femaEmpty, notIncluded, mixAX, mixDX, mixDXmin, mixAD, mixXnotMapped, limited, unavailable].map(FX.category),
+    ['high', 'moderate', 'undetermined', 'minimal', 'not_mapped', 'not_mapped', 'high', 'undetermined', 'undetermined', 'high', 'moderate', 'limited', 'unavailable']);
+  assert.deepEqual(plain(FX.CATEGORIES), ['high', 'undetermined', 'moderate', 'not_mapped', 'minimal']);
+  // An Esri-empty answer is limited even if a client only reads `category`.
+  assert.equal(FX.category({ ...limited, source: ESRI_SOURCE }), 'limited');
 });
 
 test('flood-status: without category, the same rules are derived from zoneDetails or zones', () => {
   const strip = ({ category, ...rest }) => rest;
   const stripAll = ({ category, zoneDetails, ...rest }) => rest;
-  for (const flood of [zoneAE, xPointTwo, zoneD, xMinimal, femaEmpty, notIncluded, mixAX]) {
+  for (const flood of [zoneAE, xPointTwo, zoneD, xMinimal, femaEmpty, notIncluded, mixAX, mixDX, mixDXmin, mixAD, mixXnotMapped]) {
     assert.equal(FX.category(strip(flood)), flood.category, `${NAMES.get(flood)} from zoneDetails`);
     assert.deepEqual(plain(FX.grade(strip(flood))), plain(FX.grade(flood)), NAMES.get(flood));
   }
@@ -102,22 +114,32 @@ test('flood-status: frontend rowCategory matches the backend for each zone kind'
     row('V', null, null), row('VE', null, 'T'), row('X', '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', 'F'), row('X', 'AREA WITH REDUCED FLOOD RISK DUE TO LEVEE', 'F'),
     row('B', null, 'F'), row('D', null, 'F'), row('X', 'AREA OF MINIMAL FLOOD HAZARD', 'F'), row('X', null, 'F'), row('C', null, 'F'),
     row('AREA NOT INCLUDED', null, 'F'), row('OPEN WATER', null, 'F')];
-  for (const r of rows) {
-    const backend = summarizeFloodRows([r]);
-    const front = FX.category({ ...backend, category: undefined, source: FEMA_SOURCE });
-    assert.equal(front, backend.category, `${r.FLD_ZONE} ${r.ZONE_SUBTY || ''}`);
+  for (const [backup, source] of [[false, FEMA_SOURCE], [true, ESRI_SOURCE]]) {
+    for (const r of rows) {
+      const backend = summarizeFloodRows([r], { backup });
+      const front = FX.category({ ...backend, category: undefined, source });
+      assert.equal(front, backend.category, `${backup ? 'Esri' : 'FEMA'} ${r.FLD_ZONE} ${r.ZONE_SUBTY || ''}`);
+    }
+    // Every pair of rows: the worst-zone ranking agrees too.
+    for (const a of rows) for (const b of rows) {
+      const backend = summarizeFloodRows([a, b], { backup });
+      assert.equal(FX.category({ ...backend, category: undefined, source }), backend.category, `${backup ? 'Esri' : 'FEMA'} ${a.FLD_ZONE}+${b.FLD_ZONE}`);
+    }
   }
+  assert.equal(summarizeFloodRows([row('X', null, null)], { backup: true }).category, 'moderate');
 });
 
 test('flood-status: exact user-facing text and backup suffix', () => {
   assert.equal(FX.LIMITED_LABEL, 'Limited flood data');
   assert.equal(FX.LIMITED_TEXT, 'Not in a mapped high- or moderate-risk flood area (backup source; FEMA unavailable). Verify with FEMA.');
-  assert.equal(FX.NOT_MAPPED_TEXT, 'No FEMA flood map covers this parcel. Verify locally.');
+  assert.equal(FX.NOT_MAPPED_TEXT, 'No digital FEMA flood map (NFHL) covers this parcel. Verify with the county or FEMA.');
   assert.equal(FX.backupSuffix(oldBackupX), ' (backup source)');
   assert.equal(FX.backupSuffix(oldFemaX), '');
   assert.deepEqual(plain(FX.grade(oldBackupAE)), { category: 'high', score: 20, label: 'High risk', cls: 'red', overview: 'High-risk flood zone (backup source)', overviewCls: 'warn',
-    detail: 'FEMA zone AE (1% annual chance, Special Flood Hazard Area) (backup source)' });
-  assert.equal(FX.grade(oldBackupX).detail, 'FEMA zone X (moderate flood hazard) (backup source)');
+    detail: 'Flood zone AE (backup source: Esri copy of FEMA data) (1% annual chance, Special Flood Hazard Area)' });
+  assert.equal(FX.grade(oldBackupX).detail, 'Flood zone X (backup source: Esri copy of FEMA data) (moderate flood hazard)');
+  const esriX02 = { ...summarizeFloodRows([row('X', '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', null)], { backup: true }), source: ESRI_SOURCE };
+  assert.equal(FX.grade(esriX02).detail, 'Flood zone X (backup source: Esri copy of FEMA data) (0.2% annual chance)');
   assert.equal(FX.BACKUP_PROVIDER, ESRI, 'must match ESRI_PROVIDER in src/services/flood.js');
 });
 

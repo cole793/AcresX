@@ -189,7 +189,7 @@ test('flood: Esri empty answer keeps the no-intersection shape, flagged, no-stor
   await Promise.all(pending);
   assert.equal(response.status, 200);
   const { source, ...rest } = body;
-  assert.deepEqual(rest, { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'not_mapped' });
+  assert.deepEqual(rest, { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'limited' });
   assert.deepEqual(source, { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE, emptyResult: true });
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(store.size, 0, 'Esri empty answers must never be cached');
@@ -238,7 +238,11 @@ const CATEGORY_CASES = [
   ['AREA NOT INCLUDED', [{ FLD_ZONE: 'AREA NOT INCLUDED', ZONE_SUBTY: null, SFHA_TF: 'F' }], 'not_mapped', false],
   ['AREA NOT INCLUDED without SFHA_TF', [{ FLD_ZONE: 'AREA NOT INCLUDED' }], 'not_mapped', false],
   ['OPEN WATER', [{ FLD_ZONE: 'OPEN WATER', SFHA_TF: 'F' }], 'not_mapped', false],
-  ['AREA NOT INCLUDED + X minimal', [{ FLD_ZONE: 'AREA NOT INCLUDED' }, { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }], 'minimal', false],
+  ['AREA NOT INCLUDED + X minimal (not mapped outranks minimal)', [{ FLD_ZONE: 'AREA NOT INCLUDED' }, { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' }], 'not_mapped', false],
+  ['D + X 0.2 PCT (undetermined 55 outranks moderate 70)', [{ FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' }, { FLD_ZONE: 'D', SFHA_TF: 'F' }], 'undetermined', false],
+  ['A + D', [{ FLD_ZONE: 'D', SFHA_TF: 'F' }, { FLD_ZONE: 'A', SFHA_TF: 'T' }], 'high', true],
+  ['X 0.2 PCT + AREA NOT INCLUDED (known hazard wins the tie)', [{ FLD_ZONE: 'AREA NOT INCLUDED' }, { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' }], 'moderate', false],
+  ['rows without a zone', [{ FLD_ZONE: null }], 'not_mapped', false],
   ['empty', [], 'not_mapped', false]
 ];
 
@@ -252,6 +256,10 @@ for (const [name, rows, category, high] of CATEGORY_CASES) {
     assert.equal(body.source.provider, FEMA_PROVIDER);
   });
 }
+
+test('flood: FLOOD_CATEGORIES ranks by score and includes limited', () => {
+  assert.deepEqual(FLOOD_CATEGORIES, ['high', 'undetermined', 'moderate', 'not_mapped', 'minimal', 'limited']);
+});
 
 test('flood: zoneDetails are deduped and keep zone, subtype and SFHA flag', () => {
   const summary = summarizeFloodRows([

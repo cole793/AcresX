@@ -4,12 +4,13 @@
 // score-cost.js and screening-refinements.js call window.AcresXFlood at render time (and keep
 // their old behaviour if it has not loaded).
 //
-// Categories (worst intersecting FEMA zone wins; rules match rowCategory() in src/services/flood.js):
+// Categories, worst first (the worst intersecting zone wins; ranked by score, lowest first, and
+// moderate beats not_mapped on the tie). Rules match src/services/flood.js (FLOOD_RANK, rowCategory).
 //   high          SFHA_TF 'T', or FLD_ZONE A*/V* (not 'AREA NOT INCLUDED')       score 20, red
-//   moderate      shaded X (0.2 PCT and other non-minimal subtypes), B             score 70, amber
 //   undetermined  D (or an unknown zone code)                                      score 55, amber
+//   moderate      shaded X (0.2 PCT and other non-minimal subtypes), B             score 70, amber
+//   not_mapped    no FEMA zone, or 'AREA NOT INCLUDED' / 'OPEN WATER'              score 70, amber
 //   minimal       unshaded X ("AREA OF MINIMAL FLOOD HAZARD" or no subtype), C     score 96, green
-//   not_mapped    no FEMA zone, or only 'AREA NOT INCLUDED' / 'OPEN WATER'         score 70, amber
 //   limited       source.emptyResult: FEMA was unreachable and the backup source (Esri USA Flood
 //                 Hazard Areas, which only maps high- and moderate-risk areas) found nothing.
 //                 Not "no flood zone", so it is limited data                       score 50, amber
@@ -19,7 +20,7 @@
   const BACKUP_PROVIDER = 'Esri USA Flood Hazard Areas';
   const LIMITED_LABEL = 'Limited flood data';
   const LIMITED_TEXT = 'Not in a mapped high- or moderate-risk flood area (backup source; FEMA unavailable). Verify with FEMA.';
-  const CATEGORIES = ['high', 'moderate', 'undetermined', 'minimal', 'not_mapped'];
+  const CATEGORIES = ['high', 'undetermined', 'moderate', 'not_mapped', 'minimal'];
   const NOT_MAPPED_ZONES = ['AREA NOT INCLUDED', 'OPEN WATER'];
 
   const GRADES = {
@@ -27,11 +28,12 @@
     moderate: { score: 70, label: 'Moderate risk', cls: 'amber', overview: 'Moderate flood hazard', overviewCls: 'warn' },
     undetermined: { score: 55, label: 'Undetermined', cls: 'amber', overview: 'Flood risk not determined', overviewCls: 'warn' },
     minimal: { score: 96, label: 'Minimal', cls: 'green', overview: 'Minimal flood hazard', overviewCls: 'good' },
-    not_mapped: { score: 70, label: 'Not mapped', cls: 'amber', overview: 'No FEMA flood map', overviewCls: 'warn' },
+    not_mapped: { score: 70, label: 'Not mapped', cls: 'amber', overview: 'No digital FEMA flood map', overviewCls: 'warn' },
     limited: { score: 50, label: LIMITED_LABEL, cls: 'amber', overview: LIMITED_LABEL, overviewCls: 'warn' },
     unavailable: { score: 50, label: 'Unavailable', cls: 'amber', overview: 'Not verified', overviewCls: 'warn' }
   };
-  const NOT_MAPPED_TEXT = 'No FEMA flood map covers this parcel. Verify locally.';
+  const NOT_MAPPED_TEXT = 'No digital FEMA flood map (NFHL) covers this parcel. Verify with the county or FEMA.';
+  const BACKUP_NOTE = ' (backup source: Esri copy of FEMA data)';
 
   const isLimited = flood => flood?.available === true && flood?.source?.emptyResult === true;
   const isBackup = flood => flood?.source?.provider === BACKUP_PROVIDER;
@@ -64,19 +66,16 @@
     return (Array.isArray(flood?.zones) ? flood.zones : []).map(zone => ({ zone, subtype: null, sfha: null }));
   }
 
+  // Worst of the given categories; none at all is not_mapped.
   function worst(categories) {
-    let index = CATEGORIES.length - 1;
-    for (const c of categories) {
-      const i = CATEGORIES.indexOf(c);
-      if (i >= 0 && i < index) index = i;
-    }
-    return CATEGORIES[index];
+    const ranked = categories.map(c => CATEGORIES.indexOf(c)).filter(i => i >= 0);
+    return ranked.length ? CATEGORIES[Math.min(...ranked)] : 'not_mapped';
   }
 
   // The flood result's category: unavailable, limited, or one of CATEGORIES.
   function category(flood) {
     if (!flood?.available) return 'unavailable';
-    if (isLimited(flood)) return 'limited';
+    if (isLimited(flood) || flood.category === 'limited') return 'limited';
     if (CATEGORIES.includes(flood.category)) return flood.category;
     const backup = isBackup(flood);
     const found = rowsOf(flood).map(r => rowCategory(r, backup)).filter(Boolean);
@@ -95,19 +94,28 @@
     minimal: () => ' (minimal flood hazard)'
   };
 
+  // Worst zone first, then each other category's zones in rank order. Not-mapped rows are left
+  // out of the "also" list. Backup-source zones say they come from Esri's copy of FEMA data.
   function detail(flood, cat) {
     if (cat === 'unavailable') return 'FEMA service unavailable';
     if (cat === 'limited') return LIMITED_TEXT;
     if (cat === 'not_mapped') return NOT_MAPPED_TEXT;
     const backup = isBackup(flood);
     const rows = rowsOf(flood);
-    const main = rows.filter(r => rowCategory(r, backup) === cat);
     const zonesIn = list => [...new Set(list.map(r => String(r.zone).trim()))];
-    const mainZones = zonesIn(main);
-    const others = zonesIn(rows.filter(r => { const c = rowCategory(r, backup); return c && c !== cat && c !== 'not_mapped'; }))
-      .filter(z => !mainZones.includes(z));
-    const head = mainZones.length ? `FEMA zone ${mainZones.join(', ')}${MEANING[cat](main)}` : `FEMA flood zone${MEANING[cat](main)}`;
-    return `${head}${others.length ? `; also zone ${others.join(', ')}` : ''}${backupSuffix(flood)}`;
+    const shown = new Set();
+    const groups = [];
+    for (const c of [cat, ...CATEGORIES.filter(c => c !== cat && c !== 'not_mapped')]) {
+      const group = rows.filter(r => rowCategory(r, backup) === c);
+      const zones = zonesIn(group).filter(z => !shown.has(z));
+      zones.forEach(z => shown.add(z));
+      if (c === cat || zones.length) groups.push({ c, group, zones });
+    }
+    const [main, ...others] = groups;
+    const head = main.zones.length
+      ? `${backup ? 'Flood zone' : 'FEMA zone'} ${main.zones.join(', ')}${backup ? BACKUP_NOTE : ''}${MEANING[cat](main.group)}`
+      : `${backup ? 'Flood zone' : 'FEMA flood zone'}${backup ? BACKUP_NOTE : ''}${MEANING[cat](main.group)}`;
+    return head + others.map(g => `; also zone ${g.zones.join(', ')}${MEANING[g.c](g.group)}`).join('');
   }
 
   // { category, score, label, cls, overview, overviewCls, detail } for one flood result.
@@ -124,7 +132,7 @@
   const score = flood => grade(flood).score;
 
   root.AcresXFlood = {
-    BACKUP_PROVIDER, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, CATEGORIES, GRADES,
+    BACKUP_PROVIDER, BACKUP_NOTE, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, CATEGORIES, GRADES,
     isLimited, isBackup, backupSuffix, rowCategory, category, detail, grade, score
   };
 })(typeof window !== 'undefined' ? window : globalThis);

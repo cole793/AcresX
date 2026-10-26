@@ -3,7 +3,8 @@
 // Response shape (unchanged from the legacy src/worker.js handler, plus `source`):
 //   { available, intersects, high, zones, zoneDetails, category, source: { provider, url, coverage?, emptyResult? } }
 // zoneDetails: deduped [{ zone, subtype, sfha }] (sfha: SFHA_TF as true/false, null when absent).
-// category: the parcel's worst intersecting zone, one of FLOOD_CATEGORIES (see floodCategory()).
+// category: the parcel's worst intersecting zone (see floodCategory()), or 'limited' for an empty
+// Esri-fallback answer; one of FLOOD_CATEGORIES.
 // `high` keeps its legacy meaning (some row is a Special Flood Hazard Area), except that FEMA's
 // 'AREA NOT INCLUDED' no longer counts as an A zone. The same rules live in public/flood-status.js.
 // On failure of every source: HTTP 502 with
@@ -119,8 +120,13 @@ function field(attributes, name) {
 // starts with A but is not an A zone.
 const NOT_MAPPED_ZONES = new Set(['AREA NOT INCLUDED', 'OPEN WATER']);
 
-// Worst first. A parcel's category is the worst category of any intersecting row.
-export const FLOOD_CATEGORIES = ['high', 'moderate', 'undetermined', 'minimal', 'not_mapped'];
+// Zone categories, worst first: ranked by the page's flood score (lowest wins), and on a tie a
+// known hazard (moderate) beats not_mapped. A parcel's category is the worst of its rows.
+// high 20 > undetermined 55 > moderate 70 > not_mapped 70 > minimal 96.
+export const FLOOD_RANK = ['high', 'undetermined', 'moderate', 'not_mapped', 'minimal'];
+// Every `category` value an answer can carry. 'limited' is only the Esri-empty answer
+// (source.emptyResult): not in a mapped high/moderate-risk area, which is not "no flood zone".
+export const FLOOD_CATEGORIES = [...FLOOD_RANK, 'limited'];
 
 const zoneOf = row => String(field(row, 'FLD_ZONE') ?? '').trim().toUpperCase();
 
@@ -164,14 +170,17 @@ export function rowCategory(row, options = {}) {
   return zone ? 'undetermined' : null;
 }
 
-// Worst category over all rows. No rows, or only not-mapped rows, is not_mapped.
+// Worst category over all rows (FLOOD_RANK). No rows, or no row with a zone, is not_mapped.
 export function floodCategory(rows, options = {}) {
-  let worst = FLOOD_CATEGORIES.length - 1;
+  let worst = FLOOD_RANK.indexOf('not_mapped');
+  let found = false;
   for (const row of rows) {
-    const index = FLOOD_CATEGORIES.indexOf(rowCategory(row, options));
-    if (index >= 0 && index < worst) worst = index;
+    const index = FLOOD_RANK.indexOf(rowCategory(row, options));
+    if (index < 0) continue;
+    if (!found || index < worst) worst = index;
+    found = true;
   }
-  return FLOOD_CATEGORIES[worst];
+  return FLOOD_RANK[worst];
 }
 
 function zoneDetails(rows) {
@@ -281,7 +290,7 @@ export async function floodScreening(geometry, ctx, options = {}) {
       const source = { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE };
       // Empty here means "not in a mapped high- or moderate-risk area", not "no flood zone":
       // keep the no-intersection shape for the frontend, flag it and never cache it.
-      if (!rows.length) return await answer({ ...summarizeFloodRows(rows, { backup: true }), source: { ...source, emptyResult: true } }, false);
+      if (!rows.length) return await answer({ ...summarizeFloodRows(rows, { backup: true }), category: 'limited', source: { ...source, emptyResult: true } }, false);
       return await answer({ ...summarizeFloodRows(rows, { backup: true }), source }, true);
     } catch (error) {
       failures.push(`${ESRI_PROVIDER} ${error?.message || 'failed'}`);
