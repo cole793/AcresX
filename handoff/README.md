@@ -5,7 +5,8 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 ## Current state
 
-- Merged: #3 (CLAUDE.md), #4 (agent team, tests, deploy gate), #5 (per-PR preview links).
+- Merged: #3 (CLAUDE.md), #4 (agent team, tests, deploy gate), #5 (per-PR preview links), #6 (removed restore-index.yml, issue forms,
+  level 1 merge policy; merged in chat on 2026-10-26, deploy succeeded).
 - Production: `main`, deployed to Cloudflare by `.github/workflows/deploy-cloudflare.yml` on every
   push. As of Oct 2026, every push to `main` is first gated by `npm run check`.
 - Coverage: Spokane (WA), Kootenai (ID), Gallatin and Yellowstone (MT).
@@ -15,11 +16,10 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/quick-fixes` | (see PR) | [cole793/AcresX#6](https://github.com/cole793/AcresX/pull/6) | Delete restore-index.yml, add issue templates. Waiting on owner review. |
+| (none) | | | |
 
 ## Waiting on the owner
 
-- Review and merge the quick-fixes PR.
 - Upload the ChatGPT history export for project context.
 
 ## Approvals
