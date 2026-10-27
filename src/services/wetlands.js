@@ -27,6 +27,7 @@
 // parcel geometry; 'unmeasured' and failures never are. The cache is skipped where `caches` does
 // not exist (Node tests).
 import { fetchWithTimeout, json } from '../shared/http.js';
+import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 
 export const NWI_LAYER = 'https://fwspublicservices.wim.usgs.gov/wetlandsmapservice/rest/services/Wetlands/MapServer/0';
 export const GEOMETRY_SERVER = 'https://utility.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer/intersect';
@@ -49,7 +50,6 @@ export const WETLAND_CATEGORIES = ['present', 'unmeasured', 'nearby', 'none'];
 
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/wetlands/v1/';
-const COORD_DECIMALS = 6;
 const HEADERS = { 'User-Agent': 'AcresX/0.5.2' };
 
 class UpstreamError extends Error {
@@ -209,42 +209,7 @@ export function wetlandCategory({ intersects, overlapAcres, coveragePct }) {
   return 'nearby';
 }
 
-function roundCoords(value) {
-  if (Array.isArray(value)) return value.map(roundCoords);
-  return typeof value === 'number' ? Number(value.toFixed(COORD_DECIMALS)) : value;
-}
-
-async function cacheKey(geometry) {
-  const text = JSON.stringify({ type: geometry.type, coordinates: roundCoords(geometry.coordinates) });
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
-  return new Request(`${CACHE_KEY_PREFIX}${hex}`);
-}
-
-function edgeCache() {
-  try { return typeof caches !== 'undefined' && caches?.default ? caches.default : null; } catch { return null; }
-}
-
 const cacheable = body => body?.available === true && ['present', 'nearby', 'none'].includes(body.category);
-
-async function readCache(cache, key) {
-  if (!cache) return null;
-  try {
-    const hit = await cache.match(key);
-    if (!hit) return null;
-    const body = await hit.json();
-    return cacheable(body) ? body : null;
-  } catch { return null; }
-}
-
-async function writeCache(cache, key, body, ctx) {
-  if (!cache) return;
-  const response = new Response(JSON.stringify(body), {
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}` }
-  });
-  const put = Promise.resolve().then(() => cache.put(key, response)).catch(error => console.warn('Wetlands cache write failed', error));
-  if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(put); else await put;
-}
 
 const unavailableBody = error => ({ available: false, intersects: false, count: 0, types: [], error, category: 'unavailable' });
 
@@ -296,15 +261,13 @@ export async function wetlandsScreening(geometry, ctx) {
   try { esriParcel(geometry); } catch (error) {
     return { status: 400, body: { ...unavailableBody(error.message), error: 'Parcel geometry is required.' } };
   }
-  const cache = edgeCache();
-  let key = null;
-  if (cache) { try { key = await cacheKey(geometry); } catch { key = null; } }
-  const cached = key ? await readCache(cache, key) : null;
-  if (cached) return { status: 200, body: cached };
+  const slot = await openGeometryCache(CACHE_KEY_PREFIX, geometry);
+  const cached = await readCachedJson(slot);
+  if (cacheable(cached)) return { status: 200, body: cached };
 
   try {
     const body = await measure(geometry);
-    if (key && cacheable(body)) await writeCache(cache, key, body, ctx);
+    if (cacheable(body)) await writeCachedJson(slot, body, CACHE_TTL_SECONDS, ctx);
     return { status: 200, body };
   } catch (error) {
     console.warn('Wetlands source failed: USFWS NWI', error?.message);
