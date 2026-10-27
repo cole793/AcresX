@@ -51,8 +51,8 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   if(request.method==='POST'&&url.pathname==='/api/existing-well')return await handleExistingWell(request);
   if(request.method==='POST'&&url.pathname==='/api/reso-listings')return await handleResoListings(request,env);
   if(request.method==='POST'&&url.pathname==='/api/utility-territory')return await handleUtilityTerritory(request);
-  if(request.method==='POST'&&url.pathname==='/api/land-analysis')return await handleLandAnalysis(request);
-  if(request.method==='POST'&&url.pathname==='/api/slope-grid')return await handleSlopeGrid(request);
+  if(request.method==='POST'&&url.pathname==='/api/land-analysis')return await handleLandAnalysis(request,env,ctx);
+  if(request.method==='POST'&&url.pathname==='/api/slope-grid')return await handleSlopeGrid(request,env,ctx);
   if(request.method==='POST'&&url.pathname==='/api/hazards'){const clone=request.clone();try{const body=await clone.json();if(body?.kind==='wetlands')return await handleWetlands(new Request(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(body)}));if(body?.kind==='flood')return await handleFlood(new Request(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(body)}),env,ctx);}catch(_){}}
   if(request.method==='POST'&&url.pathname==='/api/power-intelligence')return await handlePowerIntelligence(request);
   if(request.method==='POST'&&url.pathname==='/api/zoning-rules')return await handleZoningRules(request);
