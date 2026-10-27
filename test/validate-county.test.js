@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import {
   LAYERS, assertReadOnly, postJson, MAX_PER_QUERY, classifyResponse, interpretLayer, centroid, validateParcel, validateCounty,
   compareExpected, applyExpected, buildMarkdown, summarize, buildDiscoveryStrata, pickVaried, discoverParcels, parseArgs,
-  arcgisGet, probeLayer, resolveDiscoverFields, MAX_FIELD_NAMES_SHOWN
+  arcgisGet, probeLayer, resolveDiscoverFields, MAX_FIELD_NAMES_SHOWN, isRateLimited
 } from '../scripts/validate-county.mjs';
 
 const BASE = 'https://acresx.test';
@@ -457,4 +457,74 @@ test('markdown has a discovery diagnostics section when discovery ran, even with
   const ran = await validateCounty({ county: 'Kootenai', state: 'ID' }, { parcels: [{ parcelId: 'TESTPIN1' }], baseUrl: BASE, delayMs: 0, requestDelayMs: 0 });
   assert.doesNotMatch(buildMarkdown(ran), /Discovery diagnostics/, 'no section when discovery did not run');
   assert.match(buildMarkdown({ ...ran, discoveryDiagnostics: diagnostics.slice(2) }), /## Discovery diagnostics[\s\S]*\| Parcel \|/);
+});
+
+// --- rate-limit retry on the parcel lookup ----------------------------------------------------
+
+const parcelOk = { available: true, parcel: { type: 'Feature', geometry: square, properties: { ORIG_PARCEL_ID: 'PIN01', COUNTY_NM: 'Kootenai' } } };
+const jsonRes = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+function sequenceFetch(parcelAnswers) {
+  const calls = [];
+  const fetchImpl = async (url, init = {}) => {
+    const route = new URL(url).pathname;
+    calls.push(route);
+    if (route === '/api/parcel-search') return parcelAnswers.shift()();
+    return jsonRes({ available: false });
+  };
+  return { calls, fetchImpl };
+}
+const runParcel = fetchImpl => validateParcel({ parcelId: 'PIN01' }, { state: 'ID', county: 'Kootenai', baseUrl: BASE, fetchImpl, requestDelayMs: 0, parcelRetryDelayMs: 0 });
+
+test('isRateLimited matches HTTP 429 and the Worker\'s "Too many requests" 502', () => {
+  assert.equal(isRateLimited({ httpStatus: 429, data: null }), true);
+  assert.equal(isRateLimited({ httpStatus: 502, data: { error: 'Unable to perform query. Too many requests.' } }), true);
+  assert.equal(isRateLimited({ httpStatus: null, error: 'request failed: rate limit exceeded' }), true);
+  assert.equal(isRateLimited({ httpStatus: 502, data: { error: 'Parcel not found' } }), false);
+  assert.equal(isRateLimited({ httpStatus: 200, data: parcelOk }), false);
+  assert.equal(isRateLimited(null), false);
+});
+
+test('a rate-limited parcel lookup is retried once and then succeeds', async () => {
+  const { calls, fetchImpl } = sequenceFetch([() => jsonRes({ error: 'Unable to perform query. Too many requests.' }, 502), () => jsonRes(parcelOk)]);
+  const result = await runParcel(fetchImpl);
+  assert.equal(calls.filter(r => r === '/api/parcel-search').length, 2);
+  assert.equal(result.layers.parcel.status, 'ok');
+  assert.equal(result.layers.parcel.retried, true);
+  assert.match(result.layers.parcel.detail, /retried once/);
+});
+
+test('HTTP 429 is retried only once; other parcel errors and other layers are not retried', async () => {
+  let s = sequenceFetch([() => jsonRes({ error: 'slow down' }, 429), () => jsonRes({ error: 'slow down' }, 429), () => jsonRes(parcelOk)]);
+  let result = await runParcel(s.fetchImpl);
+  assert.equal(s.calls.length, 2);
+  assert.equal(result.layers.parcel.status, 'error');
+  assert.match(result.layers.parcel.detail, /HTTP 429.*retried once/);
+
+  s = sequenceFetch([() => jsonRes({ error: 'Parcel not found in available Idaho parcel sources.' }, 502), () => jsonRes(parcelOk)]);
+  result = await runParcel(s.fetchImpl);
+  assert.equal(s.calls.length, 1);
+  assert.equal(result.layers.parcel.retried, undefined);
+
+  // A "Too many requests" answer from another layer is an error, not a retry.
+  const calls = [];
+  const fetchImpl = async url => {
+    const route = new URL(url).pathname;
+    calls.push(route);
+    if (route === '/api/parcel-search') return jsonRes(parcelOk);
+    if (route === '/api/well-search') return jsonRes({ error: 'Too many requests' }, 502);
+    return jsonRes({ available: false });
+  };
+  result = await runParcel(fetchImpl);
+  assert.equal(calls.filter(r => r === '/api/well-search').length, 1);
+  assert.equal(result.layers.wells.status, 'error');
+});
+
+test('harness accepts --delay and --retry-delay within bounds', () => {
+  const a = parseArgs(['--county', 'kootenai', '--delay', '5000', '--retry-delay', '15000']);
+  assert.equal(a.delayMs, 5000);
+  assert.equal(a.retryDelayMs, 15000);
+  assert.equal(parseArgs(['--county', 'kootenai']).retryDelayMs, 15000);
+  assert.throws(() => parseArgs(['--county', 'kootenai', '--retry-delay', '-1']), /--retry-delay/);
+  assert.throws(() => parseArgs(['--county', 'kootenai', '--delay', 'abc']), /--delay/);
 });
