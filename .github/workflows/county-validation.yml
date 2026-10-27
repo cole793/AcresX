@@ -2,7 +2,8 @@ name: County validation
 
 # Runs test parcels through the deployed AcresX API and records per-layer status.
 # Read-only: the script never sends MLS sync requests or calls write/test endpoints.
-# See validation/README.md.
+# Scheduled runs also compare with the previous run and open, update or close one GitHub issue
+# per county (label validation-alert). See validation/README.md, "Alerts".
 
 on:
   workflow_dispatch:
@@ -21,6 +22,16 @@ on:
         description: AcresX base URL (blank = production)
         required: false
         default: ''
+        type: string
+      delay_ms:
+        description: Pause between parcels in milliseconds (scheduled runs use 5000)
+        required: false
+        default: '5000'
+        type: string
+      retry_delay_ms:
+        description: Pause before the one retry of a rate-limited parcel lookup, in milliseconds (scheduled runs use 15000)
+        required: false
+        default: '15000'
         type: string
   schedule:
     - cron: '23 13 * * *'
@@ -54,13 +65,18 @@ jobs:
             test -f "validation/counties/$COUNTY.json" || { echo "No validation/counties/$COUNTY.json" >&2; exit 1; }
             list="[\"$COUNTY\"]"
           else
-            list=$(ls validation/counties/*.json | xargs -n1 basename | sed 's/\.json$//' | jq -R . | jq -cs .)
+            # Scheduled runs check only counties with saved parcels (never discovery).
+            list=$(for f in validation/counties/*.json; do
+              if jq -e '(.parcels // []) | length > 0' "$f" >/dev/null; then basename "$f" .json; fi
+            done | jq -R . | jq -cs .)
           fi
           echo "list=$list" >> "$GITHUB_OUTPUT"
           echo "Counties: $list"
 
   validate:
     needs: counties
+    # An empty matrix is an error in Actions; with no county to run there is nothing to do.
+    if: ${{ needs.counties.outputs.list != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -77,16 +93,53 @@ jobs:
         with:
           node-version: 22
 
+      # The previous run's report is the baseline for the comparison. A missing branch or file
+      # just means there is nothing to compare with.
+      - name: Fetch the previous run's results
+        env:
+          COUNTY: ${{ matrix.county }}
+        run: |
+          mkdir -p previous
+          if git fetch -q --depth=1 origin "+refs/heads/validation-results:refs/remotes/origin/validation-results" 2>/dev/null \
+            && git show "origin/validation-results:latest/$COUNTY.json" > "previous/$COUNTY.json" 2>/dev/null; then
+            echo "Previous results: $(jq -r '.startedAt // "unknown"' "previous/$COUNTY.json")"
+          else
+            rm -f "previous/$COUNTY.json"
+            echo "No previous results for $COUNTY."
+          fi
+
       - name: Run validation
         id: run
         env:
           COUNTY: ${{ matrix.county }}
           DISCOVER: ${{ github.event_name == 'workflow_dispatch' && inputs.discover && 'true' || 'false' }}
           ACRESX_BASE_URL: ${{ inputs.base_url }}
+          # Scheduled runs: 5 s between parcels and a 15 s pause before the one parcel-lookup retry,
+          # to stay polite to the statewide Idaho parcel service. Manual runs take the inputs.
+          DELAY_MS: ${{ github.event_name == 'workflow_dispatch' && inputs.delay_ms || '5000' }}
+          RETRY_DELAY_MS: ${{ github.event_name == 'workflow_dispatch' && inputs.retry_delay_ms || '15000' }}
         run: |
-          args="--county $COUNTY --out validation-results"
+          for v in "$DELAY_MS" "$RETRY_DELAY_MS"; do
+            case "$v" in *[!0-9]*|'') echo "Delays must be whole milliseconds, got: $v" >&2; exit 1 ;; esac
+          done
+          args="--county $COUNTY --out validation-results --delay $DELAY_MS --retry-delay $RETRY_DELAY_MS"
           if [ "$DISCOVER" = "true" ]; then args="$args --discover"; fi
           node scripts/validate-county.mjs $args
+
+      - name: Compare with the previous run
+        if: always()
+        env:
+          COUNTY: ${{ matrix.county }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ ! -f "validation-results/$COUNTY.json" ]; then echo "No report to compare."; exit 0; fi
+          node scripts/validation-alerts.mjs --county "$COUNTY" \
+            --current "validation-results/$COUNTY.json" --previous "previous/$COUNTY.json" --out validation-results \
+            --run-url "$REPO_URL/actions/runs/$RUN_ID" \
+            --results-url "$REPO_URL/blob/validation-results/latest/$COUNTY.md" \
+            --changes-url "$REPO_URL/blob/validation-results/latest/$COUNTY-changes.md" \
+            --history-url "$REPO_URL/tree/validation-results/history"
 
       - name: Add summary
         if: always()
@@ -94,6 +147,7 @@ jobs:
           COUNTY: ${{ matrix.county }}
         run: |
           if [ -f "validation-results/$COUNTY.md" ]; then
+            if [ -f "validation-results/$COUNTY-changes.md" ]; then cat "validation-results/$COUNTY-changes.md" >> "$GITHUB_STEP_SUMMARY"; fi
             cat "validation-results/$COUNTY.md" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No report was written for $COUNTY (the script failed; see the run log)." >> "$GITHUB_STEP_SUMMARY"
@@ -176,13 +230,24 @@ jobs:
                 continue
               fi
               mkdir -p "$RESULTS/latest" "$RESULTS/history/$DATE"
-              cp "$COLLECTED/$county.json" "$COLLECTED/$county.md" "$RESULTS/latest/"
-              if [ -f "$COLLECTED/$county-discovered.json" ]; then cp "$COLLECTED/$county-discovered.json" "$RESULTS/latest/"; fi
-              cp "$COLLECTED/$county.json" "$RESULTS/history/$DATE/$county-$RUN_ID.json"
               failed=$(jq -r '.summary.failed // "unknown"' "$COLLECTED/$county.json")
+              if [ "$(jq -r '.discovered // false' "$COLLECTED/$county.json")" = "true" ]; then
+                # Discovery output never replaces latest/<county>.json: that file is the saved-parcel
+                # baseline the next scheduled run compares with.
+                cp "$COLLECTED/$county.json" "$RESULTS/latest/$county-discover-report.json"
+                cp "$COLLECTED/$county.md" "$RESULTS/latest/$county-discover-report.md"
+                if [ -f "$COLLECTED/$county-discovered.json" ]; then cp "$COLLECTED/$county-discovered.json" "$RESULTS/latest/"; fi
+                cp "$COLLECTED/$county.json" "$RESULTS/history/$DATE/$county-$RUN_ID-discover.json"
+                message="Validation $county $DATE run $RUN_ID (discover): $failed failed"
+              else
+                cp "$COLLECTED/$county.json" "$COLLECTED/$county.md" "$RESULTS/latest/"
+                if [ -f "$COLLECTED/$county-changes.md" ]; then cp "$COLLECTED/$county-changes.md" "$RESULTS/latest/"; fi
+                cp "$COLLECTED/$county.json" "$RESULTS/history/$DATE/$county-$RUN_ID.json"
+                message="Validation $county $DATE run $RUN_ID: $failed failed"
+              fi
               git -C "$RESULTS" add -A latest history
               if git -C "$RESULTS" diff --cached --quiet; then continue; fi
-              git -C "$RESULTS" commit -q -m "Validation $county $DATE run $RUN_ID: $failed failed"
+              git -C "$RESULTS" commit -q -m "$message"
               made=$((made + 1))
             done
           }
@@ -199,3 +264,72 @@ jobs:
           done
           echo "::error::Could not push to $BRANCH after 3 attempts."
           exit 1
+
+  # Opens, updates or closes one issue per county from the decision the validate job wrote
+  # (<county>-alert.json, made by scripts/validation-alerts.mjs). Scheduled runs only. This is the
+  # only job that can write issues, and it has no other permissions (no checkout, no contents).
+  # Titles and bodies come from files and quoted variables, never from expressions in the script.
+  alert:
+    needs: [counties, validate]
+    if: ${{ always() && github.event_name == 'schedule' && needs.counties.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      - name: Download results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: county-validation-*
+          path: collected
+          merge-multiple: true
+
+      - name: Open, update or close county issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COUNTIES: ${{ needs.counties.outputs.list }}
+        run: |
+          set -euo pipefail
+          LABEL=validation-alert
+          for county in $(echo "$COUNTIES" | jq -r '.[]'); do
+            case "$county" in *[!a-z0-9-]*|'') echo "Skipping invalid county name"; continue ;; esac
+            alert="collected/$county-alert.json"
+            if [ ! -f "$alert" ]; then
+              echo "::warning::No alert decision for $county (its validation or comparison step failed)."
+              continue
+            fi
+            county_label="county:$county"
+            alerting=$(jq -r '.alerting' "$alert")
+            above=$(jq -r '.aboveThreshold' "$alert")
+            changed=$(jq -r '.changed' "$alert")
+            title=$(jq -r '.title' "$alert")
+            number=$(gh issue list --state open --label "$LABEL" --label "$county_label" --limit 1 --json number --jq '.[0].number // empty')
+
+            if [ -z "$number" ]; then
+              if [ "$alerting" = "true" ]; then
+                gh label create "$LABEL" --color B60205 --description "Scheduled county validation found broken layers" --force
+                gh label create "$county_label" --color 0E8A16 --description "County validation alerts for $county" --force
+                jq -r '.body' "$alert" > body.md
+                gh issue create --title "$title" --body-file body.md --label "$LABEL" --label "$county_label"
+                echo "$county: opened an issue."
+              else
+                echo "$county: no open issue, nothing to alert."
+              fi
+            elif [ "$above" = "true" ]; then
+              if [ "$alerting" = "true" ]; then gh issue edit "$number" --title "$title"; fi
+              if [ "$changed" = "true" ]; then
+                jq -r '.updateComment' "$alert" > comment.md
+                gh issue comment "$number" --body-file comment.md
+                echo "$county: commented on issue $number."
+              else
+                echo "$county: issue $number still open, nothing changed since the previous run."
+              fi
+            else
+              jq -r '.recoveredComment' "$alert" > comment.md
+              gh issue comment "$number" --body-file comment.md
+              gh issue close "$number"
+              echo "$county: recovered; closed issue $number."
+            fi
+          done

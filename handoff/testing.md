@@ -33,6 +33,13 @@ the `validation-results` branch, so they can be read without Actions artifact ac
 `git fetch origin validation-results && git show origin/validation-results:latest/kootenai.md`.
 See `validation/README.md`.
 
+The daily scheduled run (13:23 UTC, counties with saved parcels only) compares each county with
+its previous run (`latest/<county>-changes.md`) and keeps one GitHub issue per county open while
+layers are broken (label `validation-alert`, closed with a "Recovered" comment when they
+recover). The rules are in `validation/README.md`, "Alerts". The comparison and alert rules, the
+issue body escaping and the parcel-lookup rate-limit retry are tested offline in
+`test/validation-alerts.test.js`.
+
 ## CI
 
 - `.github/workflows/test.yml` runs `npm run check` on every pull request.

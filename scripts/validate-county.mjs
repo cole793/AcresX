@@ -4,6 +4,7 @@
 //
 //   node scripts/validate-county.mjs --county kootenai [--base-url URL] [--out DIR]
 //   node scripts/validate-county.mjs --county kootenai --discover [--count 12] [--seed N]
+//   [--delay MS between parcels, default 1500] [--retry-delay MS before the one parcel-lookup retry, default 15000]
 //
 // Node 22, no dependencies. See validation/README.md.
 //
@@ -291,19 +292,41 @@ export function interpretLayer(key, res, ctx) {
   catch (error) { return { ...base, status: 'error', detail: `could not read response: ${error.message}`, values: {} }; }
 }
 
+// The statewide Idaho parcel service answers "Too many requests" when it is busy; the Worker
+// passes that on as HTTP 502 with the upstream message, so match the text as well as HTTP 429.
+export function isRateLimited(res) {
+  if (!res) return false;
+  if (res.httpStatus === 429) return true;
+  const message = [res.error, res.data && typeof res.data === 'object' ? res.data.error : ''].map(text).join(' ');
+  return /too many requests|rate limit/i.test(message);
+}
+
+export const DEFAULT_PARCEL_RETRY_DELAY_MS = 15000;
+
 const notRequested = detail => ({ status: 'unavailable', detail: `not requested: ${detail}`, values: {}, route: null, httpStatus: null, ms: null });
 const skipped = detail => ({ status: 'skipped', detail, values: {}, route: null, httpStatus: null, ms: null });
 
 // Reproduces the browser's request sequence for one parcel (Idaho/Montana path; see README).
-export async function validateParcel(entry, { state, county, baseUrl, fetchImpl, timeoutMs, requestDelayMs = 250 } = {}) {
+// The parcel lookup (only) is retried once, after parcelRetryDelayMs, when it is rate limited.
+export async function validateParcel(entry, { state, county, baseUrl, fetchImpl, timeoutMs, requestDelayMs = 250, parcelRetryDelayMs = DEFAULT_PARCEL_RETRY_DELAY_MS } = {}) {
   const opts = { fetchImpl, timeoutMs };
   const call = async (route, body) => { const res = await postJson(baseUrl, route, body, opts); await sleep(requestDelayMs); return res; };
   const layers = {};
   const parcelId = text(entry.parcelId);
 
   // 1. Parcel (public/state-selector.js:83).
-  const parcelRes = await call('/api/parcel-search', { state, county, parcelId });
+  let parcelRes = await call('/api/parcel-search', { state, county, parcelId });
+  let parcelRetried = false;
+  if (isRateLimited(parcelRes)) {
+    await sleep(parcelRetryDelayMs);
+    parcelRes = await call('/api/parcel-search', { state, county, parcelId });
+    parcelRetried = true;
+  }
   layers.parcel = interpretLayer('parcel', parcelRes);
+  if (parcelRetried) {
+    layers.parcel.retried = true;
+    layers.parcel.detail = `${layers.parcel.detail} (retried once after a rate-limit answer)`;
+  }
   if (layers.parcel.status !== 'ok') {
     for (const { key } of LAYERS) if (key !== 'parcel') layers[key] = skipped('parcel lookup failed');
     return { parcelId, label: entry.label || '', why: entry.why || '', layers };
@@ -764,7 +787,7 @@ export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl 
 
 // --- run -------------------------------------------------------------------------------------
 
-export async function validateCounty(config, { parcels = config.parcels || [], baseUrl = DEFAULT_BASE_URL, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS, delayMs = 1500, requestDelayMs = 250, log = () => {} } = {}) {
+export async function validateCounty(config, { parcels = config.parcels || [], baseUrl = DEFAULT_BASE_URL, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS, delayMs = 1500, requestDelayMs = 250, parcelRetryDelayMs = DEFAULT_PARCEL_RETRY_DELAY_MS, log = () => {} } = {}) {
   const startedAt = new Date().toISOString();
   const results = [];
   for (const [i, entry] of parcels.entries()) {
@@ -772,7 +795,7 @@ export async function validateCounty(config, { parcels = config.parcels || [], b
     log(`validate: ${entry.parcelId} (${i + 1}/${parcels.length})`);
     let result;
     try {
-      result = await validateParcel(entry, { state: config.state, county: config.county, baseUrl, fetchImpl, timeoutMs, requestDelayMs });
+      result = await validateParcel(entry, { state: config.state, county: config.county, baseUrl, fetchImpl, timeoutMs, requestDelayMs, parcelRetryDelayMs });
     } catch (error) {
       result = { parcelId: text(entry.parcelId), label: entry.label || '', why: entry.why || '', layers: { parcel: { status: 'error', detail: `harness error: ${error.message}`, values: {} } } };
     }
@@ -783,7 +806,7 @@ export async function validateCounty(config, { parcels = config.parcels || [], b
 }
 
 export function parseArgs(argv) {
-  const args = { county: '', baseUrl: '', out: 'validation-results', discover: false, count: 12, seed: null, delayMs: 1500 };
+  const args = { county: '', baseUrl: '', out: 'validation-results', discover: false, count: 12, seed: null, delayMs: 1500, retryDelayMs: DEFAULT_PARCEL_RETRY_DELAY_MS };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i], next = () => argv[++i];
     if (a === '--county') args.county = next();
@@ -793,10 +816,14 @@ export function parseArgs(argv) {
     else if (a === '--count') args.count = Number(next());
     else if (a === '--seed') args.seed = Number(next());
     else if (a === '--delay') args.delayMs = Number(next());
+    else if (a === '--retry-delay') args.retryDelayMs = Number(next());
     else throw new Error(`Unknown argument: ${a}`);
   }
   if (!/^[a-z0-9-]+$/.test(args.county || '')) throw new Error('--county is required (lowercase file name in validation/counties/, e.g. kootenai).');
   if (!Number.isInteger(args.count) || args.count < 1) throw new Error('--count must be a positive integer.');
+  for (const [flag, v] of [['--delay', args.delayMs], ['--retry-delay', args.retryDelayMs]]) {
+    if (!Number.isInteger(v) || v < 0 || v > 120000) throw new Error(`${flag} must be a whole number of milliseconds from 0 to 120000.`);
+  }
   return args;
 }
 
@@ -820,7 +847,7 @@ async function main() {
     console.log(json);
   }
 
-  const report = await validateCounty(config, { parcels, baseUrl, delayMs: args.delayMs, log });
+  const report = await validateCounty(config, { parcels, baseUrl, delayMs: args.delayMs, parcelRetryDelayMs: args.retryDelayMs, log });
   if (args.discover) { report.discovered = true; report.seed = seed; report.discoveryDiagnostics = diagnostics; }
   const markdown = buildMarkdown(report);
   await writeFile(path.join(args.out, `${args.county}.json`), JSON.stringify(report, null, 2) + '\n');
