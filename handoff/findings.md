@@ -44,6 +44,38 @@ AcresX site.
   accepts POST queries. The GeometryServer accepts counter-clockwise (GeoJSON) parcel rings, but
   the service now sends Esri orientation anyway.
 
+## 2026-10-27: terrain, slope grid and tree canopy now use batched getSamples
+
+Owner-approved 2026-10-26 (branch `claude/batch-elevation`). Checked live by the builder on
+2026-10-27.
+
+- Cause of the Kootenai failures (validation run 40391761739: slope grid 11/12 timeouts, terrain
+  4/12 "Too many subrequests"): one request per point, with up to 3 attempts x 2 sources. On a
+  ~16 ac test parcel the old code made 74 upstream requests. `/api/land-analysis` took 20.9 s and
+  `/api/slope-grid` took 46 s. EPQS often took 10-15 s per point or timed out.
+- `3DEPElevation/ImageServer/getSamples` (multipoint, POST form-encoded) answers every point in
+  one request. Verified live: `samples[].value` is a **string** in meters. Samples come back
+  **out of request order**, so match on `locationId`. NoData points (e.g. ocean) are **left out**,
+  not returned as a sentinel. At most **1000** samples per call: 2000 or 2500 points still return
+  1000, silently. GET works for small batches; we always POST.
+- `RSP_NearestNeighbor` equals the `identify` pixel value exactly, and EPQS (feet) to ~0.001 ft.
+  `RSP_BilinearInterpolation` differs by up to ~0.3 ft. We use nearest neighbour.
+- The USFS tree-canopy ImageServer (`imagery.geoplatform.gov/.../USFS_EDW_NLCD_TCC_CONUS`) also
+  supports `getSamples` (maxRecordCount 1000, U8 values). Nearest neighbour equals `identify`
+  exactly (82, 0 and 55 at the three centroids below).
+- New code on the same parcel: 5 requests in total (one 3DEP request timed out at 6 s and the
+  retry answered in 0.7 s). Land-analysis took 0.8 s and slope grid 7.0 s. Output keys and slope
+  bands are unchanged. The largest numeric difference was 0.0015 ft (EPQS feet vs 3DEP meters x
+  3.2808).
+- Live getSamples timing (ms, 3 runs each) around the Kootenai centroids 47.430694,-116.844376 /
+  47.905682,-116.770423 / 47.545631,-116.757814. 3DEP 25 points: 848/500/459, 754/922/394,
+  1003/2418/556. 3DEP 9 points: 316/479/318, 1620/542/856, 308/317/525. Canopy 25 points:
+  586/354/159, 663/285/166, 475/176/162. One cold call took 5.7 s.
+- Request budget per call, before and after. Terrain: 9 to 54 before, 1 normally (2 with a retry,
+  11 worst) after. Slope grid: 25 to 150 before, 1 (11 worst) after. Canopy: 36 before, 1 (14
+  worst) after. Land-analysis route: 46 to 91 before (over Cloudflare's 50 cap), 3 normally and
+  26 worst after.
+
 ## 2026-10-26: Kootenai assessment now comes from the county assessor layers
 
 Owner-approved 2026-10-26 (branch `claude/kootenai-assessor`). Checked live by the builder.
