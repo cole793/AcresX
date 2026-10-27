@@ -224,6 +224,37 @@ test('flood values record source provider, coverage and emptyResult', () => {
   assert.deepEqual([legacy.detail, legacy.values.provider, legacy.values.emptyResult], ['no mapped FEMA zone', null, null]);
 });
 
+test('flood values record the category', () => {
+  const flood = data => interpretLayer('flood', { ok: true, httpStatus: 200, data: { available: true, intersects: true, high: false, zones: ['D'], ...data } });
+  assert.equal(flood({ category: 'undetermined' }).values.category, 'undetermined');
+  assert.equal(flood({}).values.category, null);
+});
+
+test('assessment values: Kootenai county record carries values and the assessor property class', () => {
+  const assessment = data => interpretLayer('assessment', { ok: true, httpStatus: 200, data });
+  const kc = assessment({
+    available: true, state: 'ID', county: 'Kootenai', countySource: 'Kootenai County Assessor (Assessor_Layers)',
+    countyRecords: [{ pin: '47N03W052200', landValue: 99654, improvementValue: 0, totalValue: 99654, homeownerExemption: 0, netValue: 99654, taxYear: 2026, propertyClass: '512', propertyClassDescription: 'Rural residential tract' }]
+  });
+  assert.equal(kc.status, 'ok');
+  assert.equal(kc.detail, 'assessed $99,654, class 512 Rural residential tract, no tax amount');
+  assert.deepEqual(kc.values, {
+    assessedValue: 99654, landValue: 99654, improvementValue: 0, taxPresent: false, netValue: 99654, homeownerExemption: 0, taxYear: 2026,
+    propertyClass: '512', propertyClassDescription: 'Rural residential tract', source: 'Kootenai County Assessor (Assessor_Layers)'
+  });
+  // An upstream failure carries `error`, so it is an error in validation, not a clean "no record".
+  const down = assessment({ available: false, state: 'ID', county: 'Kootenai', countyRecords: [], error: 'Kootenai County Assessor timed out' });
+  assert.deepEqual([down.status, down.detail], ['error', 'Kootenai County Assessor timed out']);
+  const none = assessment({ available: false, state: 'ID', county: 'Kootenai', countyRecords: [], note: 'No Kootenai County Assessor record matched this parcel number.' });
+  assert.deepEqual([none.status, none.detail], ['unavailable', 'no assessment record found']);
+  // Montana keeps reading the statewide record even when a Yellowstone county record is present.
+  const mt = assessment({ available: true, state: 'MT', countyRecords: [{ GEOCODE: 'x' }], statewideSource: 'Montana Cadastral / ORION integration', statewideRecords: [{ TotalValue: 410000, TotalLandValue: 150000 }] });
+  assert.deepEqual([mt.values.assessedValue, mt.values.propertyClass, mt.values.source], [410000, null, 'Montana Cadastral / ORION integration']);
+  // A Yellowstone county hit without a statewide record has no values: still unavailable.
+  const mtCountyOnly = assessment({ available: true, state: 'MT', county: 'Yellowstone', countySource: 'Yellowstone County TaxparcelOrion', countyRecords: [{ GEOCODE: '03-1033-23-1-01-01-0000', TAX_ID: 'A12345', FULLADD: '1 TEST LN' }], statewideRecords: [] });
+  assert.deepEqual([mtCountyOnly.status, mtCountyOnly.detail], ['unavailable', 'no assessment record found']);
+});
+
 test('markdown flood detail shows the provider and limited coverage', async () => {
   for (const [source, pattern] of [
     [{ provider: 'FEMA NFHL', url: 'https://x' }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(via FEMA NFHL\) \[.*provider=FEMA NFHL/],

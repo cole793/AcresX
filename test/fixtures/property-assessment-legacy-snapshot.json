@@ -1,0 +1,105 @@
+{
+  "spokane": {
+    "status": 200,
+    "body": {
+      "available": true,
+      "state": "WA",
+      "county": "Spokane",
+      "parcelId": "47174.9017",
+      "source": "Spokane County Assessor SCOUTSimple",
+      "records": [
+        {
+          "PID_NUM": "47174.9017",
+          "tax_year": 2026,
+          "asmt_year": 2025,
+          "land_value": 120000,
+          "exmp_amt": 0,
+          "asmt_year_exmp_amt": 0,
+          "acreage": 5.1,
+          "site_address": "123 TEST RD",
+          "prop_use_desc": "91 Undeveloped Land"
+        }
+      ]
+    }
+  },
+  "yellowstone": {
+    "status": 200,
+    "body": {
+      "available": true,
+      "state": "MT",
+      "county": "Yellowstone",
+      "parcelId": "03103323101010000",
+      "formattedGeocode": "03-1033-23-1-01-01-0000",
+      "countySource": "Yellowstone County TaxparcelOrion",
+      "countyRecords": [
+        {
+          "GEOCODE": "03-1033-23-1-01-01-0000",
+          "TAX_ID": "A12345",
+          "FULLADD": "1 TEST LN"
+        }
+      ],
+      "statewideSource": "Montana Cadastral / ORION integration",
+      "statewideRecords": [
+        {
+          "ParcelID": "03-1033-23-1-01-01-0000",
+          "TotalValue": 410000,
+          "TotalLandValue": 150000,
+          "TotalBuildingValue": 260000,
+          "TaxYear": 2025
+        }
+      ]
+    }
+  },
+  "gallatin": {
+    "status": 200,
+    "body": {
+      "available": true,
+      "state": "MT",
+      "county": "Gallatin",
+      "parcelId": "06079821101010000",
+      "formattedGeocode": "06-0798-21-1-01-01-0000",
+      "statewideSource": "Montana Cadastral / ORION integration",
+      "statewideRecords": [
+        {
+          "ParcelID": "03-1033-23-1-01-01-0000",
+          "TotalValue": 410000,
+          "TotalLandValue": 150000,
+          "TotalBuildingValue": 260000,
+          "TaxYear": 2025
+        }
+      ]
+    }
+  },
+  "idahoStatewide": {
+    "status": 200,
+    "body": {
+      "available": true,
+      "state": "ID",
+      "county": "Bonner",
+      "parcelId": "RP0001",
+      "statewideSource": "Idaho Statewide Standardized Parcel Layer",
+      "statewideRecords": [
+        {
+          "PARCEL_ID": "RP0001",
+          "County": "BONNER",
+          "VAL_LAND": 80000,
+          "VAL_IMPVTS": 0,
+          "VAL_TOTAL": 80000,
+          "UPDATED": 1767225600000
+        }
+      ]
+    }
+  },
+  "unsupported": {
+    "status": 400,
+    "body": {
+      "error": "Property assessment endpoint currently supports Spokane County WA, Montana, and Idaho."
+    }
+  },
+  "missingParcel": {
+    "status": 400,
+    "body": {
+      "error": "parcelId is required"
+    }
+  }
+}

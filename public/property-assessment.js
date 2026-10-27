@@ -1,9 +1,16 @@
 (() => {
   let assessmentRequestId = 0;
+  // The assessor's property class is a tax category, not zoning (Zillow labels it "Zoning").
+  const CLASS_NOTE = 'Tax category, not zoning';
 
   function money(value) {
     const n = Number(value);
     return Number.isFinite(n) ? `$${Math.round(n).toLocaleString()}` : '—';
+  }
+
+  // Number(null) is 0; a missing value must stay missing (NaN), not show as $0.
+  function amount(value) {
+    return value === null || value === undefined || value === '' ? NaN : Number(value);
   }
 
   function currentSearch() {
@@ -41,6 +48,22 @@
       };
     }
 
+    // Kootenai: county assessor record, already mapped by src/counties/kootenai-assessor.js.
+    if (data.state === 'ID' && Array.isArray(data.countyRecords) && data.countyRecords.length) {
+      const r = data.countyRecords[0] || {};
+      return {
+        totalValue: amount(r.totalValue),
+        landValue: amount(r.landValue),
+        improvementValue: amount(r.improvementValue),
+        homeownerExemption: amount(r.homeownerExemption),
+        netValue: amount(r.netValue),
+        year: r.taxYear || null,
+        propertyClass: classText(r),
+        label: 'Assessor value',
+        source: `${data.county || 'Kootenai'} County Assessor`
+      };
+    }
+
     if (data.state === 'ID') {
       const r = data.statewideRecords?.[0] || {};
       const updated = r.UPDATED ? new Date(Number(r.UPDATED)) : null;
@@ -57,6 +80,13 @@
     return null;
   }
 
+  // "512 – Rural residential tract", or '' when the record has no class.
+  function classText(record) {
+    const code = String(record?.propertyClass || '').trim();
+    const descr = String(record?.propertyClassDescription || '').trim();
+    return code && descr ? `${code} – ${descr}` : code || descr;
+  }
+
   function ensureStyles() {
     if (document.getElementById('propertyAssessmentStyles')) return;
     const style = document.createElement('style');
@@ -64,6 +94,7 @@
     style.textContent = `
       .property-assessment-source{grid-column:1/-1;padding:9px 0 2px;font-size:9px;color:var(--muted);line-height:1.35}
       .property-assessment-source strong{font-weight:700;color:#526158}
+      .property-overview-fact small.assessor-class-note{display:block;font-size:10px;color:var(--muted);margin-top:1px}
     `;
     document.head.appendChild(style);
   }
@@ -77,9 +108,31 @@
       wrap.id = `${id}Wrap`;
       wrap.className = 'property-overview-fact';
       wrap.innerHTML = `<span>${label}</span><strong id="${id}">Checking…</strong>`;
-      grid.appendChild(wrap);
+      // Keep facts above the source line, so a fact added on a later search stays in place.
+      const source = document.getElementById('propertyAssessmentSource');
+      if (source && source.parentNode === grid) grid.insertBefore(wrap, source);
+      else grid.appendChild(wrap);
     }
     return document.getElementById(id);
+  }
+
+  // Only counties whose assessor returns a property class get this fact; otherwise it is removed
+  // so a previous Kootenai search does not leave it behind.
+  function renderAssessorClass(result) {
+    const text = result?.propertyClass || '';
+    const existing = document.getElementById('overviewAssessorClassWrap');
+    if (!text) { existing?.remove(); return; }
+    const el = addFact('overviewAssessorClass', 'Assessor class');
+    if (!el) return;
+    el.textContent = text;
+    const wrap = document.getElementById('overviewAssessorClassWrap');
+    let note = wrap.querySelector('small.assessor-class-note');
+    if (!note) {
+      note = document.createElement('small');
+      note.className = 'assessor-class-note';
+      wrap.appendChild(note);
+    }
+    note.textContent = CLASS_NOTE;
   }
 
   function renderAssessment(result) {
@@ -91,6 +144,8 @@
     const landEl = addFact('overviewLandValue', 'Land value');
     const yearEl = addFact('overviewAssessmentYear', 'Assessment / tax year');
 
+    renderAssessorClass(result);
+
     if (!result) {
       if (valueEl) valueEl.textContent = 'Not available';
       if (landEl) landEl.textContent = 'Not available';
@@ -98,8 +153,9 @@
       return;
     }
 
-    if (valueEl) valueEl.textContent = money(Number.isFinite(result.totalValue) && result.totalValue > 0 ? result.totalValue : result.landValue);
-    if (landEl) landEl.textContent = money(result.landValue);
+    const shown = value => (Number.isFinite(value) ? money(value) : 'Not available');
+    if (valueEl) valueEl.textContent = shown(Number.isFinite(result.totalValue) && result.totalValue > 0 ? result.totalValue : result.landValue);
+    if (landEl) landEl.textContent = shown(result.landValue);
     if (yearEl) yearEl.textContent = result.year ? String(result.year) : '—';
 
     let source = document.getElementById('propertyAssessmentSource');
@@ -112,13 +168,18 @@
     const improvements = Number.isFinite(result.improvementValue)
       ? ` · Improvements ${money(result.improvementValue)}`
       : '';
-    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}. Assessor values are informational and are not the current tax bill.`;
+    const exemption = Number.isFinite(result.homeownerExemption) && result.homeownerExemption > 0
+      ? ` · Homeowner exemption ${money(result.homeownerExemption)}`
+      : '';
+    const net = Number.isFinite(result.netValue) ? ` · Net taxable ${money(result.netValue)}` : '';
+    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${exemption}${net}. Assessor values are informational and are not the current tax bill.`;
   }
 
   async function loadAssessment() {
     const search = currentSearch();
     if (!search) return;
     const requestId = ++assessmentRequestId;
+    document.getElementById('overviewAssessorClassWrap')?.remove();
 
     addFact('overviewAssessorValue', 'Assessor value');
     addFact('overviewLandValue', 'Land value');
@@ -151,6 +212,8 @@
     else if (state === 'ID') location.textContent = `${county} County, Idaho`;
     else if (state === 'WA') location.textContent = `${county} County, Washington`;
   }
+
+  window.AcresXAssessment = { normalize, classText, CLASS_NOTE, renderAssessment };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;

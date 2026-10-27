@@ -1,0 +1,211 @@
+{
+  "hit": {
+    "displayFieldName": "LastName_Primary",
+    "fieldAliases": {
+      "PIN": "PIN",
+      "PID": "PID",
+      "AIN": "AIN",
+      "EffStatus": "EffStatus",
+      "ApprDist": "ApprDist",
+      "property_class": "property_class",
+      "Property_ClassDescr": "Property_ClassDescr",
+      "AssessValue_Date": "AssessValue_Date",
+      "AssessValue_Land": "AssessValue_Land",
+      "AssessValue_Imp": "AssessValue_Imp",
+      "AssessValue_Net": "AssessValue_Net",
+      "HO_Exemption": "HO_Exemption",
+      "PclArea_Acres": "PclArea_Acres"
+    },
+    "fields": [
+      {
+        "name": "PIN",
+        "type": "esriFieldTypeString",
+        "alias": "PIN",
+        "length": 16
+      },
+      {
+        "name": "PID",
+        "type": "esriFieldTypeString",
+        "alias": "PID",
+        "length": 50
+      },
+      {
+        "name": "AIN",
+        "type": "esriFieldTypeString",
+        "alias": "AIN",
+        "length": 6
+      },
+      {
+        "name": "EffStatus",
+        "type": "esriFieldTypeString",
+        "alias": "EffStatus",
+        "length": 1
+      },
+      {
+        "name": "ApprDist",
+        "type": "esriFieldTypeSmallInteger",
+        "alias": "ApprDist"
+      },
+      {
+        "name": "property_class",
+        "type": "esriFieldTypeString",
+        "alias": "property_class",
+        "length": 3
+      },
+      {
+        "name": "Property_ClassDescr",
+        "type": "esriFieldTypeString",
+        "alias": "Property_ClassDescr",
+        "length": 64
+      },
+      {
+        "name": "AssessValue_Date",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Date"
+      },
+      {
+        "name": "AssessValue_Land",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Land"
+      },
+      {
+        "name": "AssessValue_Imp",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Imp"
+      },
+      {
+        "name": "AssessValue_Net",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Net"
+      },
+      {
+        "name": "HO_Exemption",
+        "type": "esriFieldTypeInteger",
+        "alias": "HO_Exemption"
+      },
+      {
+        "name": "PclArea_Acres",
+        "type": "esriFieldTypeDouble",
+        "alias": "PclArea_Acres"
+      }
+    ],
+    "features": [
+      {
+        "attributes": {
+          "PIN": "47N03W052200",
+          "PID": "47N03W-05-2200",
+          "AIN": "146901",
+          "EffStatus": "A",
+          "ApprDist": 6,
+          "property_class": "512",
+          "Property_ClassDescr": "512- Rural residential tract",
+          "AssessValue_Date": 20260101,
+          "AssessValue_Land": 99654,
+          "AssessValue_Imp": 0,
+          "AssessValue_Net": 99654,
+          "HO_Exemption": 0,
+          "PclArea_Acres": 2.888
+        }
+      }
+    ]
+  },
+  "miss": {
+    "displayFieldName": "LastName_Primary",
+    "fieldAliases": {
+      "PIN": "PIN",
+      "PID": "PID",
+      "AIN": "AIN",
+      "EffStatus": "EffStatus",
+      "ApprDist": "ApprDist",
+      "property_class": "property_class",
+      "Property_ClassDescr": "Property_ClassDescr",
+      "AssessValue_Date": "AssessValue_Date",
+      "AssessValue_Land": "AssessValue_Land",
+      "AssessValue_Imp": "AssessValue_Imp",
+      "AssessValue_Net": "AssessValue_Net",
+      "HO_Exemption": "HO_Exemption",
+      "PclArea_Acres": "PclArea_Acres"
+    },
+    "fields": [
+      {
+        "name": "PIN",
+        "type": "esriFieldTypeString",
+        "alias": "PIN",
+        "length": 16
+      },
+      {
+        "name": "PID",
+        "type": "esriFieldTypeString",
+        "alias": "PID",
+        "length": 50
+      },
+      {
+        "name": "AIN",
+        "type": "esriFieldTypeString",
+        "alias": "AIN",
+        "length": 6
+      },
+      {
+        "name": "EffStatus",
+        "type": "esriFieldTypeString",
+        "alias": "EffStatus",
+        "length": 1
+      },
+      {
+        "name": "ApprDist",
+        "type": "esriFieldTypeSmallInteger",
+        "alias": "ApprDist"
+      },
+      {
+        "name": "property_class",
+        "type": "esriFieldTypeString",
+        "alias": "property_class",
+        "length": 3
+      },
+      {
+        "name": "Property_ClassDescr",
+        "type": "esriFieldTypeString",
+        "alias": "Property_ClassDescr",
+        "length": 64
+      },
+      {
+        "name": "AssessValue_Date",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Date"
+      },
+      {
+        "name": "AssessValue_Land",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Land"
+      },
+      {
+        "name": "AssessValue_Imp",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Imp"
+      },
+      {
+        "name": "AssessValue_Net",
+        "type": "esriFieldTypeInteger",
+        "alias": "AssessValue_Net"
+      },
+      {
+        "name": "HO_Exemption",
+        "type": "esriFieldTypeInteger",
+        "alias": "HO_Exemption"
+      },
+      {
+        "name": "PclArea_Acres",
+        "type": "esriFieldTypeDouble",
+        "alias": "PclArea_Acres"
+      }
+    ],
+    "features": []
+  },
+  "error": {
+    "error": {
+      "code": 400,
+      "message": "Failed to execute query.",
+      "details": []
+    }
+  }
+}
