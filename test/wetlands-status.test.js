@@ -19,6 +19,8 @@ const base = { available: true, types: ['Riverine'], parcelAcres: 9.99, coverage
 const present = { ...base, intersects: true, count: 1, coveragePct: 4.738, wetlandAcres: 0.4733, category: 'present', overlapAcres: 0.4733, nearby: false, overlapCount: 1 };
 const presentBig = { ...base, intersects: true, count: 16, coveragePct: 70.5, wetlandAcres: 35.89, category: 'present', overlapAcres: 35.89, nearby: false, overlapCount: 16 };
 const present11 = { ...base, parcelAcres: 1.977, intersects: true, count: 3, coveragePct: 11.19, wetlandAcres: 0.2212, category: 'present', overlapAcres: 0.2212, nearby: false, overlapCount: 3 };
+// 162 ac parcel, 0.06 ac overlap: present by acres, 0.037% of the parcel.
+const presentTiny = { ...base, parcelAcres: 162, intersects: true, count: 1, coveragePct: 0.037, wetlandAcres: 0.06, category: 'present', overlapAcres: 0.06, nearby: false, overlapCount: 1 };
 const nearby = { ...base, intersects: true, count: 1, coveragePct: 0.01, wetlandAcres: 0.0003, category: 'nearby', overlapAcres: 0.0003, nearby: true, overlapCount: 1 };
 const touch = { ...base, intersects: true, count: 1, coveragePct: 0, wetlandAcres: 0, category: 'nearby', overlapAcres: 0, nearby: true, overlapCount: 0 };
 const none = { ...base, intersects: false, count: 0, types: [], coveragePct: 0, wetlandAcres: 0, coverageMethod: 'NWI polygon intersection', category: 'none', overlapAcres: 0, nearby: false, overlapCount: 0 };
@@ -35,6 +37,7 @@ const CASES = [
   ['present 4.7%', present, 'present', 90, 'Mapped on parcel', 'amber', 'Mapped wetlands present', 'warn', '1 mapped wetland feature · 4.7% of parcel · 0.47 ac', 'Mapped wetlands: 4.7% of parcel · 0.47 ac'],
   ['present 11.2% (47N03W052200)', present11, 'present', 80, 'Mapped on parcel', 'amber', 'Mapped wetlands present', 'warn', '3 mapped wetland features · 11.2% of parcel · 0.22 ac', 'Mapped wetlands: 11.2% of parcel · 0.22 ac'],
   ['present 70%', presentBig, 'present', 22, 'Mapped on parcel', 'amber', 'Mapped wetlands present', 'warn', '16 mapped wetland features · 70.5% of parcel · 35.89 ac', 'Mapped wetlands: 70.5% of parcel · 35.89 ac'],
+  ['present <0.1% on a 162 ac parcel', presentTiny, 'present', 90, 'Mapped on parcel', 'amber', 'Mapped wetlands present', 'warn', '1 mapped wetland feature · <0.1% of parcel · 0.06 ac', 'Mapped wetlands: <0.1% of parcel · 0.06 ac'],
   ['nearby sliver', nearby, 'nearby', 92, 'Nearby only', '', 'Wetland nearby (not on parcel)', '', 'Mapped NWI wetland at the parcel edge, not on the parcel (overlap under 0.001 ac). Check setbacks with the county.', 'Mapped wetlands: nearby only, not on parcel'],
   ['boundary touch', touch, 'nearby', 92, 'Nearby only', '', 'Wetland nearby (not on parcel)', '', 'Mapped NWI wetland at the parcel edge, not on the parcel. Check setbacks with the county.', 'Mapped wetlands: nearby only, not on parcel'],
   ['none', none, 'none', 96, 'None mapped', 'green', 'No mapped wetlands', 'good', 'No NWI wetland intersects parcel', 'Mapped wetlands: none detected'],
@@ -150,6 +153,7 @@ test('screening-refinements.js: without the helper, null coverage is not 0% (the
   assert.equal(score({}, present), 90);
   assert.equal(note({}, present), 'Mapped wetlands: 4.7% of parcel · 0.47 ac');
   assert.equal(score({}, none), 96);
+  assert.equal(note({}, presentTiny), 'Mapped wetlands: <0.1% of parcel · 0.06 ac');
 });
 
 // index.html renderSummary: the real wetlands grade expression and its traffic light.

@@ -59,11 +59,14 @@
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
   const acresText = a => (a > 0 && a < 0.001 ? 'under 0.001 ac' : `${a < 0.01 ? a.toFixed(3) : a.toFixed(2)} ac`);
 
+  // A real overlap under 0.05% would round to "0.0%"; show it as "<0.1%".
+  const pctText = pct => (pct > 0 && pct < 0.05 ? '<0.1%' : `${pct.toFixed(1)}%`);
+
   function coverageText(w) {
     const pct = num(w.coveragePct);
     const acres = num(w.overlapAcres ?? w.wetlandAcres);
     if (pct == null && acres == null) return null;
-    return [pct != null ? `${pct.toFixed(1)}% of parcel` : null, acres != null ? acresText(acres) : null].filter(Boolean).join(' · ');
+    return [pct != null ? `${pctText(pct)} of parcel` : null, acres != null ? acresText(acres) : null].filter(Boolean).join(' · ');
   }
 
   function detail(w, cat) {

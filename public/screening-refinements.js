@@ -149,7 +149,7 @@
     wetlandNote.textContent = WX ? WX.grade(w).note
       : !w.available ? 'Mapped wetlands: unavailable'
       : !w.intersects ? 'Mapped wetlands: none detected'
-      : pct != null ? `Mapped wetlands: ${pct.toFixed(1)}% of parcel${acres != null ? ` · ${acres.toFixed(2)} ac` : ''}`
+      : pct != null ? `Mapped wetlands: ${pct > 0 && pct < 0.05 ? '<0.1' : pct.toFixed(1)}% of parcel${acres != null ? ` · ${acres.toFixed(2)} ac` : ''}`
       : 'Mapped wetlands detected · coverage percentage unavailable';
   }
 
