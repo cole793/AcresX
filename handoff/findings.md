@@ -2,6 +2,44 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-27: Kootenai zoning inside cities, and by parcel area
+
+Owner-approved 2026-10-27 (branch `claude/kootenai-city-zoning`). Sources checked live by the
+lead and the builder on 2026-10-27.
+
+- **City limits:** `map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18`
+  ("City Limits", really tax code areas). `CITY` is set only inside a city ('Coeur d Alene',
+  'Post Falls', 'Hayden', 'Rathdrum', 'Dalton Gardens', 'Hayden Lake', 'Athol', 'Spirit Lake',
+  'Harrison', 'Worley', 'Fernan', 'Hauser Lake', 'Huetter', 'State Line'); `' '` or null outside.
+- **City impact areas:** `Data_Layers/MapServer/17`, fields `CITY`, `ORDINANCE` (e.g.
+  `ORA25-0013` CdA, `ORA25-0012` Hayden, `ORA25-0009` Post Falls, `ORA25-0018` Rathdrum; State
+  Line spelled `STATELINE`). Land in an impact area but outside city limits keeps county zoning
+  (Athol code: "the Kootenai County zoning ordinance shall be the zoning ordinance applicable to
+  the land in the area of city impact which is outside the Athol city limits"; Hauser applies the
+  same by its 1999 agreement). AcresX shows it as info only.
+- **Coeur d'Alene zoning:** `gis.cdaid.org/server/rest/services/Share/Planning/MapServer/8`,
+  fields `ZONING`, `ZoningInfo` (HTML link to a zone PDF), `PUD`, `Notes`, `last_edited_date`.
+  Gotcha: many `ZoningInfo` links name another zone's PDF (a `C-17` polygon links `R-17.pdf`,
+  an `R-1` links `R-3.pdf`), so the adapter uses the link only when the file name matches
+  `ZONING`, otherwise `https://www.cdaid.org/planning`.
+- **Post Falls zoning:** `gis.postfalls.gov/server/rest/services/GIS2/LandUse/MapServer/5`,
+  fields `ZONING`, `LAST_UPDATED`. Planning page `https://www.postfalls.gov/179/Planning`.
+- **Other cities:** no live public zoning GIS (the old KCGIS consortium server
+  `gis.postfallsidaho.org` is unreachable). Planning pages that loaded: Hayden
+  `https://www.haydenid.gov/departments/planning_/index.php` (cityofhaydenid.us redirects
+  there), Spirit Lake `https://www.spiritlakeid.gov/planningandzoning` (it also links an ArcGIS
+  Online zoning web map, not used yet). Not linked: rathdrum.gov (bot check, could not verify),
+  cityofhauser.org and haydenlake.org (parked domains), Athol, Dalton Gardens, Harrison, Worley,
+  Fernan, Huetter, State Line (no reachable site found).
+- **Center-point misses:** the county zoning layer 21 has gaps (e.g. 48N03W312100: about half
+  the parcel is in no zone polygon, probably water; the layer 23 flood zone there is mostly AE),
+  and the parcel's vertex-average center fell in a gap. Zoning is now read by parcel area: query
+  with the parcel polygon (POST when the URL would be long), then sample about 200 grid points
+  inside the parcel and count which polygon holds each (`src/shared/polygon-coverage.js`).
+- Layer 21 `LABEL` holds the long name ('AGRICULTURE') and `ZONE_NAME` the short code ('AG');
+  some rows disagree (e.g. `LABEL` 'AG-SUBURBAN' with `ZONE_NAME` 'HDRES' or 'RUR'). The adapter
+  still uses `LABEL` first.
+
 ## 2026-10-26: Kootenai assessment now comes from the county assessor layers
 
 Owner-approved 2026-10-26 (branch `claude/kootenai-assessor`). Checked live by the builder.
