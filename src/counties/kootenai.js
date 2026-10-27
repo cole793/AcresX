@@ -1,4 +1,6 @@
-import { fetchWithTimeout } from '../shared/http.js';
+import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
+import { ringsFromGeometry, samplePoints, coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
+import { findCityJurisdiction, findCityImpactArea, getCityZoning } from './kootenai-cities.js';
 
 const KC_PARCELS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
 const KC_ZONING = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21';
@@ -9,14 +11,7 @@ function sql(value) { return String(value || '').replaceAll("'", "''"); }
 function requestedParcelId(body) {
   return body.parcelId || body.parcelID || body.apn || body.pin || body.taxParcelId || body?.parcel?.properties?.ORIG_PARCEL_ID || body?.parcel?.properties?.PARCEL_ID_NR || body?.parcel?.properties?.PIN || '';
 }
-async function arcQuery(base, params) {
-  const url=new URL(`${base}/query`); url.searchParams.set('f','json');
-  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,String(v)));
-  const response=await fetchWithTimeout(url,{cf:{cacheTtl:900,cacheEverything:true}},20000);
-  if(!response.ok) throw new Error(`Kootenai County GIS returned ${response.status}`);
-  const data=await response.json(); if(data.error) throw Object.assign(new Error(data.error.message||'Kootenai County GIS query failed'),{arcgisError:true});
-  return data.features||[];
-}
+const arcQuery = (base, params) => arcgisQuery(base, params, { agency: 'Kootenai County GIS' });
 // The Ownership_Display parcel layer has no ZONING field (zoning comes from Data_Layers/21), and
 // ArcGIS fails the whole query when outFields or where names a field the layer lacks. Only PIN,
 // Acres, Loc_Addr and Loc_City are confirmed on the layer (validation run 40389472214), so an
@@ -33,9 +28,6 @@ async function queryParcel(parcelId) {
     console.warn(`Kootenai ownership parcel query failed (${e.message}); retrying with minimal fields ${KC_PARCEL_FIELDS_MINIMAL}`);
     return arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS_MINIMAL});
   }
-}
-async function queryZoningByPoint(lon,lat) {
-  return arcQuery(KC_ZONING,{where:'1=1',geometry:JSON.stringify({x:lon,y:lat,spatialReference:{wkid:4326}}),geometryType:'esriGeometryPoint',inSR:'4326',spatialRel:'esriSpatialRelIntersects',outFields:'ZONE_NAME,LABEL,ACRES',returnGeometry:'false'});
 }
 function centerFromGeometry(geometry) {
   const rings=geometry?.rings; if(!Array.isArray(rings)||!rings.length||!rings[0].length) return null;
@@ -67,15 +59,46 @@ function buildingUsesForZone(zoneRaw) {
   return {title:'Allowed Buildings / Dwelling Types',zone:zoneRaw,sourceUrl:KC_CODE_RESIDENTIAL,status:'mapped_from_county_code',legend:{P:'Permitted',A:'Administrative permit',S:'Special notice permit',C:'Conditional use permit',X:'Prohibited'},uses,disclaimer:'Planning summary from Kootenai County Code Table 2-1101. Parcel size, frontage, overlays, nonconforming status, septic, access, fire/building code and use-specific standards can affect approval.'};
 }
 
+const round3 = n => Math.round(n * 1000) / 1000;
+
 export async function getKootenaiCountyIntelligence(body) {
   const parcelId=requestedParcelId(body); let parcelFeatures=[];
   try { parcelFeatures=await queryParcel(parcelId); } catch(e) { console.warn('Kootenai ownership parcel lookup failed',e); }
   let lon=Number(body.lon), lat=Number(body.lat);
   if((!Number.isFinite(lon)||!Number.isFinite(lat)) && parcelFeatures.length) { const c=centerFromGeometry(parcelFeatures[0].geometry); if(c) [lon,lat]=c; }
-  let zoningFeatures=[]; if(Number.isFinite(lon)&&Number.isFinite(lat)) zoningFeatures=await queryZoningByPoint(lon,lat);
-  const parcelAttrs=parcelFeatures[0]?.attributes||{}, zoningAttrs=zoningFeatures[0]?.attributes||{};
-  const zone=String(zoningAttrs.LABEL||zoningAttrs.ZONE_NAME||'').trim();
-  if(!zone) return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:'The current Kootenai County Data_Layers zoning service returned no polygon at this parcel location.',sourceUrl:KC_ZONING,url:KC_PLANNING},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
+  const parcelAttrs=parcelFeatures[0]?.attributes||{};
+  // The parcel outline (county layer first, then the one the browser sent) lets every layer below
+  // be read by how much of the parcel it covers instead of at one center point, which can land in
+  // a gap of the zoning map or on the wrong side of a city boundary.
+  const rings=ringsFromGeometry(parcelFeatures[0]?.geometry)||ringsFromGeometry(body.geometry);
+  const hasPoint=Number.isFinite(lon)&&Number.isFinite(lat);
+  if(!rings&&!hasPoint) return noZoneResult(parcelFeatures,'parcel location','');
+  const where={rings,lon,lat}, samples=rings?samplePoints(rings):[[lon,lat]];
+  const matchMethod=rings?'parcel area (sampled)':'parcel location';
+
+  // Who zones it. If the city-limits layer fails, carry on with county zoning (the old behaviour).
+  const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'}).then(features=>({features}),error=>({error}));
+  const impactArea=findCityImpactArea(where,samples).catch(e=>{ console.warn('Kootenai city impact area lookup failed',e); return null; });
+  let city=null;
+  try { city=await findCityJurisdiction(where,samples); } catch(e) { console.warn('Kootenai city limits lookup failed; using county zoning',e); }
+  if(city) {
+    const jurisdictionNote=city.straddles?` About ${pct(city.share)} of the parcel is inside ${city.name} limits; the rest may fall under another jurisdiction.`:'';
+    return getCityZoning(city,where,samples,{parcelAttrs,matchMethod,jurisdictionNote});
+  }
+
+  const {features:zoningFeatures,error}=await countyZoning; if(error) throw error;
+  const covered=coverageShares(samples,zoningFeatures,a=>String(a.LABEL||a.ZONE_NAME||'').trim()).filter(s=>s.key);
+  const impact=await impactArea;
+  const impactNote=impact?` Inside the ${impact.city} area of city impact; Kootenai County zoning applies outside city limits.`:'';
+  const top=covered[0];
+  if(!top) return noZoneResult(parcelFeatures,matchMethod,impactNote,impact);
+  const zone=top.key, zoningAttrs=Object.fromEntries(Object.entries(top.attributes||{}).filter(([k])=>k!=='Shape'));
+  const others=covered.slice(1).filter(s=>s.share>=0.05);
+  const shareNote=samples.length>1?coverageNote(top,others,1-covered.reduce((t,s)=>t+s.share,0),'county zone'):'';
   const allowedBuildings=buildingUsesForZone(zone);
-  return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:'Mapped zoning designation from Kootenai County KCEarth/Data_Layers.',sourceUrl:KC_ZONING,url:KC_PLANNING},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod:'parcel location',attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
+  return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:`Mapped zoning designation from Kootenai County KCEarth/Data_Layers.${shareNote}${impactNote}`,sourceUrl:KC_ZONING,url:KC_PLANNING,...(others.length?{otherZones:others.map(s=>({code:s.key,share:round3(s.share)}))}:{}),...(impact?{cityImpactArea:impact}:{})},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod,attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
+}
+
+function noZoneResult(parcelFeatures,matchMethod,impactNote,impact) {
+  return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:`The current Kootenai County Data_Layers zoning service returned no polygon ${matchMethod==='parcel location'?'at this parcel location':'on this parcel'}.${impactNote}`,sourceUrl:KC_ZONING,url:KC_PLANNING,...(impact?{cityImpactArea:impact}:{})},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
 }
