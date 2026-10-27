@@ -2,6 +2,38 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-27: Kootenai parcel search now uses the county parcel layer
+
+Owner-approved 2026-10-27 (branch `claude/kootenai-parcel-search`). Checked live by the builder.
+
+- `/api/parcel-search` for `ID` + `Kootenai` queries
+  `map.kcgov.us/.../NewServices/Ownership_Display/MapServer/0` first
+  (`where=PIN='<id>' OR PID='<id>'`, `outFields=PIN,PID,Acres,Loc_Addr,Loc_City`, `outSR=4326`,
+  `f=json`, 10 s timeout). Adapter: `src/counties/kootenai-parcels.js`. It falls back to the
+  statewide layer and then IDWR when the county layer errors or misses. Live: 13/13 parcels found
+  (the 12 validation parcels plus 47N03W052200), ~190-920 ms, one request each.
+- **The statewide layer has no Kootenai parcels.** `Public_Idaho_Parcels_/FeatureServer/7` holds
+  381,144 parcels from 13 counties (Ada, Bear Lake, Boise, Camas, Gooding, Jerome, Lincoln,
+  Minidoka, Nez Perce, Oneida, Teton, Valley, Washington), and 0 of the 13 Kootenai PINs. Before
+  this change every Kootenai search sent it 3 queries that could never match (exact, dashed, prefix
+  LIKE), then asked IDWR. Those wasted queries are what tripped "Too many requests". In the
+  fallback chain they still run (as instructed), now with one retry on a rate limit.
+- **The county outlines are the same as IDWR's.** For all 12 validation parcels, the county and
+  IDWR outlines differ by under 0.0001 ac in area and under 0.1 mm in centroid. IDWR republishes
+  the county geometry. So the county layer is not more accurate. Its gains are reliability,
+  one request instead of four, the assessor `Acres`, the situs address and city, and the dashed PID.
+- **Mapped area is not the assessor acreage.** 47N03W052200: outline 1.98 ac, assessor `Acres`
+  2.888 (the "1.97 statewide" figure was IDWR's outline, which is the county outline). The
+  48N03W312100 outline is 91.45 ac against 65.33 assessor acres. The response's `ACRES` is now
+  the assessor figure; before, Kootenai answers had no `ACRES` and the report computed the area
+  from the outline.
+- The layer has no ZIP or assessor link field, so `SITUS_ZIP_NR` and `DATA_LINK` stay `''`
+  (as from IDWR). Its `Name` field is the owner, and the adapter never requests it. Kootenai
+  answers from the statewide/IDWR fallbacks have `OWNER*`, `PUBLIC_STD` and `MAIL_*` removed.
+  Other Idaho counties still return the statewide owner and mailing fields (unchanged).
+- `_source {name, url}` is added to Kootenai answers. Responses for other Idaho counties and
+  Montana are byte-identical to 2d12331 (`test/fixtures/parcel-search-legacy-snapshot.json`).
+
 ## 2026-10-26: Kootenai assessment now comes from the county assessor layers
 
 Owner-approved 2026-10-26 (branch `claude/kootenai-assessor`). Checked live by the builder.
