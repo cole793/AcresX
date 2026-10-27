@@ -24,6 +24,7 @@
       .property-overview-acres strong{font:800 34px Manrope;line-height:1;color:var(--green)}
       .property-overview-acres span{font-size:12px;color:var(--muted);padding-bottom:3px}
       .property-overview-acres small{display:block;font-size:10px;color:var(--muted);margin-left:auto;padding-bottom:4px}
+      .property-overview-acreage-note{margin-top:7px;font-size:10px;font-weight:700;color:var(--amber)}
       .property-overview-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;margin-top:10px}
       .property-overview-fact{padding:11px 0;border-bottom:1px solid #edf1ee;min-width:0}
       .property-overview-fact span{display:block;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:3px}
@@ -121,6 +122,7 @@
             <div><strong id="overviewAcres">—</strong><span> acres</span></div>
             <small id="overviewSqFt">Mapped parcel area</small>
           </div>
+          <div id="overviewAcreageNote" class="property-overview-acreage-note" hidden></div>
           <div class="property-overview-facts">
             <div class="property-overview-fact"><span>Parcel ID</span><strong id="overviewParcelId">—</strong></div>
             <div class="property-overview-fact"><span>County</span><strong id="overviewCounty">—</strong></div>
@@ -169,6 +171,30 @@
     el.className = cls;
   }
 
+  // Assessor and mapped acreage together when both exist (window.AcresXAcreage, public/acreage.js);
+  // mapped area only if that module has not loaded.
+  function renderAcreage(area) {
+    const acresEl = document.getElementById('overviewAcres');
+    const detailEl = document.getElementById('overviewSqFt');
+    const noteEl = document.getElementById('overviewAcreageNote');
+    const A = window.AcresXAcreage;
+    const info = A ? A.describe(last.parcel) : null;
+    let note = '';
+    if (info && info.assessor != null) {
+      acresEl.textContent = A.format(info.assessor);
+      detailEl.textContent = info.mapped != null ? info.text : `${info.text} · mapped area unavailable`;
+      note = info.note;
+    } else if (area) {
+      const decimals = area.acres >= 100 ? 1 : 2;
+      acresEl.textContent = area.acres.toFixed(decimals);
+      detailEl.textContent = `${Math.round(area.squareFeet).toLocaleString()} sq ft · mapped area`;
+    } else {
+      acresEl.textContent = '—';
+      detailEl.textContent = 'Mapped acreage unavailable';
+    }
+    if (noteEl) { noteEl.textContent = note; noteEl.hidden = !note; }
+  }
+
   function renderPropertyOverview() {
     if (typeof last === 'undefined' || !last?.parcel || typeof L === 'undefined') return;
     if (!ensureOverviewCard()) return;
@@ -190,14 +216,7 @@
     setFact('overviewSoil', soil || 'Not available');
     setFact('overviewWellDepth', wellDepth ? `${wellDepth.depth.toLocaleString()} ft · ${wellDepth.count} nearby log${wellDepth.count === 1 ? '' : 's'}` : 'Not available');
 
-    if (area) {
-      const decimals = area.acres >= 100 ? 1 : 2;
-      document.getElementById('overviewAcres').textContent = area.acres.toFixed(decimals);
-      document.getElementById('overviewSqFt').textContent = `${Math.round(area.squareFeet).toLocaleString()} sq ft · mapped area`;
-    } else {
-      document.getElementById('overviewAcres').textContent = '—';
-      document.getElementById('overviewSqFt').textContent = 'Mapped acreage unavailable';
-    }
+    renderAcreage(area);
 
     const map = initPreviewMap();
     if (map) {
