@@ -25,9 +25,12 @@ src/
   counties/
     spokane.js
   services/
+    elevation.js
     land-analysis.js
+    slope-grid.js
     soils.js
   shared/
+    edge-cache.js
     http.js
 ```
 
@@ -41,8 +44,17 @@ Shared response and timeout helpers. This should stay dependency-light so every 
 ### `services/soils.js`
 USDA NRCS Soil Data Access integration and soil-feasibility classification. The spatial lookup uses `SDA_Get_Mukey_from_intersection_with_WktWgs84` as a table-valued function.
 
+### `shared/edge-cache.js`
+`caches.default` helpers keyed by a SHA-256 of the parcel geometry rounded to 6 decimals. Each helper is a no-op where `caches` is undefined (Node tests), and cache errors never fail a lookup.
+
+### `services/elevation.js`
+Batched raster sampling. One ArcGIS ImageServer `getSamples` request (multipoint, form-encoded POST, `returnFirstValueOnly=true`, `interpolation=RSP_NearestNeighbor`) returns every point a lookup needs. It is used for USGS 3DEP elevation (meters, converted to feet) and USFS tree canopy. Samples are matched on `locationId`. A point missing from the answer is NoData (`null`). A failed request gets one retry (6 s, then 250 ms backoff, then 4 s). After two failures, callers use a capped per-point fallback: at most 9 EPQS points (one attempt, 4 s each). Nearest neighbour is used because it reproduces the old `identify`/EPQS values; bilinear differs by up to ~0.3 ft.
+
 ### `services/land-analysis.js`
-Coordinates soil and USGS terrain screening while preserving the existing `/api/land-analysis` response shape.
+Coordinates soil, USGS terrain and USFS tree-canopy screening while preserving the existing `/api/land-analysis` response shape. Terrain samples 9 points and canopy up to 36, one `getSamples` request each. The canopy fallback is at most 12 per-point `identify` calls. Terrain and canopy answers are cached separately in `caches.default` for 30 days. Only complete `getSamples` answers are cached, never failures, fallbacks or partial canopy. Upstream requests per call: 3 normally (soil + terrain + canopy), 26 at worst.
+
+### `services/slope-grid.js`
+`/api/slope-grid`: a 5 x 5 elevation grid (16 slope cells) from one `getSamples` request. If `getSamples` fails twice, it samples a coarser 3 x 3 grid from EPQS (4 cells, `partial: true`). Complete answers (`partial: false`) are cached for 30 days. Upstream requests per call: 1 normally, 11 at worst.
 
 ### `counties/spokane.js`
 Spokane County official-source adapter for SCOUT zoning, comprehensive plan, UGA, permit jurisdiction, and permit-history screening.

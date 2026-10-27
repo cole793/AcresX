@@ -24,8 +24,62 @@ spends paid web-search quota).
 
 From GitHub Actions (the normal way): **Actions, County validation, Run workflow**. Pick the
 county, optionally tick `discover`, optionally give a base URL (for example a PR preview link).
-The run summary shows the table, and the `county-validation-<county>` artifact holds the JSON and
-Markdown. A scheduled run checks every county file daily at 13:23 UTC.
+Manual runs also take `delay_ms` (pause between parcels, default 5000) and `retry_delay_ms`
+(pause before the parcel-lookup retry, default 15000). The run summary shows what changed since
+the previous run and the table, and the `county-validation-<county>` artifact holds the JSON and
+Markdown. A scheduled run checks every county file **that has saved parcels** daily at 13:23 UTC
+(about 6:23 am Pacific), never with discovery, with 5 s between parcels.
+
+## Rate limits
+
+The statewide Idaho parcel service answers "Too many requests" when it is busy (the Worker passes
+it on as HTTP 502 with that message). The parcel lookup, and only the parcel lookup, is retried
+once after `--retry-delay` (default 15 s) when it gets HTTP 429 or a "Too many requests" / "rate
+limit" message. The parcel layer's detail then ends "(retried once after a rate-limit answer)".
+Other layers are not retried.
+
+## Alerts
+
+Every run compares its report with the previous one, `latest/<county>.json` on the
+`validation-results` branch, read before the new results are published. That baseline is only
+used when it checked the same county's saved parcels against the same base URL (not a discovery
+run, not a preview URL); otherwise the changes file says "No comparison" and every broken cell
+counts as newly broken. A cell is broken when its status is `error` or `mismatch`. Per parcel x
+layer cell:
+
+| Change | Meaning |
+|---|---|
+| Newly broken | Not broken last run (ok, unavailable, skipped, or the parcel wasn't in that run), broken now. |
+| Still broken | Broken in both runs. |
+| Recovered | Broken last run, ok or unavailable now. |
+| Newly unavailable | ok last run, unavailable now. |
+
+This is written to `<county>-changes.md` (in the run summary, the artifact and
+`latest/<county>-changes.md`). Scheduled runs then keep **one open GitHub issue per county**,
+labelled `validation-alert` and `county:<county>`, titled `Validation: <County> — <n> layers broken`:
+
+- A layer **meets the threshold** in a run when it is broken for at least 3 parcels, or, for the
+  parcel lookup, for any parcel.
+- A layer **alerts** when it meets the threshold now and either it is broken for at least 3
+  parcels in this run, or it also met the threshold in the previous comparable run. So a single
+  parcel lookup failure, or one or two parcels timing out on a layer, never opens an issue; the
+  parcel lookup failing in two runs in a row (any parcels) does.
+- No open issue and a layer alerts: the issue is opened. Its body has the broken layers with parcel
+  IDs, status and error detail, the layers failing below the threshold, the changes since the
+  previous run, and links to the run, `latest/<county>.md`, `latest/<county>-changes.md` and
+  `history/`.
+- Open issue and some layer still meets the threshold: the title is updated (when a layer
+  alerts), and a comment is added only when cells newly broke or recovered, so a steady failure
+  doesn't comment every day.
+- Open issue and no layer meets the threshold: a "Recovered" comment is added and the issue is
+  closed. One or two failing parcels on a layer don't keep it open.
+
+The decision is made offline by `scripts/validation-alerts.mjs` (tests in
+`test/validation-alerts.test.js`) and written to `<county>-alert.json`; the workflow's `alert` job
+only looks up the open issue and runs `gh`. That job runs on scheduled runs only and is the only
+job with `issues: write` (and nothing else). Upstream error text is escaped in issue bodies, and
+`@` and `#` are broken with a zero-width space, so an issue never mentions anyone or links other
+issues. Manual runs never open, comment on or close issues.
 
 ## Where results live
 
@@ -44,11 +98,14 @@ Layout on that branch:
 
 | Path | Contents |
 |---|---|
-| `latest/<county>.json`, `latest/<county>.md` | The most recent run, overwritten each time. |
+| `latest/<county>.json`, `latest/<county>.md` | The most recent saved-parcel run, overwritten each time. Discovery runs never replace it (it is the baseline for alerts). |
+| `latest/<county>-changes.md` | What changed in that run since the run before it (see "Alerts"). |
+| `latest/<county>-discover-report.json`, `.md` | The report from the most recent `discover` run. |
 | `latest/<county>-discovered.json` | The sample from the most recent `discover` run. A later run without discovery leaves it in place; check its `generatedAt`. |
-| `history/<YYYY-MM-DD>/<county>-<run_id>.json` | Every run's JSON report, kept (the date is UTC). |
+| `history/<YYYY-MM-DD>/<county>-<run_id>.json` | Every saved-parcel run's JSON report, kept (the date is UTC). Discovery runs are `<county>-<run_id>-discover.json`. |
 
-Commit messages read `Validation <county> <date> run <run_id>: <failed> failed`, so
+Commit messages read `Validation <county> <date> run <run_id>: <failed> failed` (with `(discover)`
+after the run id for discovery runs), so
 `git log origin/validation-results` is a quick pass/fail history. `<run_id>` is the GitHub Actions
 run id (`https://github.com/<owner>/<repo>/actions/runs/<run_id>`).
 
@@ -65,6 +122,8 @@ node scripts/validate-county.mjs --county kootenai                 # saved parce
 node scripts/validate-county.mjs --county kootenai --discover      # fresh varied sample
 node scripts/validate-county.mjs --county kootenai --discover --count 8 --seed 42
 node scripts/validate-county.mjs --county kootenai --base-url https://pr-12-acresx.example.workers.dev --out /tmp/v
+node scripts/validate-county.mjs --county kootenai --delay 5000 --retry-delay 15000   # scheduled-run pacing
+node scripts/validation-alerts.mjs --county kootenai --current validation-results/kootenai.json --previous previous.json
 ```
 
 The base URL defaults to `ACRESX_BASE_URL`, else `https://acresx.cole-groshens.workers.dev`.

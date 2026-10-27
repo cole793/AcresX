@@ -1,4 +1,11 @@
-import { fetchWithTimeout, json } from '../shared/http.js';
+import { json } from '../shared/http.js';
+import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
+import { epqsElevationsFt, sampleElevationsFt } from './elevation.js';
+
+export const SLOPE_CACHE_PREFIX = 'https://acresx.internal/cache/slope-grid/v1/';
+export const GRID_SIZE = 5;
+export const FALLBACK_GRID_SIZE = 3;
+const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 function geometryBounds(geometry) {
   const coords = [];
@@ -20,52 +27,6 @@ function distanceFeet(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-async function elevationAt(lon, lat) {
-  // Use USGS EPQS first: it is designed specifically for point elevations.
-  // Fall back to the 3DEP ImageServer when EPQS is temporarily unavailable.
-  const epqs = new URL('https://epqs.nationalmap.gov/v1/json');
-  epqs.searchParams.set('x', String(lon));
-  epqs.searchParams.set('y', String(lat));
-  epqs.searchParams.set('wkid', '4326');
-  epqs.searchParams.set('units', 'Feet');
-  epqs.searchParams.set('includeDate', 'false');
-
-  const image = new URL('https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/identify');
-  image.searchParams.set('geometry', JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }));
-  image.searchParams.set('geometryType', 'esriGeometryPoint');
-  image.searchParams.set('sr', '4326');
-  image.searchParams.set('returnGeometry', 'false');
-  image.searchParams.set('returnCatalogItems', 'false');
-  image.searchParams.set('f', 'json');
-
-  let lastError;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    for (const source of ['epqs', 'image']) {
-      try {
-        const response = await fetchWithTimeout(source === 'epqs' ? epqs : image, {
-          cf: { cacheTtl: 2592000, cacheEverything: true }
-        }, 15000);
-        if (!response.ok) throw new Error(`USGS elevation service returned ${response.status}`);
-        const data = await response.json();
-        if (data?.error) throw new Error(data.error.message || 'USGS elevation service error');
-
-        if (source === 'epqs') {
-          const feet = Number(data?.value ?? data?.USGS_Elevation_Point_Query_Service?.Elevation_Query?.Elevation);
-          if (Number.isFinite(feet) && feet > -10000) return feet;
-          throw new Error('USGS EPQS elevation was unavailable.');
-        }
-
-        const meters = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
-        if (Number.isFinite(meters) && meters >= -4000) return meters * 3.280839895;
-        throw new Error('USGS 3DEP elevation was unavailable.');
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
-  }
-  throw lastError || new Error('USGS elevation unavailable.');
-}
 function band(grade) {
   if (grade < 5) return 'flat';
   if (grade < 10) return 'moderate';
@@ -73,28 +34,7 @@ function band(grade) {
   return 'very_steep';
 }
 
-async function sampleInBatches(points, batchSize = 5) {
-  const sampled = [];
-  for (let i = 0; i < points.length; i += batchSize) {
-    const batch = points.slice(i, i + batchSize);
-    const results = await Promise.allSettled(batch.map(async point => ({
-      ...point,
-      elevationFt: await elevationAt(point.lon, point.lat)
-    })));
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') sampled.push(result.value);
-      else sampled.push({ ...batch[index], elevationFt: null, error: result.reason?.message || 'Elevation unavailable' });
-    });
-  }
-  return sampled;
-}
-
-export async function handleSlopeGrid(request) {
-  const { geometry } = await request.json();
-  if (!geometry) return json({ error: 'Parcel geometry is required.' }, 400, 'no-store');
-
-  const b = geometryBounds(geometry);
-  const size = 5;
+function buildGrid(b, size) {
   let lonStep = (b.maxLon - b.minLon) / (size - 1);
   let latStep = (b.maxLat - b.minLat) / (size - 1);
 
@@ -107,10 +47,41 @@ export async function handleSlopeGrid(request) {
       grid.push({ row, col, lon: b.minLon + col * lonStep, lat: b.minLat + row * latStep });
     }
   }
+  return grid;
+}
 
-  const sampled = await sampleInBatches(grid, 5);
+const withElevations = (grid, values) => grid.map((point, i) => (
+  values[i] === null
+    ? { ...point, elevationFt: null, error: 'Elevation unavailable' }
+    : { ...point, elevationFt: values[i] }
+));
+
+// Normal path: one getSamples request (plus one retry) for the 5 x 5 grid. If that fails twice,
+// a coarser 3 x 3 grid is sampled point by point from EPQS (9 requests, one attempt each).
+async function sampleGrid(b) {
+  const grid = buildGrid(b, GRID_SIZE);
+  try {
+    return { size: GRID_SIZE, grid, sampled: withElevations(grid, await sampleElevationsFt(grid)), fallback: false };
+  } catch (error) {
+    console.warn('Slope grid getSamples failed; using capped EPQS fallback', error?.message);
+    const coarse = buildGrid(b, FALLBACK_GRID_SIZE);
+    return { size: FALLBACK_GRID_SIZE, grid: coarse, sampled: withElevations(coarse, await epqsElevationsFt(coarse)), fallback: true };
+  }
+}
+
+export async function handleSlopeGrid(request, env, ctx) {
+  const { geometry } = await request.json();
+  if (!geometry) return json({ error: 'Parcel geometry is required.' }, 400, 'no-store');
+
+  const b = geometryBounds(geometry);
+  const slot = await openGeometryCache(SLOPE_CACHE_PREFIX, geometry);
+  const hit = await readCachedJson(slot);
+  if (hit?.available === true && hit.partial === false) return json(hit, 200, 'public, max-age=3600, s-maxage=2592000');
+
+  const { size, grid, sampled, fallback } = await sampleGrid(b);
   const validSamples = sampled.filter(p => Number.isFinite(p.elevationFt));
-  if (validSamples.length < 9) {
+  // 9 of 25 on the normal grid (unchanged); the coarse fallback grid needs one full cell.
+  if (validSamples.length < (fallback ? 4 : 9)) {
     return json({
       available: false,
       error: 'Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.',
@@ -167,13 +138,16 @@ export async function handleSlopeGrid(request) {
     }, 200, 'no-store');
   }
 
-  return json({
+  const body = {
     available: true,
     source: 'USGS 3DEP / EPQS elevation',
     resolution: `${size - 1} x ${size - 1} parcel grid`,
     sampleCount: validSamples.length,
     requestedSamples: grid.length,
-    partial: validSamples.length < grid.length,
+    // The coarse fallback grid counts as partial, so it is never cached.
+    partial: fallback || validSamples.length < grid.length,
     cells
-  }, 200, 'public, max-age=3600, s-maxage=2592000');
+  };
+  if (!body.partial) await writeCachedJson(slot, body, CACHE_TTL_SECONDS, ctx);
+  return json(body, 200, 'public, max-age=3600, s-maxage=2592000');
 }

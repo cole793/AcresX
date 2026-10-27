@@ -1,5 +1,14 @@
 import { fetchWithTimeout, json } from '../shared/http.js';
+import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { soilAt } from './soils.js';
+import {
+  epqsElevationsFt, getSamplesWithRetry, sampleElevationsFt, spreadPick, POINT_FALLBACK_TIMEOUT_MS
+} from './elevation.js';
+
+export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v1/';
+export const CANOPY_CACHE_PREFIX = 'https://acresx.internal/cache/canopy/v1/';
+export const CANOPY_FALLBACK_MAX_POINTS = 12;
+const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 function geometryBounds(geometry) {
   if (!geometry?.coordinates) throw new Error('Parcel geometry is invalid.');
@@ -30,56 +39,10 @@ function distanceFeet(a, b) {
   return 2 * earthRadiusFeet * Math.asin(Math.sqrt(h));
 }
 
-async function elevationAt(lon, lat) {
-  // Use USGS EPQS first: it is designed specifically for point elevations.
-  // Fall back to the 3DEP ImageServer when EPQS is temporarily unavailable.
-  const epqs = new URL('https://epqs.nationalmap.gov/v1/json');
-  epqs.searchParams.set('x', String(lon));
-  epqs.searchParams.set('y', String(lat));
-  epqs.searchParams.set('wkid', '4326');
-  epqs.searchParams.set('units', 'Feet');
-  epqs.searchParams.set('includeDate', 'false');
-
-  const image = new URL('https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/identify');
-  image.searchParams.set('geometry', JSON.stringify({ x: lon, y: lat, spatialReference: { wkid: 4326 } }));
-  image.searchParams.set('geometryType', 'esriGeometryPoint');
-  image.searchParams.set('sr', '4326');
-  image.searchParams.set('returnGeometry', 'false');
-  image.searchParams.set('returnCatalogItems', 'false');
-  image.searchParams.set('f', 'json');
-
-  let lastError;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    for (const source of ['epqs', 'image']) {
-      try {
-        const response = await fetchWithTimeout(source === 'epqs' ? epqs : image, {
-          cf: { cacheTtl: 2592000, cacheEverything: true }
-        }, 15000);
-        if (!response.ok) throw new Error(`USGS elevation service returned ${response.status}`);
-        const data = await response.json();
-        if (data?.error) throw new Error(data.error.message || 'USGS elevation service error');
-
-        if (source === 'epqs') {
-          const feet = Number(data?.value ?? data?.USGS_Elevation_Point_Query_Service?.Elevation_Query?.Elevation);
-          if (Number.isFinite(feet) && feet > -10000) return feet;
-          throw new Error('USGS EPQS elevation was unavailable.');
-        }
-
-        const meters = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
-        if (Number.isFinite(meters) && meters >= -4000) return meters * 3.280839895;
-        throw new Error('USGS 3DEP elevation was unavailable.');
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
-  }
-  throw lastError || new Error('USGS elevation unavailable.');
-}
-
 const TCC_YEAR = 2025;
-const TCC_SERVICE = 'https://imagery.geoplatform.gov/iipp/rest/services/Vegetation/USFS_EDW_NLCD_TCC_CONUS/ImageServer';
+export const TCC_SERVICE = 'https://imagery.geoplatform.gov/iipp/rest/services/Vegetation/USFS_EDW_NLCD_TCC_CONUS/ImageServer';
 
+// Per-point identify: only used as the capped fallback when getSamples fails twice.
 async function treeCanopyAt(point) {
   const url = new URL(TCC_SERVICE + '/identify');
   url.searchParams.set('geometry', JSON.stringify({
@@ -93,9 +56,7 @@ async function treeCanopyAt(point) {
   url.searchParams.set('returnCatalogItems', 'false');
   url.searchParams.set('f', 'json');
 
-  const response = await fetchWithTimeout(url, {
-    cf: { cacheTtl: 2592000, cacheEverything: true }
-  }, 15000);
+  const response = await fetchWithTimeout(url, {}, POINT_FALLBACK_TIMEOUT_MS);
   if (!response.ok) throw new Error(`USFS tree-canopy service returned ${response.status}`);
   const data = await response.json();
   if (data?.error) throw new Error(data.error.message || 'USFS tree-canopy service error');
@@ -144,15 +105,21 @@ function landCoverSamplePoints(geometry) {
   return points.slice(0, 36);
 }
 
-async function landCoverAnalysis(geometry) {
-  const points = landCoverSamplePoints(geometry);
-  const samples = [];
+const validCanopy = value => value !== null && Number.isFinite(value) && value >= 0 && value <= 100;
 
-  for (let i = 0; i < points.length; i += 6) {
-    const batch = await Promise.allSettled(points.slice(i, i + 6).map(treeCanopyAt));
-    for (const result of batch) {
-      if (result.status === 'fulfilled') samples.push(result.value);
-    }
+async function landCoverAnalysis(geometry) {
+  let points = landCoverSamplePoints(geometry);
+  let samples;
+  let fallback = false;
+
+  try {
+    samples = (await getSamplesWithRetry(TCC_SERVICE, points)).filter(validCanopy);
+  } catch (error) {
+    console.warn('Tree-canopy getSamples failed; using capped per-point fallback', error?.message);
+    fallback = true;
+    points = spreadPick(points, CANOPY_FALLBACK_MAX_POINTS);
+    const results = await Promise.allSettled(points.map(treeCanopyAt));
+    samples = results.filter(r => r.status === 'fulfilled').map(r => r.value);
   }
 
   if (samples.length < Math.min(6, points.length)) {
@@ -160,7 +127,9 @@ async function landCoverAnalysis(geometry) {
   }
 
   const canopyPct = Math.round(samples.reduce((sum, value) => sum + value, 0) / samples.length);
-  return {
+  // Only a complete getSamples answer is cached: never fallback or partial answers.
+  const cacheable = !fallback && samples.length === points.length;
+  return { cacheable, result: {
     available: true,
     year: TCC_YEAR,
     woodedPct: canopyPct,
@@ -171,7 +140,7 @@ async function landCoverAnalysis(geometry) {
     topClasses: [],
     source: 'USDA Forest Service NLCD Tree Canopy Cover',
     note: 'Preliminary 30 m satellite tree-canopy estimate; not a tree survey or clearing plan.'
-  };
+  } };
 }
 
 async function terrainAnalysis(geometry) {
@@ -193,12 +162,20 @@ async function terrainAnalysis(geometry) {
     { lon: bounds.maxLon, lat: center.lat }
   ];
 
-  const samples = await Promise.all(points.map(async point => ({
-    ...point,
-    elevation: await elevationAt(point.lon, point.lat)
-  })));
+  let elevations;
+  let fallback = false;
+  try {
+    elevations = await sampleElevationsFt(points);
+  } catch (error) {
+    console.warn('Terrain getSamples failed; using capped EPQS fallback', error?.message);
+    fallback = true;
+    elevations = await epqsElevationsFt(points);
+  }
+  // As before, terrain needs every point (the old code failed on any missing elevation).
+  const missing = elevations.filter(value => value === null).length;
+  if (missing) throw new Error(`USGS elevation was unavailable for ${missing} of ${points.length} terrain points.`);
+  const samples = points.map((point, i) => ({ ...point, elevation: elevations[i] }));
 
-  const elevations = samples.map(sample => sample.elevation);
   const minFt = Math.min(...elevations);
   const maxFt = Math.max(...elevations);
   const reliefFt = maxFt - minFt;
@@ -207,7 +184,8 @@ async function terrainAnalysis(geometry) {
     Math.abs(sample.elevation - centerSample.elevation) / Math.max(distanceFeet(centerSample, sample), 1) * 100
   );
 
-  return {
+  // Only getSamples answers are cached, so a fallback answer is replaced on the next lookup.
+  return { cacheable: !fallback, result: {
     available: true,
     gradePct: grades.reduce((sum, grade) => sum + grade, 0) / grades.length,
     maxGradePct: Math.max(...grades),
@@ -217,10 +195,20 @@ async function terrainAnalysis(geometry) {
     reliefFt,
     sampleCount: samples.length,
     source: 'USGS 3DEP / EPQS elevation'
-  };
+  } };
 }
 
-export async function handleLandAnalysis(request) {
+// Serves a layer from caches.default when it holds a successful answer; stores successes only.
+async function cachedLayer(prefix, geometry, ctx, compute) {
+  const slot = await openGeometryCache(prefix, geometry);
+  const hit = await readCachedJson(slot);
+  if (hit?.available === true) return hit;
+  const { result, cacheable } = await compute(geometry);
+  if (cacheable && result?.available === true) await writeCachedJson(slot, result, CACHE_TTL_SECONDS, ctx);
+  return result;
+}
+
+export async function handleLandAnalysis(request, env, ctx) {
   const { geometry } = await request.json();
   if (!geometry) return json({ error: 'Parcel geometry is required.' }, 400, 'no-store');
 
@@ -232,8 +220,8 @@ export async function handleLandAnalysis(request) {
 
   const [soilResult, terrainResult, landCoverResult] = await Promise.allSettled([
     soilAt(center.lon, center.lat),
-    terrainAnalysis(geometry),
-    landCoverAnalysis(geometry)
+    cachedLayer(TERRAIN_CACHE_PREFIX, geometry, ctx, terrainAnalysis),
+    cachedLayer(CANOPY_CACHE_PREFIX, geometry, ctx, landCoverAnalysis)
   ]);
 
   const soil = soilResult.status === 'fulfilled'

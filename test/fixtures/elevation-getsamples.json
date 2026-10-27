@@ -1,0 +1,1058 @@
+{
+ "recorded": "2026-10-27, live, by the builder (claude/batch-elevation)",
+ "geometry": {
+  "type": "Polygon",
+  "coordinates": [
+   [
+    [
+     -116.76,
+     47.5446
+    ],
+    [
+     -116.7556,
+     47.5446
+    ],
+    [
+     -116.7556,
+     47.5462
+    ],
+    [
+     -116.7578,
+     47.5468
+    ],
+    [
+     -116.76,
+     47.5462
+    ],
+    [
+     -116.76,
+     47.5446
+    ]
+   ]
+  ]
+ },
+ "getSamples": {
+  "tcc:36": {
+   "url": "https://imagery.geoplatform.gov/iipp/rest/services/Vegetation/USFS_EDW_NLCD_TCC_CONUS/ImageServer/getSamples",
+   "request": {
+    "geometry": "{\"points\":[[-116.75968571428572,47.544757142857144],[-116.75905714285715,47.544757142857144],[-116.75842857142858,47.544757142857144],[-116.7578,47.544757142857144],[-116.75717142857143,47.544757142857144],[-116.75654285714286,47.544757142857144],[-116.75591428571428,47.544757142857144],[-116.75968571428572,47.54507142857143],[-116.75905714285715,47.54507142857143],[-116.75842857142858,47.54507142857143],[-116.7578,47.54507142857143],[-116.75717142857143,47.54507142857143],[-116.75654285714286,47.54507142857143],[-116.75591428571428,47.54507142857143],[-116.75968571428572,47.545385714285715],[-116.75905714285715,47.545385714285715],[-116.75842857142858,47.545385714285715],[-116.7578,47.545385714285715],[-116.75717142857143,47.545385714285715],[-116.75654285714286,47.545385714285715],[-116.75591428571428,47.545385714285715],[-116.75968571428572,47.5457],[-116.75905714285715,47.5457],[-116.75842857142858,47.5457],[-116.7578,47.5457],[-116.75717142857143,47.5457],[-116.75654285714286,47.5457],[-116.75591428571428,47.5457],[-116.75968571428572,47.546014285714286],[-116.75905714285715,47.546014285714286],[-116.75842857142858,47.546014285714286],[-116.7578,47.546014285714286],[-116.75717142857143,47.546014285714286],[-116.75654285714286,47.546014285714286],[-116.75591428571428,47.546014285714286],[-116.75905714285715,47.54632857142857]],\"spatialReference\":{\"wkid\":4326}}",
+    "geometryType": "esriGeometryMultipoint",
+    "returnFirstValueOnly": "true",
+    "interpolation": "RSP_NearestNeighbor",
+    "f": "json"
+   },
+   "response": {
+    "samples": [
+     {
+      "location": {
+       "x": -116.75968571428572,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 0,
+      "value": "14",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75905714285715,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 1,
+      "value": "22",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75842857142858,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 2,
+      "value": "33",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 3,
+      "value": "36",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75717142857143,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 4,
+      "value": "47",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75654285714286,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 5,
+      "value": "34",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75591428571428,
+       "y": 47.544757142857144,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 6,
+      "value": "57",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75968571428572,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 7,
+      "value": "22",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75905714285715,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 8,
+      "value": "12",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75842857142858,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 9,
+      "value": "59",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 10,
+      "value": "66",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75717142857143,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 11,
+      "value": "78",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75654285714286,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 12,
+      "value": "43",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75591428571428,
+       "y": 47.54507142857143,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 13,
+      "value": "31",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75968571428572,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 14,
+      "value": "27",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75905714285715,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 15,
+      "value": "38",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75842857142858,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 16,
+      "value": "74",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 17,
+      "value": "63",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75717142857143,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 18,
+      "value": "78",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75654285714286,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 19,
+      "value": "44",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75591428571428,
+       "y": 47.545385714285715,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 20,
+      "value": "30",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75968571428572,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 21,
+      "value": "36",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75905714285715,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 22,
+      "value": "58",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75842857142858,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 23,
+      "value": "72",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 24,
+      "value": "55",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75717142857143,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 25,
+      "value": "49",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75654285714286,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 26,
+      "value": "32",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75591428571428,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 27,
+      "value": "19",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75968571428572,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 28,
+      "value": "41",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75905714285715,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 29,
+      "value": "50",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75842857142858,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 30,
+      "value": "77",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 31,
+      "value": "78",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75717142857143,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 32,
+      "value": "65",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75654285714286,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 33,
+      "value": "24",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75591428571428,
+       "y": 47.546014285714286,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 34,
+      "value": "0",
+      "rasterId": 80,
+      "resolution": 30
+     },
+     {
+      "location": {
+       "x": -116.75905714285715,
+       "y": 47.54632857142857,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 35,
+      "value": "31",
+      "rasterId": 80,
+      "resolution": 30
+     }
+    ]
+   }
+  },
+  "3dep:9": {
+   "url": "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples",
+   "request": {
+    "geometry": "{\"points\":[[-116.7578,47.5457],[-116.76,47.5446],[-116.76,47.5468],[-116.7556,47.5446],[-116.7556,47.5468],[-116.7578,47.5446],[-116.7578,47.5468],[-116.76,47.5457],[-116.7556,47.5457]],\"spatialReference\":{\"wkid\":4326}}",
+    "geometryType": "esriGeometryMultipoint",
+    "returnFirstValueOnly": "true",
+    "interpolation": "RSP_NearestNeighbor",
+    "f": "json"
+   },
+   "response": {
+    "samples": [
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 0,
+      "value": "795.045654297",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 1,
+      "value": "745.031555176",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 2,
+      "value": "748.829467773",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 3,
+      "value": "765.882080078",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 4,
+      "value": "827.188781738",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 5,
+      "value": "768.320617676",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 6,
+      "value": "782.923645020",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 7,
+      "value": "754.056274414",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 8,
+      "value": "815.187866211",
+      "rasterId": 58461,
+      "resolution": 1
+     }
+    ]
+   }
+  },
+  "3dep:25": {
+   "url": "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples",
+   "request": {
+    "geometry": "{\"points\":[[-116.76,47.5446],[-116.75890000000001,47.5446],[-116.7578,47.5446],[-116.7567,47.5446],[-116.7556,47.5446],[-116.76,47.54515],[-116.75890000000001,47.54515],[-116.7578,47.54515],[-116.7567,47.54515],[-116.7556,47.54515],[-116.76,47.5457],[-116.75890000000001,47.5457],[-116.7578,47.5457],[-116.7567,47.5457],[-116.7556,47.5457],[-116.76,47.54625],[-116.75890000000001,47.54625],[-116.7578,47.54625],[-116.7567,47.54625],[-116.7556,47.54625],[-116.76,47.5468],[-116.75890000000001,47.5468],[-116.7578,47.5468],[-116.7567,47.5468],[-116.7556,47.5468]],\"spatialReference\":{\"wkid\":4326}}",
+    "geometryType": "esriGeometryMultipoint",
+    "returnFirstValueOnly": "true",
+    "interpolation": "RSP_NearestNeighbor",
+    "f": "json"
+   },
+   "response": {
+    "samples": [
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 0,
+      "value": "745.031555176",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.75890000000001,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 1,
+      "value": "761.381103516",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 2,
+      "value": "768.320617676",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7567,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 3,
+      "value": "766.017761230",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.5446,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 4,
+      "value": "765.882080078",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.54515,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 5,
+      "value": "751.224365234",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.75890000000001,
+       "y": 47.54515,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 6,
+      "value": "771.472473145",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.54515,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 7,
+      "value": "783.454162598",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7567,
+       "y": 47.54515,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 8,
+      "value": "786.712036133",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.54515,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 9,
+      "value": "787.050720215",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 10,
+      "value": "754.056274414",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.75890000000001,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 11,
+      "value": "774.677368164",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 12,
+      "value": "795.045654297",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7567,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 13,
+      "value": "811.442016602",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.5457,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 14,
+      "value": "815.187866211",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.54625,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 15,
+      "value": "746.498229980",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.75890000000001,
+       "y": 47.54625,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 16,
+      "value": "767.614868164",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.54625,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 17,
+      "value": "786.465576172",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7567,
+       "y": 47.54625,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 18,
+      "value": "816.296691895",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.54625,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 19,
+      "value": "823.599975586",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.76,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 20,
+      "value": "748.829467773",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.75890000000001,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 21,
+      "value": "763.443054199",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7578,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 22,
+      "value": "782.923645020",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7567,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 23,
+      "value": "807.690673828",
+      "rasterId": 58461,
+      "resolution": 1
+     },
+     {
+      "location": {
+       "x": -116.7556,
+       "y": 47.5468,
+       "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+       }
+      },
+      "locationId": 24,
+      "value": "827.188781738",
+      "rasterId": 58461,
+      "resolution": 1
+     }
+    ]
+   }
+  }
+ }
+}
