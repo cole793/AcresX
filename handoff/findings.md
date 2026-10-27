@@ -33,6 +33,19 @@ Owner-approved 2026-10-27 (branch `claude/kootenai-parcel-search`). Checked live
   Other Idaho counties still return the statewide owner and mailing fields (unchanged).
 - `_source {name, url}` is added to Kootenai answers. Responses for other Idaho counties and
   Montana are byte-identical to 2d12331 (`test/fixtures/parcel-search-legacy-snapshot.json`).
+- Owner decision 2026-10-27: **show both acreages.** `public/acreage.js` (`window.AcresXAcreage`)
+  feeds the overview and the report's Parcel Size, e.g. "2.89 ac (assessor) · 1.98 ac mapped",
+  and adds "Assessor and mapped acreage differ; verify with the county." when they differ by more
+  than 10% of the assessor figure. Assessor acreage is `ACRES` (Idaho), then `ACREAGE`, Montana
+  cadastral `TotalAcres`, then `Acres`. Mapped acreage is `turf.area` of the outline. The report's
+  10-acre density warning uses assessor acres when present, else mapped. Spokane and Yellowstone
+  answers carry no acreage field, so they still show mapped acreage only.
+- **Listing evidence no longer feeds the score.** `renderSummary` (`public/index.html`) added
+  +20 for a found listing and +10 for none into the "data confidence" factor (weight 0.08). The
+  score now uses wells and utility only for that factor. The data-confidence dot and the listing
+  card still show listing status. In a stubbed example, the score was 9.2 / 9.1 / 9.0
+  (found / none / error) before the change and is 9.0 for all three now. The later
+  `score-cost.js` and `screening-refinements.js` scores never used listings.
 
 ## 2026-10-27: terrain, slope grid and tree canopy now use batched getSamples
 
