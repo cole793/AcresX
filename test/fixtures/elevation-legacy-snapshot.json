@@ -1,0 +1,441 @@
+{
+ "recorded": "2026-10-27, live, legacy per-point code at origin/main 2d12331 (EPQS + identify)",
+ "geometry": {
+  "type": "Polygon",
+  "coordinates": [
+   [
+    [
+     -116.76,
+     47.5446
+    ],
+    [
+     -116.7556,
+     47.5446
+    ],
+    [
+     -116.7556,
+     47.5462
+    ],
+    [
+     -116.7578,
+     47.5468
+    ],
+    [
+     -116.76,
+     47.5462
+    ],
+    [
+     -116.76,
+     47.5446
+    ]
+   ]
+  ]
+ },
+ "landAnalysis": {
+  "cacheControl": "public, max-age=3600, s-maxage=2592000",
+  "terrain": {
+   "available": true,
+   "gradePct": 18.180561979789502,
+   "maxGradePct": 24.82325301596928,
+   "minFt": 2444.33070865164,
+   "maxFt": 2713.8740426772997,
+   "centerFt": 2608.4175844437696,
+   "reliefFt": 269.54333402565953,
+   "sampleCount": 9,
+   "source": "USGS 3DEP / EPQS elevation"
+  },
+  "landCover": {
+   "available": true,
+   "year": 2025,
+   "woodedPct": 44,
+   "openPct": 56,
+   "otherPct": 0,
+   "sampleCount": 36,
+   "requestedSamples": 36,
+   "topClasses": [],
+   "source": "USDA Forest Service NLCD Tree Canopy Cover",
+   "note": "Preliminary 30 m satellite tree-canopy estimate; not a tree survey or clearing plan."
+  }
+ },
+ "slopeGrid": {
+  "cacheControl": "public, max-age=3600, s-maxage=2592000",
+  "body": {
+   "available": true,
+   "source": "USGS 3DEP / EPQS elevation",
+   "resolution": "4 x 4 parcel grid",
+   "sampleCount": 25,
+   "requestedSamples": 25,
+   "partial": false,
+   "cells": [
+    {
+     "row": 0,
+     "col": 0,
+     "center": [
+      -116.75945000000002,
+      47.544875000000005
+     ],
+     "bounds": [
+      [
+       47.5446,
+       -116.76
+      ],
+      [
+       47.54515,
+       -116.75890000000001
+      ]
+     ],
+     "elevationFt": 2484.505900592605,
+     "gradePct": 25.854524433711212,
+     "band": "very_steep"
+    },
+    {
+     "row": 0,
+     "col": 1,
+     "center": [
+      -116.75835000000001,
+      47.544875000000005
+     ],
+     "bounds": [
+      [
+       47.5446,
+       -116.75890000000001
+      ],
+      [
+       47.54515,
+       -116.7578
+      ]
+     ],
+     "elevationFt": 2530.0430246416563,
+     "gradePct": 23.592513316435625,
+     "band": "very_steep"
+    },
+    {
+     "row": 0,
+     "col": 2,
+     "center": [
+      -116.75725,
+      47.544875000000005
+     ],
+     "bounds": [
+      [
+       47.5446,
+       -116.7578
+      ],
+      [
+       47.54515,
+       -116.7567
+      ]
+     ],
+     "elevationFt": 2546.3456996236437,
+     "gradePct": 29.297284970039605,
+     "band": "very_steep"
+    },
+    {
+     "row": 0,
+     "col": 3,
+     "center": [
+      -116.75614999999999,
+      47.544875000000005
+     ],
+     "bounds": [
+      [
+       47.5446,
+       -116.7567
+      ],
+      [
+       47.54515,
+       -116.7556
+      ]
+     ],
+     "elevationFt": 2547.295433438249,
+     "gradePct": 34.225965285870366,
+     "band": "very_steep"
+    },
+    {
+     "row": 1,
+     "col": 0,
+     "center": [
+      -116.75945000000002,
+      47.545424999999994
+     ],
+     "bounds": [
+      [
+       47.54515,
+       -116.76
+      ],
+      [
+       47.5457,
+       -116.75890000000001
+      ]
+     ],
+     "elevationFt": 2502.813794785741,
+     "gradePct": 25.23763947759633,
+     "band": "very_steep"
+    },
+    {
+     "row": 1,
+     "col": 1,
+     "center": [
+      -116.75835000000001,
+      47.545424999999994
+     ],
+     "bounds": [
+      [
+       47.54515,
+       -116.75890000000001
+      ],
+      [
+       47.5457,
+       -116.7578
+      ]
+     ],
+     "elevationFt": 2562.8688961555026,
+     "gradePct": 23.024969104071353,
+     "band": "very_steep"
+    },
+    {
+     "row": 1,
+     "col": 2,
+     "center": [
+      -116.75725,
+      47.545424999999994
+     ],
+     "bounds": [
+      [
+       47.54515,
+       -116.7578
+      ],
+      [
+       47.5457,
+       -116.7567
+      ]
+     ],
+     "elevationFt": 2605.5232704092223,
+     "gradePct": 31.991788631941915,
+     "band": "very_steep"
+    },
+    {
+     "row": 1,
+     "col": 3,
+     "center": [
+      -116.75614999999999,
+      47.545424999999994
+     ],
+     "bounds": [
+      [
+       47.54515,
+       -116.7567
+      ],
+      [
+       47.5457,
+       -116.7556
+      ]
+     ],
+     "elevationFt": 2624.994046566244,
+     "gradePct": 43.293041858575585,
+     "band": "very_steep"
+    },
+    {
+     "row": 2,
+     "col": 0,
+     "center": [
+      -116.75945000000002,
+      47.545975
+     ],
+     "bounds": [
+      [
+       47.5457,
+       -116.76
+      ],
+      [
+       47.54625,
+       -116.75890000000001
+      ]
+     ],
+     "elevationFt": 2495.7733252075914,
+     "gradePct": 27.960437734783994,
+     "band": "very_steep"
+    },
+    {
+     "row": 2,
+     "col": 1,
+     "center": [
+      -116.75835000000001,
+      47.545975
+     ],
+     "bounds": [
+      [
+       47.5457,
+       -116.75890000000001
+      ],
+      [
+       47.54625,
+       -116.7578
+      ]
+     ],
+     "elevationFt": 2562.1748415015672,
+     "gradePct": 26.975450440756216,
+     "band": "very_steep"
+    },
+    {
+     "row": 2,
+     "col": 2,
+     "center": [
+      -116.75725,
+      47.545975
+     ],
+     "bounds": [
+      [
+       47.5457,
+       -116.7578
+      ],
+      [
+       47.54625,
+       -116.7567
+      ]
+     ],
+     "elevationFt": 2632.258892439303,
+     "gradePct": 28.16079604553769,
+     "band": "very_steep"
+    },
+    {
+     "row": 2,
+     "col": 3,
+     "center": [
+      -116.75614999999999,
+      47.545975
+     ],
+     "bounds": [
+      [
+       47.5457,
+       -116.7567
+      ],
+      [
+       47.54625,
+       -116.7556
+      ]
+     ],
+     "elevationFt": 2679.2377418166416,
+     "gradePct": 12.744438467191124,
+     "band": "steep"
+    },
+    {
+     "row": 3,
+     "col": 0,
+     "center": [
+      -116.75945000000002,
+      47.546525
+     ],
+     "bounds": [
+      [
+       47.54625,
+       -116.76
+      ],
+      [
+       47.5468,
+       -116.75890000000001
+      ]
+     ],
+     "elevationFt": 2482.271749475344,
+     "gradePct": 21.690898165484093,
+     "band": "very_steep"
+    },
+    {
+     "row": 3,
+     "col": 1,
+     "center": [
+      -116.75835000000001,
+      47.546525
+     ],
+     "bounds": [
+      [
+       47.54625,
+       -116.75890000000001
+      ],
+      [
+       47.5468,
+       -116.7578
+      ]
+     ],
+     "elevationFt": 2543.0177516152467,
+     "gradePct": 24.05526931188463,
+     "band": "very_steep"
+    },
+    {
+     "row": 3,
+     "col": 2,
+     "center": [
+      -116.75725,
+      47.546525
+     ],
+     "bounds": [
+      [
+       47.54625,
+       -116.7578
+      ],
+      [
+       47.5468,
+       -116.7567
+      ]
+     ],
+     "elevationFt": 2619.239410353552,
+     "gradePct": 34.524650466283894,
+     "band": "very_steep"
+    },
+    {
+     "row": 3,
+     "col": 3,
+     "center": [
+      -116.75614999999999,
+      47.546525
+     ],
+     "bounds": [
+      [
+       47.54625,
+       -116.7567
+      ],
+      [
+       47.5468,
+       -116.7556
+      ]
+     ],
+     "elevationFt": 2686.00412388438,
+     "gradePct": 16.741520360468336,
+     "band": "steep"
+    }
+   ]
+  }
+ },
+ "samples": {
+  "epqs": {
+   "location": {
+    "x": -116.7578,
+    "y": 47.5446,
+    "spatialReference": {
+     "wkid": 4326,
+     "latestWkid": 4326
+    }
+   },
+   "locationId": 0,
+   "value": 2520.737015296128,
+   "rasterId": 58461,
+   "resolution": 1
+  },
+  "tccIdentify": {
+   "objectId": 0,
+   "name": "Pixel",
+   "value": "14",
+   "location": {
+    "x": -12997628.758896945,
+    "y": 6031450.064908779,
+    "spatialReference": {
+     "wkid": 102100,
+     "latestWkid": 3857
+    }
+   },
+   "properties": null,
+   "catalogItems": null,
+   "catalogItemVisibilities": []
+  }
+ }
+}
