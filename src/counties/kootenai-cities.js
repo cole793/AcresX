@@ -68,12 +68,18 @@ export async function findCityImpactArea(where, samples) {
 }
 
 // CdA's ZoningInfo is an HTML link to a zone PDF, but many polygons link another zone's PDF
-// (a C-17 polygon linking R-17.pdf). Use the link only when its file name matches the zone.
+// (a C-17 polygon linking R-17.pdf). Use the link only when it points at the city's own site
+// (cdaid.org or www.cdaid.org, served as https) and its file name matches the zone.
 function cdaZonePdf(attrs, code) {
   const href = String(attrs?.ZoningInfo || '').match(/href=["']?([^"'\s>]+)/i)?.[1];
   if (!href) return null;
-  const file = decodeURIComponent(href.split('/').pop() || '').replace(/\.pdf$/i, '');
-  return file.toUpperCase() === code.toUpperCase() ? href.replace(/^http:\/\//i, 'https://') : null;
+  let url;
+  try { url = new URL(href); } catch { return null; }
+  if (!/^https?:$/.test(url.protocol) || !/^(www\.)?cdaid\.org$/i.test(url.hostname) || url.port || url.username || url.password) return null;
+  url.protocol = 'https:';
+  let file;
+  try { file = decodeURIComponent(url.pathname.split('/').pop() || ''); } catch { return null; }
+  return file.replace(/\.pdf$/i, '').toUpperCase() === code.toUpperCase() ? url.href : null;
 }
 
 const NOT_MAPPED_NOTE = "City zoning rules aren't mapped in AcresX yet; see the city's zoning code.";

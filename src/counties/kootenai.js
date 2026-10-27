@@ -13,10 +13,10 @@ function requestedParcelId(body) {
 }
 const arcQuery = (base, params) => arcgisQuery(base, params, { agency: 'Kootenai County GIS' });
 // The Ownership_Display parcel layer has no ZONING field (zoning comes from Data_Layers/21), and
-// ArcGIS fails the whole query when outFields or where names a field the layer lacks. Only PIN,
-// Acres, Loc_Addr and Loc_City are confirmed on the layer (validation run 40389472214), so an
-// ArcGIS error gets one retry that uses only those fields.
-const KC_PARCEL_FIELDS='PIN,PID,Acres,Legal,Loc_Addr,Loc_City,Ex_Value,Net_Val,Gross_Val,TCA';
+// ArcGIS fails the whole query when outFields or where names a field the layer lacks. Every field
+// below is in the layer's field list (checked live 2026-10-27; it has KTCA/STCA, not TCA). An
+// ArcGIS error still gets one retry with PIN,Acres,Loc_Addr,Loc_City in case the layer changes.
+const KC_PARCEL_FIELDS='PIN,PID,Acres,Legal,Loc_Addr,Loc_City,Ex_Value,Net_Val,Gross_Val,KTCA';
 const KC_PARCEL_FIELDS_MINIMAL='PIN,Acres,Loc_Addr,Loc_City';
 async function queryParcel(parcelId) {
   const id=String(parcelId||'').trim().toUpperCase(); if(!id) return [];
@@ -79,8 +79,8 @@ export async function getKootenaiCountyIntelligence(body) {
   // Who zones it. If the city-limits layer fails, carry on with county zoning (the old behaviour).
   const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'}).then(features=>({features}),error=>({error}));
   const impactArea=findCityImpactArea(where,samples).catch(e=>{ console.warn('Kootenai city impact area lookup failed',e); return null; });
-  let city=null;
-  try { city=await findCityJurisdiction(where,samples); } catch(e) { console.warn('Kootenai city limits lookup failed; using county zoning',e); }
+  let city=null, cityLimitsUnavailable=false;
+  try { city=await findCityJurisdiction(where,samples); } catch(e) { cityLimitsUnavailable=true; console.warn('Kootenai city limits lookup failed; using county zoning',e); }
   if(city) {
     const jurisdictionNote=city.straddles?` About ${pct(city.share)} of the parcel is inside ${city.name} limits; the rest may fall under another jurisdiction.`:'';
     return getCityZoning(city,where,samples,{parcelAttrs,matchMethod,jurisdictionNote});
@@ -91,7 +91,7 @@ export async function getKootenaiCountyIntelligence(body) {
   const impact=await impactArea;
   const impactNote=impact?` Inside the ${impact.city} area of city impact; Kootenai County zoning applies outside city limits.`:'';
   const top=covered[0];
-  if(!top) return noZoneResult(parcelFeatures,matchMethod,impactNote,impact);
+  if(!top) return noZoneResult(parcelFeatures,matchMethod,impactNote,impact,cityLimitsUnavailable);
   const zone=top.key, zoningAttrs=Object.fromEntries(Object.entries(top.attributes||{}).filter(([k])=>k!=='Shape'));
   const others=covered.slice(1).filter(s=>s.share>=0.05);
   const shareNote=samples.length>1?coverageNote(top,others,1-covered.reduce((t,s)=>t+s.share,0),'county zone'):'';
@@ -99,6 +99,9 @@ export async function getKootenaiCountyIntelligence(body) {
   return {available:true,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'gis_match',code:zone,name:zone,label:zone,note:`Mapped zoning designation from Kootenai County KCEarth/Data_Layers.${shareNote}${impactNote}`,sourceUrl:KC_ZONING,url:KC_PLANNING,...(others.length?{otherZones:others.map(s=>({code:s.key,share:round3(s.share)}))}:{}),...(impact?{cityImpactArea:impact}:{})},allowedBuildings,permittedUses:allowedBuildings,comprehensivePlan:{},urbanGrowthArea:{intersects:false},overlays:[],permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,matchMethod,attributes:zoningAttrs,parcelAttributes:parcelAttrs}};
 }
 
-function noZoneResult(parcelFeatures,matchMethod,impactNote,impact) {
-  return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label:'No mapped zoning result found',note:`The current Kootenai County Data_Layers zoning service returned no polygon ${matchMethod==='parcel location'?'at this parcel location':'on this parcel'}.${impactNote}`,sourceUrl:KC_ZONING,url:KC_PLANNING,...(impact?{cityImpactArea:impact}:{})},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
+function noZoneResult(parcelFeatures,matchMethod,impactNote,impact,cityLimitsUnavailable=false) {
+  // Without the city-limits answer, an empty county result may just mean the parcel is in a city.
+  const label=cityLimitsUnavailable?'No county zoning found here; the parcel may be inside a city — city limits lookup unavailable':'No mapped zoning result found';
+  const cityNote=cityLimitsUnavailable?' The county city-limits layer did not answer, so the parcel may be inside a city, where city zoning applies; check with the city or Kootenai County.':'';
+  return {available:false,county:'Kootenai',state:'ID',countyStatus:'kootenai-data-layers-v3',jurisdiction:'Kootenai County',permitJurisdiction:{name:'Kootenai County'},zoning:{status:'no_mapped_result',label,note:`The current Kootenai County Data_Layers zoning service returned no polygon ${matchMethod==='parcel location'?'at this parcel location':'on this parcel'}.${cityNote}${impactNote}`,sourceUrl:KC_ZONING,url:KC_PLANNING,...(impact?{cityImpactArea:impact}:{})},permits:[],permitHistory:[],permitHistoryStatus:'unavailable',source:{agency:'Kootenai County GIS',service:'NewServices/Data_Layers',layerId:21,parcelMatched:Boolean(parcelFeatures.length)}};
 }

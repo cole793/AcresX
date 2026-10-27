@@ -89,7 +89,7 @@ test('Kootenai parcel query does not request the missing ZONING field', async ()
   assert.equal(parcelCalls().length, 1);
   const outFields = parcelCalls()[0].params.get('outFields').split(',');
   assert.ok(!outFields.includes('ZONING'), `outFields was ${outFields}`);
-  assert.deepEqual(outFields, ['PIN', 'PID', 'Acres', 'Legal', 'Loc_Addr', 'Loc_City', 'Ex_Value', 'Net_Val', 'Gross_Val', 'TCA']);
+  assert.deepEqual(outFields, ['PIN', 'PID', 'Acres', 'Legal', 'Loc_Addr', 'Loc_City', 'Ex_Value', 'Net_Val', 'Gross_Val', 'KTCA']);
   assert.deepEqual(warnings, []);
 });
 
@@ -222,9 +222,24 @@ test('Kootenai city-limits service down falls back to county zoning', async () =
 test('Kootenai county zoning failure still degrades only the zoning layer', async () => {
   globalThis.fetch = stub({ [ZONING]: down });
   const response = await worker.fetch(new Request('https://acresx.test/api/zoning-permits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ county: 'Kootenai', parcelId: 'P1', lat: 47.705, lon: -116.795 }) }), env, { waitUntil() {} });
+  assert.equal(response.status, 502);
   const result = await response.json();
   assert.equal(result.zoning.status, 'unavailable');
   assert.equal(result.jurisdiction, 'Kootenai County');
+});
+
+test('No county zone and no city-limits answer says the parcel may be inside a city', async () => {
+  globalThis.fetch = stub({ [CITY_LIMITS]: down, [ZONING]: empty });
+  const result = await zoningPermits({ county: 'Kootenai', parcelId: 'P50N04W123456', lat: 47.705, lon: -116.795 });
+  assert.equal(result.available, false);
+  assert.equal(result.zoning.status, 'no_mapped_result');
+  assert.equal(result.zoning.label, 'No county zoning found here; the parcel may be inside a city — city limits lookup unavailable');
+  assert.match(result.zoning.note, /may be inside a city, where city zoning applies/);
+  // With city limits answering "unincorporated", the plain message stays.
+  globalThis.fetch = stub({ [ZONING]: empty });
+  const plain = await zoningPermits({ county: 'Kootenai', parcelId: 'P50N04W123456', lat: 47.705, lon: -116.795 });
+  assert.equal(plain.zoning.label, 'No mapped zoning result found');
+  assert.equal(plain.zoning.note, 'The current Kootenai County Data_Layers zoning service returned no polygon on this parcel.');
 });
 
 // --- Parcels inside a city ---
@@ -255,6 +270,21 @@ test('Coeur d\'Alene zone PDF link is used only when it names the same zone', as
   const result = await getKootenaiCountyIntelligence({ parcelId: 'P50N04W123456' });
   assert.equal(result.zoning.code, 'C-17');
   assert.equal(result.zoning.url, 'https://www.cdaid.org/planning');
+});
+
+test('Coeur d\'Alene zone PDF link must point at cdaid.org', async () => {
+  const city = { features: [{ attributes: { CITY: 'Coeur d Alene' }, geometry: { rings: [square(-116.81, 47.69, -116.78, 47.72)] } }] };
+  const urlFor = async href => {
+    const cda = { features: [{ attributes: { ZONING: 'R-8', ZoningInfo: `<a href=${href} target=_blank>R-8</a>` }, geometry: { rings: [square(-116.81, 47.69, -116.78, 47.72)] } }] };
+    globalThis.fetch = stub({ [CITY_LIMITS]: city, [CDA]: cda });
+    return (await getKootenaiCountyIntelligence({ parcelId: 'P50N04W123456' })).zoning.url;
+  };
+  assert.equal(await urlFor('http://www.cdaid.org/Files/Planning/R-8.pdf'), 'https://www.cdaid.org/Files/Planning/R-8.pdf');
+  assert.equal(await urlFor('http://cdaid.org/Files/Planning/R-8.pdf'), 'https://cdaid.org/Files/Planning/R-8.pdf');
+  assert.equal(await urlFor('https://cdaid.org/Files/Planning/R-8.pdf'), 'https://cdaid.org/Files/Planning/R-8.pdf');
+  for (const bad of ['https://evil.example/R-8.pdf', 'https://cdaid.org.evil.example/R-8.pdf', 'https://evilcdaid.org/R-8.pdf', 'javascript:alert(1)//R-8.pdf', 'ftp://cdaid.org/R-8.pdf', 'https://user@cdaid.org/R-8.pdf', '/Files/Planning/R-8.pdf', 'https://cdaid.org/Files/%E0%A4%A.pdf']) {
+    assert.equal(await urlFor(bad), 'https://www.cdaid.org/planning', bad);
+  }
 });
 
 test('Post Falls parcel gets city zoning from the city layer (recorded P00000032775)', async () => {
