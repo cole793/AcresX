@@ -128,6 +128,9 @@ test('several county rows for one PIN merge into one outline; two PINs are ambig
   const merged = await search('47N03W052200');
   assert.equal(merged.body.parcel.geometry.type, 'MultiPolygon');
   assert.equal(merged.body.parcel.geometry.coordinates.length, 2);
+  stub({ county: () => json({ features: [f, f, structuredClone(f)] }) });
+  const duplicates = await search('47N03W052200');
+  assert.equal(duplicates.body.parcel.geometry.type, 'Polygon', 'duplicate rows must not double the outline');
   stub({ county: () => json({ features: [f, { ...f, attributes: { ...f.attributes, PIN: '47N03W-05-2200' } }, { ...f, attributes: { ...f.attributes, PIN: 'OTHERPIN', PID: '47N03W052200' } }] }) });
   const ambiguous = await search('47N03W052200');
   assert.equal(ambiguous.status, 502);

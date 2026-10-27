@@ -77,11 +77,14 @@ export function esriPolygonToGeoJSON(esriGeometry) {
   return polygons.length === 1 ? { type: 'Polygon', coordinates: polygons[0] } : { type: 'MultiPolygon', coordinates: polygons };
 }
 
+// Duplicate rows (same outline stored twice) would double the mapped area, so exact-duplicate
+// parts are kept once.
 function mergeGeometries(geometries) {
-  const polygons = [];
+  const polygons = [], seen = new Set();
+  const add = polygon => { const key = JSON.stringify(polygon); if (!seen.has(key)) { seen.add(key); polygons.push(polygon); } };
   for (const g of geometries) {
-    if (g?.type === 'Polygon') polygons.push(g.coordinates);
-    else if (g?.type === 'MultiPolygon') polygons.push(...g.coordinates);
+    if (g?.type === 'Polygon') add(g.coordinates);
+    else if (g?.type === 'MultiPolygon') g.coordinates.forEach(add);
   }
   if (!polygons.length) return null;
   return polygons.length === 1 ? { type: 'Polygon', coordinates: polygons[0] } : { type: 'MultiPolygon', coordinates: polygons };
