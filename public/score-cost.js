@@ -62,7 +62,9 @@
     const FX = window.AcresXFlood;
     // Without flood-status.js loaded yet: the older scale, without throwing.
     const floodScore = FX ? FX.score(flood) : !flood.available || flood.source?.emptyResult ? 50 : flood.high ? 20 : flood.intersects ? 55 : 96;
-    const wetlandsScore = !wetlands.available ? 50 : wetlands.intersects ? 42 : 96;
+    const WX = window.AcresXWetlands;
+    // Without wetlands-status.js loaded yet: presence only, without throwing.
+    const wetlandsScore = WX ? WX.score(wetlands) : !wetlands.available ? 50 : wetlands.intersects ? 42 : 96;
     const powerScore = last?.powerIntelligence?.territory?.confirmed ? 78 : utilityFound ? 70 : 45;
     const zoningScore = zoning.status === 'gis_match' ? 86 : zoning.status === 'no_match' ? 52 : 45;
 

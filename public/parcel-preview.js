@@ -66,6 +66,12 @@
       const grade = FX.grade(result);
       return { text: grade.overview, cls: grade.overviewCls };
     }
+    const WX = window.AcresXWetlands;
+    if (WX) {
+      const grade = WX.grade(result);
+      return { text: grade.overview, cls: grade.overviewCls };
+    }
+    // wetlands-status.js not loaded yet: presence only, without throwing.
     if (result.intersects) return { text: 'Mapped wetlands present', cls: 'warn' };
     return { text: 'No mapped wetlands', cls: 'good' };
   }
