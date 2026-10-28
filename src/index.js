@@ -18,6 +18,7 @@ import { handleZoningRules } from './services/zoning-rules.js';
 import { handlePropertyTaxTest } from './services/property-tax-test.js';
 import { handleExistingWell } from './services/existing-well.js';
 import { handleResoListings } from './services/reso-listings.js';
+import { handleUpstreamHealth } from './services/upstream-health.js';
 import { json } from './shared/http.js';
 
 async function handleParcelSearch(request) {
@@ -43,6 +44,7 @@ async function handleZoningPermits(request) {
 async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for(const test of tests){const r=new Request(request.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(test)});results.push(await(await handlePropertyTaxTest(r)).json());} return json({test:'AcresX property tax / assessment sources',results},200,'no-store'); }
 async function maybeInjectUiPolish(request,response) { if(request.method!=='GET')return response; const url=new URL(request.url); if(url.pathname!=='/'&&url.pathname!=='/index.html')return response; const contentType=response.headers.get('Content-Type')||''; if(!contentType.includes('text/html'))return response; const html=await response.text(); const scripts=[]; for(const s of ['flood-status','wetlands-status','ui-polish','parcel-preview','score-cost','zoning-potential','snapshot-accordion','state-selector','slope-map','screening-refinements','branding-polish','library-polish','loading-modal','property-assessment','compact-overview','parcel-summary-insights','map-polish','demo-housekeeping','existing-well','spokane-cost-model','reso-listing-context','property-report-v2']) if(!html.includes(`/${s}.js`))scripts.push(`<script src="/${s}.js"></script>`); if(!scripts.length)return new Response(html,response); const polished=html.replace('</body>',`${scripts.join('\n')}\n</body>`); const headers=new Headers(response.headers); headers.delete('Content-Length'); return new Response(polished,{status:response.status,statusText:response.statusText,headers}); }
 export default { async scheduled(controller,env,ctx){const req=new Request('https://acresx.internal/api/reso-listings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sync:true,incremental:true})});ctx.waitUntil(handleResoListings(req,env));}, async fetch(request,env,ctx) { const url=new URL(request.url); try {
+  if(url.pathname==='/api/upstream-health'&&request.method==='GET')return await handleUpstreamHealth();
   if(url.pathname==='/api/property-tax-test'&&request.method==='GET')return await runPropertyTaxBrowserTest(request);
   if(url.pathname==='/api/property-tax-test'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(url.pathname==='/api/property-assessment'&&request.method==='POST')return await handlePropertyTaxTest(request);
