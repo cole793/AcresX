@@ -8,6 +8,9 @@ and property report. Coverage today: Spokane (WA), Kootenai (ID), Gallatin and Y
 **Read `PRODUCT.md` for who it's for, the business stage and the current priority** (consistent,
 reliable results in every supported county; depth before new counties).
 
+**Adding or upgrading a county? Follow `COUNTY_CHECKLIST.md`** (modeled on Spokane and Kootenai)
+and track it in a GitHub "New county" issue.
+
 This project was started in ChatGPT and moved to Claude Code in Oct 2026. `ARCHITECTURE.md` is the
 source of truth for the backend migration plan. The `README*.md` files are old per-release notes
 from the ChatGPT era ("replace these files and redeploy"). They describe history, not current

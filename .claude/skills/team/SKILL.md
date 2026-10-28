@@ -25,6 +25,11 @@ rig-team kit (lead / builder / verifier / reader).
 
 ## Routing a request
 
+For any new county or county upgrade, the task list comes from `COUNTY_CHECKLIST.md`: research
+every source in section 1 (reader) before any code, and don't report a county as realtor-ready
+until section 7 passes.
+
+
 1. **Clarify** the outcome with the owner if it's ambiguous. Ask once, in plain language; they
    aren't necessarily a programmer.
 2. **Research first** when the task touches a data source the code doesn't already use: send the

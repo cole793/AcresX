@@ -40,6 +40,48 @@ lead and the builder on 2026-10-27.
   some rows disagree (e.g. `LABEL` 'AG-SUBURBAN' with `ZONE_NAME` 'HDRES' or 'RUR'). The adapter
   still uses `LABEL` first.
 
+## 2026-10-27: Wetlands "present" with "0.0% of parcel" was a broken clip request, not a boundary touch
+
+Owner-approved 2026-10-27 (branch `claude/wetlands-fixes`). Checked live by the builder from the
+sandbox (Kootenai parcel layer geometry, USFWS NWI layer 0, Esri GeometryServer), not via the
+AcresX site.
+
+- **The NWI query was fine.** It sends the exact parcel polygon with `esriSpatialRelIntersects`
+  (no envelope, no buffer). The features it returns really overlap both parcels.
+- **The clip request always failed.** `src/services/wetlands.js` sent the GeometryServer
+  `intersect` parameter `geometry` as a bare Esri polygon. The service answers HTTP 200 with
+  `{"error":{"code":400,"message":"Unable to complete operation.","details":["Syntax error in JSON
+  geometry representation"]}}` for every parcel. It needs `{"geometryType":"esriGeometryPolygon",
+  "geometry":{"rings":...}}`. The code caught the error and returned `coveragePct: null,
+  wetlandAcres: null, coverageMethod: 'NWI intersection presence only'` every time.
+- **The page turned null into 0%.** `public/screening-refinements.js` `number(null)` is
+  `Number(null)` = 0, so the score card showed "Mapped wetlands: 0.0% of parcel · 0.00 ac" and
+  scored the factor as under 5% (90), next to the overview's "Mapped wetlands present". The
+  validation tool's `round(null)` also printed `coveragePct: 0`.
+- **Live numbers with the clip request fixed** (checked by hand with an independent 400x400 grid
+  point-in-polygon estimate, which agreed to within 0.01 ac):
+
+  | Parcel | Mapped parcel | NWI features | Overlap | Before (page) | After |
+  |---|---|---|---|---|---|
+  | 47N03W052200 | 1.98 ac | 3 Riverine (R4SBC, R5UBH x2) | 0.221 ac, 11.2% (0.208 + 0.013 + a 1 sq m sliver) | present + "0.0% · 0.00 ac", factor 90 | present, "11.2% of parcel · 0.22 ac", factor 80 |
+  | 015270010070 | 9.99 ac | 1 Riverine (R4SBA) | 0.473 ac, 4.7% | present + "0.0% · 0.00 ac", factor 90 | present, "4.7% of parcel · 0.47 ac", factor 90 |
+
+  Both parcels really do have mapped wetland on them. The label was right and the coverage was
+  wrong. Five other validation parcels also measure as present (47N02W035500 70.5%,
+  48N03W312100 64.5%, 49N03W324950 2.3%, 47N02W040800 3.4% on a 4-part MultiPolygon via POST)
+  and 0L8210010030 as none.
+- 47N03W052200's county `Acres` is 2.888, but its mapped polygon is 1.98 ac (two independent
+  area methods agree). Coverage uses the mapped polygon.
+- **New rule (wetlands `category`):** present = overlap >= 0.05 ac, or >= 0.5% of the parcel and
+  >= 0.01 ac. Nearby = NWI polygon touches the parcel with less overlap than that (boundary
+  slivers; NWI is mapped at about 1:24,000). None = no NWI polygon intersects. Unmeasured = the
+  clip failed after a retry (amber, 55, never cached). Polygons near the parcel but not
+  touching it are not queried. A buffered query (`distance`, which NWI layer 0 supports) would be
+  a separate change.
+- NWI layer 0 is ArcGIS 11.5, `maxRecordCount` 500, `supportsQueryWithDistance` true, and
+  accepts POST queries. The GeometryServer accepts counter-clockwise (GeoJSON) parcel rings, but
+  the service now sends Esri orientation anyway.
+
 ## 2026-10-27: terrain, slope grid and tree canopy now use batched getSamples
 
 Owner-approved 2026-10-26 (branch `claude/batch-elevation`). Checked live by the builder on
