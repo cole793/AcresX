@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from '../../shared/http.js';
+import { upstreamJson } from '../../shared/upstream.js';
 
 // Current Montana Bureau of Mines and Geology GWIC Boreholes layer.
 // This layer contains point geometry plus total depth, static water level,
@@ -43,14 +43,12 @@ async function queryGwic(lat, lon, miles) {
   url.searchParams.set('outFields', 'gwicid,site_name,latitude,longitude,total_depth_ft_bgs,static_water_level_ft_bgs,date_completed,status,construction_type,site_type,abandoned_flag');
   url.searchParams.set('resultRecordCount', '2000');
 
-  const response = await fetchWithTimeout(url, {
+  // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
+  const data = await upstreamJson(url, {
     headers: { 'User-Agent': 'AcresX/0.9 Montana Beta' },
-    cf: { cacheTtl: 3600, cacheEverything: true }
-  }, 20000);
-
-  if (!response.ok) throw new Error(`GWIC Boreholes service returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'GWIC Boreholes query failed');
+    timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true,
+    label: 'mbmg-gwic-boreholes', agency: 'GWIC Boreholes service', arcgisMessage: 'GWIC Boreholes query failed'
+  });
   return data.features || [];
 }
 

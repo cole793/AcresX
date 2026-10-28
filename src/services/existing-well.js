@@ -1,7 +1,12 @@
-import { fetchWithTimeout, json } from '../shared/http.js';
+import { json } from '../shared/http.js';
+import { upstreamJson } from '../shared/upstream.js';
 
 const SPOKANE_ASSESSOR = 'https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query';
 const ECOLOGY_WELLS = 'https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query';
+// Timeouts (first attempt + one retry, body included) keep the old single-attempt worst case:
+// assessor was 15 s per query, Ecology 20 s.
+const ASSESSOR_TIMEOUTS = { timeoutMs: 9000, retryTimeoutMs: 6000 };
+const ECOLOGY_TIMEOUTS = { timeoutMs: 12000, retryTimeoutMs: 8000 };
 
 function normParcel(value) { return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function normName(value) { return String(value || '').toUpperCase().replace(/\b(LLC|L\.L\.C|INC|CORP|CORPORATION|COMPANY|CO|TRUST|TRUSTEE|ET AL|ESTATE)\b/g, ' ').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
@@ -52,8 +57,19 @@ function distanceToParcelFt(point, geometry) {
 async function queryAssessor(parcelId) {
   const raw = String(parcelId || '').trim().replaceAll("'", "''"), normalized = normParcel(parcelId);
   const makeUrl = where => { const url = new URL(SPOKANE_ASSESSOR); url.searchParams.set('f', 'json'); url.searchParams.set('where', where); url.searchParams.set('outFields', 'PID_NUM,owner_name,taxpayer_name,site_address,site_city,site_state,site_zip'); url.searchParams.set('returnGeometry', 'false'); return url; };
-  let response = await fetchWithTimeout(makeUrl(`PID_NUM='${raw}'`), { cf: { cacheTtl: 3600, cacheEverything: true } }, 15000); let data = await response.json(); let features = data.features || [];
-  if (!features.length && normalized) { response = await fetchWithTimeout(makeUrl(`PID_NUM LIKE '%${normalized.replaceAll("'", "''")}%'`), { cf: { cacheTtl: 3600, cacheEverything: true } }, 15000); data = await response.json(); features = (data.features || []).filter(f => normParcel(f.attributes?.PID_NUM) === normalized); }
+  // As before, an HTTP error or ArcGIS error body counts as "no assessor record" (the well
+  // search still runs); timeouts and network errors reject.
+  const assessorFeatures = async where => {
+    try {
+      const data = await upstreamJson(makeUrl(where), { ...ASSESSOR_TIMEOUTS, arcgis: true, label: 'spokane-assessor-owner', agency: 'Spokane County Assessor' });
+      return data.features || [];
+    } catch (error) {
+      if (error.kind === 'http' || error.kind === 'arcgis') return [];
+      throw error;
+    }
+  };
+  let features = await assessorFeatures(`PID_NUM='${raw}'`);
+  if (!features.length && normalized) { features = (await assessorFeatures(`PID_NUM LIKE '%${normalized.replaceAll("'", "''")}%'`)).filter(f => normParcel(f.attributes?.PID_NUM) === normalized); }
   const attrs = features[0]?.attributes || {};
   return { parcelId: attrs.PID_NUM || parcelId || '', ownerName: attrs.owner_name || attrs.taxpayer_name || '', taxpayerName: attrs.taxpayer_name || '', siteAddress: [attrs.site_address, attrs.site_city, attrs.site_state, attrs.site_zip].filter(Boolean).join(', ') };
 }
@@ -62,7 +78,8 @@ async function queryNearbyWells(geometry) {
   const b = bounds(geometry), latMid = (b.minY + b.maxY) / 2, padLat = 0.006, padLon = 0.006 / Math.max(0.35, Math.cos(latMid * Math.PI / 180));
   const envelope = { xmin: b.minX - padLon, ymin: b.minY - padLat, xmax: b.maxX + padLon, ymax: b.maxY + padLat, spatialReference: { wkid: 4326 } };
   const url = new URL(ECOLOGY_WELLS); url.searchParams.set('f', 'geojson'); url.searchParams.set('where', "WellProjectType <> 'Decommission'"); url.searchParams.set('geometry', JSON.stringify(envelope)); url.searchParams.set('geometryType', 'esriGeometryEnvelope'); url.searchParams.set('inSR', '4326'); url.searchParams.set('spatialRel', 'esriSpatialRelIntersects'); url.searchParams.set('outSR', '4326'); url.searchParams.set('returnGeometry', 'true'); url.searchParams.set('outFields', 'ID,WellTagNr,ProjectName,OwnerName,WellAddress,ParcelNumber,CompletedDepth,WorkCompletionDate,WellProjectType,WellSubType,DrillerLicenseNumber,FlowRateGPM'); url.searchParams.set('resultRecordCount', '1000');
-  const response = await fetchWithTimeout(url, { cf: { cacheTtl: 3600, cacheEverything: true } }, 20000); if (!response.ok) throw new Error(`Washington Ecology well service returned ${response.status}`); const data = await response.json(); if (data.error) throw new Error(data.error.message || 'Washington Ecology well lookup failed'); return data.features || [];
+  const data = await upstreamJson(url, { ...ECOLOGY_TIMEOUTS, arcgis: true, label: 'wa-ecology-wells', agency: 'Washington Ecology well service', arcgisMessage: 'Washington Ecology well lookup failed' });
+  return data.features || [];
 }
 
 function scoreWell(well, assessor, parcelId, geometry) {
