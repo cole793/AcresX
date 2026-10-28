@@ -88,10 +88,11 @@
   }
 
   if (oldFindWells) {
-    window.findWells = async function (parcel) {
-      if (stateEl.value === 'WA') return oldFindWells(parcel);
+    // signal: optional AbortSignal (progressive-loading.js passes one as the section time limit).
+    window.findWells = async function (parcel, signal) {
+      if (stateEl.value === 'WA') return oldFindWells(parcel, signal);
       const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
-      const response = await fetch('/api/well-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}) });
+      const response = await fetch('/api/well-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}), signal });
       const data = await response.json();
       if (!response.ok || !data?.available) throw new Error(data?.error || `Well service returned ${response.status}`);
       const boundary = turf.polygonToLine(parcel);
@@ -102,11 +103,11 @@
   }
 
   if (oldFindUtility) {
-    window.findUtility = async function (parcel) {
-      if (stateEl.value === 'WA') return oldFindUtility(parcel);
+    window.findUtility = async function (parcel, signal) {
+      if (stateEl.value === 'WA') return oldFindUtility(parcel, signal);
       const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
       try {
-        const response = await fetch('/api/utility-territory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}) });
+        const response = await fetch('/api/utility-territory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}), signal });
         const data = await response.json();
         if (!response.ok) throw new Error(data?.error || `Utility territory service returned ${response.status}`);
         return Array.isArray(data.providers) ? data.providers : [];

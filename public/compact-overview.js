@@ -62,7 +62,9 @@
     }
     const gradeEl = gradeFact.querySelector('strong');
     const grade = Number(typeof last !== 'undefined' ? last?.land?.terrain?.gradePct : NaN);
-    if (gradeEl) gradeEl.textContent = Number.isFinite(grade) ? `${grade.toFixed(1)}%` : 'Not available';
+    // While terrain is loading or timed out, show progressive-loading.js's placeholder.
+    const placeholder = window.AcresXSections?.placeholderText('land');
+    if (gradeEl) gradeEl.textContent = placeholder || (Number.isFinite(grade) ? `${grade.toFixed(1)}%` : 'Not available');
 
     // Remove the old terrain/elevation strip below the summary.
     document.getElementById('phase2TerrainRow')?.remove();

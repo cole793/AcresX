@@ -47,25 +47,34 @@
     }
   }
 
+  // Once per search (window.AcresXSections, progressive-loading.js), with a time limit; an answer
+  // for an older search is dropped.
   async function loadPowerIntelligence() {
     const identity = getParcelIdentity();
     if (!identity || !identity.providers.length) return;
+    const sections = window.AcresXSections;
+    if (sections && !sections.claim('powerIntelligence')) return;
+    const searchId = sections?.searchId;
+    const stale = () => (sections && !sections.isCurrent(searchId));
     const requestId = ++powerRequestId;
     try {
       const response = await fetch('/api/power-intelligence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(identity)
+        body: JSON.stringify(identity),
+        signal: sections?.timeoutSignal()
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `Power intelligence returned ${response.status}`);
-      if (requestId !== powerRequestId || typeof last === 'undefined') return;
+      if (requestId !== powerRequestId || stale() || typeof last === 'undefined') return;
       last.powerIntelligence = data;
       applyPowerIntelligence(data);
       if (typeof activeTab !== 'undefined' && activeTab === 'power' && document.getElementById('detailCard')?.classList.contains('show')) polishPowerDetails();
+      sections?.settle('powerIntelligence');
     } catch (error) {
-      if (requestId !== powerRequestId || typeof last === 'undefined') return;
+      if (requestId !== powerRequestId || stale() || typeof last === 'undefined') return;
       last.powerIntelligence = { available: false, error: error.message };
+      sections?.settle('powerIntelligence');
     }
   }
 
@@ -90,9 +99,13 @@
     }
 
     if (Array.isArray(last.utility) && last.utility.length) {
-      const powerStatus = document.getElementById('powerStatus');
-      if (powerStatus) powerStatus.textContent = 'Checking mapped distribution proximity…';
-      loadPowerIntelligence();
+      // The summary re-renders as sections arrive: keep an answer already loaded for this search.
+      if (last.powerIntelligence) applyPowerIntelligence(last.powerIntelligence);
+      else {
+        const powerStatus = document.getElementById('powerStatus');
+        if (powerStatus) powerStatus.textContent = 'Checking mapped distribution proximity…';
+        loadPowerIntelligence();
+      }
     }
 
     const terrain = last?.land?.terrain || {};

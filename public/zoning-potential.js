@@ -1,5 +1,6 @@
 (() => {
   let zoningRequestId = 0;
+  let inflight = null; // { key, searchId, promise }: one /api/zoning-rules request per zone per search
 
   function addStyles() {
     if (document.getElementById('zoningPotentialStyles')) return;
@@ -53,23 +54,35 @@
     const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
     if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;
 
+    // The summary re-renders as sections arrive (progressive-loading.js): reuse a request in flight.
+    const sections = window.AcresXSections;
+    const searchId = sections?.searchId;
+    if (inflight && inflight.key === cacheKey && inflight.searchId === searchId) return inflight.promise;
+    const stale = () => (sections && !sections.isCurrent(searchId));
+
     const requestId = ++zoningRequestId;
-    try {
-      const response = await fetch('/api/zoning-rules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(identity)
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || `Zoning rules returned ${response.status}`);
-      if (requestId !== zoningRequestId || typeof last === 'undefined') return null;
-      data._cacheKey = cacheKey;
-      last.zoningDevelopmentPotential = data;
-      return data;
-    } catch (error) {
-      if (typeof last !== 'undefined') last.zoningDevelopmentPotential = { available: false, error: error.message, _cacheKey: cacheKey };
-      return null;
-    }
+    const promise = (async () => {
+      try {
+        const response = await fetch('/api/zoning-rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(identity)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `Zoning rules returned ${response.status}`);
+        if (requestId !== zoningRequestId || stale() || typeof last === 'undefined') return null;
+        data._cacheKey = cacheKey;
+        last.zoningDevelopmentPotential = data;
+        return data;
+      } catch (error) {
+        if (!stale() && typeof last !== 'undefined') last.zoningDevelopmentPotential = { available: false, error: error.message, _cacheKey: cacheKey };
+        return null;
+      } finally {
+        if (inflight?.promise === promise) inflight = null;
+      }
+    })();
+    inflight = { key: cacheKey, searchId, promise };
+    return promise;
   }
 
   function statusLabel(value) {
