@@ -43,9 +43,12 @@
   }
 
   function wetlandsScore(wetlands) {
+    const WX = window.AcresXWetlands;
+    if (WX) return WX.score(wetlands);
+    // Without wetlands-status.js loaded yet. A null coveragePct is unmeasured, not 0%.
     if (!wetlands?.available) return 50;
     if (!wetlands.intersects) return 96;
-    const pct = number(wetlands.coveragePct);
+    const pct = wetlands.coveragePct == null ? null : number(wetlands.coveragePct);
     if (pct == null) return 55;
     if (pct < 5) return 90;
     if (pct < 15) return 80;
@@ -139,11 +142,14 @@
       card.appendChild(wetlandNote);
     }
     const w = last?.wetlands || {};
-    const pct = number(w.coveragePct);
-    const acres = number(w.wetlandAcres);
-    wetlandNote.textContent = !w.available ? 'Mapped wetlands: unavailable'
+    const WX = window.AcresXWetlands;
+    // Null means not measured; Number(null) would read as 0%.
+    const pct = w.coveragePct == null ? null : number(w.coveragePct);
+    const acres = w.wetlandAcres == null ? null : number(w.wetlandAcres);
+    wetlandNote.textContent = WX ? WX.grade(w).note
+      : !w.available ? 'Mapped wetlands: unavailable'
       : !w.intersects ? 'Mapped wetlands: none detected'
-      : pct != null ? `Mapped wetlands: ${pct.toFixed(1)}% of parcel${acres != null ? ` · ${acres.toFixed(2)} ac` : ''}`
+      : pct != null ? `Mapped wetlands: ${pct > 0 && pct < 0.05 ? '<0.1' : pct.toFixed(1)}% of parcel${acres != null ? ` · ${acres.toFixed(2)} ac` : ''}`
       : 'Mapped wetlands detected · coverage percentage unavailable';
   }
 
