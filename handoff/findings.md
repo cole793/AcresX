@@ -2,6 +2,39 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-28: Shared upstream client, per-host cap and /api/upstream-health
+
+Owner-approved 2026-10-28 (backend cleanup step 2, branch `claude/shared-upstream-client`).
+
+- **Edge caching of raw upstream answers is gone.** 14 files passed `cf: { cacheTtl,
+  cacheEverything: true }`; ArcGIS servers return errors as HTTP 200 bodies, so the edge could
+  keep an error as a success for up to 24 h. `src/shared/upstream.js` drops any `cf` option.
+  Validated answers are cached with `cachedJson()` (Cache API) instead.
+- **Slow bodies were unbounded.** The old `fetchWithTimeout` cleared its timer when headers
+  arrived. The shared client's timeout covers the host-slot wait, headers and body.
+- **Per-host cap (4 in flight).** One Kootenai search sent ~13 requests to map.kcgov.us, 7 of them
+  at once (assessor layers). Hypothesis (not proven): county firewalls throttle Cloudflare; on
+  2026-10-28 map.kcgov.us, gis.idwr.idaho.gov and gis.stevenscountywa.gov timed out (10-40 s)
+  from the live site but answered in under 1.3 s from elsewhere. The assessor now sends at most 4
+  layers at once, layers queued behind a hit are never sent, and found records are cached 7 days
+  per PIN. The cap is per isolate (Workers has no request-scoped storage without `nodejs_als`).
+- **Visibility.** Every attempt logs `{"evt":"upstream","host","label","status","ms","ok",
+  "attempt","err"}` to Workers Logs (`observability` is on). `GET /api/upstream-health` probes 21
+  targets (20 hosts) in parallel, 10 s each. From the builder sandbox on 2026-10-28 every target
+  answered (0.5-1.1 s, whole probe 1.1 s). `elevation.nationalmap.gov/arcgis/rest/info`
+  answered 502 while the 3DEP ImageServer worked, so that probe reads the ImageServer metadata.
+- **Behaviour changes** (outputs for stubbed fixtures unchanged, `test/upstream-callers.test.js`):
+  one retry on transient failures with the old timeout split (20 s -> 12 s + 8 s, 15 s -> 9 s +
+  6 s); timeout and invalid-JSON error messages are now "<agency> timed out after Ns" /
+  "<agency> returned invalid JSON" instead of the runtime's abort/SyntaxError text; long GETs
+  (over 3,500 characters, e.g. Spokane permit polygons) go as form POSTs; the legacy wetlands
+  `queryArcGIS` in `worker.js` had no timeout and now has 20 s; the Spokane existing-well
+  assessor lookup treats an HTTP error with a non-JSON body as "no assessor record" (before, it
+  threw); land-analysis worst case is 27 requests (soil retry), was 26.
+- Not migrated: `src/counties/kootenai.js` and `src/states/idaho/parcels.js` (open PRs #21/#22;
+  they still pass `cf` in source, dropped at runtime by `fetchWithTimeout`), and
+  `src/services/reso-listings.js` (MLS provider/OAuth).
+
 ## 2026-10-27: Wetlands "present" with "0.0% of parcel" was a broken clip request, not a boundary touch
 
 Owner-approved 2026-10-27 (branch `claude/wetlands-fixes`). Checked live by the builder from the
