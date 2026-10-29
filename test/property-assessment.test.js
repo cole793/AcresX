@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { getKootenaiAssessment, KC_ASSESSOR_LAYERS } from '../src/counties/kootenai-assessor.js';
+import { inFlight, queued } from '../src/shared/upstream.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 const env = { ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
@@ -196,7 +197,11 @@ test('kootenai assessment: the first hit answers at once and the other layer req
 test('kootenai assessment: a slow host with the hit in a layer queued behind the cap still finds it', async () => {
   // Every layer answers in 6 s; the PIN is in layer 11, which waits for a slot behind 5-8. The
   // 10 s timeout starts when a layer is sent, so 11 (sent at ~6 s) answers at ~12 s.
-  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  // The mocked clock starts at real time, and earlier tests must leave no map.kcgov.us request
+  // waiting or holding a slot (a leftover would delay this one).
+  assert.equal(queued('map.kcgov.us'), 0, 'no leftover queue entries');
+  assert.equal(inFlight('map.kcgov.us'), 0, 'no leftover slots');
+  mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
   const sent = {};
   stubFetch(kootenaiUpstream({ hitLayer: -1, other: url => new Promise(resolve => {
     sent[layerOf(url)] = Date.now();
@@ -214,6 +219,26 @@ test('kootenai assessment: a slow host with the hit in a layer queued behind the
   assert.equal(result.record.layerId, 11);
   assert.ok(sent[11] - started >= 6000, 'layer 11 waited for a slot');
   assert.ok(Date.now() - started < 13000, `found at ${Date.now() - started} ms`);
+  assert.equal(queued('map.kcgov.us'), 0, 'cancelled layers left the queue');
+});
+
+test('kootenai assessment: a quick hit in a queued layer is found while layers 5-8 hang', async () => {
+  // The queue budget (12 s) is a little longer than the 10 s timeout of the layers ahead, so a
+  // queued layer is still sent when they time out.
+  mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
+  stubFetch(kootenaiUpstream({ hitLayer: 9, other: (url, init) => (layerOf(url) <= 8 ? new Promise((_, reject) => init.signal?.addEventListener('abort', () => reject(init.signal.reason))) : arcgisJson(recorded.miss)) }));
+  const started = Date.now();
+  let result = null;
+  const pending = getKootenaiAssessment('47N03W052200').then(value => { result = value; });
+  for (let ms = 0; ms < 20000 && !result; ms += 10) {
+    mock.timers.tick(10);
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setImmediate(resolve));
+  }
+  await pending;
+  assert.equal(result.status, 'found');
+  assert.equal(result.record.layerId, 9);
+  assert.ok(Date.now() - started < 11000, `found at ${Date.now() - started} ms`);
+  assert.equal(queued('map.kcgov.us'), 0);
 });
 
 test('kootenai assessment: with no hit, a hanging-then-failing layer still makes it an error, not not-found', async () => {
