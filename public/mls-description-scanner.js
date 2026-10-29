@@ -77,12 +77,18 @@
     const value = document.getElementById('wellMetric');
     const status = document.getElementById('waterStatus');
     if (!card || !value || !status) return;
+    // Nearby wells still loading or timed out (progressive-loading.js): keep that placeholder.
+    if (window.AcresXSections?.placeholder('wells')) return;
     const report = wellReport();
     const previous = card.__mlsWellPresentation;
+    // A summary re-render rewrites the card; then its current text is the new baseline.
+    const stillShown = previous && value.textContent === previous.shown;
     if (!report) {
       if (previous) {
-        value.textContent = previous.value;
-        status.textContent = previous.status;
+        if (stillShown) {
+          value.textContent = previous.value;
+          status.textContent = previous.status;
+        }
         previous.note?.remove();
         card.classList.remove('mls-well-reported');
         delete card.__mlsWellPresentation;
@@ -90,11 +96,13 @@
       return;
     }
     const signature = String(report.listing.best.listingId || '') + ':' + report.remarks;
-    if (previous?.signature === signature) return;
+    if (previous?.signature === signature && stillShown) return;
     if (previous) {
       previous.note?.remove();
-      value.textContent = previous.value;
-      status.textContent = previous.status;
+      if (stillShown) {
+        value.textContent = previous.value;
+        status.textContent = previous.status;
+      }
     }
     const baseline = { signature, value: value.textContent, status: status.textContent };
     const note = document.createElement('div');
@@ -109,6 +117,7 @@
     value.textContent = report.count ? report.count + ' wells reported' : 'Well reported';
     status.textContent = 'Matched listing reports existing well' +
       (report.count === 1 ? '' : 's') + ' · Verify on property';
+    baseline.shown = value.textContent;
   }
   function addWellStyles() {
     if (document.getElementById('acresxMlsWellStyles')) return;
@@ -206,23 +215,31 @@
     const value = document.getElementById(category === 'septic' ? 'soilMetric' : 'utilityMetric');
     const status = document.getElementById(category === 'septic' ? 'soilStatus' : 'powerStatus');
     if (!card || !value || !status) return;
+    // Soil or utility still loading or timed out (progressive-loading.js): keep that placeholder.
+    if (window.AcresXSections?.placeholder(category === 'septic' ? 'land' : 'utility')) return;
     const key = '__mls_' + category + '_presentation';
     const previous = card[key];
+    // A summary re-render rewrites the card; then its current text is the new baseline.
+    const stillShown = previous && value.textContent === previous.shown;
     const report = infrastructureReport(category);
     if (!report) {
       if (previous) {
-        value.textContent = previous.value;
-        status.textContent = previous.status;
+        if (stillShown) {
+          value.textContent = previous.value;
+          status.textContent = previous.status;
+        }
         previous.note.remove();
         card.classList.remove('mls-' + category + '-reported');
         delete card[key];
       }
       return;
     }
-    if (previous?.signature === report.signature) return;
+    if (previous?.signature === report.signature && stillShown) return;
     if (previous) {
-      value.textContent = previous.value;
-      status.textContent = previous.status;
+      if (stillShown) {
+        value.textContent = previous.value;
+        status.textContent = previous.status;
+      }
       previous.note.remove();
     }
     const baseline = { signature: report.signature, value: value.textContent, status: status.textContent };
@@ -240,6 +257,7 @@
     value.textContent = infrastructureLabel(category, report);
     status.textContent = 'Matched listing statement · Verify ' +
       (category === 'septic' ? 'permit and system status' : 'service and connection');
+    baseline.shown = value.textContent;
   }
   function showInfrastructureDetail(category) {
     const detail = category === 'septic' ? 'soil' : 'power';

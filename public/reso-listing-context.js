@@ -41,22 +41,31 @@
     const wrapped=function(...args){ const out=base.apply(this,args); try{ const d=getLast(); if(typeof activeTab!=='undefined'&&activeTab==='listing'&&d?.resoListings){ const box=document.querySelector('#detailCard .results-scroll'); if(box)box.innerHTML=detailHtml(d.resoListings); } }catch(_){} return out; };
     wrapped.__resoWrapped=true; window.renderResults=wrapped;
   }
+  // The listing card waits for its own section (listing evidence) before showing the RESO result.
+  function listingPending(){ return Boolean(window.AcresXSections?.placeholder('evidence')); }
+  // A re-render rewrites the listing card: paint the answer already loaded for this search.
+  function paintLoaded(){ const d=getLast(); if(d?.resoListings&&!listingPending())paint(d.resoListings); }
   async function lookup(){
     const d=getLast(); if(!d)return; const id=parcelId(d); const addr=address(d); const pt=point(d); if(!id&&!addr&&!Number.isFinite(pt.lat))return;
+    // Once per search (progressive-loading.js); later calls only repaint.
+    const sections=window.AcresXSections;
+    if(sections&&!sections.claim('reso')){ paintLoaded(); return; }
+    const searchId=sections?.searchId; const stale=()=>sections&&!sections.isCurrent(searchId);
     const mine=++seq;
     try{
       const response=await fetch('/api/reso-listings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parcelId:id||undefined,address:addr||undefined,lat:pt.lat,lon:pt.lon})});
-      const result=await response.json(); if(mine!==seq)return;
+      const result=await response.json(); if(mine!==seq||stale())return;
       d.resoListings=result; d.listingContext=result; window.__acresxLast=d;
-      paint(result);
+      sections?.settle('reso');
+      if(!listingPending())paint(result);
       if(typeof activeTab!=='undefined'&&activeTab==='listing'&&document.getElementById('detailCard')?.classList.contains('show')){ const box=document.querySelector('#detailCard .results-scroll'); if(box)box.innerHTML=detailHtml(result); }
-    }catch(error){ if(mine!==seq)return; const result={available:false,status:'lookup_error',error:error?.message}; d.resoListings=result; d.listingContext=result; paint(result); }
+    }catch(error){ if(mine!==seq||stale())return; const result={available:false,status:'lookup_error',error:error?.message}; d.resoListings=result; d.listingContext=result; sections?.settle('reso'); if(!listingPending())paint(result); }
   }
   function schedule(){ setTimeout(lookup,250); setTimeout(lookup,1100); }
   wireDetails();
   if(typeof window.renderSummary==='function'){
     const base=window.renderSummary;
-    window.renderSummary=function(...args){ const out=base.apply(this,args); schedule(); return out; };
+    window.renderSummary=function(...args){ const out=base.apply(this,args); paintLoaded(); schedule(); return out; };
   }
   const dashboard=document.querySelector('.dashboard');
   if(dashboard)new MutationObserver(()=>{ if(dashboard.classList.contains('show'))schedule(); }).observe(dashboard,{attributes:true,attributeFilter:['class']});

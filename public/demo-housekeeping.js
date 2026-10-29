@@ -54,8 +54,14 @@
     }
   }
 
+  // Card -> its data section in progressive-loading.js.
+  const SECTION_OF = { wells: 'wells', soil: 'land', power: 'utility', listing: 'evidence', slope: 'land', zoning: 'zoningPermits', permits: 'zoningPermits' };
+
   function confidenceFor(detail) {
     if (typeof last === 'undefined' || !last?.parcel) return { label: 'Verify', cls: 'verify', note: 'No property analysis loaded' };
+    const placeholder = window.AcresXSections?.placeholder(SECTION_OF[detail]);
+    if (placeholder === 'pending') return { label: 'Checking', cls: 'screening', note: 'Waiting for this data source to answer' };
+    if (placeholder === 'timeout') return { label: 'Timed out', cls: 'verify', note: 'The data source did not answer in time; use Retry' };
     if (detail === 'wells') return Array.isArray(last.wells) && last.wells.length ? { label: 'Confirmed', cls: 'confirmed', note: 'Public well records returned for this search' } : { label: 'Verify', cls: 'verify', note: 'No nearby public well records returned' };
     if (detail === 'soil') return last?.land?.soil?.available ? { label: 'Screening', cls: 'screening', note: 'Derived from mapped USDA soil data; field verification required' } : { label: 'Verify', cls: 'verify', note: 'Soil screening is not available for this parcel' };
     if (detail === 'power') return Array.isArray(last.utility) && last.utility.length ? { label: 'Screening', cls: 'screening', note: 'Likely utility territory; service availability requires provider verification' } : { label: 'Verify', cls: 'verify', note: 'Serving utility has not been identified' };
