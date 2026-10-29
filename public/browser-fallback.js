@@ -2,7 +2,8 @@
 // 2026-10-29, "option A"). The Worker always asks first. When an eligible layer fails there with a
 // network error, a timeout or a 403/429/5xx, its /api answer keeps its shape and adds
 //   fallback: { mode: 'browser', kind, input }          (src/shared/fallback.js)
-// This script wraps window.fetch for four /api routes. When such an answer arrives it runs the
+// This script wraps window.fetch for five /api routes (parcel search, zoning, wells, assessment,
+// flood). When such an answer arrives it runs the
 // known query for that kind from the user's browser and hands the page an answer in the Worker's
 // shape, so the existing render path shows it. It then labels the section
 // "Loaded directly from <agency>".
@@ -20,8 +21,14 @@
 //   src/states/idaho/wells.js, src/services/flood.js). test/browser-fallback.test.js runs both on
 //   the same recorded fixtures and checks the answers match. Change both together.
 //
-// Hook for other modules (e.g. progressive loading): AcresXFallback.run(kind, input) returns a
-// promise of the Worker-shaped answer and records the label; AcresXFallback.kinds lists the kinds.
+// Progressive loading (public/progressive-loading.js): a section's find* fetch passes its
+// AbortSignal; the wrapped fetch holds the answer while the browser query runs, so the section
+// stays "Checking…" and the score waits for it. Before the browser query starts it calls
+// AcresXSections.extend(signal, EXTEND_MS), which gives that section one fresh time limit. A
+// timed-out section's abort cancels the browser requests, and Retry goes through the same fetch,
+// so it uses the fallback too. Parcel search has no time limit, so the search waits for it.
+// AcresXFallback.run(kind, input, { signal }) returns a promise of the Worker-shaped answer and
+// records the label; AcresXFallback.kinds lists the kinds.
 // Loaded last by maybeInjectUiPolish() in src/index.js, after every renderer it labels.
 (function (root) {
   'use strict';
@@ -29,6 +36,8 @@
 
   const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov']);
   const TIMEOUT_MS = 12000;
+  // How much more time a progressive-loading section gets once its browser fallback starts.
+  const EXTEND_MS = 30000;
   const baseFetch = typeof root.fetch === 'function' ? root.fetch.bind(root) : null;
 
   // ---- Requests (allowlisted hosts only)
@@ -193,6 +202,98 @@
     return { where: '1=1', ...geometry, inSR: '4326', spatialRel: 'esriSpatialRelIntersects', ...output };
   }
 
+  // ---- 0. Kootenai parcel search (copy of src/counties/kootenai-parcels.js
+  // findKootenaiCountyParcel and the /api/parcel-search answer around it). A miss or an ambiguous
+  // match fails the fallback, so the Worker's own answer stays.
+
+  const KC_PARCEL_LAYER = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
+  const KC_PARCEL_SOURCE = 'Kootenai County GIS (Ownership_Display parcel layer)';
+  const KC_PARCEL_SEARCH_FIELDS = 'PIN,PID,Acres,Loc_Addr,Loc_City'; // never Name (the owner)
+
+  const normalizeId = value => String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const trimmed = value => String(value ?? '').trim();
+  const numberOrNull = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };
+  function closeRing(ring) {
+    const pts = ring.map(p => [Number(p[0]), Number(p[1])]).filter(p => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    if (pts.length && (pts[0][0] !== pts.at(-1)[0] || pts[0][1] !== pts.at(-1)[1])) pts.push([...pts[0]]);
+    return pts;
+  }
+  function signedArea(ring) {
+    let sum = 0;
+    for (let i = 0; i < ring.length - 1; i++) sum += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+    return sum / 2;
+  }
+  function pointInRing([x, y], ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function esriPolygonToGeoJSON(esriGeometry) {
+    const rings = (Array.isArray(esriGeometry?.rings) ? esriGeometry.rings : []).map(closeRing).filter(r => r.length >= 4);
+    const outers = [], holes = [];
+    for (const ring of rings) {
+      const a = signedArea(ring);
+      if (a === 0) continue;
+      if (a < 0) outers.push({ ring: [...ring].reverse(), area: -a, holes: [] });
+      else holes.push(ring);
+    }
+    for (const hole of holes) {
+      const probes = [hole[0], [(hole[0][0] + hole[1][0]) / 2, (hole[0][1] + hole[1][1]) / 2]];
+      const owner = outers.filter(o => probes.some(p => pointInRing(p, o.ring))).sort((a, b) => a.area - b.area)[0];
+      if (owner) owner.holes.push([...hole].reverse());
+      else outers.push({ ring: hole, area: signedArea(hole), holes: [] });
+    }
+    const polygons = outers.map(o => [o.ring, ...o.holes]);
+    if (!polygons.length) return null;
+    return polygons.length === 1 ? { type: 'Polygon', coordinates: polygons[0] } : { type: 'MultiPolygon', coordinates: polygons };
+  }
+  function mergeGeometries(geometries) {
+    const polygons = [], seen = new Set();
+    const add = polygon => { const key = JSON.stringify(polygon); if (!seen.has(key)) { seen.add(key); polygons.push(polygon); } };
+    for (const g of geometries) {
+      if (g?.type === 'Polygon') add(g.coordinates);
+      else if (g?.type === 'MultiPolygon') g.coordinates.forEach(add);
+    }
+    if (!polygons.length) return null;
+    return polygons.length === 1 ? { type: 'Polygon', coordinates: polygons[0] } : { type: 'MultiPolygon', coordinates: polygons };
+  }
+  // Named fields only, like the Worker's mapKootenaiParcel.
+  function mapKootenaiParcel(attrs = {}, geometry = null) {
+    const pin = trimmed(attrs.PIN);
+    return {
+      type: 'Feature', geometry,
+      properties: {
+        PIN: pin, PID: trimmed(attrs.PID), COUNTY: 'Kootenai',
+        ORIG_PARCEL_ID: pin, PARCEL_ID_NR: pin, COUNTY_NM: 'Kootenai',
+        _countyDisplay: 'Kootenai', _stateCode: 'ID', _stateDisplay: 'Idaho',
+        SITUS_ADDRESS: trimmed(attrs.Loc_Addr), SITUS_CITY_NM: trimmed(attrs.Loc_City), SITUS_ZIP_NR: '',
+        DATA_LINK: '', ACRES: numberOrNull(attrs.Acres),
+        _assessment: { categories: '' },
+        _source: { name: KC_PARCEL_SOURCE, url: KC_PARCEL_LAYER }
+      }
+    };
+  }
+
+  async function kootenaiParcel(input, signal) {
+    const raw = parcelIdOf(input), compact = normalizeId(raw);
+    if (!compact) throw new Error('AcresX fallback: parcel number required');
+    const id = String(raw.toUpperCase()).replaceAll("'", "''");
+    const data = await request(`${KC_PARCEL_LAYER}/query`, { f: 'json', where: `PIN='${id}' OR PID='${id}'`, outFields: KC_PARCEL_SEARCH_FIELDS, returnGeometry: 'true', outSR: '4326', resultRecordCount: '20' }, {
+      agency: 'Kootenai County parcel layer', signal, arcgisMessage: 'Kootenai County parcel layer: query failed'
+    });
+    const features = (Array.isArray(data?.features) ? data.features : []).filter(f => normalizeId(f.attributes?.PIN) === compact || normalizeId(f.attributes?.PID) === compact);
+    const byPin = new Map();
+    for (const f of features) { const key = normalizeId(f.attributes?.PIN); if (!byPin.has(key)) byPin.set(key, []); byPin.get(key).push(f); }
+    if (byPin.size !== 1) throw new Error(byPin.size ? 'AcresX fallback: more than one parcel matches' : 'AcresX fallback: parcel not found');
+    const rows = [...byPin.values()][0];
+    const geometry = mergeGeometries(rows.map(f => esriPolygonToGeoJSON(f.geometry)));
+    if (!geometry) throw new Error('AcresX fallback: parcel has no outline');
+    return { available: true, state: 'ID', county: 'Kootenai', parcel: mapKootenaiParcel(rows[0].attributes, geometry) };
+  }
+
   // ---- 1. Kootenai zoning, city limits and city zoning (copy of src/counties/kootenai.js and
   // kootenai-cities.js). Differences: a failing city-limits or city-zoning layer fails the
   // fallback (the Worker's degraded answer is kept), and there is no retry.
@@ -213,7 +314,7 @@
   const ARCGIS_MAX_GET_URL = 1800; // src/shared/arcgis.js
 
   const sql = value => String(value || '').replaceAll("'", "''");
-  const kq = (layer, params, agency = KC_AGENCY) => arcgisFeatures(layer, params, { agency, maxGet: ARCGIS_MAX_GET_URL });
+  const kq = (layer, params, signal, agency = KC_AGENCY) => arcgisFeatures(layer, params, { agency, maxGet: ARCGIS_MAX_GET_URL, signal });
 
   const CITIES = {
     'COEUR D ALENE': { name: "City of Coeur d'Alene", planningUrl: 'https://www.cdaid.org/planning',
@@ -240,8 +341,8 @@
     if (!key) return null;
     return { key, ...(CITIES[key] || { name: `City of ${String(cityValue).trim()}` }) };
   }
-  async function findCityJurisdiction(where, samples) {
-    const features = await kq(KC_CITY_LIMITS, { ...spatialParams(where), outFields: 'CITY' });
+  async function findCityJurisdiction(where, samples, signal) {
+    const features = await kq(KC_CITY_LIMITS, { ...spatialParams(where), outFields: 'CITY' }, signal);
     const shares = coverageShares(samples, features, a => cityKey(a.CITY));
     const merged = new Map();
     for (const s of shares) merged.set(s.key || '', (merged.get(s.key || '') || 0) + s.share);
@@ -250,8 +351,8 @@
     if (!topKey) return null;
     return { ...cityInfo(topKey), share: topShare, straddles: ranked.length > 1 };
   }
-  async function findCityImpactArea(where, samples) {
-    const features = await kq(KC_CITY_IMPACT, { ...spatialParams(where), outFields: 'CITY,ORDINANCE' });
+  async function findCityImpactArea(where, samples, signal) {
+    const features = await kq(KC_CITY_IMPACT, { ...spatialParams(where), outFields: 'CITY,ORDINANCE' }, signal);
     const top = coverageShares(samples, features, a => cityKey(a.CITY)).find(s => s.key);
     if (!top) return null;
     const ordinance = String(top.attributes?.ORDINANCE || '').trim();
@@ -272,7 +373,7 @@
   const cityBase = city => ({ county: 'Kootenai', state: 'ID', countyStatus: 'kootenai-city-zoning-v1', jurisdiction: city.name, permitJurisdiction: { name: city.name } });
   const tail = source => ({ comprehensivePlan: {}, urbanGrowthArea: { intersects: false }, overlays: [], permits: [], permitHistory: [], permitHistoryStatus: 'unavailable', source });
 
-  async function getCityZoning(city, where, samples, { parcelAttrs = {}, matchMethod, jurisdictionNote = '' } = {}) {
+  async function getCityZoning(city, where, samples, { parcelAttrs = {}, matchMethod, jurisdictionNote = '', signal } = {}) {
     const jurisdictionSource = { agency: KC_AGENCY, service: 'NewServices/Data_Layers', layerId: 18, city: city.key, share: Math.round(city.share * 1000) / 1000 };
     const planning = city.planningUrl ? { url: city.planningUrl, urlLabel: `Open ${city.name} planning ↗` } : {};
     if (!city.zoning) {
@@ -285,7 +386,7 @@
     }
     const z = city.zoning;
     const source = { agency: z.agency, service: z.service, layerId: z.layerId, matchMethod, jurisdictionSource, parcelAttributes: parcelAttrs };
-    const features = await kq(z.url, { ...spatialParams(where), outFields: z.outFields }, z.agency); // a failure fails the fallback
+    const features = await kq(z.url, { ...spatialParams(where), outFields: z.outFields }, signal, z.agency); // a failure fails the fallback
     const covered = coverageShares(samples, features, a => String(a.ZONING || '').trim()).filter(s => s.key);
     const top = covered[0];
     if (!top) {
@@ -339,14 +440,14 @@
     return { title: 'Allowed Buildings / Dwelling Types', zone: zoneRaw, sourceUrl: KC_CODE_RESIDENTIAL, status: 'mapped_from_county_code', legend: { P: 'Permitted', A: 'Administrative permit', S: 'Special notice permit', C: 'Conditional use permit', X: 'Prohibited' }, uses, disclaimer: 'Planning summary from Kootenai County Code Table 2-1101. Parcel size, frontage, overlays, nonconforming status, septic, access, fire/building code and use-specific standards can affect approval.' };
   }
 
-  async function queryKootenaiParcel(parcelId) {
+  async function queryKootenaiParcel(parcelId, signal) {
     const id = String(parcelId || '').trim().toUpperCase(); if (!id) return [];
     const params = { returnGeometry: 'true', outSR: '4326' };
     try {
-      return await kq(KC_PARCELS, { ...params, where: `UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`, outFields: KC_PARCEL_FIELDS });
+      return await kq(KC_PARCELS, { ...params, where: `UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`, outFields: KC_PARCEL_FIELDS }, signal);
     } catch (e) {
       if (!e?.arcgisError) throw e;
-      return kq(KC_PARCELS, { ...params, where: `UPPER(PIN)='${sql(id)}'`, outFields: KC_PARCEL_FIELDS_MINIMAL });
+      return kq(KC_PARCELS, { ...params, where: `UPPER(PIN)='${sql(id)}'`, outFields: KC_PARCEL_FIELDS_MINIMAL }, signal);
     }
   }
   function centerFromGeometry(geometry) {
@@ -360,10 +461,10 @@
     return { available: false, county: 'Kootenai', state: 'ID', countyStatus: 'kootenai-data-layers-v3', jurisdiction: 'Kootenai County', permitJurisdiction: { name: 'Kootenai County' }, zoning: { status: 'no_mapped_result', label: 'No mapped zoning result found', note: `The current Kootenai County Data_Layers zoning service returned no polygon ${matchMethod === 'parcel location' ? 'at this parcel location' : 'on this parcel'}.${impactNote}`, sourceUrl: KC_ZONING, url: KC_PLANNING, ...(impact ? { cityImpactArea: impact } : {}) }, permits: [], permitHistory: [], permitHistoryStatus: 'unavailable', source: { agency: KC_AGENCY, service: 'NewServices/Data_Layers', layerId: 21, parcelMatched: Boolean(parcelFeatures.length) } };
   }
 
-  async function kootenaiZoning(input) {
+  async function kootenaiZoning(input, signal) {
     const parcelId = parcelIdOf(input), point = pointOf(input, false), geometry = geometryOf(input, false);
     let parcelFeatures = [];
-    try { parcelFeatures = await queryKootenaiParcel(parcelId); } catch { /* as the Worker: carry on without it */ }
+    try { parcelFeatures = await queryKootenaiParcel(parcelId, signal); } catch { /* as the Worker: carry on without it */ }
     let lon = point ? point.lon : NaN, lat = point ? point.lat : NaN;
     if ((!Number.isFinite(lon) || !Number.isFinite(lat)) && parcelFeatures.length) { const c = centerFromGeometry(parcelFeatures[0].geometry); if (c) [lon, lat] = c; }
     const parcelAttrs = parcelFeatures[0]?.attributes || {};
@@ -373,12 +474,12 @@
     const where = { rings, lon, lat }, samples = rings ? samplePoints(rings) : [[lon, lat]];
     const matchMethod = rings ? 'parcel area (sampled)' : 'parcel location';
 
-    const countyZoning = kq(KC_ZONING, { ...spatialParams(where), outFields: 'ZONE_NAME,LABEL,ACRES' }).then(features => ({ features }), error => ({ error }));
-    const impactArea = findCityImpactArea(where, samples).catch(() => null);
-    const city = await findCityJurisdiction(where, samples); // a failure fails the fallback
+    const countyZoning = kq(KC_ZONING, { ...spatialParams(where), outFields: 'ZONE_NAME,LABEL,ACRES' }, signal).then(features => ({ features }), error => ({ error }));
+    const impactArea = findCityImpactArea(where, samples, signal).catch(() => null);
+    const city = await findCityJurisdiction(where, samples, signal); // a failure fails the fallback
     if (city) {
       const jurisdictionNote = city.straddles ? ` About ${pct(city.share)} of the parcel is inside ${city.name} limits; the rest may fall under another jurisdiction.` : '';
-      return getCityZoning(city, where, samples, { parcelAttrs, matchMethod, jurisdictionNote });
+      return getCityZoning(city, where, samples, { parcelAttrs, matchMethod, jurisdictionNote, signal });
     }
     const { features: zoningFeatures, error } = await countyZoning; if (error) throw error;
     const covered = coverageShares(samples, zoningFeatures, a => String(a.LABEL || a.ZONE_NAME || '').trim()).filter(s => s.key);
@@ -398,7 +499,7 @@
   const IDAHO_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0';
   const IDAHO_WELL_FIELDS = 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,WellAddress,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude';
 
-  async function idahoWells(input) {
+  async function idahoWells(input, signal) {
     const { lat: y, lon: x } = pointOf(input, true);
     let features = [];
     for (const miles of [2, 5, 10, 20, 40]) {
@@ -406,7 +507,7 @@
         f: 'geojson', where: 'TotalDepth > 0', geometry: `${x},${y}`, geometryType: 'esriGeometryPoint', inSR: '4326',
         spatialRel: 'esriSpatialRelIntersects', distance: String(miles), units: 'esriSRUnit_StatuteMile', outFields: IDAHO_WELL_FIELDS,
         returnGeometry: 'true', outSR: '4326', resultRecordCount: '200'
-      }, { agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed' });
+      }, { agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed', signal });
       features = (data.features || []).filter(f => Number(f?.properties?.TotalDepth) > 0);
       if (features.length >= 5) break;
     }
@@ -461,12 +562,13 @@
     };
   }
 
-  async function kootenaiAssessor(input) {
+  async function kootenaiAssessor(input, signal) {
     const parcelId = parcelIdOf(input);
     if (!parcelId) throw new Error('AcresX fallback: parcel number required');
     const id = sql(parcelId.toUpperCase());
     const where = `PIN='${id}' OR PID='${id}'`;
     const cancel = new AbortController();
+    if (signal) { if (signal.aborted) cancel.abort(); else signal.addEventListener('abort', () => cancel.abort(), { once: true }); }
     const queue = [...KC_ASSESSOR_LAYERS];
     let hit = null, failed = false;
     const worker = async () => {
@@ -553,13 +655,13 @@
     return { available: true, intersects: rows.length > 0, high: rows.some(isSfha), zones, zoneDetails: zoneDetails(rows), category: floodCategory(rows) };
   }
 
-  async function femaFlood(input) {
+  async function femaFlood(input, signal) {
     const geometry = geometryOf(input, true);
     const rings = geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat();
     const data = await request(`${FEMA_NFHL_FLOOD_LAYER}/query`, {
       f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
       inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'FLD_ZONE,ZONE_SUBTY,SFHA_TF', returnGeometry: 'false', resultRecordCount: '100'
-    }, { agency: FEMA_PROVIDER });
+    }, { agency: FEMA_PROVIDER, signal });
     const rows = (data?.features || []).map(f => f?.attributes || {});
     return { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
   }
@@ -567,6 +669,7 @@
   // ---- Kinds, the fetch hook and labels
 
   const KINDS = {
+    'kootenai-parcel': { api: '/api/parcel-search', run: kootenaiParcel, agency: () => 'Kootenai County GIS', targets: ['overviewParcelId', 'parcelAddress'] },
     'kootenai-zoning': { api: '/api/zoning-permits', run: kootenaiZoning, agency: body => body?.source?.agency || KC_AGENCY, targets: ['zoningNote'] },
     'idaho-wells': { api: '/api/well-search', run: idahoWells, agency: () => 'Idaho Department of Water Resources', targets: ['wellNote'] },
     'kootenai-assessor': { api: '/api/property-assessment', run: kootenaiAssessor, agency: () => 'Kootenai County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
@@ -613,9 +716,12 @@
 
   // Runs the browser query for `kind`. Resolves the Worker-shaped answer; rejects for an unknown
   // kind, bad input, or a failed request.
-  async function run(kind, input) {
+  // options.signal (e.g. a progressive-loading section's) cancels the browser requests.
+  async function run(kind, input, { signal } = {}) {
     if (!Object.prototype.hasOwnProperty.call(KINDS, kind)) throw new Error(`AcresX fallback: unknown kind ${kind}`);
-    const body = await KINDS[kind].run(input || {});
+    if (signal?.aborted) throw new Error('AcresX fallback: cancelled');
+    const body = await KINDS[kind].run(input || {}, signal);
+    if (signal?.aborted) throw new Error('AcresX fallback: cancelled');
     loaded[kind] = KINDS[kind].agency(body);
     scheduleLabels();
     return body;
@@ -624,7 +730,10 @@
   // Given an /api answer: if it carries a browser hint for that route's kind, returns a new
   // Response with the browser's answer; otherwise (or if the browser query fails too) the
   // original response, untouched.
-  async function recover(input, response) {
+  // init.signal is the page request's signal. Before the browser query starts, the
+  // progressive-loading section holding that signal gets its time limit extended once
+  // (AcresXSections.extend), so it stays "Checking…" while the browser runs.
+  async function recover(input, response, init) {
     try {
       const raw = typeof input === 'string' ? input : input?.url || String(input);
       const here = root.location?.href || 'https://acresx.invalid/';
@@ -635,7 +744,9 @@
       const data = await response.clone().json();
       const hint = data?.fallback;
       if (!hint || hint.mode !== 'browser' || hint.kind !== kind) return response;
-      const body = await run(kind, hint.input);
+      const signal = init?.signal || (typeof Request !== 'undefined' && input instanceof Request ? input.signal : undefined);
+      try { root.AcresXSections?.extend?.(signal, EXTEND_MS); } catch { /* optional */ }
+      const body = await run(kind, hint.input, { signal });
       return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
     } catch (error) {
       try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ }
@@ -646,7 +757,7 @@
   if (baseFetch) {
     root.fetch = async function (input, init) {
       const response = await baseFetch(input, init);
-      return recover(input, response);
+      return recover(input, response, init);
     };
   }
 
@@ -659,7 +770,7 @@
 
   root.AcresXFallback = Object.freeze({
     run, recover, applyLabels, reset, labelText,
-    kinds: Object.freeze(Object.keys(KINDS)),
+    kinds: Object.freeze(Object.keys(KINDS)), EXTEND_MS,
     ALLOWED_HOSTS,
     loaded: () => ({ ...loaded }),
     _request: request // tests: the allowlist check

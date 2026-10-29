@@ -111,7 +111,7 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'fema-flood']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'fema-flood']);
   assert.equal(typeof fb.run, 'function');
   assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
 });
@@ -161,6 +161,44 @@ test('browser fallback: a hint never chooses the URL, and must match the route',
   assert.equal(recovered.status, 200);
   assert.deepEqual(rec.calls.map(c => c.base), [FEMA]);
   assertSafe(rec.calls);
+});
+
+// ---- 0. Kootenai parcel search: same answer as the Worker
+
+const PARCEL_LAYER = `${KC}/Ownership_Display/MapServer/0/query`;
+const parcelCases = [
+  ['47N03W052200', fixture('kootenai-parcel-47N03W052200.json')],
+  ['47N02W040800', fixture('kootenai-parcel-47N02W040800.json')], // several rows, merged into one outline
+  ['50N04W323200', fixture('browser-fallback-50N04W323200.json').responses.find(r => r.url === PARCEL_LAYER && r.body.fields?.length === 5).body],
+  ['50N04W-32-3200', fixture('browser-fallback-50N04W323200.json').responses.find(r => r.url === PARCEL_LAYER && r.body.fields?.length === 5).body] // dashed PID
+];
+for (const [parcelId, layerAnswer] of parcelCases) {
+  test(`kootenai-parcel parity on recorded ${parcelId}: browser answer equals the Worker's /api/parcel-search answer`, async () => {
+    const w = recorder(({ base }) => (base === PARCEL_LAYER ? layerAnswer : new Response('unexpected', { status: 500 })));
+    const expected = await apiJson('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId }, w.fetch);
+    assert.equal(expected.status, 200);
+    const b = recorder(() => layerAnswer);
+    const { api: fb } = browser(b.fetch);
+    assert.deepEqual(plain(await fb.run('kootenai-parcel', { parcelId })), expected.body);
+    const workerCall = w.calls.find(c => c.base === PARCEL_LAYER);
+    assert.equal(b.calls.length, 1);
+    for (const name of ['where', 'outFields', 'returnGeometry', 'outSR', 'resultRecordCount', 'f']) assert.equal(b.calls[0].params.get(name), workerCall.params.get(name), name);
+    assert.equal(b.calls[0].params.get('outFields'), 'PIN,PID,Acres,Loc_Addr,Loc_City');
+    assertSafe(b.calls);
+  });
+}
+
+test('kootenai-parcel: a miss, two parcels, or an owner field sent anyway', async () => {
+  const { api: fb } = browser(recorder(() => ({ features: [] })).fetch);
+  await assert.rejects(fb.run('kootenai-parcel', { parcelId: '50N04W323200' }), /not found/);
+  const two = { features: [{ attributes: { PIN: 'A1', PID: 'X' }, geometry: { rings: [[[0, 0], [0, 1], [1, 1], [0, 0]]] } }, { attributes: { PIN: 'A2', PID: 'X' }, geometry: { rings: [[[0, 0], [0, 1], [1, 1], [0, 0]]] } }] };
+  const { api: fb2 } = browser(recorder(() => two).fetch);
+  await assert.rejects(fb2.run('kootenai-parcel', { parcelId: 'X' }), /more than one/);
+  const withOwner = plain(fixture('kootenai-parcel-47N03W052200.json'));
+  withOwner.features[0].attributes.Name = 'OWNER PLACEHOLDER';
+  const { api: fb3 } = browser(recorder(() => withOwner).fetch);
+  const result = plain(await fb3.run('kootenai-parcel', { parcelId: '47N03W052200' }));
+  assert.equal(JSON.stringify(result).includes('OWNER PLACEHOLDER'), false);
 });
 
 // ---- 1. Kootenai zoning: same answers as the Worker
