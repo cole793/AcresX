@@ -201,10 +201,12 @@
       if (requestId !== assessmentRequestId || stale()) return;
       if (typeof last !== 'undefined') last.propertyAssessment = data;
       renderAssessment(normalize(data));
+      sections?.settle('assessment');
     } catch (error) {
       if (requestId !== assessmentRequestId || stale()) return;
       console.warn('Property assessment lookup failed', error);
       renderAssessment(null);
+      sections?.settle('assessment', 'failed');
     }
   }
 
