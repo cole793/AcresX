@@ -66,8 +66,8 @@ export async function checkUpstreamHealth(targets = HEALTH_TARGETS, timeoutMs = 
   return { checkedAt, results };
 }
 
-// The route is public, so one answer is reused for HEALTH_MEMO_MS within an isolate (concurrent
-// hits share the run in progress): repeated GETs do not fan out 21 requests to government
+// The route is public, so an answer where every probe succeeded is reused for HEALTH_MEMO_MS
+// within an isolate (concurrent hits share the run in progress; a run with a failure is not kept): repeated GETs do not fan out 21 requests to government
 // servers each time. checkedAt says how old the answer is.
 export const HEALTH_MEMO_MS = 60000;
 let memo = null; // { startedAt, promise }
@@ -79,7 +79,12 @@ export async function handleUpstreamHealth() {
   if (!memo || now - memo.startedAt >= HEALTH_MEMO_MS) {
     const promise = checkUpstreamHealth();
     memo = { startedAt: now, promise };
-    promise.catch(() => { if (memo?.promise === promise) memo = null; });
+    // Only an all-healthy answer is reused: once a run with any failed probe finishes, the next
+    // GET probes again (concurrent GETs still share the run in progress).
+    promise.then(
+      result => { if (memo?.promise === promise && !result.results.every(r => r.ok)) memo = null; },
+      () => { if (memo?.promise === promise) memo = null; }
+    );
   }
   return json(await memo.promise, 200, 'no-store');
 }
