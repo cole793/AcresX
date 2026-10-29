@@ -15,19 +15,14 @@ test('migrated upstream callers: outputs (and successful requests) match the pre
   for (const name of Object.keys(expected)) assert.deepEqual(actual[name], expected[name], name);
 });
 
-// src/counties/kootenai.js and src/states/idaho/parcels.js are being changed in open PRs #21 and
-// #22, so they were not edited here; their `cf` options are dropped at runtime by fetchWithTimeout
-// (test/upstream.test.js checks that). Remove them from this list when those files move to the shared client.
-const CF_ALLOWED = new Set(['src/counties/kootenai.js', 'src/states/idaho/parcels.js']);
 function sourceFiles(dir) {
   return readdirSync(new URL(`../${dir}/`, import.meta.url)).flatMap(name => {
     const rel = `${dir}/${name}`;
     return statSync(new URL(`../${rel}`, import.meta.url)).isDirectory() ? sourceFiles(rel) : rel.endsWith('.js') ? [rel] : [];
   });
 }
-test('no source file asks for cf edge caching (except the two files in open PRs)', () => {
+test('no source file asks for cf edge caching', () => {
   const offenders = sourceFiles('src').filter(file => {
-    if (CF_ALLOWED.has(file)) return false;
     const code = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').split('\n').filter(line => !/^\s*\/\//.test(line)).join('\n');
     return /cacheEverything|cacheTtl|\bcf\s*:\s*\{/.test(code);
   });

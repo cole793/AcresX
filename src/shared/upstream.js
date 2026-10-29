@@ -37,9 +37,9 @@
 // `agency` defaults to the host. UpstreamError also has kind, status, code, host, label, attempt,
 // retryable and (for http errors) body: the parsed JSON or text of the error answer.
 //
-// Mapping from src/shared/arcgis.js (open PR #21): arcgisQuery(base, params, { agency, timeoutMs })
-// has the same signature and result (features[]) here; errors from an ArcGIS {error} body have
-// kind 'arcgis' and arcgisError: true, as there. PR #21 can re-export these from arcgis.js.
+// src/shared/arcgis.js arcgisQuery(base, params, { agency, timeoutMs }) is a thin wrapper over
+// arcgisQuery here (same features[] result; it adds a 1,800-char GET limit and 12 s + 8 s
+// timeouts); errors from an ArcGIS {error} body have kind 'arcgis' and arcgisError: true.
 
 import { openValueCache, readCachedJson, writeCachedJson } from './edge-cache.js';
 

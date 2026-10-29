@@ -31,8 +31,12 @@ Owner-approved 2026-10-28 (backend cleanup step 2, branch `claude/shared-upstrea
   `queryArcGIS` in `worker.js` had no timeout and now has 20 s; the Spokane existing-well
   assessor lookup treats an HTTP error with a non-JSON body as "no assessor record" (before, it
   threw); land-analysis worst case is 27 requests (soil retry), was 26.
-- Not migrated: `src/counties/kootenai.js` and `src/states/idaho/parcels.js` (open PRs #21/#22;
-  they still pass `cf` in source, dropped at runtime by `fetchWithTimeout`), and
+- After merging #21/#22: `src/counties/kootenai.js`, `kootenai-cities.js` (via
+  `src/shared/arcgis.js`, now a thin wrapper that keeps its 1,800-char GET limit),
+  `kootenai-parcels.js` and `src/states/idaho/parcels.js` are on the shared client too. Zoning and
+  city layers: 12 s + one retry at 8 s (was one 20 s attempt). County parcel-search layer: one 10 s
+  attempt (statewide and IDWR are its fallbacks). Statewide/IDWR: 12 s + 8 s, statewide also
+  retries a rate limit. Parcel answers that found rows are cached 7 days. Not migrated:
   `src/services/reso-listings.js` (MLS provider/OAuth).
 
 ## 2026-10-27: Kootenai parcel search now uses the county parcel layer

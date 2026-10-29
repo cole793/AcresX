@@ -11,7 +11,8 @@ function sql(value) { return String(value || '').replaceAll("'", "''"); }
 function requestedParcelId(body) {
   return body.parcelId || body.parcelID || body.apn || body.pin || body.taxParcelId || body?.parcel?.properties?.ORIG_PARCEL_ID || body?.parcel?.properties?.PARCEL_ID_NR || body?.parcel?.properties?.PIN || '';
 }
-const arcQuery = (base, params) => arcgisQuery(base, params, { agency: 'Kootenai County GIS' });
+// Through the shared client (src/shared/arcgis.js -> upstream.js): 12 s + one retry at 8 s.
+const arcQuery = (base, params, label) => arcgisQuery(base, params, { agency: 'Kootenai County GIS', label });
 // The Ownership_Display parcel layer has no ZONING field (zoning comes from Data_Layers/21), and
 // ArcGIS fails the whole query when outFields or where names a field the layer lacks. Every field
 // below is in the layer's field list (checked live 2026-10-27; it has KTCA/STCA, not TCA). An
@@ -22,11 +23,11 @@ async function queryParcel(parcelId) {
   const id=String(parcelId||'').trim().toUpperCase(); if(!id) return [];
   const params={returnGeometry:'true',outSR:'4326'};
   try {
-    return await arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS});
+    return await arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS},'kootenai-ownership-parcel');
   } catch(e) {
     if(!e?.arcgisError) throw e;
     console.warn(`Kootenai ownership parcel query failed (${e.message}); retrying with minimal fields ${KC_PARCEL_FIELDS_MINIMAL}`);
-    return arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS_MINIMAL});
+    return arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS_MINIMAL},'kootenai-ownership-parcel-minimal');
   }
 }
 function centerFromGeometry(geometry) {
@@ -77,7 +78,7 @@ export async function getKootenaiCountyIntelligence(body) {
   const matchMethod=rings?'parcel area (sampled)':'parcel location';
 
   // Who zones it. If the city-limits layer fails, carry on with county zoning (the old behaviour).
-  const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'}).then(features=>({features}),error=>({error}));
+  const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'},'kootenai-zoning').then(features=>({features}),error=>({error}));
   const impactArea=findCityImpactArea(where,samples).catch(e=>{ console.warn('Kootenai city impact area lookup failed',e); return null; });
   let city=null, cityLimitsUnavailable=false;
   try { city=await findCityJurisdiction(where,samples); } catch(e) { cityLimitsUnavailable=true; console.warn('Kootenai city limits lookup failed; using county zoning',e); }

@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { esriPolygonToGeoJSON, mapKootenaiParcel, KC_PARCEL_LAYER, KC_PARCEL_SEARCH_FIELDS } from '../src/counties/kootenai-parcels.js';
 import { RATE_LIMIT_RETRY_MS } from '../src/states/idaho/parcels.js';
+import { configureUpstream } from '../src/shared/upstream.js';
 import { runParcelScenarios, kootenaiIdwrScenario, idwrFeature } from './parcel-search-scenarios.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8'));
@@ -57,8 +58,9 @@ function assertNoOwnerFields(properties) {
 const realFetch = globalThis.fetch;
 const realWarn = console.warn;
 const realRetry = RATE_LIMIT_RETRY_MS.value;
-beforeEach(() => { globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; console.warn = () => {}; RATE_LIMIT_RETRY_MS.value = 1; });
-afterEach(() => { globalThis.fetch = realFetch; console.warn = realWarn; RATE_LIMIT_RETRY_MS.value = realRetry; });
+let restoreUpstream;
+beforeEach(() => { globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; console.warn = () => {}; RATE_LIMIT_RETRY_MS.value = 1; restoreUpstream = configureUpstream({ backoffMs: 0 }); });
+afterEach(() => { globalThis.fetch = realFetch; console.warn = realWarn; RATE_LIMIT_RETRY_MS.value = realRetry; restoreUpstream(); });
 
 // --- County layer hit ---------------------------------------------------------------------------
 
@@ -226,6 +228,41 @@ test('all Kootenai sources fail: 502 with an error string naming each failure', 
   assert.match(body.error, /returned 500/);
 });
 
+// --- Shared upstream client (src/shared/upstream.js) -------------------------------------------
+
+test('county parcel layer: one attempt (the fallbacks are the retry), labelled log line, no cf', async () => {
+  const logs = [], inits = [];
+  const restore = configureUpstream({ log: line => logs.push(JSON.parse(line)) });
+  try {
+    stub({ county: () => json({ error: { code: 500, message: 'Failed to execute query.' } }), statewide: () => geojson([]), idwr: () => new Response('', { status: 500 }) });
+    const inner = globalThis.fetch;
+    globalThis.fetch = async (input, init) => { inits.push(init || {}); return inner(input, init); };
+    const { status, body } = await search('47N03W052200');
+    assert.equal(status, 502);
+    assert.match(body.error, /Kootenai County parcel layer: Failed to execute query\./);
+    assert.equal(callsTo('county').length, 1);
+    assert.ok(inits.every(init => !('cf' in init)));
+    const labels = new Set(logs.map(l => l.label));
+    for (const label of ['kootenai-parcel-search', 'idaho-statewide-parcels', 'idwr-parcels']) assert.ok(labels.has(label), label);
+    assert.deepEqual(logs.filter(l => l.label === 'kootenai-parcel-search').map(l => [l.host, l.ok, l.attempt]), [['map.kcgov.us', false, 1]]);
+  } finally { restore(); }
+});
+
+test('statewide and IDWR 5xx answers are retried once by the shared client', async () => {
+  stub({
+    county: () => json({ features: [] }),
+    statewide: (params, n) => (n === 1 ? new Response('down', { status: 500 }) : geojson([])),
+    idwr: (params, n) => (n === 1 ? new Response('', { status: 503 }) : geojson([idwrFeature]))
+  });
+  const { status, body } = await search('47N03W052200');
+  assert.equal(status, 200);
+  assert.equal(callsTo('statewide').length, 4); // first query twice, then the other two
+  assert.equal(callsTo('idwr').length, 2);
+  assert.equal(callsTo('idwr')[0].params.get('where'), callsTo('idwr')[1].params.get('where'));
+  assert.match(body.parcel.properties._source.name, /IDWR/);
+  assertNoOwnerFields(body.parcel.properties);
+});
+
 // --- Owner fields ------------------------------------------------------------------------------
 
 test('owner name is never requested or returned, even if the county server sends it', async () => {
@@ -287,7 +324,14 @@ test('mapKootenaiParcel copies named fields only', () => {
 
 // --- Everything outside Kootenai is unchanged --------------------------------------------------
 
+// The shared upstream client retries a failed request once (timeout, network, 5xx), so a
+// scenario whose upstream fails now sends that request twice in a row; answers are unchanged.
+const withoutRetries = results => results.map(r => ({ ...r, requests: r.requests.filter((q, i) => i === 0 || JSON.stringify(q) !== JSON.stringify(r.requests[i - 1])) }));
 test('other Idaho counties and Montana answer exactly as before (snapshot from 2d12331)', async () => {
   const now = await runParcelScenarios(worker);
-  assert.deepEqual(now, legacySnapshot);
+  assert.deepEqual(withoutRetries(now), withoutRetries(legacySnapshot));
+  const ada500 = now.find(r => r.name === 'Ada upstream 500');
+  assert.equal(ada500.requests.length, 2, 'one shared-client retry of the failing statewide query');
+  assert.deepEqual(ada500.requests[0], ada500.requests[1]);
+  assert.deepEqual(ada500.body, legacySnapshot.find(r => r.name === 'Ada upstream 500').body);
 });
