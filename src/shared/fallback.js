@@ -16,6 +16,7 @@
 // Errors are classified from src/shared/upstream.js UpstreamError fields (kind, status, code).
 
 export const FALLBACK_KINDS = Object.freeze({
+  kootenaiParcel: 'kootenai-parcel',
   kootenaiZoning: 'kootenai-zoning',
   idahoWells: 'idaho-wells',
   kootenaiAssessor: 'kootenai-assessor',

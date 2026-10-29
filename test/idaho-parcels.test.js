@@ -222,7 +222,9 @@ test('all Kootenai sources fail: 502 with an error string naming each failure', 
   stub({ county: () => new Response('', { status: 503 }), statewide: tooMany, idwr: () => new Response('', { status: 500 }) });
   const { status, body } = await search('47N03W052200');
   assert.equal(status, 502);
-  assert.deepEqual(Object.keys(body), ['error']);
+  // The only addition: the county layer's 503 lets the browser try it (src/shared/fallback.js).
+  assert.deepEqual(Object.keys(body), ['error', 'fallback']);
+  assert.deepEqual(body.fallback, { mode: 'browser', kind: 'kootenai-parcel', input: { parcelId: '47N03W052200' } });
   assert.match(body.error, /Kootenai County parcel layer returned 503/);
   assert.match(body.error, /Too many requests/);
   assert.match(body.error, /returned 500/);

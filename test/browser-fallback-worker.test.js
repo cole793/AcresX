@@ -65,7 +65,7 @@ test('fallback: eligible failures are network, timeout and 403/429/5xx (HTTP or 
   }
   assert.equal(isFallbackEligible(null), false);
   assert.deepEqual(fallbackHint('fema-flood', { a: 1 }), { mode: 'browser', kind: 'fema-flood', input: { a: 1 } });
-  assert.deepEqual(Object.values(FALLBACK_KINDS), ['kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'fema-flood']);
+  assert.deepEqual(Object.values(FALLBACK_KINDS), ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'fema-flood']);
 });
 
 // ---- Kootenai zoning (/api/zoning-permits)
@@ -127,6 +127,49 @@ test('fallback: the Kootenai hint leaves out what the request did not have', asy
   stub({ [PARCELS]: empty, [ZONING]: down(500), [CITY_LIMITS]: unincorporated, [IMPACT]: empty });
   const { body } = await api('/api/zoning-permits', { county: 'Kootenai', parcelId: 'P1', lat: 47.7, lon: -116.8 });
   assert.deepEqual(body.fallback, { mode: 'browser', kind: 'kootenai-zoning', input: { parcelId: 'P1', lat: 47.7, lon: -116.8 } });
+});
+
+// ---- Kootenai parcel search (/api/parcel-search)
+
+const KC_PARCEL = `${KC}/Ownership_Display/MapServer/0/query`;
+const STATEWIDE = 'https://services1.arcgis.com/CNPdEkvnGl65jCX8/ArcGIS/rest/services/Public_Idaho_Parcels_/FeatureServer/7/query';
+const IDWR_PARCELS_HOST = 'gis.idwr.idaho.gov';
+// Every Kootenai/IDWR/statewide request fails the way the 2026-10-29 outage did.
+function parcelStub(county) {
+  calls = [];
+  globalThis.fetch = async input => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    calls.push(url.origin + url.pathname);
+    if (url.origin + url.pathname === KC_PARCEL) return county();
+    if (url.hostname === IDWR_PARCELS_HOST || url.origin + url.pathname === STATEWIDE) { const e = new Error('The operation was aborted.'); e.name = 'AbortError'; throw e; }
+    throw new Error(`unexpected request ${url.href}`);
+  };
+}
+
+test('fallback: Kootenai parcel search with every source timing out -> the { error } 502 plus the parcel hint', async () => {
+  parcelStub(() => { const e = new Error('The operation was aborted.'); e.name = 'AbortError'; throw e; });
+  const { status, body } = await api('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId: '50N04W323200' });
+  assert.equal(status, 502);
+  assert.deepEqual(Object.keys(body).sort(), ['error', 'fallback']);
+  assert.match(body.error, /^Idaho parcel sources failed for Kootenai/);
+  assert.deepEqual(body.fallback, { mode: 'browser', kind: 'kootenai-parcel', input: { parcelId: '50N04W323200' } });
+});
+
+test('fallback: Kootenai parcel search gets no hint when the county layer answered (miss or 400)', async () => {
+  parcelStub(() => reply(empty));
+  const miss = await api('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId: '50N04W323200' });
+  assert.equal(miss.status, 502);
+  assert.equal('fallback' in miss.body, false, 'a county miss: the browser would miss too');
+  parcelStub(() => reply({ error: { code: 400, message: 'Invalid query' } }));
+  assert.equal('fallback' in (await api('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId: '50N04W323200' })).body, false);
+});
+
+test('fallback: other Idaho counties never get the Kootenai parcel hint', async () => {
+  calls = [];
+  globalThis.fetch = async () => { throw new TypeError('fetch failed'); };
+  const { status, body } = await api('/api/parcel-search', { state: 'ID', county: 'Bonner', parcelId: 'RP1' });
+  assert.equal(status, 502);
+  assert.deepEqual(Object.keys(body), ['error']);
 });
 
 // ---- Idaho wells (/api/well-search)
