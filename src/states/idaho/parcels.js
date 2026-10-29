@@ -140,18 +140,18 @@ function withoutOwnerFields(feature, source) {
 
 // Kootenai: county Ownership_Display layer first, then the statewide layer, then IDWR. Each
 // source that errors or misses hands on to the next; an ambiguous county match is final.
-// If the county layer itself failed in a way a browser might get past and no fallback found the
-// parcel, the error carries a browser fallback hint (src/shared/fallback.js; src/index.js copies
-// it into the 502 answer). A county-layer miss gets no hint: the browser would miss too.
+// A county-layer outage a browser might get past (timeout, network error, 403/429/5xx) answers
+// at once with a browser fallback hint (src/shared/fallback.js; src/index.js copies it into the
+// 502): the statewide layer has no Kootenai parcels and IDWR sits behind the same block, so
+// waiting for them only delays the browser. A county-layer miss keeps the fallback order.
 async function findKootenaiParcel(raw, county) {
   const errors = [];
-  let browserFallback = null;
   try {
     const parcel = await findKootenaiCountyParcel(raw);
     if (parcel) return parcel;
   } catch (error) {
     if (error.ambiguous) throw error;
-    if (isFallbackEligible(error)) browserFallback = fallbackHint(FALLBACK_KINDS.kootenaiParcel, { parcelId: raw });
+    if (isFallbackEligible(error)) throw Object.assign(new Error(`Idaho parcel sources failed for Kootenai: ${error.message}`), { fallback: fallbackHint(FALLBACK_KINDS.kootenaiParcel, { parcelId: raw }) });
     errors.push(error); console.warn(`Kootenai county parcel layer failed (${error.message}); trying the statewide Idaho layer.`);
   }
   const fallbacks = [
@@ -163,11 +163,7 @@ async function findKootenaiParcel(raw, county) {
     try { features = await find(); } catch (error) { errors.push(error); continue; }
     if (features.length) return withoutOwnerFields(pickOne(features, raw, county), source);
   }
-  if (errors.length) {
-    const error = new Error(`Idaho parcel sources failed for Kootenai: ${errors.map(e => e.message).join('; ')}`);
-    if (browserFallback) error.fallback = browserFallback;
-    throw error;
-  }
+  if (errors.length) throw new Error(`Idaho parcel sources failed for Kootenai: ${errors.map(e => e.message).join('; ')}`);
   throw new Error(NOT_FOUND);
 }
 

@@ -314,3 +314,28 @@ test('the time limit is extended once: a browser attempt past it times out, its 
   await pg.runFor(500);
   assert.equal(pg.text('wellMetric'), '5 nearby wells');
 });
+
+test(`timing ${PIN}: a hanging county parcel layer costs the 8 s cap, then the parcel renders via the browser`, async t => {
+  // The Worker's county parcel request never answers (as on 2026-10-29); everything else fails fast.
+  const hosts = [];
+  globalThis.fetch = (input, init = {}) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    hosts.push(url.hostname + url.pathname + (url.searchParams.get('outFields') === 'PIN,PID,Acres,Loc_Addr,Loc_City' ? ' (parcel search)' : ''));
+    if (url.pathname.endsWith('/Ownership_Display/MapServer/0/query')) {
+      return new Promise((_, reject) => init.signal?.addEventListener('abort', () => { const e = new Error('The operation was aborted.'); e.name = 'AbortError'; reject(e); }));
+    }
+    const error = new Error('The operation was aborted.');
+    error.name = 'AbortError';
+    return Promise.reject(error);
+  };
+  const pg = page();
+  const started = Date.now();
+  pg.ctx.AcresXProgress.search();
+  await pg.waitReal(() => pg.text('overviewParcelId') === PIN, 15000);
+  const ms = Date.now() - started;
+  assert.ok(ms >= 7900 && ms < 9500, `parcel rendered after ${ms} ms`);
+  assert.equal(hosts.filter(h => h.endsWith('(parcel search)')).length, 1, 'one Worker attempt at the county parcel layer');
+  assert.equal(hosts.some(h => h.startsWith('services1.arcgis.com') || h.includes('/Reference/Parcels/')), false, 'no statewide or IDWR parcel request');
+  assert.equal(pg.run('last.parcel.properties.ACRES'), 11.703);
+  t.diagnostic(`search start -> parcel rendered via the browser: ${ms} ms (Worker county attempt capped at 8 s, then the hinted 502, then one browser request)`);
+});
