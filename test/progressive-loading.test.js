@@ -5,7 +5,7 @@
 // DOM, clock and fetch from test/ui-harness.js; a small stand-in plays index.html's inline script.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeClock, makeContext, makeFetch, readPublic } from './ui-harness.js';
+import { makeClock, makeContext, makeFetch, makeLazyContext, readPublic, acresToSqm } from './ui-harness.js';
 
 const card = (detail, metric, status) => ['article', { class: 'card snapshot-card', 'data-detail': detail }, '', [
   ['div', { class: 'snapshot-value', id: metric }, '—'], ['span', { id: status }, 'Pending'], ['button', { class: 'snapshot-details-btn' }, 'Details']
@@ -334,4 +334,157 @@ test('follow-up requests fire once per search, only after their inputs exist', a
   assert.equal(count('/api/property-assessment'), 3);
   assert.equal(count('/api/reso-listings'), 3);
   assert.equal(count('/api/existing-well'), 3);
+});
+
+// ---------- With the real page modules from main: renderSummary (index.html), flood-status.js,
+// wetlands-status.js, acreage.js and parcel-preview.js, in their injection order. ----------
+
+const pickIndexFunctions = (...names) => {
+  const lines = readPublic('index.html').split('\n');
+  return names.map(name => {
+    const line = lines.find(l => l.startsWith(`function ${name}(`));
+    assert.ok(line, `index.html defines ${name}`);
+    return line;
+  }).join('\n');
+};
+const REAL_BASE = `
+let last = { parcel: null, wells: [], utility: [], evidence: null };
+let activeTab = 'wells';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '');
+const log = [];
+${pickIndexFunctions('gradeWellDepth', 'setTraffic', 'renderSummary')}
+function renderMap(fit) { log.push('map:' + fit); }
+function renderResults() { $('results').innerHTML = 'details for ' + activeTab; }
+async function findParcel(county, input) { return __ctl('parcel', null, input); }
+async function findWells(parcel, signal) { return __ctl('wells', signal); }
+async function findUtility(parcel, signal) { return __ctl('utility', signal); }
+async function findListingEvidence(parcel, signal) { return __ctl('evidence', signal); }
+async function findFlood(parcel, signal) { return __ctl('flood', signal); }
+async function findWetlands(parcel, signal) { return __ctl('wetlands', signal); }
+async function findZoningPermits(parcel, signal) { return __ctl('zoningPermits', signal); }
+async function findLandAnalysis(parcel, signal) { return __ctl('land', signal); }
+`;
+// Kootenai 47N03W052200: 2.89 ac on the assessor record, 1.98 ac from the mapped outline.
+const KOOTENAI_PARCEL = { type: 'Feature', properties: { ORIG_PARCEL_ID: '47N03W052200', ACRES: 2.89, _countyDisplay: 'Kootenai' }, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } };
+const WETLANDS_PRESENT = { available: true, intersects: true, category: 'present', count: 2, coveragePct: 12.4, overlapAcres: 0.25, types: ['PEM'] };
+const REAL_ANSWERS = {
+  ...ANSWERS,
+  wells: [{ properties: { CompletedDepth: 180, _distance: 0.2 } }],
+  flood: { available: true, intersects: false, high: false, zones: ['X'] },
+  land: { available: true, soil: { available: true, feasibility: 'favorable', mapUnit: 'Garrison' }, terrain: { available: true, gradePct: 4.2, reliefFt: 12 } }
+};
+
+function setupReal() {
+  const clock = makeClock();
+  const { fetch } = makeFetch(clock, {});
+  const asks = {};
+  const __ctl = (name, signal, input) => new Promise((resolve, reject) => { (asks[name] ||= []).push({ resolve, reject, signal, input }); });
+  const turf = { centroid: () => ({ geometry: { coordinates: [-116.8, 47.7] } }), area: () => acresToSqm(1.98) };
+  const layer = { addTo() { return this; }, removeFrom() {}, getBounds: () => ({ isValid: () => false }) };
+  const L = { map: () => ({ fitBounds() {}, invalidateSize() {} }), tileLayer: () => layer, geoJSON: () => layer };
+  // The overview section parcel-preview.js builds (its innerHTML is not parsed by the fake DOM).
+  const overview = ['section', { id: 'propertyOverviewSection' }, '', [
+    ['strong', { id: 'overviewAcres' }, '—'], ['small', { id: 'overviewSqFt' }, ''], ['div', { id: 'overviewAcreageNote' }, ''],
+    ['strong', { id: 'overviewParcelId' }, '—'], ['strong', { id: 'overviewCounty' }, '—']
+  ]];
+  const body = PAGE.map(spec => spec[1]?.id === 'dashboard' ? [spec[0], spec[1], spec[2], [overview, ...spec[3]]] : spec);
+  const { ctx, document, run } = makeContext({ body, clock, fetch, extra: { __ctl, turf, L }, autoIds: true });
+  document.getElementById('county').value = 'Kootenai';
+  document.getElementById('parcel').value = '47N03W052200';
+  run(REAL_BASE, 'index-inline.js');
+  for (const f of ['flood-status.js', 'wetlands-status.js', 'acreage.js', 'parcel-preview.js', 'progressive-loading.js']) run(readPublic(f), f);
+  const $ = id => document.getElementById(id);
+  const text = id => $(id).textContent;
+  const answer = (name, value = REAL_ANSWERS[name], i = -1) => asks[name].at(i).resolve(value);
+  async function search() {
+    const done = ctx.AcresXProgress.search();
+    await clock.flush();
+    answer('parcel', JSON.parse(JSON.stringify(KOOTENAI_PARCEL)));
+    await done;
+    await clock.flush();
+  }
+  const acreage = () => ({ acres: text('overviewAcres'), detail: text('overviewSqFt'), note: $('overviewAcreageNote').hidden ? '' : text('overviewAcreageNote') });
+  return { clock, ctx, document, run, $, text, asks, answer, search, acreage, S: ctx.AcresXSections };
+}
+
+// renderSummary from index.html with flood-status.js and wetlands-status.js loaded, on its own.
+function standaloneScore(last) {
+  const h = makeLazyContext({ last });
+  h.run(readPublic('flood-status.js'));
+  h.run(readPublic('wetlands-status.js'));
+  h.run(`const $=id=>document.getElementById(id);\n${pickIndexFunctions('gradeWellDepth', 'setTraffic', 'renderSummary')}`);
+  h.run('renderSummary(last.parcel)');
+  return h.el('scoreMetric').textContent;
+}
+
+const ACREAGE_SHOWN = { acres: '2.89', detail: '2.89 ac (assessor) · 1.98 ac mapped', note: 'Assessor and mapped acreage differ; verify with the county.' };
+const clickRetry = (t, section) => {
+  const btn = [...t.document.querySelectorAll('.section-retry')].find(b => b.dataset.section === section);
+  assert.ok(btn, `${section} has a Retry button`);
+  for (const fn of t.document.listeners.click) fn({ target: btn, preventDefault() {}, stopPropagation() {} });
+};
+
+test('acreage.js and wetlands-status.js render as their data arrives while zoning hangs', async () => {
+  const t = setupReal();
+  await t.search();
+  // Acreage needs only the parcel: it shows on the first render, before any section answers.
+  assert.equal(t.clock.now, 0);
+  assert.ok(t.$('dashboard').classList.contains('show'));
+  assert.deepEqual(t.acreage(), ACREAGE_SHOWN);
+  assert.equal(t.text('overviewWetlands'), 'Checking…');
+  assert.equal(t.text('zoningMetric'), 'Checking…');
+
+  // Wetlands answers; its overview fact and grade card use window.AcresXWetlands. Zoning still hangs.
+  t.answer('wetlands', WETLANDS_PRESENT);
+  await t.clock.advance(150);
+  assert.equal(t.text('overviewWetlands'), 'Mapped wetlands present');
+  assert.ok(t.$('overviewWetlands').classList.contains('warn'));
+  assert.equal(t.$('overviewWetlands').classList.contains('section-pending-text'), false);
+  assert.equal(t.text('wetlandGrade'), 'Mapped on parcel');
+  assert.equal(t.text('wetlandStatus'), '2 mapped wetland features · 12.4% of parcel · 0.25 ac');
+  assert.equal(t.text('zoningMetric'), 'Checking…');
+  assert.deepEqual(t.acreage(), ACREAGE_SHOWN, 'acreage kept across re-renders');
+
+  for (const name of ['wells', 'utility', 'evidence', 'flood', 'land']) t.answer(name);
+  await t.clock.advance(150);
+  assert.equal(t.text('scoreMetric'), 'Updating…', 'the score waits for zoning');
+  assert.equal(t.text('overviewWetlands'), 'Mapped wetlands present');
+
+  // Zoning runs out of time alone; everything else keeps its data and the score is final.
+  await t.clock.advance(20150 - t.clock.now);
+  assert.equal(t.S.status('zoningPermits'), 'timeout');
+  assert.equal(t.text('zoningMetric'), 'Timed out');
+  assert.equal(t.document.querySelectorAll('.section-retry').length, 1);
+  assert.deepEqual(t.acreage(), ACREAGE_SHOWN);
+  assert.equal(t.text('overviewWetlands'), 'Mapped wetlands present');
+  assert.equal(t.text('wetlandGrade'), 'Mapped on parcel');
+  // The same score main's renderSummary gives for this data with no progressive loading
+  // (scoreDataConfidence, AcresXFlood / AcresXWetlands grading, listing data excluded).
+  assert.equal(t.text('scoreMetric'), standaloneScore(JSON.parse(JSON.stringify(t.run('last')))));
+  assert.match(t.text('scoreNote'), /zoning timed out \(scored as unavailable\)/);
+});
+
+test('a wetlands answer after another section timed out still renders, and a hung wetlands section can be retried', async () => {
+  const t = setupReal();
+  await t.search();
+  for (const name of ['wells', 'utility', 'evidence', 'flood', 'land']) t.answer(name);
+  await t.clock.advance(20150);
+  // Zoning and wetlands both timed out; acreage is unaffected.
+  assert.equal(t.S.status('wetlands'), 'timeout');
+  assert.equal(t.S.status('zoningPermits'), 'timeout');
+  assert.equal(t.text('overviewWetlands'), 'Timed out — try again');
+  assert.equal(t.text('wetlandGrade'), 'Unavailable');
+  assert.deepEqual(t.acreage(), ACREAGE_SHOWN);
+  clickRetry(t, 'wetlands');
+  assert.equal(t.text('overviewWetlands'), 'Checking…');
+  // The retried wetlands answer lands while zoning stays timed out.
+  t.answer('wetlands', WETLANDS_PRESENT);
+  await t.clock.advance(150);
+  assert.equal(t.S.status('wetlands'), 'done');
+  assert.equal(t.S.status('zoningPermits'), 'timeout');
+  assert.equal(t.text('overviewWetlands'), 'Mapped wetlands present');
+  assert.equal(t.text('wetlandGrade'), 'Mapped on parcel');
+  assert.deepEqual(t.acreage(), ACREAGE_SHOWN);
+  assert.notEqual(t.text('scoreMetric'), 'Updating…');
 });

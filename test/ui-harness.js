@@ -168,13 +168,23 @@ export function makeFetch(clock, routes) {
 }
 
 // A vm context with window === the global, the fake DOM and the clock.
-export function makeContext({ body = [], clock, fetch, extra = {} }) {
+// autoIds: getElementById(id) creates a missing element (in a div#autoIds at the end of body),
+// for running page code that writes into many ids the test does not care about (the real
+// renderSummary from index.html).
+export function makeContext({ body = [], clock, fetch, extra = {}, autoIds = false }) {
   const head = new El('head');
   const bodyEl = new El('body');
+  const find = id => { for (const e of [...head.walk(), ...bodyEl.walk()]) if (e.id === id) return e; return null; };
+  let autoHolder = null;
   const document = {
     head, body: bodyEl, readyState: 'complete', listeners: {},
     createElement: tag => new El(tag, document),
-    getElementById: id => { for (const e of [...head.walk(), ...bodyEl.walk()]) if (e.id === id) return e; return null; },
+    getElementById: id => {
+      const found = find(id);
+      if (found || !autoIds) return found;
+      if (!autoHolder) { autoHolder = new El('div', document); autoHolder.id = 'autoIds'; bodyEl.appendChild(autoHolder); }
+      const el = new El('div', document); el.id = String(id); autoHolder.appendChild(el); return el;
+    },
     querySelector: sel => bodyEl.querySelector(sel) || head.querySelector(sel),
     querySelectorAll: sel => bodyEl.querySelectorAll(sel),
     addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); },
