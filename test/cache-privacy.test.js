@@ -68,9 +68,10 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
 });
 
 test('cache prefixes moved past every version that could have held owner fields', () => {
-  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, KC_PARCEL_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
-  // v2 held outFields '*' answers (stripped); v3 holds the named-field answers.
+  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  // idaho-parcels v2 held outFields '*' answers (stripped); v3 holds the named-field answers.
   assert.match(IDAHO_PARCEL_CACHE_PREFIX, /\/idaho-parcels\/v3\/$/);
+  assert.match(KC_PARCEL_CACHE_PREFIX, /\/kootenai-parcels\/v3\/$/);
 });
 
 // ---- Spokane
@@ -219,4 +220,19 @@ test('Idaho Kootenai fallbacks: failed, rate-limited and empty answers are not c
   stub(url => (url.hostname === 'map.kcgov.us' ? down() : url.pathname.includes('Public_Idaho_Parcels_') ? json({ error: { code: 429, message: 'Too many requests.' } }) : down()));
   await findIdahoParcel('47N03W052200', 'Kootenai').catch(() => {});
   assert.equal(store.size, 0);
+});
+
+test('Kootenai county parcel layer: only the search fields are cached, even if the server sends owner fields', async () => {
+  const ring = [[-116.6, 47.3], [-116.6, 47.31], [-116.59, 47.31], [-116.59, 47.3], [-116.6, 47.3]];
+  const attributes = { PIN: '47N03W052200', PID: '47N03W-05-2200', Acres: 2.9, Loc_Addr: '1 SITE RD', Loc_City: 'HARRISON', Name: 'TEST OWNER', Owner_Primary: 'TEST OWNER', DeliveryAddr_Primary: '1 MAIL ST', Legal: 'LOT 1' };
+  stub(url => (url.hostname === 'map.kcgov.us' ? json({ features: [{ attributes, geometry: { rings: [ring] } }] }) : geojson([])));
+  const fresh = await findIdahoParcel('47N03W052200', 'Kootenai');
+  const cached = stored().filter(s => s.key.startsWith(KC_PARCEL_CACHE_PREFIX));
+  assert.equal(cached.length, 1);
+  assertNoPersonalData(cached[0].value);
+  assert.deepEqual(Object.keys(cached[0].value.value[0].attributes), ['PIN', 'PID', 'Acres', 'Loc_Addr', 'Loc_City']);
+  assertNoPersonalData(fresh.properties);
+  const before = calls.length;
+  assert.deepEqual(await findIdahoParcel('47N03W052200', 'Kootenai'), fresh, 'a cache hit answers the same');
+  assert.equal(calls.length, before);
 });

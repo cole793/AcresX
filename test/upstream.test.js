@@ -4,7 +4,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   upstreamJson, arcgisQuery, arcgisJson, upstreamFetch, cachedJson, configureUpstream, buildUpstreamRequest,
-  UPSTREAM_DEFAULTS, UpstreamError, inFlight
+  UPSTREAM_DEFAULTS, UpstreamError, inFlight, queued
 } from '../src/shared/upstream.js';
 import { fetchWithTimeout } from '../src/shared/http.js';
 
@@ -271,6 +271,24 @@ test('per-host cap: a slot that never frees fails the waiter after queueTimeoutM
   assert.ok(elapsed < 300, `failed after ${elapsed} ms`);
   assert.equal(calls.length, 2, 'the waiter was never sent');
   await Promise.allSettled(holders);
+});
+
+test('per-host cap: a cancelled waiter leaves the queue at once, not at the next poll', async () => {
+  const restore = configureUpstream({ pollMs: 60000 }); // a poll that would never come in time
+  try {
+    stubFetch(() => new Promise(() => {}));
+    const holder = upstreamJson('https://e.example.gov/h', { timeoutMs: 400, retries: 0, maxPerHost: 1 });
+    holder.catch(() => {});
+    await sleep(5);
+    const cancel = new AbortController();
+    const waiter = upstreamJson('https://e.example.gov/w', { timeoutMs: 400, retries: 0, maxPerHost: 1, signal: cancel.signal }).catch(e => e);
+    await sleep(5);
+    assert.equal(queued('e.example.gov'), 1);
+    cancel.abort();
+    assert.equal(queued('e.example.gov'), 0, 'left the queue synchronously on abort');
+    assert.equal((await waiter).kind, 'cancelled');
+    await holder.catch(() => {});
+  } finally { restore(); }
 });
 
 // ---- logging

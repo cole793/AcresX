@@ -55,7 +55,7 @@ test('upstream health: probes every target once in parallel and reports per-host
 
 test('upstream health: a hanging host is reported as a timeout at 10 s and does not hold up the answer', async () => {
   assert.equal(HEALTH_TIMEOUT_MS, 10000);
-  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
   stubFetch(url => (url.includes('map.kcgov.us') ? new Promise(() => {}) : jsonResponse({ currentVersion: 11 })));
   let settled = null;
   const pending = checkUpstreamHealth().then(value => { settled = value; });
@@ -75,7 +75,7 @@ test('upstream health: a hanging host is reported as a timeout at 10 s and does 
 
 test('upstream health: repeated GETs within 60 s reuse one answer instead of probing again', async () => {
   assert.equal(HEALTH_MEMO_MS, 60000);
-  mock.timers.enable({ apis: ['Date'] });
+  mock.timers.enable({ apis: ['Date'], now: Date.now() });
   stubFetch(() => jsonResponse({ currentVersion: 11 }));
   const get = async () => (await worker.fetch(new Request('https://acresx.test/api/upstream-health'), { ASSETS: { fetch: async () => new Response('') } }, { waitUntil() {} })).json();
   const [a, b] = await Promise.all([get(), get()]);
@@ -85,4 +85,17 @@ test('upstream health: repeated GETs within 60 s reuse one answer instead of pro
   mock.timers.tick(HEALTH_MEMO_MS);
   await get();
   assert.equal(calls.length, 2 * HEALTH_TARGETS.length, 'probes again after 60 s');
+});
+
+test('upstream health: a run with a failed probe is not reused', async () => {
+  mock.timers.enable({ apis: ['Date'], now: Date.now() });
+  stubFetch(url => (url.includes('map.kcgov.us') ? new Response('blocked', { status: 403 }) : jsonResponse({ currentVersion: 11 })));
+  const get = async () => (await worker.fetch(new Request('https://acresx.test/api/upstream-health'), { ASSETS: { fetch: async () => new Response('') } }, { waitUntil() {} })).json();
+  const [a, b] = await Promise.all([get(), get()]);
+  assert.deepEqual(b, a, 'concurrent GETs share the run');
+  assert.equal(calls.length, HEALTH_TARGETS.length);
+  await new Promise(resolve => setImmediate(resolve));
+  const c = await get();
+  assert.equal(calls.length, 2 * HEALTH_TARGETS.length, 'the next GET probes again');
+  assert.equal(c.results.find(r => r.host === 'map.kcgov.us').ok, false);
 });
