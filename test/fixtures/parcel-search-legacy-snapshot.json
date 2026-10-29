@@ -1,0 +1,516 @@
+[
+ {
+  "name": "Ada hit on first variant",
+  "status": 200,
+  "cache": "public, max-age=300, s-maxage=3600",
+  "body": {
+   "available": true,
+   "state": "ID",
+   "county": "Ada",
+   "parcel": {
+    "type": "Feature",
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -116.2,
+        43.6
+       ],
+       [
+        -116.19,
+        43.6
+       ],
+       [
+        -116.19,
+        43.61
+       ],
+       [
+        -116.2,
+        43.61
+       ],
+       [
+        -116.2,
+        43.6
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "OBJECTID": 7,
+     "PARCEL_ID": "R1234560010",
+     "FP_ID": null,
+     "County": "Ada",
+     "WEBSITE": "https://adacounty.id.gov/assessor/",
+     "ASR_ACRES": 4.5,
+     "OWNER1": "TEST OWNER ONE",
+     "OWNER2": "",
+     "MAIL_ADD1": "1 MAIL ST",
+     "MAIL_CITY": "BOISE",
+     "SITE_ADD": "100 TEST RD",
+     "SITE_CITY": "BOISE",
+     "SITE_ZIP": "83702",
+     "ASR_CATS": "12",
+     "VAL_LAND": 100000,
+     "VAL_IMPVTS": 50000,
+     "VAL_TOTAL": 150000,
+     "ORIG_PARCEL_ID": "R1234560010",
+     "PARCEL_ID_NR": "R1234560010",
+     "COUNTY_NM": "Ada",
+     "_countyDisplay": "Ada",
+     "_stateCode": "ID",
+     "_stateDisplay": "Idaho",
+     "SITUS_ADDRESS": "100 TEST RD",
+     "SITUS_CITY_NM": "BOISE",
+     "SITUS_ZIP_NR": "83702",
+     "DATA_LINK": "https://adacounty.id.gov/assessor/",
+     "ACRES": 4.5,
+     "_assessment": {
+      "landValue": 100000,
+      "improvementValue": 50000,
+      "totalValue": 150000,
+      "categories": "12"
+     }
+    }
+   }
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='R1234560010' OR UPPER(FP_ID)='R1234560010')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Ada hit on compact variant",
+  "status": 200,
+  "cache": "public, max-age=300, s-maxage=3600",
+  "body": {
+   "available": true,
+   "state": "ID",
+   "county": "Ada",
+   "parcel": {
+    "type": "Feature",
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -116.2,
+        43.6
+       ],
+       [
+        -116.19,
+        43.6
+       ],
+       [
+        -116.19,
+        43.61
+       ],
+       [
+        -116.2,
+        43.61
+       ],
+       [
+        -116.2,
+        43.6
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "OBJECTID": 7,
+     "PARCEL_ID": "R1234560010",
+     "FP_ID": null,
+     "County": "Ada",
+     "WEBSITE": "https://adacounty.id.gov/assessor/",
+     "ASR_ACRES": 4.5,
+     "OWNER1": "TEST OWNER ONE",
+     "OWNER2": "",
+     "MAIL_ADD1": "1 MAIL ST",
+     "MAIL_CITY": "BOISE",
+     "SITE_ADD": "100 TEST RD",
+     "SITE_CITY": "BOISE",
+     "SITE_ZIP": "83702",
+     "ASR_CATS": "12",
+     "VAL_LAND": 100000,
+     "VAL_IMPVTS": 50000,
+     "VAL_TOTAL": 150000,
+     "ORIG_PARCEL_ID": "R1234560010",
+     "PARCEL_ID_NR": "R1234560010",
+     "COUNTY_NM": "Ada",
+     "_countyDisplay": "Ada",
+     "_stateCode": "ID",
+     "_stateDisplay": "Idaho",
+     "SITUS_ADDRESS": "100 TEST RD",
+     "SITUS_CITY_NM": "BOISE",
+     "SITUS_ZIP_NR": "83702",
+     "DATA_LINK": "https://adacounty.id.gov/assessor/",
+     "ACRES": 4.5,
+     "_assessment": {
+      "landValue": 100000,
+      "improvementValue": 50000,
+      "totalValue": 150000,
+      "categories": "12"
+     }
+    }
+   }
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='R12345-60010' OR UPPER(FP_ID)='R12345-60010')",
+    "outFields": "*"
+   },
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='R1234560010' OR UPPER(FP_ID)='R1234560010')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Ada not found",
+  "status": 502,
+  "cache": "no-store",
+  "body": {
+   "error": "Parcel not found in available Idaho parcel sources. Confirm the county and assessor parcel number."
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='NOPE1' OR UPPER(FP_ID)='NOPE1')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Ada upstream 500",
+  "status": 502,
+  "cache": "no-store",
+  "body": {
+   "error": "Idaho parcel service returned 500"
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='R1' OR UPPER(FP_ID)='R1')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Ada ArcGIS error body",
+  "status": 502,
+  "cache": "no-store",
+  "body": {
+   "error": "Failed to execute query."
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='R1' OR UPPER(FP_ID)='R1')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Ada two parcels match",
+  "status": 502,
+  "cache": "no-store",
+  "body": {
+   "error": "Multiple Idaho parcels match that identifier. Confirm the exact county parcel number."
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "UPPER(County)='ADA' AND (UPPER(PARCEL_ID)='R1234560010' OR UPPER(FP_ID)='R1234560010')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Idaho no county",
+  "status": 200,
+  "cache": "public, max-age=300, s-maxage=3600",
+  "body": {
+   "available": true,
+   "state": "ID",
+   "county": "Ada",
+   "parcel": {
+    "type": "Feature",
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -116.2,
+        43.6
+       ],
+       [
+        -116.19,
+        43.6
+       ],
+       [
+        -116.19,
+        43.61
+       ],
+       [
+        -116.2,
+        43.61
+       ],
+       [
+        -116.2,
+        43.6
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "OBJECTID": 7,
+     "PARCEL_ID": "R1234560010",
+     "FP_ID": null,
+     "County": "Ada",
+     "WEBSITE": "https://adacounty.id.gov/assessor/",
+     "ASR_ACRES": 4.5,
+     "OWNER1": "TEST OWNER ONE",
+     "OWNER2": "",
+     "MAIL_ADD1": "1 MAIL ST",
+     "MAIL_CITY": "BOISE",
+     "SITE_ADD": "100 TEST RD",
+     "SITE_CITY": "BOISE",
+     "SITE_ZIP": "83702",
+     "ASR_CATS": "12",
+     "VAL_LAND": 100000,
+     "VAL_IMPVTS": 50000,
+     "VAL_TOTAL": 150000,
+     "ORIG_PARCEL_ID": "R1234560010",
+     "PARCEL_ID_NR": "R1234560010",
+     "COUNTY_NM": "Ada",
+     "_countyDisplay": "Ada",
+     "_stateCode": "ID",
+     "_stateDisplay": "Idaho",
+     "SITUS_ADDRESS": "100 TEST RD",
+     "SITUS_CITY_NM": "BOISE",
+     "SITUS_ZIP_NR": "83702",
+     "DATA_LINK": "https://adacounty.id.gov/assessor/",
+     "ACRES": 4.5,
+     "_assessment": {
+      "landValue": 100000,
+      "improvementValue": 50000,
+      "totalValue": 150000,
+      "categories": "12"
+     }
+    }
+   }
+  },
+  "requests": [
+   {
+    "host": "idaho",
+    "where": "(UPPER(PARCEL_ID)='R1234560010' OR UPPER(FP_ID)='R1234560010')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Gallatin cadastral hit",
+  "status": 200,
+  "cache": "public, max-age=300, s-maxage=3600",
+  "body": {
+   "available": true,
+   "state": "MT",
+   "county": "Gallatin",
+   "parcel": {
+    "type": "Feature",
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -111,
+        45.6
+       ],
+       [
+        -110.99,
+        45.6
+       ],
+       [
+        -110.99,
+        45.61
+       ],
+       [
+        -111,
+        45.6
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "PARCELID": "06079830101010000",
+     "Geocode": "06-0798-30-1-01-01-0000",
+     "AddressLine1": "1 MT RD",
+     "CityStateZip": "BOZEMAN, MT 59715",
+     "OwnerName": "MT OWNER",
+     "PropertyCardLink": "https://svc.mt.gov/card",
+     "ORIG_PARCEL_ID": "06079830101010000",
+     "PARCEL_ID_NR": "06079830101010000",
+     "COUNTY_NM": "Gallatin",
+     "_countyDisplay": "Gallatin",
+     "_stateCode": "MT",
+     "_stateDisplay": "Montana",
+     "SITUS_ADDRESS": "1 MT RD",
+     "SITUS_CITY_NM": "BOZEMAN, MT 59715",
+     "SITUS_ZIP_NR": "",
+     "DATA_LINK": "https://svc.mt.gov/card"
+    }
+   }
+  },
+  "requests": [
+   {
+    "host": "mt",
+    "where": "(UPPER(PARCELID)='06079830101010000' OR UPPER(Geocode)='06079830101010000' OR UPPER(AssessmentCode)='06079830101010000')",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Gallatin not found",
+  "status": 502,
+  "cache": "no-store",
+  "body": {
+   "error": "Parcel not found in the Montana statewide cadastral database. Try the 17-digit geocode shown on the Montana property record."
+  },
+  "requests": [
+   {
+    "host": "mt",
+    "where": "(UPPER(PARCELID)='1' OR UPPER(Geocode)='1' OR UPPER(AssessmentCode)='1' OR PropertyID=1)",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Yellowstone tax parcel hit",
+  "status": 200,
+  "cache": "public, max-age=300, s-maxage=3600",
+  "body": {
+   "available": true,
+   "state": "MT",
+   "county": "Yellowstone",
+   "parcel": {
+    "type": "Feature",
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -108.5,
+        45.7
+       ],
+       [
+        -108.49,
+        45.7
+       ],
+       [
+        -108.49,
+        45.71
+       ],
+       [
+        -108.5,
+        45.7
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "GEOCODE": "03092727411010000",
+     "TAX_ID": "A123",
+     "OWNER": "YS OWNER",
+     "ORIG_PARCEL_ID": "03092727411010000",
+     "PARCEL_ID_NR": "03092727411010000",
+     "COUNTY_NM": "Yellowstone",
+     "_countyDisplay": "Yellowstone",
+     "_stateCode": "MT",
+     "_stateDisplay": "Montana",
+     "SITUS_ADDRESS": "",
+     "SITUS_CITY_NM": "",
+     "SITUS_ZIP_NR": "",
+     "DATA_LINK": "https://www.yellowstonecountymt.gov/Treasurer/PropertySearch/"
+    }
+   }
+  },
+  "requests": [
+   {
+    "host": "yellowstone",
+    "where": "(UPPER(GEOCODE)='03092727411010000' OR UPPER(GEO_CODE)='03092727411010000' OR UPPER(TAX_ID)='03092727411010000' OR UPPER(TAXID)='03092727411010000' OR PROP_ID=3092727411010000)",
+    "outFields": "*"
+   }
+  ]
+ },
+ {
+  "name": "Yellowstone miss -> cadastral",
+  "status": 200,
+  "cache": "public, max-age=300, s-maxage=3600",
+  "body": {
+   "available": true,
+   "state": "MT",
+   "county": "Yellowstone",
+   "parcel": {
+    "type": "Feature",
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -111,
+        45.6
+       ],
+       [
+        -110.99,
+        45.6
+       ],
+       [
+        -110.99,
+        45.61
+       ],
+       [
+        -111,
+        45.6
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "PARCELID": "06079830101010000",
+     "Geocode": "06-0798-30-1-01-01-0000",
+     "AddressLine1": "1 MT RD",
+     "CityStateZip": "BOZEMAN, MT 59715",
+     "OwnerName": "MT OWNER",
+     "PropertyCardLink": "https://svc.mt.gov/card",
+     "ORIG_PARCEL_ID": "06079830101010000",
+     "PARCEL_ID_NR": "06079830101010000",
+     "COUNTY_NM": "Yellowstone",
+     "_countyDisplay": "Yellowstone",
+     "_stateCode": "MT",
+     "_stateDisplay": "Montana",
+     "SITUS_ADDRESS": "1 MT RD",
+     "SITUS_CITY_NM": "BOZEMAN, MT 59715",
+     "SITUS_ZIP_NR": "",
+     "DATA_LINK": "https://svc.mt.gov/card"
+    }
+   }
+  },
+  "requests": [
+   {
+    "host": "yellowstone",
+    "where": "(UPPER(GEOCODE)='06079830101010000' OR UPPER(GEO_CODE)='06079830101010000' OR UPPER(TAX_ID)='06079830101010000' OR UPPER(TAXID)='06079830101010000' OR PROP_ID=6079830101010000)",
+    "outFields": "*"
+   },
+   {
+    "host": "mt",
+    "where": "(UPPER(PARCELID)='06079830101010000' OR UPPER(Geocode)='06079830101010000' OR UPPER(AssessmentCode)='06079830101010000')",
+    "outFields": "*"
+   }
+  ]
+ }
+]
