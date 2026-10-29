@@ -1,5 +1,6 @@
 import { json } from '../shared/http.js';
 import { arcgisQuery } from '../shared/upstream.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
 
 const HIFLD_RETAIL = 'https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0';
 
@@ -40,7 +41,8 @@ export async function handleUtilityTerritory(request) {
       type: attrs.TYPE || attrs.UTIL_TYPE || attrs.OWNERSHIP || '',
       state: attrs.STATE || '',
       year: attrs.YEAR || '',
-      attributes: attrs
+      // The HIFLD layer has no owner or mailing fields today; strip in case one is added.
+      attributes: withoutPersonalFields(attrs)
     };
   }).filter(item => item.name);
 

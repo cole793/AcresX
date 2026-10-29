@@ -123,8 +123,6 @@
         ? (evidence.insideParcel ? 'Well coordinates map within the selected parcel' : 'Well-record owner matches the current assessor owner') + ' · verify record and current well status'
         : escHtml(data.confidence) + ' confidence · match score ' + Number(data.score || 0) + '/100 · not confirmation of an existing well on this parcel'}</div>
       <div class="data-grid">
-        <div class="datum"><span>Current assessor owner</span><strong>${escHtml(data.currentOwner || 'Not returned')}</strong></div>
-        <div class="datum"><span>Well record owner</span><strong>${escHtml(m.ownerName || 'Not reported')}</strong></div>
         <div class="datum"><span>Well parcel number</span><strong>${escHtml(m.parcelNumber || 'Not reported')}</strong></div>
         <div class="datum"><span>Well tag</span><strong>${escHtml(m.wellTag || 'Not reported')}</strong></div>
         <div class="datum"><span>Completed depth</span><strong>${m.completedDepth ? `${escHtml(m.completedDepth)} ft` : 'Not reported'}</strong></div>

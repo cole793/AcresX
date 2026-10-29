@@ -8,7 +8,7 @@ import { PERSONAL_FIELD, withoutPersonalFields } from '../src/shared/personal-fi
 import { getSpokaneCountyIntelligence, SPOKANE_CACHE_PREFIX } from '../src/counties/spokane.js';
 import { getYellowstoneCountyIntelligence, YELLOWSTONE_CACHE_PREFIX } from '../src/counties/yellowstone.js';
 import { getGallatinCountyIntelligence, GALLATIN_CACHE_PREFIX } from '../src/counties/gallatin.js';
-import { findMontanaParcel, findYellowstoneParcel } from '../src/states/montana/parcels.js';
+import { findMontanaParcel, findYellowstoneParcel, MONTANA_PARCEL_CACHE_PREFIX } from '../src/states/montana/parcels.js';
 import { findIdahoParcel, IDAHO_PARCEL_CACHE_PREFIX, RATE_LIMIT_RETRY_MS } from '../src/states/idaho/parcels.js';
 import { KC_PARCEL_CACHE_PREFIX } from '../src/counties/kootenai-parcels.js';
 import { getZoningProfile } from '../src/zoning-counties.js';
@@ -67,8 +67,10 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
   assert.deepEqual(out, { a: [{ attributes: { NAME: 'Rural', ZONE_NAME: 'AG', JURISDICTION: 'Spokane County' } }] });
 });
 
-test('cache prefixes that could have held owner fields were bumped to v2', () => {
-  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, IDAHO_PARCEL_CACHE_PREFIX, KC_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+test('cache prefixes moved past every version that could have held owner fields', () => {
+  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, KC_PARCEL_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  // v2 held outFields '*' answers (stripped); v3 holds the named-field answers.
+  assert.match(IDAHO_PARCEL_CACHE_PREFIX, /\/idaho-parcels\/v3\/$/);
 });
 
 // ---- Spokane
@@ -146,29 +148,50 @@ test('Gallatin: a zoning answer is cached without owner fields; an HTTP or ArcGI
   }
 });
 
-// ---- Montana parcels: the response carries owner fields today, so nothing is cached
+// ---- Montana parcels: cached again now that the answers carry no owner fields
 
-test('Montana and Yellowstone parcel answers are never cached (the response still has its owner fields)', async () => {
-  const mt = { type: 'Feature', geometry: square(-111.05, 45.68), properties: { PARCELID: '06079821101010000', OwnerName: 'TEST OWNER', COUNTY_NM: 'Gallatin' } };
+test('Montana and Yellowstone parcel answers are cached without owner fields; a hit answers the same', async () => {
+  const mt = { type: 'Feature', geometry: square(-111.05, 45.68), properties: { PARCELID: '06079821101010000', OwnerName: 'TEST OWNER', OwnerAddress1: '1 MAIL ST', CareOfTaxpayer: 'TEST OWNER', COUNTY_NM: 'Gallatin' } };
   stub(() => geojson([mt]));
   const parcel = await findMontanaParcel('06079821101010000', 'Gallatin');
-  assert.equal(parcel.properties.OwnerName, 'TEST OWNER', 'response shape unchanged');
-  stub(() => geojson([{ ...mt, properties: { GEOCODE: '03103323101010000', OWNER: 'TEST OWNER' } }]));
-  await findYellowstoneParcel('03103323101010000');
+  assertNoPersonalData(parcel);
+  assert.equal(parcel.properties.PARCELID, '06079821101010000');
+  assert.equal(store.size, 1);
+  assert.ok(stored()[0].key.startsWith(MONTANA_PARCEL_CACHE_PREFIX));
+  assertNoPersonalData(stored()[0].value);
+  const before = calls.length;
+  assert.deepEqual(await findMontanaParcel('06079821101010000', 'Gallatin'), parcel, 'a cache hit answers the same');
+  assert.equal(calls.length, before, 'answered from the cache');
+
+  store.clear();
+  stub(() => geojson([{ ...mt, properties: { GEOCODE: '03103323101010000', OWNER: 'TEST OWNER', OWNER_NAME: 'TEST OWNER', MAILADDRESS1: '1 MAIL ST', MAILCITY: 'BILLINGS' } }]));
+  assertNoPersonalData(await findYellowstoneParcel('03103323101010000'));
+  assert.equal(store.size, 1);
+  assertNoPersonalData(stored()[0].value);
+
+  store.clear();
   stub(() => down());
   await findMontanaParcel('06079821101010000', 'Gallatin').catch(() => {});
-  assert.equal(store.size, 0);
+  stub(() => geojson([]));
+  await findMontanaParcel('06079821101010000', 'Gallatin').catch(() => {});
+  assert.equal(store.size, 0, 'failed and empty answers are not cached');
 });
 
 // ---- Idaho parcels
 
 const statewide = id => ({ type: 'Feature', geometry: square(-116.2, 43.6), properties: { PARCEL_ID: id, County: 'Ada', OWNER1: 'TEST OWNER', OWNER2: '', PUBLIC_STD: 'TEST OWNER', MAIL_ADD1: '1 MAIL ST', MAIL_CITY: 'BOISE', SITE_ADD: '1 SITE RD' } });
 
-test('Idaho (not Kootenai): statewide answers are never cached and the response keeps its fields', async () => {
+test('Idaho (not Kootenai): statewide answers are cached without owner fields; a hit answers the same', async () => {
   stub(() => geojson([statewide('R1234560010')]));
   const parcel = await findIdahoParcel('R1234560010', 'Ada');
-  assert.equal(parcel.properties.OWNER1, 'TEST OWNER', 'response shape unchanged');
-  assert.equal(store.size, 0);
+  assertNoPersonalData(parcel);
+  assert.equal(parcel.properties.SITUS_ADDRESS, '1 SITE RD');
+  assert.equal(store.size, 1);
+  assert.ok(stored()[0].key.startsWith(IDAHO_PARCEL_CACHE_PREFIX));
+  assertNoPersonalData(stored()[0].value);
+  const before = calls.length;
+  assert.deepEqual(await findIdahoParcel('R1234560010', 'Ada'), parcel, 'a cache hit answers the same');
+  assert.equal(calls.length, before, 'answered from the cache');
 });
 
 test('Idaho Kootenai fallbacks: statewide and IDWR answers are cached without owner fields', async () => {

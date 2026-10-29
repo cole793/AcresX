@@ -14,15 +14,21 @@ function isRateLimit(error) { return error?.status === 429 || Number(error?.code
 // Wait before the one retry of a statewide query (tests shorten it).
 export const RATE_LIMIT_RETRY_MS = { value: 600 };
 
-// Only the Kootenai fallback queries (statewide layer for Kootenai, IDWR) are cached: their
-// answers have owner and mailing fields removed before they are stored and before they are used,
-// which is what the Kootenai response does anyway. Other Idaho counties still return the
-// statewide owner fields in /api/parcel-search (a decision pending with the owner), so their
-// answers are never cached. Feature lists that found parcels are cached per query for 7 days;
-// errors and empty answers (a parcel may be added) are never cached.
+// No owner names or mailing addresses (owner decision, 2026-10-29). Each layer is asked for its
+// non-personal fields by name (every field the layer had on 2026-10-29 except the owner and
+// mailing ones, so the answer is what outFields '*' gave minus those), and every feature also
+// has its owner fields removed (withoutOwnerProperties) before it is stored or used.
+// Never add here: statewide OWNER1, OWNER2, PUBLIC_STD, MAIL_ADD1, MAIL_ADD2, MAIL_CITY,
+// MAIL_STATE, MAIL_ZIP, MAIL_CNTRY; IDWR OWNER.
+export const IDAHO_STATEWIDE_FIELDS = 'OBJECTID,PARCEL_ID,STEWARD,County,UPDATED,WEBSITE,FIPS,ASR_ACRES,LAT_DD,LONG_DD,IDTM_N,IDTM_E,SITE_ADD,SITE_CITY,SITE_ZIP,ASR_CATS,LGL_DESCR,VAL_LAND,VAL_IMPVTS,VAL_TOTAL,HOME_EXMPT,FP_ID,Shape__Area,Shape__Length';
+export const IDWR_PARCEL_FIELDS = 'OBJECTID,PIN,COUNTY,Shape__Area,Shape__Length';
+
+// Every statewide and IDWR query (every Idaho county) is cached: feature lists that found
+// parcels, owner-free, per query for 7 days; errors and empty answers (a parcel may be added)
+// are never cached.
 // Bump the version in the prefix whenever the fields requested or stripped change, so no entry
-// in the old shape survives.
-export const IDAHO_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/idaho-parcels/v2/';
+// in the old shape survives (v2 held outFields '*' answers, stripped).
+export const IDAHO_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/idaho-parcels/v3/';
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 // Through the shared client (src/shared/upstream.js). Was one 20 s attempt (plus one retry on a
@@ -32,7 +38,7 @@ async function fetchService(service, where, count, { retryRateLimit, label }) {
   const url = new URL(`${service}/query`);
   url.searchParams.set('f', 'geojson');
   url.searchParams.set('where', where);
-  url.searchParams.set('outFields', '*');
+  url.searchParams.set('outFields', service === IDWR_PARCELS ? IDWR_PARCEL_FIELDS : IDAHO_STATEWIDE_FIELDS);
   url.searchParams.set('returnGeometry', 'true');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('resultRecordCount', String(count));
@@ -43,13 +49,12 @@ async function fetchService(service, where, count, { retryRateLimit, label }) {
   return data.features || [];
 }
 
-function queryService(service, where, count = 20, { retryRateLimit = false, label = 'idaho-parcels', ownerFree = false } = {}) {
-  if (!ownerFree) return fetchService(service, where, count, { retryRateLimit, label });
+function queryService(service, where, count = 20, { retryRateLimit = false, label = 'idaho-parcels' } = {}) {
   return cachedJson(IDAHO_PARCEL_CACHE_PREFIX, { service, where, count }, CACHE_TTL_SECONDS,
     async () => (await fetchService(service, where, count, { retryRateLimit, label })).map(withoutOwnerProperties),
     { isValid: features => Array.isArray(features) && features.length > 0 });
 }
-async function query(where, count = 20, { ownerFree = false } = {}) { return queryService(IDAHO_PARCELS, where, count, { retryRateLimit: true, label: 'idaho-statewide-parcels', ownerFree }); }
+async function query(where, count = 20) { return queryService(IDAHO_PARCELS, where, count, { retryRateLimit: true, label: 'idaho-statewide-parcels' }); }
 
 function normalizeFeature(feature, requestedId, county = '') {
   const attrs = feature.properties || {};
@@ -78,29 +83,29 @@ async function findKootenaiIdwr(raw) {
   const compact = normalize(raw);
   const variants = kootenaiVariants(raw);
   for (const candidate of variants) {
-    const features = await queryService(IDWR_PARCELS, `UPPER(PIN)='${sql(candidate)}' AND UPPER(COUNTY)='KOOTENAI'`, 20, { label: 'idwr-parcels', ownerFree: true });
+    const features = await queryService(IDWR_PARCELS, `UPPER(PIN)='${sql(candidate)}' AND UPPER(COUNTY)='KOOTENAI'`, 20, { label: 'idwr-parcels' });
     const exact = features.filter(f => normalize(f.properties?.PIN) === compact);
     if (exact.length) return exact;
   }
   // County assessor PINs are canonical without dashes; normalize punctuation if IDWR retained it.
   const prefix = compact.slice(0, Math.min(8, compact.length));
-  const broad = await queryService(IDWR_PARCELS, `UPPER(COUNTY)='KOOTENAI' AND UPPER(PIN) LIKE '${sql(prefix)}%'`, 200, { label: 'idwr-parcels', ownerFree: true });
+  const broad = await queryService(IDWR_PARCELS, `UPPER(COUNTY)='KOOTENAI' AND UPPER(PIN) LIKE '${sql(prefix)}%'`, 200, { label: 'idwr-parcels' });
   return broad.filter(f => normalize(f.properties?.PIN) === compact);
 }
 
 // Statewide layer 7 lookup by PARCEL_ID / FP_ID (Kootenai also tries the dashed PIN and a prefix match).
-async function findStatewide(raw, countyName, { ownerFree = false } = {}) {
+async function findStatewide(raw, countyName) {
   const compact = normalize(raw);
   const countySafe = sql(countyName); const countyWhere = countySafe ? `UPPER(County)='${countySafe.toUpperCase()}' AND ` : '';
   const variants = /^kootenai$/i.test(countyName) ? kootenaiVariants(raw) : [...new Set([raw.toUpperCase(), compact])];
   let features = [];
   for (const candidate of variants) {
-    features = await query(`${countyWhere}(UPPER(PARCEL_ID)='${sql(candidate)}' OR UPPER(FP_ID)='${sql(candidate)}')`, 20, { ownerFree });
+    features = await query(`${countyWhere}(UPPER(PARCEL_ID)='${sql(candidate)}' OR UPPER(FP_ID)='${sql(candidate)}')`, 20);
     if (features.length) break;
   }
   if (!features.length && /^kootenai$/i.test(countyName)) {
     const prefix = compact.slice(0, Math.min(8, compact.length));
-    const broad = await query(`${countyWhere}(UPPER(PARCEL_ID) LIKE '${sql(prefix)}%' OR UPPER(FP_ID) LIKE '${sql(prefix)}%')`, 200, { ownerFree });
+    const broad = await query(`${countyWhere}(UPPER(PARCEL_ID) LIKE '${sql(prefix)}%' OR UPPER(FP_ID) LIKE '${sql(prefix)}%')`, 200);
     features = broad.filter(feature => [feature.properties?.PARCEL_ID, feature.properties?.FP_ID].some(value => normalize(value) === compact));
   }
   return features;
@@ -123,7 +128,7 @@ function pickOne(features, raw, county) {
 const NOT_FOUND = 'Parcel not found in available Idaho parcel sources. Confirm the county and assessor parcel number.';
 
 // Owner name and mailing address fields of the statewide (OWNER1, OWNER2, PUBLIC_STD, MAIL_*)
-// and IDWR (OWNER) layers. Kootenai answers never carry them.
+// and IDWR (OWNER) layers, plus anything PERSONAL_FIELD matches. No Idaho answer carries them.
 const OWNER_FIELD = /^(OWNER\d*|PUBLIC_STD|MAIL_.*|Name)$/i;
 const isOwnerField = key => OWNER_FIELD.test(key) || PERSONAL_FIELD.test(key);
 function withoutOwnerProperties(feature) {
@@ -149,7 +154,7 @@ async function findKootenaiParcel(raw, county) {
     errors.push(error); console.warn(`Kootenai county parcel layer failed (${error.message}); trying the statewide Idaho layer.`);
   }
   const fallbacks = [
-    { find: () => findStatewide(raw, 'Kootenai', { ownerFree: true }), source: { name: 'Idaho statewide parcels (Public_Idaho_Parcels_)', url: IDAHO_PARCELS } },
+    { find: () => findStatewide(raw, 'Kootenai'), source: { name: 'Idaho statewide parcels (Public_Idaho_Parcels_)', url: IDAHO_PARCELS } },
     { find: () => findKootenaiIdwr(raw), source: { name: 'IDWR statewide parcel compilation', url: IDWR_PARCELS } }
   ];
   for (const { find, source } of fallbacks) {

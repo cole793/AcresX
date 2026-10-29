@@ -47,7 +47,6 @@
           "county": "Spokane",
           "state": "WA",
           "parcelId": "47174.9017",
-          "currentOwner": "SMITH JOHN A",
           "siteAddress": "123 TEST RD, SPOKANE, WA, 99208",
           "status": "strong_match",
           "label": "Likely existing well",
@@ -57,7 +56,6 @@
             "id": 1,
             "wellTag": "BAA123",
             "projectName": "Smith",
-            "ownerName": "JOHN SMITH",
             "wellAddress": "123 TEST RD",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
@@ -104,7 +102,6 @@
           "county": "Spokane",
           "state": "WA",
           "parcelId": "47174-9017",
-          "currentOwner": "",
           "siteAddress": "",
           "status": "strong_match",
           "label": "Likely existing well",
@@ -114,7 +111,6 @@
             "id": 1,
             "wellTag": "BAA123",
             "projectName": "Smith",
-            "ownerName": "JOHN SMITH",
             "wellAddress": "123 TEST RD",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
@@ -162,7 +158,6 @@
           "county": "Spokane",
           "state": "WA",
           "parcelId": "47174.9017",
-          "currentOwner": "",
           "siteAddress": "",
           "status": "strong_match",
           "label": "Likely existing well",
@@ -172,7 +167,6 @@
             "id": 1,
             "wellTag": "BAA123",
             "projectName": "Smith",
-            "ownerName": "JOHN SMITH",
             "wellAddress": "123 TEST RD",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
@@ -332,12 +326,12 @@
       }
     },
     "requests": [
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=AssessmentCode%3D%2703-1033-23-1-01-01-0000%27&outFields=*&f=json&returnGeometry=false",
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=AssessmentCode%3D%2703103323101010000%27&outFields=*&f=json&returnGeometry=false",
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=Geocode%3D%2703-1033-23-1-01-01-0000%27&outFields=*&f=json&returnGeometry=false",
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=Geocode%3D%2703103323101010000%27&outFields=*&f=json&returnGeometry=false",
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=ParcelID%3D%2703-1033-23-1-01-01-0000%27&outFields=*&f=json&returnGeometry=false",
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=ParcelID%3D%2703103323101010000%27&outFields=*&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=AssessmentCode%3D%2703-1033-23-1-01-01-0000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=AssessmentCode%3D%2703103323101010000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=Geocode%3D%2703-1033-23-1-01-01-0000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=Geocode%3D%2703103323101010000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=ParcelID%3D%2703-1033-23-1-01-01-0000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=ParcelID%3D%2703103323101010000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
       "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?where=GEOCODE%3D%2703103323101010000%27+OR+GEO_CODE%3D%2703103323101010000%27&outFields=GEOCODE%2CGEO_CODE%2CTAX_ID%2CTAXID%2CPROP_ID%2CFULLADD%2CSHORTLEGAL&f=json&returnGeometry=false"
     ]
   },
@@ -681,7 +675,7 @@
       }
     },
     "requests": [
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?f=geojson&where=%28UPPER%28GEOCODE%29%3D%2703103323101010000%27+OR+UPPER%28GEO_CODE%29%3D%2703103323101010000%27+OR+UPPER%28TAX_ID%29%3D%2703103323101010000%27+OR+UPPER%28TAXID%29%3D%2703103323101010000%27+OR+PROP_ID%3D3103323101010000%29&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=10"
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?f=geojson&where=%28UPPER%28GEOCODE%29%3D%2703103323101010000%27+OR+UPPER%28GEO_CODE%29%3D%2703103323101010000%27+OR+UPPER%28TAX_ID%29%3D%2703103323101010000%27+OR+UPPER%28TAXID%29%3D%2703103323101010000%27+OR+PROP_ID%3D3103323101010000%29&outFields=OBJECTID%2CGEOCODE%2CTAX_ID%2CPROP_ID%2CADDR%2CGEO_CODE%2CTAXID%2CFULLADD%2CSHORTLEGAL%2CShape.STArea%28%29%2CShape.STLength%28%29&returnGeometry=true&outSR=4326&resultRecordCount=10"
     ]
   },
   "montana parcels: Yellowstone miss falls back to statewide": {
@@ -735,8 +729,8 @@
       }
     },
     "requests": [
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?f=geojson&where=%28UPPER%28PARCELID%29%3D%2706079821101010000%27+OR+UPPER%28Geocode%29%3D%2706079821101010000%27+OR+UPPER%28AssessmentCode%29%3D%2706079821101010000%27%29&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?f=geojson&where=%28UPPER%28GEOCODE%29%3D%2706079821101010000%27+OR+UPPER%28GEO_CODE%29%3D%2706079821101010000%27+OR+UPPER%28TAX_ID%29%3D%2706079821101010000%27+OR+UPPER%28TAXID%29%3D%2706079821101010000%27+OR+PROP_ID%3D6079821101010000%29&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=10"
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?f=geojson&where=%28UPPER%28PARCELID%29%3D%2706079821101010000%27+OR+UPPER%28Geocode%29%3D%2706079821101010000%27+OR+UPPER%28AssessmentCode%29%3D%2706079821101010000%27%29&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&returnGeometry=true&outSR=4326&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?f=geojson&where=%28UPPER%28GEOCODE%29%3D%2706079821101010000%27+OR+UPPER%28GEO_CODE%29%3D%2706079821101010000%27+OR+UPPER%28TAX_ID%29%3D%2706079821101010000%27+OR+UPPER%28TAXID%29%3D%2706079821101010000%27+OR+PROP_ID%3D6079821101010000%29&outFields=OBJECTID%2CGEOCODE%2CTAX_ID%2CPROP_ID%2CADDR%2CGEO_CODE%2CTAXID%2CFULLADD%2CSHORTLEGAL%2CShape.STArea%28%29%2CShape.STLength%28%29&returnGeometry=true&outSR=4326&resultRecordCount=10"
     ]
   },
   "montana parcels: statewide parcel": {
@@ -790,7 +784,7 @@
       }
     },
     "requests": [
-      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?f=geojson&where=%28UPPER%28PARCELID%29%3D%2706079821101010000%27+OR+UPPER%28Geocode%29%3D%2706079821101010000%27+OR+UPPER%28AssessmentCode%29%3D%2706079821101010000%27%29&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=10"
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?f=geojson&where=%28UPPER%28PARCELID%29%3D%2706079821101010000%27+OR+UPPER%28Geocode%29%3D%2706079821101010000%27+OR+UPPER%28AssessmentCode%29%3D%2706079821101010000%27%29&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&returnGeometry=true&outSR=4326&resultRecordCount=10"
     ]
   },
   "montana parcels: statewide not found": {
@@ -1037,7 +1031,6 @@
               "PermitID": null,
               "MetalTagNumber": null,
               "ConstructionDate": 1104537600000,
-              "Owner": "OWNER 0",
               "WellUse": "Domestic",
               "CountyName": "Kootenai",
               "TotalDepth": 150,
@@ -1046,7 +1039,7 @@
               "WellDocs": "https://idwr.example/well/500",
               "ID": 500,
               "WellTagNr": 500,
-              "ProjectName": "OWNER 0",
+              "ProjectName": "Domestic",
               "CompletedDepth": 150,
               "StaticWaterLvl": 60,
               "FlowRateGPM": 20,
@@ -1069,7 +1062,6 @@
               "PermitID": null,
               "MetalTagNumber": null,
               "ConstructionDate": 1104537600000,
-              "Owner": "OWNER 2",
               "WellUse": "Domestic",
               "CountyName": "Kootenai",
               "TotalDepth": 152,
@@ -1078,7 +1070,7 @@
               "WellDocs": "https://idwr.example/well/502",
               "ID": 502,
               "WellTagNr": 502,
-              "ProjectName": "OWNER 2",
+              "ProjectName": "Domestic",
               "CompletedDepth": 152,
               "StaticWaterLvl": 60,
               "FlowRateGPM": 20,
@@ -1101,7 +1093,6 @@
               "PermitID": null,
               "MetalTagNumber": "D003",
               "ConstructionDate": 1104537600000,
-              "Owner": "OWNER 3",
               "WellUse": "Domestic",
               "CountyName": "Kootenai",
               "TotalDepth": 153,
@@ -1110,7 +1101,7 @@
               "WellDocs": "https://idwr.example/well/503",
               "ID": 503,
               "WellTagNr": "D003",
-              "ProjectName": "OWNER 3",
+              "ProjectName": "Domestic",
               "CompletedDepth": 153,
               "StaticWaterLvl": 60,
               "FlowRateGPM": 20,
@@ -1133,7 +1124,6 @@
               "PermitID": null,
               "MetalTagNumber": null,
               "ConstructionDate": 1104537600000,
-              "Owner": "OWNER 4",
               "WellUse": "Domestic",
               "CountyName": "Kootenai",
               "TotalDepth": 154,
@@ -1142,7 +1132,7 @@
               "WellDocs": "https://idwr.example/well/504",
               "ID": 504,
               "WellTagNr": 504,
-              "ProjectName": "OWNER 4",
+              "ProjectName": "Domestic",
               "CompletedDepth": 154,
               "StaticWaterLvl": 60,
               "FlowRateGPM": 20,
@@ -1165,7 +1155,6 @@
               "PermitID": null,
               "MetalTagNumber": "D005",
               "ConstructionDate": 1104537600000,
-              "Owner": "OWNER 5",
               "WellUse": "Domestic",
               "CountyName": "Kootenai",
               "TotalDepth": 155,
@@ -1174,7 +1163,7 @@
               "WellDocs": "https://idwr.example/well/505",
               "ID": 505,
               "WellTagNr": "D005",
-              "ProjectName": "OWNER 5",
+              "ProjectName": "Domestic",
               "CompletedDepth": 155,
               "StaticWaterLvl": 60,
               "FlowRateGPM": 20,
@@ -1197,7 +1186,6 @@
               "PermitID": null,
               "MetalTagNumber": null,
               "ConstructionDate": 1104537600000,
-              "Owner": "OWNER 6",
               "WellUse": "Domestic",
               "CountyName": "Kootenai",
               "TotalDepth": 156,
@@ -1206,7 +1194,7 @@
               "WellDocs": "https://idwr.example/well/506",
               "ID": 506,
               "WellTagNr": 506,
-              "ProjectName": "OWNER 6",
+              "ProjectName": "Domestic",
               "CompletedDepth": 156,
               "StaticWaterLvl": 60,
               "FlowRateGPM": 20,
@@ -1219,9 +1207,9 @@
       }
     },
     "requests": [
-      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=10&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2COwner%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
-      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2COwner%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
-      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=5&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2COwner%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200"
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=10&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=5&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200"
     ]
   },
   "idaho wells: HTTP 503": {

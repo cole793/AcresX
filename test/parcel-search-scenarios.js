@@ -1,8 +1,10 @@
 // /api/parcel-search scenarios outside Kootenai (other Idaho counties, Montana), run against a
 // Worker module with fetch stubbed. test/fixtures/parcel-search-legacy-snapshot.json holds what
 // the Worker at 2d12331 (before the Kootenai county-layer change) answered; idaho-parcels.test.js
-// checks the current Worker still answers exactly the same. To re-record, import an older
-// src/index.js and write JSON.stringify(await runParcelScenarios(worker), null, 1).
+// checks the current Worker still answers exactly the same. On 2026-10-29 the owner and mailing
+// fields were removed from the recorded answers and the recorded outFields '*' became the named
+// field lists (owner decision); nothing else in the recording changed. To re-record, import an
+// older src/index.js and write JSON.stringify(await runParcelScenarios(worker), null, 1).
 
 const square = [[[-116.2, 43.6], [-116.19, 43.6], [-116.19, 43.61], [-116.2, 43.61], [-116.2, 43.6]]];
 const adaFeature = (id = 'R1234560010') => ({
