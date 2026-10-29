@@ -1,8 +1,12 @@
 import { cachedJson, upstreamJson } from '../shared/upstream.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
 
 // Answers are cached per parcel for a day (Cache API), only when every layer query that ran
 // succeeded (a failed layer could hide the controlling zone).
-export const YELLOWSTONE_CACHE_PREFIX = 'https://acresx.internal/cache/yellowstone-intelligence/v1/';
+// Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
+// stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
+// prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
+export const YELLOWSTONE_CACHE_PREFIX = 'https://acresx.internal/cache/yellowstone-intelligence/v2/';
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 const ZONING_SERVICE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer';
@@ -143,7 +147,7 @@ export async function getYellowstoneCountyIntelligence(body) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Yellowstone zoning requires parcel coordinates.');
   const failures = [];
   return cachedJson(YELLOWSTONE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS,
-    () => lookupYellowstone(lon, lat, geometry, failures),
+    async () => withoutPersonalFields(await lookupYellowstone(lon, lat, geometry, failures)),
     { isValid: () => failures.length === 0 });
 }
 

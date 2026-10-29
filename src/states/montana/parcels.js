@@ -1,10 +1,10 @@
-import { cachedJson, upstreamJson } from '../../shared/upstream.js';
+import { upstreamJson } from '../../shared/upstream.js';
 
-// Layer answers (feature lists) are cached per query for 7 days (Cache API) when the query
-// found parcels; errors and empty answers (a parcel may be added) are never cached. The parcel
-// is rebuilt from the cached answer.
-export const MONTANA_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/montana-parcels/v1/';
-const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+// Not cached: these layers are queried with outFields '*' and /api/parcel-search returns their
+// owner fields (OwnerName, OWNER, ...), so a cached answer would store owner and mailing data in
+// the Cache API, and stripping it would change the response (a decision pending with the owner).
+// If caching comes back, strip with src/shared/personal-fields.js first and use a new prefix
+// (montana-parcels/v1 entries may exist from PR previews).
 
 const YELLOWSTONE_TAX_PARCEL = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1';
 const MONTANA_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0';
@@ -28,7 +28,7 @@ async function fetchLayer(layer, where, count, label) {
 }
 
 function queryLayer(layer, where, count = 20, label = 'montana-parcels') {
-  return cachedJson(MONTANA_PARCEL_CACHE_PREFIX, { layer, where, count }, CACHE_TTL_SECONDS, () => fetchLayer(layer, where, count, label), { isValid: features => Array.isArray(features) && features.length > 0 });
+  return fetchLayer(layer, where, count, label);
 }
 
 function normalizeFeature(feature, requestedId, county = '') {
