@@ -46,6 +46,85 @@ Owner-approved 2026-10-27 (branch `claude/kootenai-parcel-search`). Checked live
   card still show listing status. In a stubbed example, the score was 9.2 / 9.1 / 9.0
   (found / none / error) before the change and is 9.0 for all three now. The later
   `score-cost.js` and `screening-refinements.js` scores never used listings.
+## 2026-10-27: Kootenai zoning inside cities, and by parcel area
+
+Owner-approved 2026-10-27 (branch `claude/kootenai-city-zoning`). Sources checked live by the
+lead and the builder on 2026-10-27.
+
+- **City limits:** `map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18`
+  ("City Limits", really tax code areas). `CITY` is set only inside a city ('Coeur d Alene',
+  'Post Falls', 'Hayden', 'Rathdrum', 'Dalton Gardens', 'Hayden Lake', 'Athol', 'Spirit Lake',
+  'Harrison', 'Worley', 'Fernan', 'Hauser Lake', 'Huetter', 'State Line'); `' '` or null outside.
+- **City impact areas:** `Data_Layers/MapServer/17`, fields `CITY`, `ORDINANCE` (e.g.
+  `ORA25-0013` CdA, `ORA25-0012` Hayden, `ORA25-0009` Post Falls, `ORA25-0018` Rathdrum; State
+  Line spelled `STATELINE`). Land in an impact area but outside city limits keeps county zoning
+  (Athol code: "the Kootenai County zoning ordinance shall be the zoning ordinance applicable to
+  the land in the area of city impact which is outside the Athol city limits"; Hauser applies the
+  same by its 1999 agreement). AcresX shows it as info only.
+- **Coeur d'Alene zoning:** `gis.cdaid.org/server/rest/services/Share/Planning/MapServer/8`,
+  fields `ZONING`, `ZoningInfo` (HTML link to a zone PDF), `PUD`, `Notes`, `last_edited_date`.
+  Gotcha: many `ZoningInfo` links name another zone's PDF (a `C-17` polygon links `R-17.pdf`,
+  an `R-1` links `R-3.pdf`), so the adapter uses the link only when the file name matches
+  `ZONING`, otherwise `https://www.cdaid.org/planning`.
+- **Post Falls zoning:** `gis.postfalls.gov/server/rest/services/GIS2/LandUse/MapServer/5`,
+  fields `ZONING`, `LAST_UPDATED`. Planning page `https://www.postfalls.gov/179/Planning`.
+- **Other cities:** no live public zoning GIS (the old KCGIS consortium server
+  `gis.postfallsidaho.org` is unreachable). Planning pages that loaded: Hayden
+  `https://www.haydenid.gov/departments/planning_/index.php` (cityofhaydenid.us redirects
+  there), Spirit Lake `https://www.spiritlakeid.gov/planningandzoning` (it also links an ArcGIS
+  Online zoning web map, not used yet). Not linked: rathdrum.gov (bot check, could not verify),
+  cityofhauser.org and haydenlake.org (parked domains), Athol, Dalton Gardens, Harrison, Worley,
+  Fernan, Huetter, State Line (no reachable site found).
+- **Center-point misses:** the county zoning layer 21 has gaps (e.g. 48N03W312100: about half
+  the parcel is in no zone polygon, probably water; the layer 23 flood zone there is mostly AE),
+  and the parcel's vertex-average center fell in a gap. Zoning is now read by parcel area: query
+  with the parcel polygon (POST when the URL would be long), then sample about 200 grid points
+  inside the parcel and count which polygon holds each (`src/shared/polygon-coverage.js`).
+- Layer 21 `LABEL` holds the long name ('AGRICULTURE') and `ZONE_NAME` the short code ('AG');
+  some rows disagree (e.g. `LABEL` 'AG-SUBURBAN' with `ZONE_NAME` 'HDRES' or 'RUR'). The adapter
+  still uses `LABEL` first.
+
+## 2026-10-27: Wetlands "present" with "0.0% of parcel" was a broken clip request, not a boundary touch
+
+Owner-approved 2026-10-27 (branch `claude/wetlands-fixes`). Checked live by the builder from the
+sandbox (Kootenai parcel layer geometry, USFWS NWI layer 0, Esri GeometryServer), not via the
+AcresX site.
+
+- **The NWI query was fine.** It sends the exact parcel polygon with `esriSpatialRelIntersects`
+  (no envelope, no buffer). The features it returns really overlap both parcels.
+- **The clip request always failed.** `src/services/wetlands.js` sent the GeometryServer
+  `intersect` parameter `geometry` as a bare Esri polygon. The service answers HTTP 200 with
+  `{"error":{"code":400,"message":"Unable to complete operation.","details":["Syntax error in JSON
+  geometry representation"]}}` for every parcel. It needs `{"geometryType":"esriGeometryPolygon",
+  "geometry":{"rings":...}}`. The code caught the error and returned `coveragePct: null,
+  wetlandAcres: null, coverageMethod: 'NWI intersection presence only'` every time.
+- **The page turned null into 0%.** `public/screening-refinements.js` `number(null)` is
+  `Number(null)` = 0, so the score card showed "Mapped wetlands: 0.0% of parcel · 0.00 ac" and
+  scored the factor as under 5% (90), next to the overview's "Mapped wetlands present". The
+  validation tool's `round(null)` also printed `coveragePct: 0`.
+- **Live numbers with the clip request fixed** (checked by hand with an independent 400x400 grid
+  point-in-polygon estimate, which agreed to within 0.01 ac):
+
+  | Parcel | Mapped parcel | NWI features | Overlap | Before (page) | After |
+  |---|---|---|---|---|---|
+  | 47N03W052200 | 1.98 ac | 3 Riverine (R4SBC, R5UBH x2) | 0.221 ac, 11.2% (0.208 + 0.013 + a 1 sq m sliver) | present + "0.0% · 0.00 ac", factor 90 | present, "11.2% of parcel · 0.22 ac", factor 80 |
+  | 015270010070 | 9.99 ac | 1 Riverine (R4SBA) | 0.473 ac, 4.7% | present + "0.0% · 0.00 ac", factor 90 | present, "4.7% of parcel · 0.47 ac", factor 90 |
+
+  Both parcels really do have mapped wetland on them. The label was right and the coverage was
+  wrong. Five other validation parcels also measure as present (47N02W035500 70.5%,
+  48N03W312100 64.5%, 49N03W324950 2.3%, 47N02W040800 3.4% on a 4-part MultiPolygon via POST)
+  and 0L8210010030 as none.
+- 47N03W052200's county `Acres` is 2.888, but its mapped polygon is 1.98 ac (two independent
+  area methods agree). Coverage uses the mapped polygon.
+- **New rule (wetlands `category`):** present = overlap >= 0.05 ac, or >= 0.5% of the parcel and
+  >= 0.01 ac. Nearby = NWI polygon touches the parcel with less overlap than that (boundary
+  slivers; NWI is mapped at about 1:24,000). None = no NWI polygon intersects. Unmeasured = the
+  clip failed after a retry (amber, 55, never cached). Polygons near the parcel but not
+  touching it are not queried. A buffered query (`distance`, which NWI layer 0 supports) would be
+  a separate change.
+- NWI layer 0 is ArcGIS 11.5, `maxRecordCount` 500, `supportsQueryWithDistance` true, and
+  accepts POST queries. The GeometryServer accepts counter-clockwise (GeoJSON) parcel rings, but
+  the service now sends Esri orientation anyway.
 
 ## 2026-10-27: terrain, slope grid and tree canopy now use batched getSamples
 

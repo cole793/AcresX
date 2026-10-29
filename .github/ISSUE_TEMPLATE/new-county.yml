@@ -1,0 +1,61 @@
+name: New county
+description: Add a county to AcresX, or bring an existing one up to realtor-ready (level 3)
+title: "County: <name>, <state>"
+labels: [county]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Follows [COUNTY_CHECKLIST.md](../blob/main/COUNTY_CHECKLIST.md), modeled on Spokane and Kootenai.
+        Tick items as they're done. The agents record sources and findings in `handoff/findings.md`.
+  - type: input
+    id: county
+    attributes:
+      label: County and state
+      placeholder: "Bonner County, ID"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this county?
+      description: Realtors asking for it, listings there, priority list, etc.
+  - type: textarea
+    id: parcels
+    attributes:
+      label: Known parcels to test (optional)
+      description: Parcel numbers realtors have used, especially ones where results looked wrong.
+  - type: checkboxes
+    id: sources
+    attributes:
+      label: 1. Source inventory
+      options:
+        - label: Parcel outlines and ID formats (statewide layer confirmed to contain this county, or county layer used)
+        - label: Assessor values and property class
+        - label: County zoning layer
+        - label: City limits / jurisdiction layer
+        - label: City zoning for each incorporated city (or "city zoning applies" with a link)
+        - label: Impact areas / growth boundary (if any), with the code section on which zoning applies
+        - label: Zoning code document and use table
+        - label: Wells, utilities and power providers
+        - label: Personal fields identified and excluded
+  - type: checkboxes
+    id: build
+    attributes:
+      label: 2-6. Build
+      options:
+        - label: Parcel lookup (ID formats, outlines, acres mapped vs assessor)
+        - label: Assessor values plus property class labeled "tax category, not zoning"
+        - label: Zoning by jurisdiction; whole-parcel lookup; every zone label mapped to rules
+        - label: Flood, wetlands, soil, terrain, wells and power checked for this county
+        - label: Adapter, offline tests with recorded fixtures, coverage config entry
+  - type: checkboxes
+    id: validate
+    attributes:
+      label: 7. Validation and sign-off
+      options:
+        - label: ~12 discovered parcels saved, with expected values for at least 3 checked on the county site
+        - label: Two consecutive live runs with no errors or mismatches
+        - label: Daily check running
+        - label: Owner compared at least 2 parcels on the preview with the county's own site
+        - label: Level and lastValidated updated in county-coverage.js
