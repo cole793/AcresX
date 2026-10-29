@@ -247,15 +247,30 @@ test('per-host cap: never more than 4 requests in flight to one host', async () 
   assert.equal(inFlight('a.example.gov'), 0);
 });
 
-test('per-host cap: requests wait in order, and the wait counts toward the timeout', async () => {
+test('per-host cap: requests wait in order; the timeout starts when sent, the wait has its own budget', async () => {
   const order = [];
   stubFetch(async url => { order.push(Number(url.split('/').pop().split('?')[0])); await sleep(60); return jsonResponse({}); });
   const results = await Promise.allSettled(Array.from({ length: 6 }, (_, i) => upstreamJson(`https://c.example.gov/x/${i}`, { timeoutMs: 90, retries: 0, maxPerHost: 2 })));
   assert.deepEqual(order.slice(0, 2), [0, 1]);
-  // 0,1 answer at ~60 ms; 2,3 start then and would answer at ~120 ms > 90 ms; 4,5 never start.
-  assert.deepEqual(results.map(r => r.status), ['fulfilled', 'fulfilled', 'rejected', 'rejected', 'rejected', 'rejected']);
-  assert.ok(results.slice(2).every(r => r.reason.kind === 'timeout'));
-  assert.ok(!order.includes(4) && !order.includes(5), 'requests that timed out while waiting were never sent');
+  // 0,1 answer at ~60 ms; 2,3 get a slot then and answer at ~120 ms (60 ms after they were sent,
+  // inside their 90 ms timeout); 4,5 would get a slot at ~120 ms, past their 90 ms queue budget.
+  assert.deepEqual(results.map(r => r.status), ['fulfilled', 'fulfilled', 'fulfilled', 'fulfilled', 'rejected', 'rejected']);
+  assert.ok(results.slice(4).every(r => r.reason.kind === 'timeout' && r.reason.queued === true));
+  assert.match(results[4].reason.message, /waiting for a free connection/);
+  assert.ok(!order.includes(4) && !order.includes(5), 'requests that ran out of queue budget were never sent');
+});
+
+test('per-host cap: a slot that never frees fails the waiter after queueTimeoutMs, not never', async () => {
+  stubFetch(() => new Promise(() => {}));
+  const holders = Array.from({ length: 2 }, (_, i) => upstreamJson(`https://d.example.gov/h/${i}`, { timeoutMs: 400, retries: 0, maxPerHost: 2 }));
+  holders.forEach(p => p.catch(() => {}));
+  const started = Date.now();
+  const waiter = await upstreamJson('https://d.example.gov/w', { timeoutMs: 400, queueTimeoutMs: 50, retries: 0, maxPerHost: 2 }).catch(e => e);
+  const elapsed = Date.now() - started;
+  assert.equal(waiter.kind, 'timeout'); assert.equal(waiter.queued, true);
+  assert.ok(elapsed < 300, `failed after ${elapsed} ms`);
+  assert.equal(calls.length, 2, 'the waiter was never sent');
+  await Promise.allSettled(holders);
 });
 
 // ---- logging

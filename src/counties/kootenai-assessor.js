@@ -13,8 +13,10 @@
 //
 // Requests go through the shared client (src/shared/upstream.js) with the first-hit cancel
 // signal: at most 4 run against map.kcgov.us at once (the per-host cap; the rest wait, and are
-// never sent once a hit cancels them), one attempt each, 10 s each including the wait and the
-// body. Found records are cached per PIN for 7 days (Cache API); misses and errors are not.
+// never sent once a hit cancels them), one attempt each. Each layer's 10 s timeout starts when
+// it is sent and covers the body; the wait for a slot has its own 10 s budget, so a layer queued
+// behind slow ones still gets its full 10 s (a 6 s server finds a PIN in layer 11 at ~12 s).
+// The cap stays at 4 on purpose: 7 assessor queries at once is what this cap was added for. Found records are cached per PIN for 7 days (Cache API); misses and errors are not.
 import { arcgisQuery, cachedJson } from '../shared/upstream.js';
 
 export const KC_ASSESSOR = 'https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer';
@@ -27,6 +29,8 @@ export const KC_ASSESSOR_FIELDS = [
   'AssessValue_Date', 'AssessValue_Land', 'AssessValue_Imp', 'AssessValue_Net', 'HO_Exemption', 'PclArea_Acres'
 ].join(',');
 const TIMEOUT_MS = 10000;
+// The cached value is the mapped record (named non-personal fields only). Bump the version in
+// the prefix whenever KC_ASSESSOR_FIELDS or the record mapping changes.
 export const KC_ASSESSOR_CACHE_PREFIX = 'https://acresx.internal/cache/kootenai-assessor/v1/';
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -41,8 +45,8 @@ export function kootenaiAssessorWhere(parcelId) {
   return `PIN='${id}' OR PID='${id}'`;
 }
 
-// One layer query. It stops at TIMEOUT_MS (including the wait for a host slot and reading the
-// body) or as soon as `cancel` aborts, which getKootenaiAssessment() does once another layer has
+// One layer query. It stops TIMEOUT_MS after it is sent (reading the body included), after
+// TIMEOUT_MS waiting for a host slot without being sent, or as soon as `cancel` aborts, which getKootenaiAssessment() does once another layer has
 // found the record.
 function queryLayer(layerId, where, cancel) {
   return arcgisQuery(`${KC_ASSESSOR}/${layerId}`, { where, outFields: KC_ASSESSOR_FIELDS, returnGeometry: 'false' }, {
