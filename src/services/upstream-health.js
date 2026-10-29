@@ -5,7 +5,7 @@
 // <server>/rest/info?f=json (a few hundred bytes); USDA SDA gets a one-row catalog query; EPQS one
 // point. No secrets, no writes, no owner data. Answer:
 //   { checkedAt, results: [{ host, name, ok, status, ms, error }] }   (Cache-Control: no-store)
-// Cheap enough to call by hand; the app does not call it.
+// Cheap enough to call by hand; the app does not call it. Answers are reused for 60 s (below).
 import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
 
@@ -66,6 +66,20 @@ export async function checkUpstreamHealth(targets = HEALTH_TARGETS, timeoutMs = 
   return { checkedAt, results };
 }
 
+// The route is public, so one answer is reused for HEALTH_MEMO_MS within an isolate (concurrent
+// hits share the run in progress): repeated GETs do not fan out 21 requests to government
+// servers each time. checkedAt says how old the answer is.
+export const HEALTH_MEMO_MS = 60000;
+let memo = null; // { startedAt, promise }
+
+export function resetUpstreamHealthMemo() { memo = null; }
+
 export async function handleUpstreamHealth() {
-  return json(await checkUpstreamHealth(), 200, 'no-store');
+  const now = Date.now();
+  if (!memo || now - memo.startedAt >= HEALTH_MEMO_MS) {
+    const promise = checkUpstreamHealth();
+    memo = { startedAt: now, promise };
+    promise.catch(() => { if (memo?.promise === promise) memo = null; });
+  }
+  return json(await memo.promise, 200, 'no-store');
 }

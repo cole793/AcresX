@@ -8,8 +8,11 @@
 //   cachedJson(prefix, key, ttl, produce, { isValid }) -> Cache API wrapper, validated answers only
 //
 // Rules every request follows:
-// - The timeout covers the wait for a host slot, the headers AND the body. (The old
-//   fetchWithTimeout cleared its timer when headers arrived, so a slow body was unbounded.)
+// - The timeout starts when the request is sent and covers the headers AND the body. (The old
+//   fetchWithTimeout cleared its timer when headers arrived, so a slow body was unbounded.) The
+//   wait for a host slot before that has its own budget, queueTimeoutMs (default: timeoutMs), so
+//   a request queued behind slow ones still gets its full timeout once sent, and a slot that
+//   never frees still fails in finite time (kind 'timeout', never sent).
 // - No `cf` edge caching. ArcGIS servers send errors as HTTP 200 bodies, and `cf.cacheEverything`
 //   kept those errors as successes for up to 24 h. Any `cf` passed in is dropped. Validated answers
 //   can be cached with cachedJson() (Cache API, src/shared/edge-cache.js).
@@ -105,7 +108,9 @@ function prune(state, now) {
 
 // Resolves a release function once fewer than `cap` requests to `host` are in flight. FIFO among
 // waiters. Rejects when `signal` aborts (timeout or caller cancel).
-async function acquireSlot(host, cap, expiresAt, signal) {
+// The ticket expires at `expiresAt` (the end of the queue budget); a slot taken expires
+// slotMs + 1 s after it was taken (the request's own timeout plus slack).
+async function acquireSlot(host, cap, expiresAt, slotMs, signal) {
   const state = hostState(host);
   const ticket = { expiresAt };
   state.queue.push(ticket);
@@ -116,7 +121,7 @@ async function acquireSlot(host, cap, expiresAt, signal) {
       if (!state.queue.includes(ticket)) state.queue.push(ticket);
       const position = state.queue.indexOf(ticket);
       if (state.active.size + position < cap) {
-        const slot = { expiresAt: expiresAt + 1000 };
+        const slot = { expiresAt: Date.now() + slotMs + 1000 };
         state.active.add(slot);
         return () => state.active.delete(slot);
       }
@@ -156,23 +161,27 @@ function quiet(fn) {
 const NULL_BODY_STATUS = new Set([101, 204, 205, 304]);
 
 // Returns { status, statusText, headers, buffer } or throws UpstreamError (timeout | network | cancelled).
-async function attemptOnce(url, init, { host, label, agency, timeoutMs, signal, maxPerHost, attempt }) {
+async function attemptOnce(url, init, { host, label, agency, timeoutMs, queueTimeoutMs = timeoutMs, signal, maxPerHost, attempt }) {
   const controller = new AbortController();
-  let timedOut = false;
-  const timer = setTimeout(() => { timedOut = true; controller.abort(new Error('timeout')); }, timeoutMs);
+  let timedOut = false, queuedOut = false;
+  // First the queue budget (waiting for a host slot), then, once a slot is held, the request timeout.
+  let timer = setTimeout(() => { queuedOut = true; controller.abort(new Error('queue timeout')); }, queueTimeoutMs);
   const onCancel = () => controller.abort(new Error('cancelled'));
   if (signal) { if (signal.aborted) onCancel(); else signal.addEventListener('abort', onCancel, { once: true }); }
   const aborted = rejectOnAbort(controller.signal);
   aborted.catch(() => {});
   let release = null;
   try {
-    release = await Promise.race([quiet(() => acquireSlot(host, maxPerHost, Date.now() + timeoutMs, controller.signal)), aborted]);
+    release = await Promise.race([quiet(() => acquireSlot(host, maxPerHost, Date.now() + queueTimeoutMs, timeoutMs, controller.signal)), aborted]);
+    clearTimeout(timer);
+    timer = setTimeout(() => { timedOut = true; controller.abort(new Error('timeout')); }, timeoutMs);
     const { cf, ...rest } = init || {};
     const response = await Promise.race([quiet(() => fetch(url, { ...rest, signal: controller.signal })), aborted]);
     const buffer = await Promise.race([quiet(() => response.arrayBuffer()), aborted]);
     return { status: response.status, statusText: response.statusText, headers: response.headers, buffer };
   } catch (error) {
     const fields = { host, label, attempt, cause: error };
+    if (queuedOut) throw new UpstreamError(`${agency} timed out after ${Math.round(queueTimeoutMs / 100) / 10}s waiting for a free connection`, { ...fields, kind: 'timeout', queued: true, retryable: true });
     if (timedOut) throw new UpstreamError(`${agency} timed out after ${Math.round(timeoutMs / 100) / 10}s`, { ...fields, kind: 'timeout', retryable: true });
     if (signal?.aborted) throw new UpstreamError(`${agency} request cancelled`, { ...fields, kind: 'cancelled', retryable: false });
     if (error?.name === 'AbortError' || error?.name === 'TimeoutError') throw new UpstreamError(`${agency} timed out`, { ...fields, kind: 'timeout', retryable: true });
@@ -256,7 +265,7 @@ function interpret(raw, { agency, arcgis, arcgisMessage, validate, fields }) {
 
 // Fetches JSON with the shared rules. Options:
 //   method, params (object; appended to the URL, or the form body for POST), body (raw), headers,
-//   timeoutMs, retries (default 1), retryTimeoutMs (later attempts; default timeoutMs), backoffMs,
+//   timeoutMs (from send), queueTimeoutMs (host-slot wait; default timeoutMs), retries (default 1), retryTimeoutMs (later attempts; default timeoutMs), backoffMs,
 //   retryOn (fn(error) -> bool, or kinds like ['timeout', 'network', '5xx', 'json', 'arcgis']),
 //   label (log name), agency (error-message prefix), signal (caller cancel), arcgis (treat
 //   {error} bodies as errors), arcgisMessage, validate (fn(data) throws to reject), maxPerHost,
@@ -264,7 +273,7 @@ function interpret(raw, { agency, arcgis, arcgisMessage, validate, fields }) {
 export async function upstreamJson(url, opts = {}) {
   const {
     timeoutMs = settings.timeoutMs, retries = settings.retries, retryTimeoutMs = timeoutMs, backoffMs = settings.backoffMs,
-    retryOn, signal, arcgis = false, arcgisMessage, validate, maxPerHost = settings.maxPerHost
+    retryOn, signal, arcgis = false, arcgisMessage, validate, maxPerHost = settings.maxPerHost, queueTimeoutMs
   } = opts;
   const request = buildUpstreamRequest(url, opts);
   const host = hostOf(request.url);
@@ -275,7 +284,7 @@ export async function upstreamJson(url, opts = {}) {
     const fields = { host, label, attempt };
     let status = null;
     try {
-      const raw = await attemptOnce(request.url, request.init, { host, label, agency, timeoutMs: attempt === 1 ? timeoutMs : retryTimeoutMs, signal, maxPerHost, attempt });
+      const raw = await attemptOnce(request.url, request.init, { host, label, agency, timeoutMs: attempt === 1 ? timeoutMs : retryTimeoutMs, queueTimeoutMs, signal, maxPerHost, attempt });
       status = raw.status;
       const data = interpret(raw, { agency, arcgis, arcgisMessage, validate, fields });
       logAttempt({ host, label, status, started, ok: true, attempt });
@@ -311,14 +320,14 @@ export function arcgisJson(url, params = {}, opts = {}) {
 // (what callers of the old fetchWithTimeout check for); a network error rejects with the
 // original error.
 export async function upstreamFetch(input, opts = {}) {
-  const { timeoutMs = settings.timeoutMs, signal, maxPerHost = settings.maxPerHost, cf, label: labelOpt, agency: agencyOpt, ...init } = opts;
+  const { timeoutMs = settings.timeoutMs, queueTimeoutMs, signal, maxPerHost = settings.maxPerHost, cf, label: labelOpt, agency: agencyOpt, ...init } = opts;
   const url = String(input instanceof Request ? input.url : input);
   const host = hostOf(url);
   const label = labelOpt || pathLabel(url);
   const agency = agencyOpt || host;
   const started = Date.now();
   try {
-    const raw = await attemptOnce(input instanceof Request ? input : url, init, { host, label, agency, timeoutMs, signal, maxPerHost, attempt: 1 });
+    const raw = await attemptOnce(input instanceof Request ? input : url, init, { host, label, agency, timeoutMs, queueTimeoutMs, signal, maxPerHost, attempt: 1 });
     logAttempt({ host, label, status: raw.status, started, ok: raw.status >= 200 && raw.status <= 299, attempt: 1, err: raw.status >= 200 && raw.status <= 299 ? null : `http: ${raw.status}` });
     const headers = new Headers(raw.headers);
     headers.delete('Content-Encoding');

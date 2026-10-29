@@ -1,8 +1,12 @@
 import { cachedJson, upstreamJson } from '../shared/upstream.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
 
 // The zoning-layer answer for a parcel center is cached for a day (Cache API) when the query
 // succeeded; errors are never cached.
-export const GALLATIN_CACHE_PREFIX = 'https://acresx.internal/cache/gallatin-zoning/v1/';
+// Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
+// stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
+// prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
+export const GALLATIN_CACHE_PREFIX = 'https://acresx.internal/cache/gallatin-zoning/v2/';
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 // Official Gallatin County zoning service. Layer 42 contains the county zoning
@@ -50,7 +54,7 @@ export async function getGallatinCountyIntelligence(body) {
   const lon = Number(body.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Gallatin zoning requires parcel coordinates.');
 
-  const features = await cachedJson(GALLATIN_CACHE_PREFIX, { lon, lat }, CACHE_TTL_SECONDS, () => queryPoint(lon, lat), { isValid: Array.isArray });
+  const features = await cachedJson(GALLATIN_CACHE_PREFIX, { lon, lat }, CACHE_TTL_SECONDS, async () => withoutPersonalFields(await queryPoint(lon, lat)), { isValid: Array.isArray });
   if (!features.length) {
     return {
       available: true,

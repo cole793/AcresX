@@ -20,7 +20,9 @@ export const KC_PARCEL_SEARCH_FIELDS = 'PIN,PID,Acres,Loc_Addr,Loc_City';
 // One 10 s attempt (body included), no retry: the statewide and IDWR layers behind it are the
 // retry. Answers that found rows are cached 7 days (Cache API); empty answers and errors are not.
 const TIMEOUT_MS = 10000;
-export const KC_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/kootenai-parcels/v1/';
+// Bump the version in the prefix whenever KC_PARCEL_SEARCH_FIELDS changes, so no entry in the
+// old shape survives. (No owner fields are requested, so none can be stored.)
+export const KC_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/kootenai-parcels/v2/';
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function sql(value) { return String(value ?? '').replaceAll("'", "''"); }

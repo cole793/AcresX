@@ -11,7 +11,18 @@ Owner-approved 2026-10-28 (backend cleanup step 2, branch `claude/shared-upstrea
   keep an error as a success for up to 24 h. `src/shared/upstream.js` drops any `cf` option.
   Validated answers are cached with `cachedJson()` (Cache API) instead.
 - **Slow bodies were unbounded.** The old `fetchWithTimeout` cleared its timer when headers
-  arrived. The shared client's timeout covers the host-slot wait, headers and body.
+  arrived. The shared client's timeout covers headers and body. (Verifier, 2026-10-29: it first
+  also covered the host-slot wait, so with map.kcgov.us answering in 6 s, assessor layers 9-11
+  queued behind 5-8 timed out at 10 s where main found the PIN in 6 s. The timeout now starts at
+  send; the slot wait has its own budget, `queueTimeoutMs`, default the timeout. With the cap
+  kept at 4 that case finds the PIN at ~12 s.)
+- **No owner data in the Cache API** (verifier, 2026-10-29). Layers read with outFields '*' carry
+  owner/mailing fields. Cached values are stripped with `src/shared/personal-fields.js` first
+  (Spokane, Yellowstone, Gallatin, Kootenai's statewide/IDWR fallbacks); Idaho statewide outside
+  Kootenai and Montana/Yellowstone parcels are not cached, because their /api/parcel-search answer
+  still returns owner fields (owner decision pending). Prefixes bumped to v2.
+- **/api/upstream-health is memoized 60 s per isolate**, so repeated public GETs do not each send
+  21 requests to government servers.
 - **Per-host cap (4 in flight).** One Kootenai search sent ~13 requests to map.kcgov.us, 7 of them
   at once (assessor layers). Hypothesis (not proven): county firewalls throttle Cloudflare; on
   2026-10-28 map.kcgov.us, gis.idwr.idaho.gov and gis.stevenscountywa.gov timed out (10-40 s)

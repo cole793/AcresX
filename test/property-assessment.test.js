@@ -1,6 +1,6 @@
 // Offline tests for /api/property-assessment (src/services/property-tax-test.js).
 // Network is stubbed: upstream county/state answers are canned objects or recorded fixtures.
-import { test, beforeEach, afterEach } from 'node:test';
+import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import worker from '../src/index.js';
@@ -20,7 +20,7 @@ function stubFetch(handler) {
   };
 }
 beforeEach(() => { requested = []; globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; });
-afterEach(() => { globalThis.fetch = realFetch; });
+afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 
 const arcgisJson = body => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
 const features = list => arcgisJson({ features: list.map(attributes => ({ attributes })) });
@@ -191,6 +191,29 @@ test('kootenai assessment: the first hit answers at once and the other layer req
   assert.equal(signals[7].aborted, true, 'the hanging layer request was aborted');
   assert.equal(signals[9], undefined, 'a layer waiting behind the cap is not sent after the hit');
   assert.equal(signals[6].aborted, true, 'other pending layer requests were aborted');
+});
+
+test('kootenai assessment: a slow host with the hit in a layer queued behind the cap still finds it', async () => {
+  // Every layer answers in 6 s; the PIN is in layer 11, which waits for a slot behind 5-8. The
+  // 10 s timeout starts when a layer is sent, so 11 (sent at ~6 s) answers at ~12 s.
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const sent = {};
+  stubFetch(kootenaiUpstream({ hitLayer: -1, other: url => new Promise(resolve => {
+    sent[layerOf(url)] = Date.now();
+    setTimeout(() => resolve(arcgisJson(layerOf(url) === 11 ? recorded.hit : recorded.miss)), 6000);
+  }) }));
+  const started = Date.now();
+  let result = null;
+  const pending = getKootenaiAssessment('47N03W052200').then(value => { result = value; });
+  for (let ms = 0; ms < 20000 && !result; ms += 10) {
+    mock.timers.tick(10);
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setImmediate(resolve));
+  }
+  await pending;
+  assert.equal(result.status, 'found');
+  assert.equal(result.record.layerId, 11);
+  assert.ok(sent[11] - started >= 6000, 'layer 11 waited for a slot');
+  assert.ok(Date.now() - started < 13000, `found at ${Date.now() - started} ms`);
 });
 
 test('kootenai assessment: with no hit, a hanging-then-failing layer still makes it an error, not not-found', async () => {
