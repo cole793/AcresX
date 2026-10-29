@@ -2,7 +2,7 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { configureUpstream } from '../src/shared/upstream.js';
-import { checkUpstreamHealth, HEALTH_TARGETS, HEALTH_TIMEOUT_MS } from '../src/services/upstream-health.js';
+import { checkUpstreamHealth, HEALTH_TARGETS, HEALTH_TIMEOUT_MS, HEALTH_MEMO_MS, resetUpstreamHealthMemo } from '../src/services/upstream-health.js';
 import worker from '../src/index.js';
 
 const realFetch = globalThis.fetch;
@@ -15,7 +15,7 @@ function stubFetch(handler) {
     return handler(url, init, calls.length);
   };
 }
-beforeEach(() => { calls = []; restoreSettings = configureUpstream({ log: () => {} }); });
+beforeEach(() => { calls = []; resetUpstreamHealthMemo(); restoreSettings = configureUpstream({ log: () => {} }); });
 afterEach(() => { restoreSettings(); globalThis.fetch = realFetch; mock.timers.reset(); });
 const jsonResponse = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -71,4 +71,18 @@ test('upstream health: a hanging host is reported as a timeout at 10 s and does 
   assert.match(kc.error, /^timeout: /);
   assert.equal(kc.ms, 10000);
   assert.ok(settled.results.filter(r => r.host !== 'map.kcgov.us').every(r => r.ok));
+});
+
+test('upstream health: repeated GETs within 60 s reuse one answer instead of probing again', async () => {
+  assert.equal(HEALTH_MEMO_MS, 60000);
+  mock.timers.enable({ apis: ['Date'] });
+  stubFetch(() => jsonResponse({ currentVersion: 11 }));
+  const get = async () => (await worker.fetch(new Request('https://acresx.test/api/upstream-health'), { ASSETS: { fetch: async () => new Response('') } }, { waitUntil() {} })).json();
+  const [a, b] = await Promise.all([get(), get()]);
+  const c = await get();
+  assert.equal(calls.length, HEALTH_TARGETS.length, 'one probe per target for three GETs');
+  assert.deepEqual(b, a); assert.deepEqual(c, a);
+  mock.timers.tick(HEALTH_MEMO_MS);
+  await get();
+  assert.equal(calls.length, 2 * HEALTH_TARGETS.length, 'probes again after 60 s');
 });
