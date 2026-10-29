@@ -1,24 +1,24 @@
 # County validation: Kootenai, ID
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-10-28T18:54:21.302Z
-- Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 137, unavailable 31, error 0, mismatch 0, skipped 0
+- Run: 2026-10-29T18:59:04.842Z
+- Parcels: 12, with an error or mismatch: 3
+- Layer results: ok 106, unavailable 20, error 3, mismatch 0, skipped 39
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 0L8210010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 015270010070 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| C72150030040 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
+| C72150030040 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 47N02W035500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48N03W312100 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
+| 48N03W312100 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 0K245001002B | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 49N03W324950 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 007740020050 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 0K2660010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0153400A001A | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 47N02W040800 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| C72150040140 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
+| 0153400A001A | error | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
+| 47N02W040800 | error | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
+| C72150040140 | error | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
 
 ## Parcel details
 
@@ -26,7 +26,7 @@
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | other/blank locality"; first in locality (blank). Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 0L8210010030 [parcelId=0L8210010030, lat=47.865654, lon=-116.819488]
+- **Parcel**: ok. parcel 0L8210010030, 4.79 ac [parcelId=0L8210010030, acres=4.79, lat=47.865654, lon=-116.819488]
 - **Wells**: ok. 137 well record(s), 5 of nearest 5 report depth [wellCount=137, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=360]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
@@ -45,13 +45,13 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | 
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac | city-named locality"; first in locality WORLEY. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 015270010070 [parcelId=015270010070, lat=47.430694, lon=-116.844376]
+- **Parcel**: ok. parcel 015270010070, 10.01 ac [parcelId=015270010070, acres=10.01, address=26402 S FARUP RD, WORLEY, lat=47.430694, lon=-116.844376]
 - **Wells**: ok. 39 well record(s), 5 of nearest 5 report depth [wellCount=39, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=360]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Santa ashy silt loam, 15 to 35 percent slopes) [feasibility=limited, mapUnit=Santa ashy silt loam, 15 to 35 percent slopes, hydrologicGroup=C/D, drainage=Moderately well drained, soilSlopePct=16]
 - **Terrain**: ok. avg grade 13.1%, max 28.1% [gradePct=13.1, maxGradePct=28.1, reliefFt=95, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 22.9% [cellCount=16, avgSlopePct=22.9, maxSlopePct=37.5, partial=false]
-- **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=4.7]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
@@ -64,18 +64,18 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac |
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 ac | city-named locality"; first in locality COEUR D ALENE. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel C72150030040 [parcelId=C72150030040, lat=47.724453, lon=-116.803995]
+- **Parcel**: ok. parcel C72150030040, 0.27 ac [parcelId=C72150030040, acres=0.27, address=5811 N CHRISTOPHER DR, COEUR D ALENE, lat=47.724453, lon=-116.803995]
 - **Wells**: ok. 53 well record(s), 5 of nearest 5 report depth [wellCount=53, nearestDepthsCount=5, nearestMi=0.74, medianDepthFt=330]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McGuire-Marble association, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=McGuire-Marble association, 0 to 7 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: ok. avg grade 3.8%, max 7.9% [gradePct=3.8, maxGradePct=7.9, reliefFt=7, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.5% [cellCount=16, avgSlopePct=5.5, maxSlopePct=14.6, partial=false]
+- **Terrain**: ok. avg grade 4%, max 7.6% [gradePct=4, maxGradePct=7.6, reliefFt=7, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 5.5% [cellCount=16, avgSlopePct=5.5, maxSlopePct=12.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
-- **Zoning**: unavailable. No mapped zoning result found [jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable]
-- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
+- **Zoning**: ok. R-12 (City of Coeur d'Alene) [code=R-12, jurisdiction=City of Coeur d'Alene, countyStatus=kootenai-city-zoning-v1, zoningStatus=gis_match, allowedBuildings=not_mapped, permitHistoryStatus=unavailable]
+- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $496,440, class 541 Imp res lot/tract in city, no tax amount [assessedValue=496440, landValue=195000, improvementValue=301440, taxPresent=false, netValue=371440, homeownerExemption=125000, taxYear=2026, propertyClass=541, propertyClassDescription=Imp res lot/tract in city, source=Kootenai County Assessor (Assessor_Layers)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
@@ -83,7 +83,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 a
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | other/blank locality"; first in locality MEDIMONT. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 47N02W035500 [parcelId=47N02W035500, lat=47.453302, lon=-116.577746]
+- **Parcel**: ok. parcel 47N02W035500, 51.64 ac [parcelId=47N02W035500, acres=51.64, address=15047 E CAMERON RD, MEDIMONT, lat=47.453302, lon=-116.577746]
 - **Wells**: ok. 40 well record(s), 5 of nearest 5 report depth [wellCount=40, nearestDepthsCount=5, nearestMi=0.06, medianDepthFt=262]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Cougarbay silt loam) [feasibility=limited, mapUnit=Cougarbay silt loam, hydrologicGroup=D, drainage=Very poorly drained, soilSlopePct=1]
@@ -102,7 +102,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | 
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | city-named locality"; first in locality HARRISON. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 48N03W312100 [parcelId=48N03W312100, lat=47.462958, lon=-116.763586]
+- **Parcel**: ok. parcel 48N03W312100, 65.33 ac [parcelId=48N03W312100, acres=65.33, address=1561 E BELL CANYON RD, HARRISON, lat=47.462958, lon=-116.763586]
 - **Wells**: ok. 40 well record(s), 5 of nearest 5 report depth [wellCount=40, nearestDepthsCount=5, nearestMi=0.33, medianDepthFt=280]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Aeric Fluvaquents-Typic Fluvaquents-Typic Haplosaprist association, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Aeric Fluvaquents-Typic Fluvaquents-Typic Haplosaprist association, 0 to 1 percent slopes, hydrologicGroup=B/D, drainage=Very poorly drained, soilSlopePct=0]
@@ -112,8 +112,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | 
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=64.5]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
-- **Zoning**: unavailable. No mapped zoning result found [jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable]
-- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
+- **Zoning**: ok. AGRICULTURE (Kootenai County) [code=AGRICULTURE, jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=gis_match, allowedBuildings=mapped_from_county_code, permitHistoryStatus=unavailable]
+- **Zoning rules**: ok. A: Resource Lands (7 uses) [code=A, family=Resource Lands, useCount=7]
 - **Assessment**: ok. assessed $677,433, class 534 Imp res rural tract, no tax amount [assessedValue=677433, landValue=388853, improvementValue=288580, taxPresent=false, netValue=585993, homeownerExemption=0, taxYear=2026, propertyClass=534, propertyClassDescription=Imp res rural tract, source=Kootenai County Assessor (Assessor_Layers)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
@@ -121,7 +121,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | 
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | city-named locality"; first in locality RATHDRUM. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 0K245001002B [parcelId=0K245001002B, lat=47.874046, lon=-116.855048]
+- **Parcel**: ok. parcel 0K245001002B, 1.62 ac [parcelId=0K245001002B, acres=1.62, address=22311 N BIRDSONG LN, RATHDRUM, lat=47.874046, lon=-116.855048]
 - **Wells**: ok. 81 well record(s), 5 of nearest 5 report depth [wellCount=81, nearestDepthsCount=5, nearestMi=0.24, medianDepthFt=540]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
@@ -140,7 +140,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | 
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac | other/blank locality". Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 49N03W324950 [parcelId=49N03W324950, lat=47.545631, lon=-116.757814]
+- **Parcel**: ok. parcel 49N03W324950, 10 ac [parcelId=49N03W324950, acres=10, address=178640 UNKNOWN, lat=47.545631, lon=-116.757814]
 - **Wells**: ok. 105 well record(s), 5 of nearest 5 report depth [wellCount=105, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=405]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Blinn loam, 35 to 65 percent slopes, very stony) [feasibility=limited, mapUnit=Blinn loam, 35 to 65 percent slopes, very stony, hydrologicGroup=C, drainage=Well drained, soilSlopePct=50]
@@ -159,7 +159,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac |
 
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 ac | other/blank locality". Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 007740020050 [parcelId=007740020050, lat=47.518447, lon=-116.870854]
+- **Parcel**: ok. parcel 007740020050, 0.58 ac [parcelId=007740020050, acres=0.58, lat=47.518447, lon=-116.870854]
 - **Wells**: ok. 154 well record(s), 5 of nearest 5 report depth [wellCount=154, nearestDepthsCount=5, nearestMi=0.42, medianDepthFt=563]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Taney silt loam, 7 to 25 percent slopes) [feasibility=limited, mapUnit=Taney silt loam, 7 to 25 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=16]
@@ -178,7 +178,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 a
 
 Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ATHOL. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 0K2660010030 [parcelId=0K2660010030, lat=47.905682, lon=-116.770423]
+- **Parcel**: ok. parcel 0K2660010030, 4.95 ac [parcelId=0K2660010030, acres=4.95, address=25754 N CLASSIC DR, ATHOL, lat=47.905682, lon=-116.770423]
 - **Wells**: ok. 86 well record(s), 5 of nearest 5 report depth [wellCount=86, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=460]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
@@ -197,57 +197,57 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ATHOL. 
 
 Why: Picked by discovery run 40391761739 (2026-10-26): first in locality POST FALLS. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 0153400A001A [parcelId=0153400A001A, lat=47.745887, lon=-116.866026]
-- **Wells**: ok. 73 well record(s), 5 of nearest 5 report depth [wellCount=73, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=304]
-- **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: ok. favorable (Avonville fine gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Avonville fine gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
-- **Terrain**: ok. avg grade 0.8%, max 1.1% [gradePct=0.8, maxGradePct=1.1, reliefFt=8, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=3, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
-- **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
-- **Power**: ok. AVISTA CORP [provider=AVISTA CORP, confidence=low, distributionStatus=not_publicly_mapped]
-- **Zoning**: ok. AGRICULTURE (Kootenai County) [code=AGRICULTURE, jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=gis_match, allowedBuildings=mapped_from_county_code, permitHistoryStatus=unavailable]
-- **Zoning rules**: ok. A: Resource Lands (7 uses) [code=A, family=Resource Lands, useCount=7]
-- **Assessment**: ok. assessed $5,825,620, class 438 Com Imp rural subdiv, no tax amount [assessedValue=5825620, landValue=1919779, improvementValue=3905841, taxPresent=false, netValue=5825620, homeownerExemption=0, taxYear=2026, propertyClass=438, propertyClassDescription=Com Imp rural subdiv, source=Kootenai County Assessor (Assessor_Layers)]
-- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
+- **Parcel**: error. timeout after 30s
+- **Wells**: skipped. parcel lookup failed
+- **Existing well**: skipped. parcel lookup failed
+- **Soil**: skipped. parcel lookup failed
+- **Terrain**: skipped. parcel lookup failed
+- **Slope grid**: skipped. parcel lookup failed
+- **Flood**: skipped. parcel lookup failed
+- **Wetlands**: skipped. parcel lookup failed
+- **Utility**: skipped. parcel lookup failed
+- **Power**: skipped. parcel lookup failed
+- **Zoning**: skipped. parcel lookup failed
+- **Zoning rules**: skipped. parcel lookup failed
+- **Assessment**: skipped. parcel lookup failed
+- **Listing**: skipped. parcel lookup failed
 
 ### 47N02W040800 (ST MARIES, 99.74 ac)
 
 Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ST MARIES. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel 47N02W040800 [parcelId=47N02W040800, lat=47.458258, lon=-116.597619]
-- **Wells**: ok. 60 well record(s), 5 of nearest 5 report depth [wellCount=60, nearestDepthsCount=5, nearestMi=0.15, medianDepthFt=205]
-- **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: ok. limited (Lacy-Bobbitt association, 5 to 35 percent slopes, very stony) [feasibility=limited, mapUnit=Lacy-Bobbitt association, 5 to 35 percent slopes, very stony, hydrologicGroup=D, drainage=Well drained, soilSlopePct=20]
-- **Terrain**: ok. avg grade 3.6%, max 8% [gradePct=3.6, maxGradePct=8, reliefFt=137, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=17.6, partial=false]
-- **Flood**: ok. high-risk zone (X, AE) (via FEMA NFHL) [high=true, intersects=true, zones=X; AE, category=high, provider=FEMA NFHL]
-- **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.4]
-- **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
-- **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
-- **Zoning**: ok. AGRICULTURE (Kootenai County) [code=AGRICULTURE, jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=gis_match, allowedBuildings=mapped_from_county_code, permitHistoryStatus=unavailable]
-- **Zoning rules**: ok. A: Resource Lands (7 uses) [code=A, family=Resource Lands, useCount=7]
-- **Assessment**: ok. assessed $549,398, class 534 Imp res rural tract, no tax amount [assessedValue=549398, landValue=472598, improvementValue=76800, taxPresent=false, netValue=442326, homeownerExemption=107072, taxYear=2026, propertyClass=534, propertyClassDescription=Imp res rural tract, source=Kootenai County Assessor (Assessor_Layers)]
-- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
+- **Parcel**: error. timeout after 30s
+- **Wells**: skipped. parcel lookup failed
+- **Existing well**: skipped. parcel lookup failed
+- **Soil**: skipped. parcel lookup failed
+- **Terrain**: skipped. parcel lookup failed
+- **Slope grid**: skipped. parcel lookup failed
+- **Flood**: skipped. parcel lookup failed
+- **Wetlands**: skipped. parcel lookup failed
+- **Utility**: skipped. parcel lookup failed
+- **Power**: skipped. parcel lookup failed
+- **Zoning**: skipped. parcel lookup failed
+- **Zoning rules**: skipped. parcel lookup failed
+- **Assessment**: skipped. parcel lookup failed
+- **Listing**: skipped. parcel lookup failed
 
 ### C72150040140 (COEUR D ALENE, 0.23 ac)
 
 Why: Picked by discovery run 40391761739 (2026-10-26): fills remaining sample slots. Locality is the parcel's situs city field, not proof it is inside city limits.
 
-- **Parcel**: ok. parcel C72150040140 [parcelId=C72150040140, lat=47.723551, lon=-116.803077]
-- **Wells**: ok. 55 well record(s), 5 of nearest 5 report depth [wellCount=55, nearestDepthsCount=5, nearestMi=0.77, medianDepthFt=300]
-- **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: ok. favorable (McGuire-Marble association, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=McGuire-Marble association, 0 to 7 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: ok. avg grade 2.6%, max 10% [gradePct=2.6, maxGradePct=10, reliefFt=9, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.8% [cellCount=16, avgSlopePct=5.8, maxSlopePct=22, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
-- **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
-- **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
-- **Zoning**: unavailable. No mapped zoning result found [jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable]
-- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
-- **Assessment**: ok. assessed $533,760, class 541 Imp res lot/tract in city, no tax amount [assessedValue=533760, landValue=195000, improvementValue=338760, taxPresent=false, netValue=408760, homeownerExemption=125000, taxYear=2026, propertyClass=541, propertyClassDescription=Imp res lot/tract in city, source=Kootenai County Assessor (Assessor_Layers)]
-- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
+- **Parcel**: error. timeout after 30s
+- **Wells**: skipped. parcel lookup failed
+- **Existing well**: skipped. parcel lookup failed
+- **Soil**: skipped. parcel lookup failed
+- **Terrain**: skipped. parcel lookup failed
+- **Slope grid**: skipped. parcel lookup failed
+- **Flood**: skipped. parcel lookup failed
+- **Wetlands**: skipped. parcel lookup failed
+- **Utility**: skipped. parcel lookup failed
+- **Power**: skipped. parcel lookup failed
+- **Zoning**: skipped. parcel lookup failed
+- **Zoning rules**: skipped. parcel lookup failed
+- **Assessment**: skipped. parcel lookup failed
+- **Listing**: skipped. parcel lookup failed
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.

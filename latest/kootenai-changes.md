@@ -1,14 +1,16 @@
 # Changes since the previous run: Kootenai, ID
 
-- Run: 2026-10-28T18:54:21.302Z
+- Run: 2026-10-29T18:59:04.842Z
 
 ## Cells
 
-Parcel x layer cells: newly broken 0, still broken 0, recovered 1, newly unavailable 0.
+Parcel x layer cells: newly broken 3, still broken 0, recovered 0, newly unavailable 0.
 
-### Recovered
+### Newly broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 0L8210010030 | Power | error | ok | timeout after 30s |
+| 0153400A001A | Parcel | ok | error | timeout after 30s |
+| 47N02W040800 | Parcel | ok | error | timeout after 30s |
+| C72150040140 | Parcel | ok | error | timeout after 30s |
 
