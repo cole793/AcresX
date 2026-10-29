@@ -1,0 +1,83 @@
+{
+ "name": "Kootenai statewide miss -> IDWR",
+ "status": 200,
+ "cache": "public, max-age=300, s-maxage=3600",
+ "body": {
+  "available": true,
+  "state": "ID",
+  "county": "Kootenai",
+  "parcel": {
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -116.6,
+       47.3
+      ],
+      [
+       -116.6,
+       47.31
+      ],
+      [
+       -116.59,
+       47.31
+      ],
+      [
+       -116.59,
+       47.3
+      ],
+      [
+       -116.6,
+       47.3
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "OBJECTID": 609238,
+    "PIN": "47N03W052200",
+    "COUNTY": "Kootenai",
+    "OWNER": "TEST OWNER",
+    "Shape__Area": 8008.75,
+    "Shape__Length": 494.7,
+    "ORIG_PARCEL_ID": "47N03W052200",
+    "PARCEL_ID_NR": "47N03W052200",
+    "COUNTY_NM": "Kootenai",
+    "_countyDisplay": "Kootenai",
+    "_stateCode": "ID",
+    "_stateDisplay": "Idaho",
+    "SITUS_ADDRESS": "",
+    "SITUS_CITY_NM": "",
+    "SITUS_ZIP_NR": "",
+    "DATA_LINK": "",
+    "_assessment": {
+     "categories": ""
+    }
+   }
+  }
+ },
+ "requests": [
+  {
+   "host": "idaho",
+   "where": "UPPER(County)='KOOTENAI' AND (UPPER(PARCEL_ID)='47N03W052200' OR UPPER(FP_ID)='47N03W052200')",
+   "outFields": "*"
+  },
+  {
+   "host": "idaho",
+   "where": "UPPER(County)='KOOTENAI' AND (UPPER(PARCEL_ID)='47N03W-05-2200' OR UPPER(FP_ID)='47N03W-05-2200')",
+   "outFields": "*"
+  },
+  {
+   "host": "idaho",
+   "where": "UPPER(County)='KOOTENAI' AND (UPPER(PARCEL_ID) LIKE '47N03W05%' OR UPPER(FP_ID) LIKE '47N03W05%')",
+   "outFields": "*"
+  },
+  {
+   "host": "other",
+   "where": "UPPER(PIN)='47N03W052200' AND UPPER(COUNTY)='KOOTENAI'",
+   "outFields": "*"
+  }
+ ]
+}
