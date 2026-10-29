@@ -21,6 +21,10 @@ import { handleResoListings } from './services/reso-listings.js';
 import { handleUpstreamHealth } from './services/upstream-health.js';
 import { json } from './shared/http.js';
 
+// A failed lookup may carry a browser fallback hint (src/shared/fallback.js); it is the only
+// field added to these 502 answers.
+const fallbackOf = error => (error?.fallback?.mode === 'browser' ? { fallback: error.fallback } : {});
+
 async function handleParcelSearch(request) {
   const body = await request.json(); const state = String(body.state || '').toUpperCase().trim(); const county = String(body.county || '').replace(/\s+County$/i, '').trim(); const parcelId = String(body.parcelId || '').trim();
   if (state === 'MT') { const parcel = /^yellowstone$/i.test(county) ? await findYellowstoneParcel(parcelId) : await findMontanaParcel(parcelId, county); return json({ available: true, state: 'MT', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
@@ -63,9 +67,9 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
     try { const body=await clone.json(); county=String(body?.county||'').replace(/\s+County$/i,'').trim(); } catch (_) {}
     if(/^(gallatin|kootenai)$/i.test(county)) {
       try { const response=await handleZoningPermits(request); if(response)return response; }
-      catch(error){ const isKootenai=/^kootenai$/i.test(county); return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.'},502,'no-store'); }
+      catch(error){ const isKootenai=/^kootenai$/i.test(county); return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.',...fallbackOf(error)},502,'no-store'); }
     }
     try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}
   }
   const response=await legacyWorker.fetch(request,env,ctx); return await maybeInjectUiPolish(request,response);
-} catch(error){return json({error:error?.message||'Request failed'},502,'no-store');} } };
+} catch(error){return json({error:error?.message||'Request failed',...fallbackOf(error)},502,'no-store');} } };

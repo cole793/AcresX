@@ -44,6 +44,8 @@ function stubFetch(...handlers) {
   };
 }
 const urls = () => calls.map(c => c.url);
+// What a failed FEMA call adds to the answer (src/shared/fallback.js; public/browser-fallback.js).
+const femaHint = { mode: 'browser', kind: 'fema-flood', input: { geometry } };
 
 function fakeCache() {
   const store = new Map();
@@ -173,12 +175,16 @@ test('flood: FEMA fails twice, Esri AE is high risk, carries coverage, and is ca
   const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
   await Promise.all(pending);
   assert.equal(response.status, 200);
-  assert.deepEqual(body, {
+  const { fallback, ...rest } = body;
+  const esriBody = {
     available: true, intersects: true, high: true, zones: ['AE'], zoneDetails: [{ zone: 'AE', subtype: null, sfha: true }], category: 'high',
     source: { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE }
-  });
+  };
+  assert.deepEqual(rest, esriBody);
+  assert.deepEqual(fallback, femaHint, 'FEMA failed (525, network), so the browser may ask FEMA itself');
   assert.equal(calls.length, 3);
   assert.equal(store.size, 1);
+  assert.deepEqual(await [...store.values()][0].clone().json(), esriBody, 'the cached answer never carries the hint');
 });
 
 test('flood: Esri empty answer keeps the no-intersection shape, flagged, no-store, not cached', async () => {
@@ -188,8 +194,9 @@ test('flood: Esri empty answer keeps the no-intersection shape, flagged, no-stor
   const { response, body } = await floodCall(undefined, { waitUntil(p) { pending.push(p); } });
   await Promise.all(pending);
   assert.equal(response.status, 200);
-  const { source, ...rest } = body;
+  const { source, fallback, ...rest } = body;
   assert.deepEqual(rest, { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'limited' });
+  assert.deepEqual(fallback, femaHint);
   assert.deepEqual(source, { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE, emptyResult: true });
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(store.size, 0, 'Esri empty answers must never be cached');
@@ -297,7 +304,9 @@ test('flood: both sources fail returns the unavailable shape naming both sources
   const { response, body } = await floodCall();
   assert.equal(response.status, 502);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
-  assert.deepEqual({ ...body, error: undefined }, { available: false, intersects: false, high: false, zones: [], error: undefined, source: null });
+  const { fallback, ...rest } = body;
+  assert.deepEqual({ ...rest, error: undefined }, { available: false, intersects: false, high: false, zones: [], error: undefined, source: null });
+  assert.deepEqual(fallback, femaHint);
   assert.match(body.error, /FEMA NFHL/);
   assert.match(body.error, /Esri USA Flood Hazard Areas/);
   assert.equal(calls.length, 3);

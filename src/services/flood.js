@@ -21,7 +21,12 @@
 // Queries go as GET, or as a form-encoded POST when the URL would be too long (large parcels).
 // Cacheable answers go in the Workers Cache API for 7 days, keyed by a hash of the rounded
 // parcel geometry. The cache is skipped where `caches` does not exist (Node tests).
+// Browser fallback (src/shared/fallback.js): when FEMA failed with a network error, a timeout or
+// a 403/429/5xx, the answer (Esri backup or 502) gains `fallback: { mode: 'browser', kind:
+// 'fema-flood', input: { geometry } }` so public/browser-fallback.js can ask FEMA from the
+// user's browser. The hint is never cached.
 import { fetchWithTimeout, json } from '../shared/http.js';
+import { FALLBACK_KINDS, fallbackHint, hintGeometry } from '../shared/fallback.js';
 
 export const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
 
@@ -54,12 +59,15 @@ const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v4/';
 const COORD_DECIMALS = 6;
 
+// browserFallback: a failure a browser might get past (network, timeout, 403/429/5xx).
 class UpstreamError extends Error {
-  constructor(message, retryable) {
+  constructor(message, retryable, browserFallback = false) {
     super(message);
     this.retryable = retryable;
+    this.browserFallback = browserFallback;
   }
 }
+const browserEligibleStatus = status => status === 403 || status === 429 || (status >= 500 && status <= 599);
 
 function esriPolygon(geometry) {
   if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) throw new Error('A parcel Polygon or MultiPolygon is required.');
@@ -94,14 +102,14 @@ async function queryLayer(layerUrl, geometry, outFields, timeoutMs) {
     response = await fetchWithTimeout(url, init, timeoutMs);
   } catch (error) {
     const timedOut = error?.name === 'AbortError';
-    throw new UpstreamError(timedOut ? `timeout after ${Math.round(timeoutMs / 1000)}s` : (error?.message || 'network error'), true);
+    throw new UpstreamError(timedOut ? `timeout after ${Math.round(timeoutMs / 1000)}s` : (error?.message || 'network error'), true, true);
   }
-  if (!response.ok) throw new UpstreamError(`returned ${response.status}`, response.status >= 500);
+  if (!response.ok) throw new UpstreamError(`returned ${response.status}`, response.status >= 500, browserEligibleStatus(response.status));
   let data;
   try { data = await response.json(); } catch { throw new UpstreamError('returned invalid JSON', true); }
   if (data?.error) {
     const code = Number(data.error.code);
-    throw new UpstreamError(`ArcGIS error${Number.isFinite(code) ? ` ${code}` : ''}: ${data.error.message || 'query failed'}`, !(code >= 400 && code < 500));
+    throw new UpstreamError(`ArcGIS error${Number.isFinite(code) ? ` ${code}` : ''}: ${data.error.message || 'query failed'}`, !(code >= 400 && code < 500), browserEligibleStatus(code));
   }
   return (data?.features || []).map(f => f?.attributes || {});
 }
@@ -250,7 +258,7 @@ async function fromFema(geometry) {
     try {
       return await queryLayer(FEMA_NFHL_FLOOD_LAYER, geometry, outFields, FEMA_RETRY_TIMEOUT_MS);
     } catch (retryError) {
-      throw new UpstreamError(`${error.message}; retry ${retryError.message}`, false);
+      throw new UpstreamError(`${error.message}; retry ${retryError.message}`, false, Boolean(retryError.browserFallback));
     }
   }
 }
@@ -276,13 +284,17 @@ export async function floodScreening(geometry, ctx, options = {}) {
   };
 
   const failures = [];
+  let fallback = null;
   try {
     const rows = await fromFema(geometry);
     return await answer({ ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } }, true);
   } catch (error) {
     failures.push(`${FEMA_PROVIDER} ${error?.message || 'failed'}`);
     console.warn(`Flood source failed: ${FEMA_PROVIDER}`, error?.message);
+    if (error?.browserFallback) fallback = { fallback: fallbackHint(FALLBACK_KINDS.femaFlood, { geometry: hintGeometry(geometry) }) };
   }
+  // The hint is added after the cache write, so a cached answer never carries it.
+  const withHint = async promise => { const result = await promise; return fallback ? { ...result, body: { ...result.body, ...fallback } } : result; };
 
   if (esriFallback) {
     try {
@@ -290,15 +302,15 @@ export async function floodScreening(geometry, ctx, options = {}) {
       const source = { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE };
       // Empty here means "not in a mapped high- or moderate-risk area", not "no flood zone":
       // keep the no-intersection shape for the frontend, flag it and never cache it.
-      if (!rows.length) return await answer({ ...summarizeFloodRows(rows, { backup: true }), category: 'limited', source: { ...source, emptyResult: true } }, false);
-      return await answer({ ...summarizeFloodRows(rows, { backup: true }), source }, true);
+      if (!rows.length) return await withHint(answer({ ...summarizeFloodRows(rows, { backup: true }), category: 'limited', source: { ...source, emptyResult: true } }, false));
+      return await withHint(answer({ ...summarizeFloodRows(rows, { backup: true }), source }, true));
     } catch (error) {
       failures.push(`${ESRI_PROVIDER} ${error?.message || 'failed'}`);
       console.warn(`Flood source failed: ${ESRI_PROVIDER}`, error?.message);
     }
   }
 
-  return { status: 502, body: unavailableBody(`Flood data unavailable: ${failures.join('; ')}`) };
+  return { status: 502, body: { ...unavailableBody(`Flood data unavailable: ${failures.join('; ')}`), ...(fallback || {}) } };
 }
 
 export async function handleFlood(request, env, ctx) {

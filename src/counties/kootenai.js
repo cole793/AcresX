@@ -1,6 +1,7 @@
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
 import { ringsFromGeometry, samplePoints, coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
 import { findCityJurisdiction, findCityImpactArea, getCityZoning } from './kootenai-cities.js';
+import { FALLBACK_KINDS, fallbackHint, hintGeometry, isFallbackEligible } from '../shared/fallback.js';
 
 const KC_PARCELS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
 const KC_ZONING = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21';
@@ -62,6 +63,18 @@ function buildingUsesForZone(zoneRaw) {
 
 const round3 = n => Math.round(n * 1000) / 1000;
 
+// What public/browser-fallback.js needs to run this lookup itself (src/shared/fallback.js): the
+// parcel number, the point and the outline the browser sent. Added to the answer only when the
+// county zoning, city limits or city zoning layer failed in a way a browser might get past.
+function browserFallback(body) {
+  const lat = Number(body.lat), lon = Number(body.lon), geometry = hintGeometry(body.geometry);
+  return fallbackHint(FALLBACK_KINDS.kootenaiZoning, {
+    parcelId: String(requestedParcelId(body) || ''),
+    ...(Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : {}),
+    ...(geometry ? { geometry } : {})
+  });
+}
+
 export async function getKootenaiCountyIntelligence(body) {
   const parcelId=requestedParcelId(body); let parcelFeatures=[];
   try { parcelFeatures=await queryParcel(parcelId); } catch(e) { console.warn('Kootenai ownership parcel lookup failed',e); }
@@ -80,16 +93,22 @@ export async function getKootenaiCountyIntelligence(body) {
   // Who zones it. If the city-limits layer fails, carry on with county zoning (the old behaviour).
   const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'},'kootenai-zoning').then(features=>({features}),error=>({error}));
   const impactArea=findCityImpactArea(where,samples).catch(e=>{ console.warn('Kootenai city impact area lookup failed',e); return null; });
-  let city=null, cityLimitsUnavailable=false;
-  try { city=await findCityJurisdiction(where,samples); } catch(e) { cityLimitsUnavailable=true; console.warn('Kootenai city limits lookup failed; using county zoning',e); }
+  let city=null, cityLimitsUnavailable=false, fallback=null;
+  try { city=await findCityJurisdiction(where,samples); } catch(e) { cityLimitsUnavailable=true; if(isFallbackEligible(e)) fallback=browserFallback(body); console.warn('Kootenai city limits lookup failed; using county zoning',e); }
   if(city) {
     const jurisdictionNote=city.straddles?` About ${pct(city.share)} of the parcel is inside ${city.name} limits; the rest may fall under another jurisdiction.`:'';
-    return getCityZoning(city,where,samples,{parcelAttrs,matchMethod,jurisdictionNote});
+    return getCityZoning(city,where,samples,{parcelAttrs,matchMethod,jurisdictionNote,fallback:browserFallback(body)});
   }
 
-  const {features:zoningFeatures,error}=await countyZoning; if(error) throw error;
+  const {features:zoningFeatures,error}=await countyZoning;
+  // src/index.js copies error.fallback into its 502 answer.
+  if(error) { if(isFallbackEligible(error)) error.fallback=browserFallback(body); throw error; }
+  const result=countyResult(parcelFeatures,parcelAttrs,zoningFeatures,samples,matchMethod,await impactArea,cityLimitsUnavailable);
+  return fallback?{...result,fallback}:result;
+}
+
+function countyResult(parcelFeatures,parcelAttrs,zoningFeatures,samples,matchMethod,impact,cityLimitsUnavailable) {
   const covered=coverageShares(samples,zoningFeatures,a=>String(a.LABEL||a.ZONE_NAME||'').trim()).filter(s=>s.key);
-  const impact=await impactArea;
   const impactNote=impact?` Inside the ${impact.city} area of city impact; Kootenai County zoning applies outside city limits.`:'';
   const top=covered[0];
   if(!top) return noZoneResult(parcelFeatures,matchMethod,impactNote,impact,cityLimitsUnavailable);
