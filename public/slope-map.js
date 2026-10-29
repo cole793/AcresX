@@ -169,9 +169,9 @@
       if (typeof last === 'undefined') return;
       const lc = last?.land?.landCover;
       const note = document.getElementById('slopeNote');
-      if (note && lc?.available && !note.dataset.landCoverAdded) {
+      // Checked by text, not a flag: a summary re-render (progressive-loading.js) rewrites the note.
+      if (note && lc?.available && !note.textContent.includes('% wooded')) {
         note.textContent += ' · ~' + lc.woodedPct + '% wooded';
-        note.dataset.landCoverAdded = 'true';
       }
       const detail = document.getElementById('detailCard');
       const root = detail?.querySelector('.results-scroll');

@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { getKootenaiCountyIntelligence } from '../src/counties/kootenai.js';
-import { makeContext, readPublic } from './ui-harness.js';
+import { makeLazyContext as makeContext, readPublic } from './ui-harness.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 const plain = value => JSON.parse(JSON.stringify(value)); // what the page receives (and drops vm prototypes)

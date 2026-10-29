@@ -52,7 +52,9 @@
     if (wellFacts.length) {
       const primary = wellFacts[0];
       const strong = primary.querySelector('strong');
-      if (strong) strong.textContent = well ? `${well.toLocaleString()} ft` : 'Not available';
+      // While nearby wells are loading or timed out, progressive-loading.js's placeholder stays.
+      const placeholder = window.AcresXSections?.placeholderText('wells');
+      if (strong) strong.textContent = placeholder || (well ? `${well.toLocaleString()} ft` : 'Not available');
       wellFacts.slice(1).forEach(f => f.remove());
     }
   }
