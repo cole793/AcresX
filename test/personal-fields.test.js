@@ -57,10 +57,13 @@ const requestedPersonal = [];
 // A layer answers with the fields asked for (all of them for outFields '*'), like ArcGIS does.
 function askedFor(p, url) {
   const asked = p.get('outFields');
-  if (!asked || asked === '*') return attributes;
+  // GWIC site names are the well owner's name; only that layer has the field.
+  const layer = url.hostname === 'mbmgmap.mtech.edu' ? { ...attributes, site_name: 'PLACEHOLDER OWNER * TOWN MT' } : attributes;
+  if (!asked || asked === '*') return layer;
   const exact = asked.split(',').map(s => s.trim()), names = exact.map(s => s.toLowerCase());
   for (const name of Object.keys(PLANTED)) if (exact.includes(name)) requestedPersonal.push(`${url.hostname}${url.pathname}: ${name}`);
-  return Object.fromEntries(Object.entries(attributes).filter(([k]) => names.includes(k.toLowerCase())));
+  if (exact.includes('site_name') && layer !== attributes) requestedPersonal.push(`${url.hostname}${url.pathname}: site_name`);
+  return Object.fromEntries(Object.entries(layer).filter(([k]) => names.includes(k.toLowerCase())));
 }
 function reply(input, init) {
   const url = new URL(String(input instanceof Request ? input.url : input));
@@ -98,7 +101,7 @@ const CASES = [
   ['parcel-search MT Yellowstone', post('/api/parcel-search', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.GEOCODE, PARCEL)],
   ['parcel-search ID Ada', post('/api/parcel-search', { state: 'ID', county: 'Ada', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.SITUS_ADDRESS, '100 SITE RD')],
   ['parcel-search ID Kootenai', post('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.PIN, PARCEL)],
-  ['well-search MT', post('/api/well-search', { state: 'MT', ...point }), b => assert.ok(b.wells.length > 0)],
+  ['well-search MT', post('/api/well-search', { state: 'MT', ...point }), b => { assert.ok(b.wells.length > 0); assert.equal(b.wells[0].properties.ProjectName, 'Montana GWIC well'); }],
   ['well-search ID', post('/api/well-search', { state: 'ID', ...point }), b => { assert.ok(b.wells.length > 0); assert.equal(b.wells[0].properties.ProjectName, 'Domestic'); }],
   ['existing-well Spokane', post('/api/existing-well', { state: 'WA', county: 'Spokane', ...parcel }), b => { assert.equal(b.status, 'strong_match'); assert.equal(b.match.wellTag, 'BAA123'); assert.equal(b.match.evidence.ownerMatch, true, 'owner names are still compared server-side'); }],
   ['reso-listings', post('/api/reso-listings', { parcelId: PARCEL })],
