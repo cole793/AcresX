@@ -2,6 +2,88 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-10-27: Kootenai parcel search now uses the county parcel layer
+
+Owner-approved 2026-10-27 (branch `claude/kootenai-parcel-search`). Checked live by the builder.
+
+- `/api/parcel-search` for `ID` + `Kootenai` queries
+  `map.kcgov.us/.../NewServices/Ownership_Display/MapServer/0` first
+  (`where=PIN='<id>' OR PID='<id>'`, `outFields=PIN,PID,Acres,Loc_Addr,Loc_City`, `outSR=4326`,
+  `f=json`, 10 s timeout). Adapter: `src/counties/kootenai-parcels.js`. It falls back to the
+  statewide layer and then IDWR when the county layer errors or misses. Live: 13/13 parcels found
+  (the 12 validation parcels plus 47N03W052200), ~190-920 ms, one request each.
+- **The statewide layer has no Kootenai parcels.** `Public_Idaho_Parcels_/FeatureServer/7` holds
+  381,144 parcels from 13 counties (Ada, Bear Lake, Boise, Camas, Gooding, Jerome, Lincoln,
+  Minidoka, Nez Perce, Oneida, Teton, Valley, Washington), and 0 of the 13 Kootenai PINs. Before
+  this change every Kootenai search sent it 3 queries that could never match (exact, dashed, prefix
+  LIKE), then asked IDWR. Those wasted queries are what tripped "Too many requests". In the
+  fallback chain they still run (as instructed), now with one retry on a rate limit.
+- **The county outlines are the same as IDWR's.** For all 12 validation parcels, the county and
+  IDWR outlines differ by under 0.0001 ac in area and under 0.1 mm in centroid. IDWR republishes
+  the county geometry. So the county layer is not more accurate. Its gains are reliability,
+  one request instead of four, the assessor `Acres`, the situs address and city, and the dashed PID.
+- **Mapped area is not the assessor acreage.** 47N03W052200: outline 1.98 ac, assessor `Acres`
+  2.888 (the "1.97 statewide" figure was IDWR's outline, which is the county outline). The
+  48N03W312100 outline is 91.45 ac against 65.33 assessor acres. The response's `ACRES` is now
+  the assessor figure; before, Kootenai answers had no `ACRES` and the report computed the area
+  from the outline.
+- The layer has no ZIP or assessor link field, so `SITUS_ZIP_NR` and `DATA_LINK` stay `''`
+  (as from IDWR). Its `Name` field is the owner, and the adapter never requests it. Kootenai
+  answers from the statewide/IDWR fallbacks have `OWNER*`, `PUBLIC_STD` and `MAIL_*` removed.
+  Other Idaho counties still return the statewide owner and mailing fields (unchanged).
+- `_source {name, url}` is added to Kootenai answers. Responses for other Idaho counties and
+  Montana are byte-identical to 2d12331 (`test/fixtures/parcel-search-legacy-snapshot.json`).
+- Owner decision 2026-10-27: **show both acreages.** `public/acreage.js` (`window.AcresXAcreage`)
+  feeds the overview and the report's Parcel Size, e.g. "2.89 ac (assessor) · 1.98 ac mapped",
+  and adds "Assessor and mapped acreage differ; verify with the county." when they differ by more
+  than 10% of the assessor figure. Assessor acreage is `ACRES` (Idaho), then `ACREAGE`, Montana
+  cadastral `TotalAcres`, then `Acres`. Mapped acreage is `turf.area` of the outline. The report's
+  10-acre density warning uses assessor acres when present, else mapped. Spokane and Yellowstone
+  answers carry no acreage field, so they still show mapped acreage only.
+- **Listing evidence no longer feeds the score.** `renderSummary` (`public/index.html`) added
+  +20 for a found listing and +10 for none into the "data confidence" factor (weight 0.08). The
+  score now uses wells and utility only for that factor. The data-confidence dot and the listing
+  card still show listing status. In a stubbed example, the score was 9.2 / 9.1 / 9.0
+  (found / none / error) before the change and is 9.0 for all three now. The later
+  `score-cost.js` and `screening-refinements.js` scores never used listings.
+## 2026-10-27: Kootenai zoning inside cities, and by parcel area
+
+Owner-approved 2026-10-27 (branch `claude/kootenai-city-zoning`). Sources checked live by the
+lead and the builder on 2026-10-27.
+
+- **City limits:** `map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18`
+  ("City Limits", really tax code areas). `CITY` is set only inside a city ('Coeur d Alene',
+  'Post Falls', 'Hayden', 'Rathdrum', 'Dalton Gardens', 'Hayden Lake', 'Athol', 'Spirit Lake',
+  'Harrison', 'Worley', 'Fernan', 'Hauser Lake', 'Huetter', 'State Line'); `' '` or null outside.
+- **City impact areas:** `Data_Layers/MapServer/17`, fields `CITY`, `ORDINANCE` (e.g.
+  `ORA25-0013` CdA, `ORA25-0012` Hayden, `ORA25-0009` Post Falls, `ORA25-0018` Rathdrum; State
+  Line spelled `STATELINE`). Land in an impact area but outside city limits keeps county zoning
+  (Athol code: "the Kootenai County zoning ordinance shall be the zoning ordinance applicable to
+  the land in the area of city impact which is outside the Athol city limits"; Hauser applies the
+  same by its 1999 agreement). AcresX shows it as info only.
+- **Coeur d'Alene zoning:** `gis.cdaid.org/server/rest/services/Share/Planning/MapServer/8`,
+  fields `ZONING`, `ZoningInfo` (HTML link to a zone PDF), `PUD`, `Notes`, `last_edited_date`.
+  Gotcha: many `ZoningInfo` links name another zone's PDF (a `C-17` polygon links `R-17.pdf`,
+  an `R-1` links `R-3.pdf`), so the adapter uses the link only when the file name matches
+  `ZONING`, otherwise `https://www.cdaid.org/planning`.
+- **Post Falls zoning:** `gis.postfalls.gov/server/rest/services/GIS2/LandUse/MapServer/5`,
+  fields `ZONING`, `LAST_UPDATED`. Planning page `https://www.postfalls.gov/179/Planning`.
+- **Other cities:** no live public zoning GIS (the old KCGIS consortium server
+  `gis.postfallsidaho.org` is unreachable). Planning pages that loaded: Hayden
+  `https://www.haydenid.gov/departments/planning_/index.php` (cityofhaydenid.us redirects
+  there), Spirit Lake `https://www.spiritlakeid.gov/planningandzoning` (it also links an ArcGIS
+  Online zoning web map, not used yet). Not linked: rathdrum.gov (bot check, could not verify),
+  cityofhauser.org and haydenlake.org (parked domains), Athol, Dalton Gardens, Harrison, Worley,
+  Fernan, Huetter, State Line (no reachable site found).
+- **Center-point misses:** the county zoning layer 21 has gaps (e.g. 48N03W312100: about half
+  the parcel is in no zone polygon, probably water; the layer 23 flood zone there is mostly AE),
+  and the parcel's vertex-average center fell in a gap. Zoning is now read by parcel area: query
+  with the parcel polygon (POST when the URL would be long), then sample about 200 grid points
+  inside the parcel and count which polygon holds each (`src/shared/polygon-coverage.js`).
+- Layer 21 `LABEL` holds the long name ('AGRICULTURE') and `ZONE_NAME` the short code ('AG');
+  some rows disagree (e.g. `LABEL` 'AG-SUBURBAN' with `ZONE_NAME` 'HDRES' or 'RUR'). The adapter
+  still uses `LABEL` first.
+
 ## 2026-10-27: Wetlands "present" with "0.0% of parcel" was a broken clip request, not a boundary touch
 
 Owner-approved 2026-10-27 (branch `claude/wetlands-fixes`). Checked live by the builder from the
