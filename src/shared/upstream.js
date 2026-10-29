@@ -113,7 +113,13 @@ function prune(state, now) {
 async function acquireSlot(host, cap, expiresAt, slotMs, signal) {
   const state = hostState(host);
   const ticket = { expiresAt };
+  const leave = () => { const index = state.queue.indexOf(ticket); if (index >= 0) state.queue.splice(index, 1); };
+  // An abort (timeout or caller cancel) leaves the queue at once and wakes the poll, so a ticket
+  // never lingers until a poll that may not come (e.g. a timer dropped by the runtime).
+  let wake = null;
+  const onAbort = () => { leave(); if (wake) wake(); };
   state.queue.push(ticket);
+  signal.addEventListener('abort', onAbort, { once: true });
   try {
     for (;;) {
       if (signal.aborted) throw signal.reason ?? new Error('aborted');
@@ -125,12 +131,21 @@ async function acquireSlot(host, cap, expiresAt, slotMs, signal) {
         state.active.add(slot);
         return () => state.active.delete(slot);
       }
-      await sleep(settings.pollMs);
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, settings.pollMs);
+        wake = () => { clearTimeout(timer); resolve(); };
+      });
+      wake = null;
     }
   } finally {
-    const index = state.queue.indexOf(ticket);
-    if (index >= 0) state.queue.splice(index, 1);
+    signal.removeEventListener('abort', onAbort);
+    leave();
   }
+}
+
+// Test/diagnostic helper: tickets currently waiting for a slot for `host`.
+export function queued(host) {
+  return hosts.get(host)?.queue.length ?? 0;
 }
 
 // Test/diagnostic helper: requests currently holding a slot for `host`.
