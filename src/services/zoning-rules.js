@@ -71,6 +71,9 @@ export async function handleZoningRules(request) {
   }
 
   if (/^kootenai$/i.test(county)) {
+    // City zones share letters with county zones (CdA 'M', Post Falls 'LI') but not their rules.
+    const jurisdiction = String(body.jurisdiction || '').trim();
+    if (jurisdiction && !/^kootenai county$/i.test(jurisdiction)) return json({ available: false, county: 'Kootenai', jurisdiction, zoneCode, status: 'zone_not_mapped', note: "City zoning rules aren't mapped in AcresX yet; see the city's zoning code." }, 200, 'public, max-age=3600');
     const potential = getKootenaiZoneDevelopmentPotential(zoneCode);
     if (!potential) return json({ available: false, county: 'Kootenai', zoneCode, status: 'zone_not_mapped' }, 200, 'public, max-age=3600');
     return json({ available: true, county: 'Kootenai', jurisdiction: body.jurisdiction || 'Kootenai County', ...potential }, 200, 'public, max-age=86400, s-maxage=604800');
