@@ -29,17 +29,23 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/shared-upstream-client` | b4f9c5a (being updated) | #23 | Builder merging main and moving the #21/#22 Kootenai code onto the shared client; then verifier |
-| `claude/progressive-loading` | 4853360 (being updated) | not yet | Builder merging main (conflict in `test/ui-harness.js`); then verifier, then PR |
-| `claude/browser-fallback` | none yet | none | Owner chose option A (2026-10-28). Starts after #23 is updated, based on it |
+| (none) | | | |
 
-## Up next (owner-requested, 2026-10-28 backend audit, "Start 1 and 2")
+Merged 2026-10-29 to 10-31, each with the owner's approval; every deploy succeeded:
+#24 progressive loading, #23 shared upstream client + `/api/upstream-health`, #26 owner names and
+mailing addresses removed everywhere (approved 2026-10-29), #27 browser fallback (option A) for
+Kootenai parcel/zoning/assessor, IDWR wells and FEMA flood.
 
-1. Progressive loading with per-section time limits (branch above).
-2. Shared upstream client, fewer county requests, `/api/upstream-health` (#23).
-3. Browser fallback for government servers that block Cloudflare (option A), wired into
-   progressive loading.
-- Stevens County, WA scored 33/100 on the checklist (2026-10-28). No Stevens work approved yet.
+## Offered next (not approved)
+
+- Stevens County, WA: 33/100 on the checklist. Its zoning code must be extracted from `worker.js`
+  before it can get a browser fallback.
+- Browser fallback for MT DNRC parcels (now possible since #26 removed owner fields).
+- "Kootenai County, Washington" label in `public/parcel-preview.js` (should say Idaho).
+- `/api/upstream-health` re-probes all 21 sources on every GET while any one is down (memo only
+  keeps all-healthy runs); a 10-15 s memo for failed runs would cut that.
+- A test that `outFields=*` is never sent to owner-bearing layers (verifier gap on #26).
+- Draft a note to Kootenai County GIS about Cloudflare blocking (owner said "not yet" 2026-10-28).
 
 ## Waiting on the owner
 
