@@ -531,3 +531,31 @@ test('index.html: the search form uses AcresXProgress, and the all-at-once handl
   assert.equal(h.run('legacy'), 1);
   assert.equal(prevented, 2);
 });
+
+test('extend(signal, ms): once per attempt, only while that section is pending, only for a running section signal', async () => {
+  const t = setup();
+  await t.search();
+  const signal = t.asks.zoningPermits.at(-1).signal;
+  assert.equal(t.S.extend(undefined, 30000), false, 'no signal');
+  assert.equal(t.S.extend(new AbortController().signal, 30000), false, 'a signal no section owns');
+  assert.equal(t.S.extend(signal, 0), false, 'a non-positive time limit');
+  assert.equal(t.S.extend(signal, 30000), true, 'first extension');
+  assert.equal(t.S.extend(signal, 30000), false, 'once per attempt');
+  // Past the original 20 s limit, the extended section is still checking.
+  await t.clock.advance(25000);
+  assert.equal(t.S.status('zoningPermits'), 'pending');
+  await t.clock.advance(6000);
+  assert.equal(t.S.status('zoningPermits'), 'timeout', 'the extension is 30 s from when it was given');
+  // A settled section cannot be extended.
+  const wells = t.asks.wells.at(-1).signal;
+  t.answer('wells');
+  await t.clock.advance(200);
+  assert.equal(t.S.extend(wells, 30000), false, 'not pending any more');
+  // A retry is a new attempt: its signal can be extended once again; the old one cannot.
+  t.ctx.AcresXProgress.retry('zoningPermits');
+  await t.clock.flush();
+  const retried = t.asks.zoningPermits.at(-1).signal;
+  assert.notEqual(retried, signal);
+  assert.equal(t.S.extend(signal, 30000), false, 'the old attempt is gone');
+  assert.equal(t.S.extend(retried, 30000), true);
+});
