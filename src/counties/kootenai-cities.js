@@ -9,6 +9,7 @@
 //   applies and link the city's planning page where one was verified to load.
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
 import { coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
+import { isFallbackEligible } from '../shared/fallback.js';
 
 export const KC_CITY_LIMITS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18';
 export const KC_CITY_IMPACT = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/17';
@@ -19,9 +20,9 @@ const POST_FALLS_ZONING = 'https://gis.postfalls.gov/server/rest/services/GIS2/L
 // 2026-10-27; Rathdrum's site sits behind a bot check and the others had no reachable site.
 const CITIES = {
   'COEUR D ALENE': { name: "City of Coeur d'Alene", planningUrl: 'https://www.cdaid.org/planning',
-    zoning: { url: CDA_ZONING, agency: "City of Coeur d'Alene GIS", service: 'Share/Planning', layerId: 8, outFields: 'ZONING,ZoningInfo,PUD,Notes,last_edited_date' } },
+    zoning: { url: CDA_ZONING, label: 'cda-zoning', agency: "City of Coeur d'Alene GIS", service: 'Share/Planning', layerId: 8, outFields: 'ZONING,ZoningInfo,PUD,Notes,last_edited_date' } },
   'POST FALLS': { name: 'City of Post Falls', planningUrl: 'https://www.postfalls.gov/179/Planning',
-    zoning: { url: POST_FALLS_ZONING, agency: 'City of Post Falls GIS', service: 'GIS2/LandUse', layerId: 5, outFields: 'ZONING,LAST_UPDATED' } },
+    zoning: { url: POST_FALLS_ZONING, label: 'post-falls-zoning', agency: 'City of Post Falls GIS', service: 'GIS2/LandUse', layerId: 5, outFields: 'ZONING,LAST_UPDATED' } },
   HAYDEN: { name: 'City of Hayden', planningUrl: 'https://www.haydenid.gov/departments/planning_/index.php' },
   'SPIRIT LAKE': { name: 'City of Spirit Lake', planningUrl: 'https://www.spiritlakeid.gov/planningandzoning' },
   RATHDRUM: { name: 'City of Rathdrum' },
@@ -48,7 +49,7 @@ export function cityInfo(cityValue) {
 // Which city (if any) covers most of the parcel. Unincorporated land competes as key ''; a city
 // wins only when it covers more of the parcel than unincorporated land and any other city.
 export async function findCityJurisdiction(where, samples) {
-  const features = await arcgisQuery(KC_CITY_LIMITS, { ...spatialParams(where), outFields: 'CITY' }, { agency: 'Kootenai County GIS' });
+  const features = await arcgisQuery(KC_CITY_LIMITS, { ...spatialParams(where), outFields: 'CITY' }, { agency: 'Kootenai County GIS', label: 'kootenai-city-limits' });
   const shares = coverageShares(samples, features, a => cityKey(a.CITY));
   const merged = new Map();
   for (const s of shares) merged.set(s.key || '', (merged.get(s.key || '') || 0) + s.share);
@@ -60,7 +61,7 @@ export async function findCityJurisdiction(where, samples) {
 }
 
 export async function findCityImpactArea(where, samples) {
-  const features = await arcgisQuery(KC_CITY_IMPACT, { ...spatialParams(where), outFields: 'CITY,ORDINANCE' }, { agency: 'Kootenai County GIS' });
+  const features = await arcgisQuery(KC_CITY_IMPACT, { ...spatialParams(where), outFields: 'CITY,ORDINANCE' }, { agency: 'Kootenai County GIS', label: 'kootenai-city-impact' });
   const top = coverageShares(samples, features, a => cityKey(a.CITY)).find(s => s.key);
   if (!top) return null;
   const ordinance = String(top.attributes?.ORDINANCE || '').trim();
@@ -96,8 +97,9 @@ function tail(source) {
 
 // Zoning for a parcel inside a city. Cities with a zoning layer get a mapped result; the others
 // get an honest "city zoning applies" result. A failing city layer degrades to "unavailable" for
-// that city only, still naming the city as the jurisdiction.
-export async function getCityZoning(city, where, samples, { parcelAttrs = {}, matchMethod, jurisdictionNote = '' } = {}) {
+// that city only, still naming the city as the jurisdiction. `fallback` (src/shared/fallback.js
+// hint) is added to that "unavailable" answer when the failure is one a browser might get past.
+export async function getCityZoning(city, where, samples, { parcelAttrs = {}, matchMethod, jurisdictionNote = '', fallback = null } = {}) {
   const jurisdictionSource = { agency: 'Kootenai County GIS', service: 'NewServices/Data_Layers', layerId: 18, city: city.key, share: Math.round(city.share * 1000) / 1000 };
   const planning = city.planningUrl ? { url: city.planningUrl, urlLabel: `Open ${city.name} planning ↗` } : {};
   if (!city.zoning) {
@@ -112,13 +114,14 @@ export async function getCityZoning(city, where, samples, { parcelAttrs = {}, ma
   const source = { agency: z.agency, service: z.service, layerId: z.layerId, matchMethod, jurisdictionSource, parcelAttributes: parcelAttrs };
   let features;
   try {
-    features = await arcgisQuery(z.url, { ...spatialParams(where), outFields: z.outFields }, { agency: z.agency });
+    features = await arcgisQuery(z.url, { ...spatialParams(where), outFields: z.outFields }, { agency: z.agency, label: z.label });
   } catch (error) {
     console.warn(`${city.name} zoning lookup failed`, error);
     return {
       available: false, ...cityBase(city),
       zoning: { status: 'unavailable', label: `${city.name} zoning lookup unavailable`, note: `This parcel is inside ${city.name} limits, so city zoning applies. The city zoning map did not answer (${error?.message || 'request failed'}); check with the city.${jurisdictionNote}`, sourceUrl: z.url, ...planning },
-      ...tail({ ...source, error: error?.message || 'City zoning lookup failed' })
+      ...tail({ ...source, error: error?.message || 'City zoning lookup failed' }),
+      ...(fallback && isFallbackEligible(error) ? { fallback } : {})
     };
   }
   const shares = coverageShares(samples, features, a => String(a.ZONING || '').trim());

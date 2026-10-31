@@ -1,0 +1,2165 @@
+{
+  "soils: map unit found": {
+    "output": {
+      "ok": {
+        "available": true,
+        "mapUnit": "Bong coarse sandy loam, 0 to 8 percent slopes",
+        "component": "Bong",
+        "componentPct": 85,
+        "drainage": "Somewhat excessively drained",
+        "hydrologicGroup": "A",
+        "soilSlopePct": 4,
+        "feasibility": "favorable",
+        "source": "USDA NRCS Soil Data Access"
+      }
+    },
+    "requests": [
+      "POST https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest BODY {\"service\":\"query\",\"request\":\"query\",\"query\":\"\\n    SELECT TOP 1\\n      mu.mukey,\\n      mu.muname,\\n      c.compname,\\n      c.comppct_r,\\n      c.drainagecl,\\n      c.hydgrp,\\n      c.slope_r\\n    FROM SDA_Get_Mukey_from_intersection_with_WktWgs84('POINT(-117.4 47.6)') AS spatial\\n    INNER JOIN mapunit mu ON mu.mukey = spatial.mukey\\n    INNER JOIN component c ON c.mukey = mu.mukey\\n    ORDER BY c.comppct_r DESC\\n  \",\"format\":\"JSON+COLUMNNAME\"}"
+    ]
+  },
+  "soils: empty table": {
+    "output": {
+      "error": "No USDA soil map unit was returned."
+    }
+  },
+  "soils: HTTP 400 with an SDA message": {
+    "output": {
+      "error": "USDA soil service returned 400."
+    }
+  },
+  "soils: HTTP 500 with an error body": {
+    "output": {
+      "error": "USDA soil service: SDA overloaded"
+    }
+  },
+  "soils: invalid JSON": {
+    "output": {
+      "error": "USDA soil service returned 200 with an invalid response."
+    }
+  },
+  "existing-well: strong parcel match": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=300, s-maxage=900",
+        "body": {
+          "available": true,
+          "county": "Spokane",
+          "state": "WA",
+          "parcelId": "47174.9017",
+          "siteAddress": "123 TEST RD, SPOKANE, WA, 99208",
+          "status": "strong_match",
+          "label": "Likely existing well",
+          "confidence": "High",
+          "score": 100,
+          "match": {
+            "id": 1,
+            "wellTag": "BAA123",
+            "projectName": "Smith",
+            "wellAddress": "123 TEST RD",
+            "parcelNumber": "47174.9017",
+            "completedDepth": 220,
+            "completionDate": 946684800000,
+            "wellType": "Water",
+            "drillerLicenseNumber": "1234",
+            "flowRateGPM": 12,
+            "latitude": 47.6005,
+            "longitude": -117.3995,
+            "evidence": {
+              "parcelMatch": true,
+              "insideParcel": true,
+              "nearParcel": false,
+              "distanceToParcelFt": 0,
+              "ownerMatch": true,
+              "partialOwnerMatch": true,
+              "addressMatch": true,
+              "ownerSimilarity": 100
+            },
+            "score": 100
+          },
+          "candidateCount": 2,
+          "methodology": "Matches Washington Ecology well records to the current Spokane County assessor parcel using parcel number, mapped location, proximity to the parcel boundary, owner name, and site address.",
+          "caution": "Well records are historical and mapped locations can be approximate. A match is screening evidence, not proof that a well is currently usable or legally serving the parcel.",
+          "sources": {
+            "assessor": "Spokane County Assessor SCOUT",
+            "wells": "Washington Department of Ecology Well Reports"
+          }
+        }
+      }
+    },
+    "requests": [
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query?f=json&where=PID_NUM%3D%2747174.9017%27&outFields=PID_NUM%2Cowner_name%2Ctaxpayer_name%2Csite_address%2Csite_city%2Csite_state%2Csite_zip&returnGeometry=false",
+      "GET https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query?f=geojson&where=WellProjectType+%3C%3E+%27Decommission%27&geometry=%7B%22xmin%22%3A-117.40889817009793%2C%22ymin%22%3A47.594%2C%22xmax%22%3A-117.39010182990208%2C%22ymax%22%3A47.607%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=ID%2CWellTagNr%2CProjectName%2COwnerName%2CWellAddress%2CParcelNumber%2CCompletedDepth%2CWorkCompletionDate%2CWellProjectType%2CWellSubType%2CDrillerLicenseNumber%2CFlowRateGPM&resultRecordCount=1000"
+    ]
+  },
+  "existing-well: assessor miss falls back to LIKE query": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=300, s-maxage=900",
+        "body": {
+          "available": true,
+          "county": "Spokane",
+          "state": "WA",
+          "parcelId": "47174-9017",
+          "siteAddress": "",
+          "status": "strong_match",
+          "label": "Likely existing well",
+          "confidence": "High",
+          "score": 100,
+          "match": {
+            "id": 1,
+            "wellTag": "BAA123",
+            "projectName": "Smith",
+            "wellAddress": "123 TEST RD",
+            "parcelNumber": "47174.9017",
+            "completedDepth": 220,
+            "completionDate": 946684800000,
+            "wellType": "Water",
+            "drillerLicenseNumber": "1234",
+            "flowRateGPM": 12,
+            "latitude": 47.6005,
+            "longitude": -117.3995,
+            "evidence": {
+              "parcelMatch": true,
+              "insideParcel": true,
+              "nearParcel": false,
+              "distanceToParcelFt": 0,
+              "ownerMatch": false,
+              "partialOwnerMatch": false,
+              "addressMatch": false,
+              "ownerSimilarity": 0
+            },
+            "score": 100
+          },
+          "candidateCount": 2,
+          "methodology": "Matches Washington Ecology well records to the current Spokane County assessor parcel using parcel number, mapped location, proximity to the parcel boundary, owner name, and site address.",
+          "caution": "Well records are historical and mapped locations can be approximate. A match is screening evidence, not proof that a well is currently usable or legally serving the parcel.",
+          "sources": {
+            "assessor": "Spokane County Assessor SCOUT",
+            "wells": "Washington Department of Ecology Well Reports"
+          }
+        }
+      }
+    },
+    "requests": [
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query?f=json&where=PID_NUM%3D%2747174-9017%27&outFields=PID_NUM%2Cowner_name%2Ctaxpayer_name%2Csite_address%2Csite_city%2Csite_state%2Csite_zip&returnGeometry=false",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query?f=json&where=PID_NUM+LIKE+%27%25471749017%25%27&outFields=PID_NUM%2Cowner_name%2Ctaxpayer_name%2Csite_address%2Csite_city%2Csite_state%2Csite_zip&returnGeometry=false",
+      "GET https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query?f=geojson&where=WellProjectType+%3C%3E+%27Decommission%27&geometry=%7B%22xmin%22%3A-117.40889817009793%2C%22ymin%22%3A47.594%2C%22xmax%22%3A-117.39010182990208%2C%22ymax%22%3A47.607%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=ID%2CWellTagNr%2CProjectName%2COwnerName%2CWellAddress%2CParcelNumber%2CCompletedDepth%2CWorkCompletionDate%2CWellProjectType%2CWellSubType%2CDrillerLicenseNumber%2CFlowRateGPM&resultRecordCount=1000"
+    ]
+  },
+  "existing-well: assessor ArcGIS error is treated as no assessor record": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=300, s-maxage=900",
+        "body": {
+          "available": true,
+          "county": "Spokane",
+          "state": "WA",
+          "parcelId": "47174.9017",
+          "siteAddress": "",
+          "status": "strong_match",
+          "label": "Likely existing well",
+          "confidence": "High",
+          "score": 100,
+          "match": {
+            "id": 1,
+            "wellTag": "BAA123",
+            "projectName": "Smith",
+            "wellAddress": "123 TEST RD",
+            "parcelNumber": "47174.9017",
+            "completedDepth": 220,
+            "completionDate": 946684800000,
+            "wellType": "Water",
+            "drillerLicenseNumber": "1234",
+            "flowRateGPM": 12,
+            "latitude": 47.6005,
+            "longitude": -117.3995,
+            "evidence": {
+              "parcelMatch": true,
+              "insideParcel": true,
+              "nearParcel": false,
+              "distanceToParcelFt": 0,
+              "ownerMatch": false,
+              "partialOwnerMatch": false,
+              "addressMatch": false,
+              "ownerSimilarity": 0
+            },
+            "score": 100
+          },
+          "candidateCount": 2,
+          "methodology": "Matches Washington Ecology well records to the current Spokane County assessor parcel using parcel number, mapped location, proximity to the parcel boundary, owner name, and site address.",
+          "caution": "Well records are historical and mapped locations can be approximate. A match is screening evidence, not proof that a well is currently usable or legally serving the parcel.",
+          "sources": {
+            "assessor": "Spokane County Assessor SCOUT",
+            "wells": "Washington Department of Ecology Well Reports"
+          }
+        }
+      }
+    }
+  },
+  "existing-well: Ecology HTTP 500 rejects": {
+    "output": {
+      "error": "Washington Ecology well service returned 500"
+    }
+  },
+  "existing-well: Ecology ArcGIS error rejects": {
+    "output": {
+      "error": "Invalid query parameters"
+    }
+  },
+  "utility-territory: two providers": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600, s-maxage=86400",
+        "body": {
+          "available": true,
+          "source": "DOE / ORNL HIFLD Electric Retail Service Territories",
+          "sourceDate": "2025-08-21",
+          "providers": [
+            "AVISTA CORP",
+            "INLAND POWER & LIGHT CO"
+          ],
+          "matches": [
+            {
+              "name": "AVISTA CORP",
+              "type": "INVESTOR OWNED",
+              "state": "WA",
+              "year": 2023,
+              "attributes": {
+                "NAME": "AVISTA CORP",
+                "TYPE": "INVESTOR OWNED",
+                "STATE": "WA",
+                "YEAR": 2023
+              }
+            },
+            {
+              "name": "INLAND POWER & LIGHT CO",
+              "type": "COOPERATIVE",
+              "state": "WA",
+              "year": "",
+              "attributes": {
+                "NAME": "INLAND POWER & LIGHT CO",
+                "TYPE": "COOPERATIVE",
+                "STATE": "WA"
+              }
+            }
+          ],
+          "confidence": "low",
+          "note": "Retail electric service territory intersected the parcel center. Confirm new-service availability directly with the utility."
+        }
+      }
+    },
+    "requests": [
+      "GET https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.4%2C47.6&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=20"
+    ]
+  },
+  "utility-territory: HTTP 503": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600",
+        "body": {
+          "available": false,
+          "error": "Utility territory service returned 503"
+        }
+      }
+    }
+  },
+  "utility-territory: ArcGIS error": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600",
+        "body": {
+          "available": false,
+          "error": "Invalid geometry"
+        }
+      }
+    }
+  },
+  "utility-territory: ArcGIS error without message": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600",
+        "body": {
+          "available": false,
+          "error": "Utility territory lookup failed"
+        }
+      }
+    }
+  },
+  "property-tax: Spokane HTTP 500 rejects": {
+    "output": {
+      "error": "Source returned 500"
+    }
+  },
+  "property-tax: Spokane ArcGIS error without message rejects": {
+    "output": {
+      "error": "ArcGIS query failed"
+    }
+  },
+  "property-tax: Montana statewide errors are skipped, county record found": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "no-store",
+        "body": {
+          "available": true,
+          "state": "MT",
+          "county": "Yellowstone",
+          "parcelId": "03103323101010000",
+          "formattedGeocode": "03-1033-23-1-01-01-0000",
+          "countySource": "Yellowstone County TaxparcelOrion",
+          "countyRecords": [
+            {
+              "GEOCODE": "03-1033-23-1-01-01-0000",
+              "TAX_ID": "A12345"
+            }
+          ],
+          "statewideSource": "Montana Cadastral / ORION integration",
+          "statewideRecords": []
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=AssessmentCode%3D%2703-1033-23-1-01-01-0000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=AssessmentCode%3D%2703103323101010000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=Geocode%3D%2703-1033-23-1-01-01-0000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=Geocode%3D%2703103323101010000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=ParcelID%3D%2703-1033-23-1-01-01-0000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?where=ParcelID%3D%2703103323101010000%27&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&f=json&returnGeometry=false",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?where=GEOCODE%3D%2703103323101010000%27+OR+GEO_CODE%3D%2703103323101010000%27&outFields=GEOCODE%2CGEO_CODE%2CTAX_ID%2CTAXID%2CPROP_ID%2CFULLADD%2CSHORTLEGAL&f=json&returnGeometry=false"
+    ]
+  },
+  "power: Avista with mapped OSM distribution": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600, s-maxage=86400",
+        "body": {
+          "available": true,
+          "adapter": "avista-v1",
+          "provider": "Avista Corp",
+          "territory": {
+            "confirmed": true,
+            "confidence": "high",
+            "basis": "Washington electric utility service-territory screening"
+          },
+          "publicInfrastructure": {
+            "available": true,
+            "mapUrl": "https://www.arcgis.com/home/item.html?id=955db80ba1124479a906c0a6edefe1cc",
+            "source": "Avista Geospatial Maps",
+            "scope": "system planning / transmission and other public planning layers",
+            "locationAccuracy": "approximate",
+            "note": "Avista publishes public geospatial planning maps, but these should not be treated as a parcel-level residential service-point map."
+          },
+          "transmission": {
+            "status": "public_map_available",
+            "distanceFt": null,
+            "usableForResidentialExtensionCost": false,
+            "note": "Transmission infrastructure is not a residential service connection and is intentionally excluded from the development-cost estimate."
+          },
+          "distribution": {
+            "status": "osm_mapped_proximity",
+            "estimatedDistanceFt": 88,
+            "confidence": "high",
+            "infrastructure": "overhead_distribution",
+            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
+          },
+          "costEstimate": {
+            "available": false,
+            "low": null,
+            "high": null,
+            "status": "pending_distribution_distance",
+            "note": "Power-extension cost will be calculated after a credible distribution-distance estimate or utility-provided service point is available."
+          },
+          "verification": {
+            "required": true,
+            "recommendation": "Contact Avista with the parcel number and site address for service availability, required facilities, and an official extension estimate."
+          },
+          "parcel": {
+            "parcelId": "47174.9017",
+            "address": "",
+            "pointAvailable": true
+          },
+          "proximity": {
+            "available": true,
+            "adapter": "osm-power-v1",
+            "status": "mapped_distribution_found",
+            "provider": "Avista Corp",
+            "searchRadiusFt": 16404,
+            "nearest": {
+              "osmType": "node",
+              "osmId": 11,
+              "type": "pole",
+              "infrastructureClass": "overhead_distribution",
+              "distanceFt": 87.99975031517839,
+              "operator": "Avista",
+              "voltage": "",
+              "location": "",
+              "source": "OpenStreetMap"
+            },
+            "estimatedDistanceFt": 88,
+            "infrastructure": "overhead_distribution",
+            "confidence": "high",
+            "confidenceScore": 90,
+            "evidence": {
+              "mappedPoles": 1,
+              "mappedDistributionLines": 1,
+              "mappedTransformers": 1,
+              "mappedFeatures": 3
+            },
+            "nearby": [
+              {
+                "osmType": "node",
+                "osmId": 11,
+                "type": "pole",
+                "infrastructureClass": "overhead_distribution",
+                "distanceFt": 87.99975031517839,
+                "operator": "Avista",
+                "voltage": "",
+                "location": "",
+                "source": "OpenStreetMap"
+              },
+              {
+                "osmType": "way",
+                "osmId": 13,
+                "type": "minor_line",
+                "infrastructureClass": "overhead_distribution",
+                "distanceFt": 248.67962622729488,
+                "operator": "",
+                "voltage": "13200",
+                "location": "",
+                "source": "OpenStreetMap"
+              },
+              {
+                "osmType": "node",
+                "osmId": 12,
+                "type": "transformer",
+                "infrastructureClass": "transformer",
+                "distanceFt": 804.6290802519775,
+                "operator": "",
+                "voltage": "",
+                "location": "",
+                "source": "OpenStreetMap"
+              }
+            ],
+            "source": "OpenStreetMap / Overpass API",
+            "sourceUrl": "https://www.openstreetmap.org",
+            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
+          }
+        }
+      }
+    },
+    "requests": [
+      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A15%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B"
+    ]
+  },
+  "power: first Overpass endpoint fails, second answers": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600, s-maxage=86400",
+        "body": {
+          "available": true,
+          "adapter": "inland-power-v1",
+          "provider": "Inland Power & Light",
+          "territory": {
+            "confirmed": false,
+            "confidence": "moderate",
+            "basis": "Mapped utility service-territory screening; provider and availability require direct confirmation"
+          },
+          "publicInfrastructure": {
+            "available": false,
+            "note": "Inland Power has not supplied parcel-level distribution facilities or a confirmed service point."
+          },
+          "costEstimate": {
+            "available": false,
+            "status": "utility_quote_required",
+            "note": "Inland Power offers a residential service estimator, but its inputs require a credible route and electrical design. Mapped power proximity alone is not sufficient to calculate a connection quote.",
+            "estimatorUrl": "https://www.inlandpower.com/residential-service-estimator",
+            "engineeringFeeUsd": null,
+            "engineeringFeeNote": "Ask Inland Power whether an engineering/application fee applies; do not assume a fixed fee without a current utility quote."
+          },
+          "newService": {
+            "applicationUrl": "https://www.inlandpower.com/residential-applications",
+            "requirementsUrl": "https://www.inlandpower.com/new-construction-step-by-step",
+            "phone": "(509) 747-7151",
+            "email": "inlandpower@inlandpower.com",
+            "projectTypes": [
+              "Single-family home",
+              "Manufactured/mobile home",
+              "Accessory dwelling unit",
+              "Outbuilding"
+            ],
+            "requirements": [
+              "Submit residential low-density application and new-member information",
+              "Provide service address and property sketch showing proposed improvements and existing power",
+              "Pay applicable engineering fee",
+              "Meet staking engineer on site before beginning utility job preparation",
+              "Complete required easements, site work, electrical permits and inspections"
+            ]
+          },
+          "verification": {
+            "required": true,
+            "recommendation": "Contact Inland Power with the parcel number and site plan to verify territory, available capacity, route, easements and the official line-extension charge."
+          },
+          "parcel": {
+            "parcelId": "",
+            "address": ""
+          },
+          "proximity": {
+            "available": true,
+            "adapter": "osm-power-v1",
+            "status": "mapped_distribution_found",
+            "provider": "Inland Power & Light",
+            "searchRadiusFt": 16404,
+            "nearest": {
+              "osmType": "node",
+              "osmId": 11,
+              "type": "pole",
+              "infrastructureClass": "overhead_distribution",
+              "distanceFt": 87.99975031517839,
+              "operator": "Avista",
+              "voltage": "",
+              "location": "",
+              "source": "OpenStreetMap"
+            },
+            "estimatedDistanceFt": 88,
+            "infrastructure": "overhead_distribution",
+            "confidence": "high",
+            "confidenceScore": 90,
+            "evidence": {
+              "mappedPoles": 1,
+              "mappedDistributionLines": 1,
+              "mappedTransformers": 1,
+              "mappedFeatures": 3
+            },
+            "nearby": [
+              {
+                "osmType": "node",
+                "osmId": 11,
+                "type": "pole",
+                "infrastructureClass": "overhead_distribution",
+                "distanceFt": 87.99975031517839,
+                "operator": "Avista",
+                "voltage": "",
+                "location": "",
+                "source": "OpenStreetMap"
+              },
+              {
+                "osmType": "way",
+                "osmId": 13,
+                "type": "minor_line",
+                "infrastructureClass": "overhead_distribution",
+                "distanceFt": 248.67962622729488,
+                "operator": "",
+                "voltage": "13200",
+                "location": "",
+                "source": "OpenStreetMap"
+              },
+              {
+                "osmType": "node",
+                "osmId": 12,
+                "type": "transformer",
+                "infrastructureClass": "transformer",
+                "distanceFt": 804.6290802519775,
+                "operator": "",
+                "voltage": "",
+                "location": "",
+                "source": "OpenStreetMap"
+              }
+            ],
+            "source": "OpenStreetMap / Overpass API",
+            "sourceUrl": "https://www.openstreetmap.org",
+            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
+          },
+          "distribution": {
+            "status": "osm_mapped_proximity",
+            "estimatedDistanceFt": 88,
+            "confidence": "high",
+            "infrastructure": "overhead_distribution",
+            "note": "Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route."
+          }
+        }
+      }
+    },
+    "requests": [
+      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A15%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B",
+      "POST https://overpass.private.coffee/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A15%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B"
+    ]
+  },
+  "power: both Overpass endpoints fail": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600, s-maxage=86400",
+        "body": {
+          "available": false,
+          "status": "provider_unknown",
+          "provider": "",
+          "proximity": {
+            "available": false,
+            "adapter": "osm-power-v1",
+            "status": "source_unavailable",
+            "confidence": "low",
+            "error": "Overpass returned 504"
+          },
+          "distribution": {
+            "status": "source_unavailable",
+            "estimatedDistanceFt": null,
+            "confidence": "low",
+            "infrastructure": "unknown",
+            "note": "Electric utility territory was not identified for this parcel."
+          },
+          "verification": {
+            "required": true,
+            "recommendation": "Confirm the serving electric utility and parcel-level service availability before purchase."
+          }
+        }
+      }
+    }
+  },
+  "montana parcels: Yellowstone tax parcel": {
+    "output": {
+      "ok": {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -108.5,
+                45.78
+              ],
+              [
+                -108.499,
+                45.78
+              ],
+              [
+                -108.499,
+                45.781
+              ],
+              [
+                -108.5,
+                45.781
+              ],
+              [
+                -108.5,
+                45.78
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "GEOCODE": "03103323101010000",
+          "TAX_ID": "A12345",
+          "FULLADD": "1 TEST LN",
+          "CityStateZip": "BILLINGS MT 59101",
+          "PropertyCardLink": "https://svc.mt.gov/msl/cadastral/?geocode=03103323101010000",
+          "ORIG_PARCEL_ID": "03103323101010000",
+          "PARCEL_ID_NR": "03103323101010000",
+          "COUNTY_NM": "Yellowstone",
+          "_countyDisplay": "Yellowstone",
+          "_stateCode": "MT",
+          "_stateDisplay": "Montana",
+          "SITUS_ADDRESS": "1 TEST LN",
+          "SITUS_CITY_NM": "BILLINGS MT 59101",
+          "SITUS_ZIP_NR": "",
+          "DATA_LINK": "https://www.yellowstonecountymt.gov/Treasurer/PropertySearch/"
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?f=geojson&where=%28UPPER%28GEOCODE%29%3D%2703103323101010000%27+OR+UPPER%28GEO_CODE%29%3D%2703103323101010000%27+OR+UPPER%28TAX_ID%29%3D%2703103323101010000%27+OR+UPPER%28TAXID%29%3D%2703103323101010000%27+OR+PROP_ID%3D3103323101010000%29&outFields=OBJECTID%2CGEOCODE%2CTAX_ID%2CPROP_ID%2CADDR%2CGEO_CODE%2CTAXID%2CFULLADD%2CSHORTLEGAL%2CShape.STArea%28%29%2CShape.STLength%28%29&returnGeometry=true&outSR=4326&resultRecordCount=10"
+    ]
+  },
+  "montana parcels: Yellowstone miss falls back to statewide": {
+    "output": {
+      "ok": {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -111.05,
+                45.68
+              ],
+              [
+                -111.04899999999999,
+                45.68
+              ],
+              [
+                -111.04899999999999,
+                45.681
+              ],
+              [
+                -111.05,
+                45.681
+              ],
+              [
+                -111.05,
+                45.68
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "PARCELID": "06079821101010000",
+          "Geocode": "06-0798-21-1-01-01-0000",
+          "AddressLine1": "5 RANCH RD",
+          "CityStateZip": "BOZEMAN MT 59715",
+          "COUNTY_NM": "Yellowstone",
+          "PropertyCardLink": "https://svc.mt.gov/msl/cadastral/?geocode=06079821101010000",
+          "ORIG_PARCEL_ID": "06079821101010000",
+          "PARCEL_ID_NR": "06079821101010000",
+          "_countyDisplay": "Yellowstone",
+          "_stateCode": "MT",
+          "_stateDisplay": "Montana",
+          "SITUS_ADDRESS": "5 RANCH RD",
+          "SITUS_CITY_NM": "BOZEMAN MT 59715",
+          "SITUS_ZIP_NR": "",
+          "DATA_LINK": "https://svc.mt.gov/msl/cadastral/?geocode=06079821101010000"
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?f=geojson&where=%28UPPER%28PARCELID%29%3D%2706079821101010000%27+OR+UPPER%28Geocode%29%3D%2706079821101010000%27+OR+UPPER%28AssessmentCode%29%3D%2706079821101010000%27%29&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&returnGeometry=true&outSR=4326&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query?f=geojson&where=%28UPPER%28GEOCODE%29%3D%2706079821101010000%27+OR+UPPER%28GEO_CODE%29%3D%2706079821101010000%27+OR+UPPER%28TAX_ID%29%3D%2706079821101010000%27+OR+UPPER%28TAXID%29%3D%2706079821101010000%27+OR+PROP_ID%3D6079821101010000%29&outFields=OBJECTID%2CGEOCODE%2CTAX_ID%2CPROP_ID%2CADDR%2CGEO_CODE%2CTAXID%2CFULLADD%2CSHORTLEGAL%2CShape.STArea%28%29%2CShape.STLength%28%29&returnGeometry=true&outSR=4326&resultRecordCount=10"
+    ]
+  },
+  "montana parcels: statewide parcel": {
+    "output": {
+      "ok": {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -111.05,
+                45.68
+              ],
+              [
+                -111.04899999999999,
+                45.68
+              ],
+              [
+                -111.04899999999999,
+                45.681
+              ],
+              [
+                -111.05,
+                45.681
+              ],
+              [
+                -111.05,
+                45.68
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "PARCELID": "06079821101010000",
+          "Geocode": "06-0798-21-1-01-01-0000",
+          "AddressLine1": "5 RANCH RD",
+          "CityStateZip": "BOZEMAN MT 59715",
+          "COUNTY_NM": "Gallatin",
+          "PropertyCardLink": "https://svc.mt.gov/msl/cadastral/?geocode=06079821101010000",
+          "ORIG_PARCEL_ID": "06079821101010000",
+          "PARCEL_ID_NR": "06079821101010000",
+          "_countyDisplay": "Gallatin",
+          "_stateCode": "MT",
+          "_stateDisplay": "Montana",
+          "SITUS_ADDRESS": "5 RANCH RD",
+          "SITUS_CITY_NM": "BOZEMAN MT 59715",
+          "SITUS_ZIP_NR": "",
+          "DATA_LINK": "https://svc.mt.gov/msl/cadastral/?geocode=06079821101010000"
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query?f=geojson&where=%28UPPER%28PARCELID%29%3D%2706079821101010000%27+OR+UPPER%28Geocode%29%3D%2706079821101010000%27+OR+UPPER%28AssessmentCode%29%3D%2706079821101010000%27%29&outFields=RefreshDate%2COBJECTID%2CPARCELID%2CCOUNTYCD%2CGISAcres%2CTaxYear%2CPropertyID%2CAssessmentCode%2CTownship%2CRange%2CSection%2CLegalDescriptionShort%2CSubdivision%2CCertificateOfSurvey%2CAddressLine1%2CAddressLine2%2CCityStateZip%2CPropAccess%2CLevyDistrict%2CPropType%2CContinuousCropAcres%2CFallowAcres%2CFarmsiteAcres%2CForestAcres%2CGrazingAcres%2CWildHayAcres%2CIrrigatedAcres%2CNonQualAcres%2CTotalAcres%2CTotalBuildingValue%2CTotalLandValue%2CTotalValue%2CGeocode%2CPropertyCardLink%2CShape__Area%2CShape__Length&returnGeometry=true&outSR=4326&resultRecordCount=10"
+    ]
+  },
+  "montana parcels: statewide not found": {
+    "output": {
+      "error": "Parcel not found in the Montana statewide cadastral database. Try the 17-digit geocode shown on the Montana property record."
+    }
+  },
+  "montana parcels: statewide HTTP 502": {
+    "output": {
+      "error": "Montana parcel service returned 502"
+    }
+  },
+  "montana parcels: statewide ArcGIS error": {
+    "output": {
+      "error": "Invalid field"
+    }
+  },
+  "montana wells: radius grows until 5 wells": {
+    "output": {
+      "ok": {
+        "available": true,
+        "source": "Montana Bureau of Mines and Geology — Ground Water Information Center (GWIC)",
+        "sourceUrl": "https://mbmggwic.mtech.edu/",
+        "searchRadiusMiles": 4,
+        "wells": [
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.04899999999999,
+                45.681
+              ]
+            },
+            "properties": {
+              "ID": "1001",
+              "GWICId": "1001",
+              "WellTagNr": "1001",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1001",
+              "CompletedDepth": 110,
+              "StaticWaterLvl": 41,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1001&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.048,
+                45.682
+              ]
+            },
+            "properties": {
+              "ID": "1002",
+              "GWICId": "1002",
+              "WellTagNr": "1002",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1002",
+              "CompletedDepth": 120,
+              "StaticWaterLvl": 42,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1002&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.047,
+                45.683
+              ]
+            },
+            "properties": {
+              "ID": "1003",
+              "GWICId": "1003",
+              "WellTagNr": "1003",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1003",
+              "CompletedDepth": 130,
+              "StaticWaterLvl": 43,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1003&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.04599999999999,
+                45.684
+              ]
+            },
+            "properties": {
+              "ID": "1004",
+              "GWICId": "1004",
+              "WellTagNr": "1004",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1004",
+              "CompletedDepth": 140,
+              "StaticWaterLvl": 44,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1004&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.045,
+                45.685
+              ]
+            },
+            "properties": {
+              "ID": "1005",
+              "GWICId": "1005",
+              "WellTagNr": "1005",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1005",
+              "CompletedDepth": 150,
+              "StaticWaterLvl": 45,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1005&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.044,
+                45.686
+              ]
+            },
+            "properties": {
+              "ID": "1006",
+              "GWICId": "1006",
+              "WellTagNr": "1006",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1006",
+              "CompletedDepth": 160,
+              "StaticWaterLvl": 46,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1006&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -111.04299999999999,
+                45.687
+              ]
+            },
+            "properties": {
+              "ID": "1007",
+              "GWICId": "1007",
+              "WellTagNr": "1007",
+              "ProjectName": "Montana GWIC well",
+              "FileName": "GWIC 1007",
+              "CompletedDepth": 170,
+              "StaticWaterLvl": 47,
+              "FlowRateGPM": null,
+              "WorkCompletionDate": "1999-06-01",
+              "WellProjectType": "WELL",
+              "WellSubType": "Drilled",
+              "Status": "Active",
+              "ReportLink": "https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=1007&agency=mbmg&reqby=M",
+              "_source": "Montana Bureau of Mines and Geology GWIC — Boreholes"
+            }
+          }
+        ]
+      }
+    },
+    "requests": [
+      "GET https://mbmgmap.mtech.edu/server/rest/services/Water_Resources/GWIC_Database/FeatureServer/4/query?f=json&where=total_depth_ft_bgs+IS+NOT+NULL+AND+total_depth_ft_bgs+%3E+0&geometry=%7B%22xmin%22%3A-111.09148698514501%2C%22ymin%22%3A45.651014492753625%2C%22xmax%22%3A-111.00851301485498%2C%22ymax%22%3A45.708985507246375%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=gwicid%2Clatitude%2Clongitude%2Ctotal_depth_ft_bgs%2Cstatic_water_level_ft_bgs%2Cdate_completed%2Cstatus%2Cconstruction_type%2Csite_type%2Cabandoned_flag&resultRecordCount=2000",
+      "GET https://mbmgmap.mtech.edu/server/rest/services/Water_Resources/GWIC_Database/FeatureServer/4/query?f=json&where=total_depth_ft_bgs+IS+NOT+NULL+AND+total_depth_ft_bgs+%3E+0&geometry=%7B%22xmin%22%3A-111.13297397029002%2C%22ymin%22%3A45.62202898550725%2C%22xmax%22%3A-110.96702602970997%2C%22ymax%22%3A45.73797101449275%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=gwicid%2Clatitude%2Clongitude%2Ctotal_depth_ft_bgs%2Cstatic_water_level_ft_bgs%2Cdate_completed%2Cstatus%2Cconstruction_type%2Csite_type%2Cabandoned_flag&resultRecordCount=2000"
+    ]
+  },
+  "montana wells: HTTP 500": {
+    "output": {
+      "error": "GWIC Boreholes service returned 500"
+    }
+  },
+  "montana wells: ArcGIS error without message": {
+    "output": {
+      "error": "GWIC Boreholes query failed"
+    }
+  },
+  "idaho wells: radius grows until 5 wells": {
+    "output": {
+      "ok": {
+        "available": true,
+        "state": "ID",
+        "source": "Idaho Department of Water Resources Well Database",
+        "wells": [
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -116.8,
+                47.7
+              ]
+            },
+            "properties": {
+              "WellID": 500,
+              "PermitID": null,
+              "MetalTagNumber": null,
+              "ConstructionDate": 1104537600000,
+              "WellUse": "Domestic",
+              "CountyName": "Kootenai",
+              "TotalDepth": 150,
+              "StaticWaterLevel": 60,
+              "ProductionRate": 20,
+              "WellDocs": "https://idwr.example/well/500",
+              "ID": 500,
+              "WellTagNr": 500,
+              "ProjectName": "Domestic",
+              "CompletedDepth": 150,
+              "StaticWaterLvl": 60,
+              "FlowRateGPM": 20,
+              "WorkCompletionDate": 1104537600000,
+              "FileName": "https://idwr.example/well/500",
+              "_source": "Idaho Department of Water Resources"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -116.798,
+                47.7
+              ]
+            },
+            "properties": {
+              "WellID": 502,
+              "PermitID": null,
+              "MetalTagNumber": null,
+              "ConstructionDate": 1104537600000,
+              "WellUse": "Domestic",
+              "CountyName": "Kootenai",
+              "TotalDepth": 152,
+              "StaticWaterLevel": 60,
+              "ProductionRate": 20,
+              "WellDocs": "https://idwr.example/well/502",
+              "ID": 502,
+              "WellTagNr": 502,
+              "ProjectName": "Domestic",
+              "CompletedDepth": 152,
+              "StaticWaterLvl": 60,
+              "FlowRateGPM": 20,
+              "WorkCompletionDate": 1104537600000,
+              "FileName": "https://idwr.example/well/502",
+              "_source": "Idaho Department of Water Resources"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -116.797,
+                47.7
+              ]
+            },
+            "properties": {
+              "WellID": 503,
+              "PermitID": null,
+              "MetalTagNumber": "D003",
+              "ConstructionDate": 1104537600000,
+              "WellUse": "Domestic",
+              "CountyName": "Kootenai",
+              "TotalDepth": 153,
+              "StaticWaterLevel": 60,
+              "ProductionRate": 20,
+              "WellDocs": "https://idwr.example/well/503",
+              "ID": 503,
+              "WellTagNr": "D003",
+              "ProjectName": "Domestic",
+              "CompletedDepth": 153,
+              "StaticWaterLvl": 60,
+              "FlowRateGPM": 20,
+              "WorkCompletionDate": 1104537600000,
+              "FileName": "https://idwr.example/well/503",
+              "_source": "Idaho Department of Water Resources"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -116.79599999999999,
+                47.7
+              ]
+            },
+            "properties": {
+              "WellID": 504,
+              "PermitID": null,
+              "MetalTagNumber": null,
+              "ConstructionDate": 1104537600000,
+              "WellUse": "Domestic",
+              "CountyName": "Kootenai",
+              "TotalDepth": 154,
+              "StaticWaterLevel": 60,
+              "ProductionRate": 20,
+              "WellDocs": "https://idwr.example/well/504",
+              "ID": 504,
+              "WellTagNr": 504,
+              "ProjectName": "Domestic",
+              "CompletedDepth": 154,
+              "StaticWaterLvl": 60,
+              "FlowRateGPM": 20,
+              "WorkCompletionDate": 1104537600000,
+              "FileName": "https://idwr.example/well/504",
+              "_source": "Idaho Department of Water Resources"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -116.795,
+                47.7
+              ]
+            },
+            "properties": {
+              "WellID": 505,
+              "PermitID": null,
+              "MetalTagNumber": "D005",
+              "ConstructionDate": 1104537600000,
+              "WellUse": "Domestic",
+              "CountyName": "Kootenai",
+              "TotalDepth": 155,
+              "StaticWaterLevel": 60,
+              "ProductionRate": 20,
+              "WellDocs": "https://idwr.example/well/505",
+              "ID": 505,
+              "WellTagNr": "D005",
+              "ProjectName": "Domestic",
+              "CompletedDepth": 155,
+              "StaticWaterLvl": 60,
+              "FlowRateGPM": 20,
+              "WorkCompletionDate": 1104537600000,
+              "FileName": "https://idwr.example/well/505",
+              "_source": "Idaho Department of Water Resources"
+            }
+          },
+          {
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                -116.794,
+                47.7
+              ]
+            },
+            "properties": {
+              "WellID": 506,
+              "PermitID": null,
+              "MetalTagNumber": null,
+              "ConstructionDate": 1104537600000,
+              "WellUse": "Domestic",
+              "CountyName": "Kootenai",
+              "TotalDepth": 156,
+              "StaticWaterLevel": 60,
+              "ProductionRate": 20,
+              "WellDocs": "https://idwr.example/well/506",
+              "ID": 506,
+              "WellTagNr": 506,
+              "ProjectName": "Domestic",
+              "CompletedDepth": 156,
+              "StaticWaterLvl": 60,
+              "FlowRateGPM": 20,
+              "WorkCompletionDate": 1104537600000,
+              "FileName": "https://idwr.example/well/506",
+              "_source": "Idaho Department of Water Resources"
+            }
+          }
+        ]
+      }
+    },
+    "requests": [
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=10&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=5&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200"
+    ]
+  },
+  "idaho wells: HTTP 503": {
+    "output": {
+      "error": "Idaho well service returned 503"
+    }
+  },
+  "idaho wells: ArcGIS error": {
+    "output": {
+      "error": "Error performing query operation"
+    }
+  },
+  "spokane: zoning, plan, jurisdiction and permits": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Spokane",
+        "parcelId": "47174.9017",
+        "address": "123 TEST RD",
+        "jurisdiction": "Spokane County",
+        "countyStatus": "official_adapter",
+        "source": "Spokane County SCOUT / Building & Planning GIS",
+        "sourceUrl": "https://cp.spokanecounty.org/scout/propertyinformation/",
+        "zoning": {
+          "status": "gis_match",
+          "code": "RR-5",
+          "name": "Rural Residential 5",
+          "label": "Official mapped zoning",
+          "note": "Mapped directly from Spokane County SCOUT zoning. Verify allowed uses, density, setbacks and overlays with Spokane County or the applicable city.",
+          "url": "https://cp.spokanecounty.org/scout/propertyinformation/",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3",
+          "sourceField": "ZONECLASS",
+          "zoneFileNumber": "ZE-1-99",
+          "developmentAgreement": "",
+          "developmentAgreementUrl": ""
+        },
+        "comprehensivePlan": {
+          "available": true,
+          "code": "RR",
+          "name": "Rural Residential",
+          "developmentAgreement": "",
+          "developmentAgreementUrl": "",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/4"
+        },
+        "urbanGrowthArea": {
+          "intersects": false,
+          "name": "",
+          "type": "",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/2"
+        },
+        "permitJurisdiction": {
+          "name": "Spokane County",
+          "attributes": {
+            "JURISDICTION": "Spokane County"
+          },
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+        },
+        "permitHistory": [
+          {
+            "number": "B-1",
+            "type": "Residential",
+            "status": "Final",
+            "address": "123 TEST RD",
+            "issuedDate": "2010-01-01",
+            "appliedDate": "",
+            "description": "",
+            "url": ""
+          },
+          {
+            "number": "B-2",
+            "type": "Septic",
+            "status": "Issued",
+            "address": "123 TEST RD",
+            "issuedDate": "",
+            "appliedDate": "2020-04-02",
+            "description": "",
+            "url": ""
+          }
+        ],
+        "permitHistoryStatus": "found",
+        "permitHistoryError": "",
+        "agencies": {
+          "county": "Spokane",
+          "status": "configured",
+          "jurisdiction": "Spokane County",
+          "catalogQueries": [
+            "Spokane County Washington zoning",
+            "Spokane County generalized zoning",
+            "Spokane County current zoning",
+            "Spokane County land use zoning"
+          ],
+          "serviceCandidates": [],
+          "codeFields": [
+            "ZONING",
+            "ZONE",
+            "ZONE_CODE",
+            "ZONING_CODE",
+            "ZONECLASS",
+            "ZONINGCLASS",
+            "DESIGNATION"
+          ],
+          "nameFields": [
+            "ZONE_NAME",
+            "ZONING_NAME",
+            "DESCRIPTION",
+            "ZONE_DESC",
+            "ZONING_DESC",
+            "DESIGNATION"
+          ],
+          "layerNamePattern": {},
+          "planningAgency": "Spokane County Building & Planning",
+          "healthAgency": "Spokane Regional Health District",
+          "roadAgency": "Spokane County Public Works",
+          "planningUrl": "https://www.spokanecounty.org/194/Building-Planning",
+          "zoningMapUrl": "https://cp.spokanecounty.org/scout/scoutdashboard/",
+          "permitUrl": "https://www.spokanecounty.org/194/Building-Planning",
+          "septicUrl": "https://srhd.org/programs-and-services/environmental-health/onsite-sewage",
+          "preferredOwners": [
+            "SpokaneCountyGIS",
+            "Spokane_County",
+            "SpokaneCounty"
+          ]
+        },
+        "permits": [
+          {
+            "name": "Land-use / zoning verification",
+            "agency": "Spokane County Building & Planning",
+            "status": "Verify",
+            "reason": "Confirm allowed use, setbacks, minimum lot size and overlays before design.",
+            "url": "https://cp.spokanecounty.org/scout/scoutdashboard/"
+          },
+          {
+            "name": "Building permit",
+            "agency": "Spokane County Building & Planning",
+            "status": "Likely",
+            "reason": "Normally required for a new residence, shop or other permitted structure.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          },
+          {
+            "name": "On-site septic approval",
+            "agency": "Spokane Regional Health District",
+            "status": "Likely",
+            "reason": "Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.",
+            "url": "https://srhd.org/programs-and-services/environmental-health/onsite-sewage"
+          },
+          {
+            "name": "Well notice / water review",
+            "agency": "Washington Department of Ecology and local health authority",
+            "status": "Possible",
+            "reason": "Well construction, water availability and drinking-water requirements vary by project and location.",
+            "url": "https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells"
+          },
+          {
+            "name": "Driveway / road approach permit",
+            "agency": "Spokane County Public Works",
+            "status": "Possible",
+            "reason": "Often required for a new or modified connection to a county or state road.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          },
+          {
+            "name": "Critical-areas review",
+            "agency": "Spokane County Building & Planning",
+            "status": "Possible",
+            "reason": "Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          }
+        ]
+      }
+    },
+    "requests": [
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/BPPublic/MapServer/5/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-117.4%2C47.6%5D%2C%5B-117.399%2C47.6%5D%2C%5B-117.399%2C47.601%5D%2C%5B-117.4%2C47.601%5D%2C%5B-117.4%2C47.6%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=100",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=100",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/2/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME%2CTYPE&returnGeometry=false&resultRecordCount=100",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS%2CZONEDESC%2CZFILENUM%2CCOMMENTS%2CURL%2CDevFileNum%2CDevURL&returnGeometry=false&resultRecordCount=100",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/4/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=LANDUSECODE%2CLANDUSEDESC%2CCOMMENTS%2CDevFileNum%2CDevURL&returnGeometry=false&resultRecordCount=100"
+    ]
+  },
+  "spokane: zoning HTTP 500 and permits ArcGIS error degrade per layer": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Spokane",
+        "parcelId": "47174.9017",
+        "address": "",
+        "jurisdiction": "Spokane County",
+        "countyStatus": "official_adapter",
+        "source": "Spokane County SCOUT / Building & Planning GIS",
+        "sourceUrl": "https://cp.spokanecounty.org/scout/propertyinformation/",
+        "zoning": {
+          "status": "no_match",
+          "code": null,
+          "name": "",
+          "label": "No mapped zoning result",
+          "note": "Spokane zoning service error: Spokane County GIS returned 500",
+          "url": "https://cp.spokanecounty.org/scout/propertyinformation/"
+        },
+        "comprehensivePlan": {
+          "available": true,
+          "code": "RR",
+          "name": "Rural Residential",
+          "developmentAgreement": "",
+          "developmentAgreementUrl": "",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/4"
+        },
+        "urbanGrowthArea": {
+          "intersects": false,
+          "name": "",
+          "type": "",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/2"
+        },
+        "permitJurisdiction": {
+          "name": "Spokane County",
+          "attributes": {
+            "JURISDICTION": "Spokane County"
+          },
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+        },
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "permitHistoryError": "Invalid geometry",
+        "agencies": {
+          "county": "Spokane",
+          "status": "configured",
+          "jurisdiction": "Spokane County",
+          "catalogQueries": [
+            "Spokane County Washington zoning",
+            "Spokane County generalized zoning",
+            "Spokane County current zoning",
+            "Spokane County land use zoning"
+          ],
+          "serviceCandidates": [],
+          "codeFields": [
+            "ZONING",
+            "ZONE",
+            "ZONE_CODE",
+            "ZONING_CODE",
+            "ZONECLASS",
+            "ZONINGCLASS",
+            "DESIGNATION"
+          ],
+          "nameFields": [
+            "ZONE_NAME",
+            "ZONING_NAME",
+            "DESCRIPTION",
+            "ZONE_DESC",
+            "ZONING_DESC",
+            "DESIGNATION"
+          ],
+          "layerNamePattern": {},
+          "planningAgency": "Spokane County Building & Planning",
+          "healthAgency": "Spokane Regional Health District",
+          "roadAgency": "Spokane County Public Works",
+          "planningUrl": "https://www.spokanecounty.org/194/Building-Planning",
+          "zoningMapUrl": "https://cp.spokanecounty.org/scout/scoutdashboard/",
+          "permitUrl": "https://www.spokanecounty.org/194/Building-Planning",
+          "septicUrl": "https://srhd.org/programs-and-services/environmental-health/onsite-sewage",
+          "preferredOwners": [
+            "SpokaneCountyGIS",
+            "Spokane_County",
+            "SpokaneCounty"
+          ]
+        },
+        "permits": [
+          {
+            "name": "Land-use / zoning verification",
+            "agency": "Spokane County Building & Planning",
+            "status": "Verify",
+            "reason": "Confirm allowed use, setbacks, minimum lot size and overlays before design.",
+            "url": "https://cp.spokanecounty.org/scout/scoutdashboard/"
+          },
+          {
+            "name": "Building permit",
+            "agency": "Spokane County Building & Planning",
+            "status": "Likely",
+            "reason": "Normally required for a new residence, shop or other permitted structure.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          },
+          {
+            "name": "On-site septic approval",
+            "agency": "Spokane Regional Health District",
+            "status": "Likely",
+            "reason": "Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.",
+            "url": "https://srhd.org/programs-and-services/environmental-health/onsite-sewage"
+          },
+          {
+            "name": "Well notice / water review",
+            "agency": "Washington Department of Ecology and local health authority",
+            "status": "Possible",
+            "reason": "Well construction, water availability and drinking-water requirements vary by project and location.",
+            "url": "https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells"
+          },
+          {
+            "name": "Driveway / road approach permit",
+            "agency": "Spokane County Public Works",
+            "status": "Possible",
+            "reason": "Often required for a new or modified connection to a county or state road.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          },
+          {
+            "name": "Critical-areas review",
+            "agency": "Spokane County Building & Planning",
+            "status": "Possible",
+            "reason": "Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          }
+        ]
+      }
+    }
+  },
+  "spokane: zoning ArcGIS error without message": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Spokane",
+        "parcelId": "",
+        "address": "",
+        "jurisdiction": "Spokane County",
+        "countyStatus": "official_adapter",
+        "source": "Spokane County SCOUT / Building & Planning GIS",
+        "sourceUrl": "https://cp.spokanecounty.org/scout/propertyinformation/",
+        "zoning": {
+          "status": "no_match",
+          "code": null,
+          "name": "",
+          "label": "No mapped zoning result",
+          "note": "Spokane zoning service error: Spokane County GIS query failed",
+          "url": "https://cp.spokanecounty.org/scout/propertyinformation/"
+        },
+        "comprehensivePlan": {
+          "available": true,
+          "code": "RR",
+          "name": "Rural Residential",
+          "developmentAgreement": "",
+          "developmentAgreementUrl": "",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/4"
+        },
+        "urbanGrowthArea": {
+          "intersects": false,
+          "name": "",
+          "type": "",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/2"
+        },
+        "permitJurisdiction": {
+          "name": "Spokane County",
+          "attributes": {
+            "JURISDICTION": "Spokane County"
+          },
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+        },
+        "permitHistory": [
+          {
+            "number": "B-1",
+            "type": "Residential",
+            "status": "Final",
+            "address": "123 TEST RD",
+            "issuedDate": "2010-01-01",
+            "appliedDate": "",
+            "description": "",
+            "url": ""
+          },
+          {
+            "number": "B-2",
+            "type": "Septic",
+            "status": "Issued",
+            "address": "123 TEST RD",
+            "issuedDate": "",
+            "appliedDate": "2020-04-02",
+            "description": "",
+            "url": ""
+          }
+        ],
+        "permitHistoryStatus": "found",
+        "permitHistoryError": "",
+        "agencies": {
+          "county": "Spokane",
+          "status": "configured",
+          "jurisdiction": "Spokane County",
+          "catalogQueries": [
+            "Spokane County Washington zoning",
+            "Spokane County generalized zoning",
+            "Spokane County current zoning",
+            "Spokane County land use zoning"
+          ],
+          "serviceCandidates": [],
+          "codeFields": [
+            "ZONING",
+            "ZONE",
+            "ZONE_CODE",
+            "ZONING_CODE",
+            "ZONECLASS",
+            "ZONINGCLASS",
+            "DESIGNATION"
+          ],
+          "nameFields": [
+            "ZONE_NAME",
+            "ZONING_NAME",
+            "DESCRIPTION",
+            "ZONE_DESC",
+            "ZONING_DESC",
+            "DESIGNATION"
+          ],
+          "layerNamePattern": {},
+          "planningAgency": "Spokane County Building & Planning",
+          "healthAgency": "Spokane Regional Health District",
+          "roadAgency": "Spokane County Public Works",
+          "planningUrl": "https://www.spokanecounty.org/194/Building-Planning",
+          "zoningMapUrl": "https://cp.spokanecounty.org/scout/scoutdashboard/",
+          "permitUrl": "https://www.spokanecounty.org/194/Building-Planning",
+          "septicUrl": "https://srhd.org/programs-and-services/environmental-health/onsite-sewage",
+          "preferredOwners": [
+            "SpokaneCountyGIS",
+            "Spokane_County",
+            "SpokaneCounty"
+          ]
+        },
+        "permits": [
+          {
+            "name": "Land-use / zoning verification",
+            "agency": "Spokane County Building & Planning",
+            "status": "Verify",
+            "reason": "Confirm allowed use, setbacks, minimum lot size and overlays before design.",
+            "url": "https://cp.spokanecounty.org/scout/scoutdashboard/"
+          },
+          {
+            "name": "Building permit",
+            "agency": "Spokane County Building & Planning",
+            "status": "Likely",
+            "reason": "Normally required for a new residence, shop or other permitted structure.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          },
+          {
+            "name": "On-site septic approval",
+            "agency": "Spokane Regional Health District",
+            "status": "Likely",
+            "reason": "Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.",
+            "url": "https://srhd.org/programs-and-services/environmental-health/onsite-sewage"
+          },
+          {
+            "name": "Well notice / water review",
+            "agency": "Washington Department of Ecology and local health authority",
+            "status": "Possible",
+            "reason": "Well construction, water availability and drinking-water requirements vary by project and location.",
+            "url": "https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells"
+          },
+          {
+            "name": "Driveway / road approach permit",
+            "agency": "Spokane County Public Works",
+            "status": "Possible",
+            "reason": "Often required for a new or modified connection to a county or state road.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          },
+          {
+            "name": "Critical-areas review",
+            "agency": "Spokane County Building & Planning",
+            "status": "Possible",
+            "reason": "Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.",
+            "url": "https://www.spokanecounty.org/194/Building-Planning"
+          }
+        ]
+      }
+    }
+  },
+  "yellowstone: county zoning at the parcel center": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Yellowstone",
+        "state": "MT",
+        "countyStatus": "yellowstone-v2",
+        "jurisdiction": "Yellowstone County",
+        "permitJurisdiction": {
+          "name": "Yellowstone County"
+        },
+        "zoning": {
+          "status": "gis_match",
+          "code": "A-1",
+          "name": "Agricultural Open Space",
+          "label": "A-1 — Agricultural Open Space",
+          "note": "Mapped Yellowstone County Zoning result from Yellowstone County GIS using parcel center.",
+          "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2",
+          "url": "https://gis.yellowstonecountymt.gov/"
+        },
+        "comprehensivePlan": {},
+        "urbanGrowthArea": {
+          "intersects": false
+        },
+        "overlays": [],
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "permitHistoryError": "Recorded permit-history screening for Yellowstone County is not connected yet.",
+        "source": {
+          "agency": "Yellowstone County GIS",
+          "service": "Yellowstone County Zoning",
+          "layerId": 2,
+          "matchMethod": "parcel center"
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/0/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/8/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10"
+    ]
+  },
+  "yellowstone: parcel intersection plus entryway": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Yellowstone",
+        "state": "MT",
+        "countyStatus": "yellowstone-v2",
+        "jurisdiction": "City of Billings",
+        "permitJurisdiction": {
+          "name": "City of Billings"
+        },
+        "zoning": {
+          "status": "gis_match",
+          "code": "R-96",
+          "name": "Residential 9600",
+          "label": "R-96 — Residential 9600",
+          "note": "Mapped Billings Zoning result from Yellowstone County GIS using parcel intersection. Entryway Zoning District also intersects the parcel.",
+          "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4",
+          "url": "https://gis.yellowstonecountymt.gov/"
+        },
+        "comprehensivePlan": {},
+        "urbanGrowthArea": {
+          "intersects": false
+        },
+        "overlays": [
+          {
+            "code": "ENTRYWAY",
+            "name": "Entryway Zoning District"
+          }
+        ],
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "permitHistoryError": "Recorded permit-history screening for Yellowstone County is not connected yet.",
+        "source": {
+          "agency": "Yellowstone County GIS",
+          "service": "Billings Zoning",
+          "layerId": 4,
+          "matchMethod": "parcel intersection"
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/0/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/8/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10"
+    ]
+  },
+  "yellowstone: entryway only": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Yellowstone",
+        "state": "MT",
+        "countyStatus": "yellowstone-v2",
+        "jurisdiction": "Yellowstone County",
+        "permitJurisdiction": {
+          "name": "Yellowstone County"
+        },
+        "zoning": {
+          "status": "gis_match",
+          "code": "ENTRYWAY",
+          "name": "Entryway Zoning District",
+          "label": "ENTRYWAY — Entryway Zoning District",
+          "note": "The parcel intersects Yellowstone County’s Entryway Zoning District. No separate base-zoning polygon was returned, so verify the controlling district and development standards with county planning.",
+          "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1",
+          "url": "https://gis.yellowstonecountymt.gov/"
+        },
+        "comprehensivePlan": {},
+        "urbanGrowthArea": {
+          "intersects": false
+        },
+        "overlays": [
+          {
+            "code": "ENTRYWAY",
+            "name": "Entryway Zoning District"
+          }
+        ],
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "permitHistoryError": "Recorded permit-history screening for Yellowstone County is not connected yet.",
+        "source": {
+          "agency": "Yellowstone County GIS",
+          "service": "Entryway Zoning District",
+          "layerId": 1
+        }
+      }
+    }
+  },
+  "yellowstone: failing layers and no match": {
+    "output": {
+      "ok": {
+        "available": false,
+        "county": "Yellowstone",
+        "state": "MT",
+        "countyStatus": "yellowstone-v2",
+        "jurisdiction": "Yellowstone County",
+        "permitJurisdiction": {
+          "name": "Yellowstone County"
+        },
+        "zoning": {
+          "status": "no_mapped_result",
+          "label": "No mapped zoning district found",
+          "note": "AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers. No mapped zoning polygon intersected the parcel. Some Yellowstone County land may be outside a mapped zoning district; verify with the applicable planning authority before relying on this result.",
+          "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer"
+        },
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "permitHistoryError": "Yellowstone permit-history adapter has not been connected yet.",
+        "errors": [
+          "Billings Zoning point query: Yellowstone zoning layer 4 returned 500",
+          "Laurel Zoning parcel query: Yellowstone zoning layer 8 returned 500"
+        ]
+      }
+    }
+  },
+  "gallatin: zoning district": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Gallatin",
+        "state": "MT",
+        "countyStatus": "gallatin-v2",
+        "jurisdiction": "Gallatin County",
+        "permitJurisdiction": {
+          "name": "Gallatin County"
+        },
+        "zoning": {
+          "status": "gis_match",
+          "code": "AS",
+          "name": "Agricultural Suburban",
+          "label": "AS — Agricultural Suburban",
+          "note": "Mapped zoning result from Gallatin County GIS using the parcel center.",
+          "sourceUrl": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
+          "url": "https://www.gallatinmt.gov/588/Zoning-Guide"
+        },
+        "comprehensivePlan": {},
+        "urbanGrowthArea": {
+          "intersects": false
+        },
+        "overlays": [],
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "source": {
+          "agency": "Gallatin County GIS",
+          "service": "County Zoning Districts",
+          "layerId": 42,
+          "matchMethod": "parcel center",
+          "attributes": {
+            "ZONING": "AS",
+            "ZONE_NAME": "Agricultural Suburban"
+          }
+        }
+      }
+    },
+    "requests": [
+      "POST https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query BODY f=json&where=1%3D1&geometry=%7B%22x%22%3A-111.05%2C%22y%22%3A45.68%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10"
+    ]
+  },
+  "gallatin: unzoned polygon": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Gallatin",
+        "state": "MT",
+        "countyStatus": "gallatin-v2",
+        "jurisdiction": "Gallatin County",
+        "permitJurisdiction": {
+          "name": "Gallatin County"
+        },
+        "zoning": {
+          "status": "unzoned",
+          "code": "UNZONED",
+          "name": "Unzoned area",
+          "label": "Unzoned",
+          "note": "Gallatin County GIS maps this location within its unzoned-area polygon. Verify development requirements with County Planning.",
+          "sourceUrl": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
+          "url": "https://www.gallatinmt.gov/588/Zoning-Guide"
+        },
+        "comprehensivePlan": {},
+        "urbanGrowthArea": {
+          "intersects": false
+        },
+        "overlays": [],
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "source": {
+          "agency": "Gallatin County GIS",
+          "service": "County Zoning Districts",
+          "layerId": 42,
+          "matchMethod": "parcel center",
+          "attributes": {
+            "ZONING": "UNZONED",
+            "NAME": "Unzoned"
+          }
+        }
+      }
+    }
+  },
+  "gallatin: no polygon": {
+    "output": {
+      "ok": {
+        "available": true,
+        "county": "Gallatin",
+        "state": "MT",
+        "countyStatus": "gallatin-v2",
+        "jurisdiction": "Gallatin County",
+        "permitJurisdiction": {
+          "name": "Gallatin County"
+        },
+        "zoning": {
+          "status": "no_mapped_result",
+          "label": "No mapped zoning district",
+          "note": "No Gallatin County zoning polygon intersects the parcel center. This may be an unzoned location or an area requiring Planning Department verification.",
+          "sourceUrl": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
+          "url": "https://www.gallatinmt.gov/588/Zoning-Guide"
+        },
+        "comprehensivePlan": {},
+        "urbanGrowthArea": {
+          "intersects": false
+        },
+        "overlays": [],
+        "permits": [],
+        "permitHistory": [],
+        "permitHistoryStatus": "unavailable",
+        "source": {
+          "agency": "Gallatin County GIS",
+          "service": "County Zoning Districts",
+          "layerId": 42,
+          "matchMethod": "parcel center"
+        }
+      }
+    }
+  },
+  "gallatin: HTTP 500": {
+    "output": {
+      "error": "Gallatin zoning service returned 500"
+    }
+  },
+  "gallatin: ArcGIS error": {
+    "output": {
+      "error": "Invalid geometry"
+    }
+  },
+  "legacy worker: /api/arcgis proxy answer": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=60, s-maxage=3600",
+        "body": {
+          "features": [
+            {
+              "attributes": {
+                "PARCEL": "47174.9017"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "requests": [
+      "GET https://services.arcgis.com/jsIt88o09Q0r1j8h/arcgis/rest/services/Current_Parcels/FeatureServer/0/query?where=PARCEL%3D%2747174.9017%27&outFields=PARCEL&f=json"
+    ]
+  },
+  "legacy worker: /api/arcgis proxy ArcGIS error": {
+    "output": {
+      "ok": {
+        "status": 502,
+        "cache": "no-store",
+        "body": {
+          "error": "Invalid where"
+        }
+      }
+    }
+  },
+  "legacy worker: /api/arcgis proxy HTTP 500": {
+    "output": {
+      "ok": {
+        "status": 502,
+        "cache": "no-store",
+        "body": {
+          "error": "Government data service returned 500."
+        }
+      }
+    }
+  },
+  "legacy worker: Stevens zoning through the configured service": {
+    "output": {
+      "ok": {
+        "status": 200,
+        "cache": "public, max-age=3600, s-maxage=86400",
+        "body": {
+          "available": true,
+          "county": "Stevens",
+          "parcelId": "",
+          "address": "",
+          "jurisdiction": "Stevens County (unincorporated areas)",
+          "countyStatus": "configured",
+          "zoning": {
+            "status": "gis_match",
+            "code": "R-10",
+            "name": "Rural 10",
+            "label": "Zoning Districts",
+            "note": "Mapped zoning returned from Stevens County GIS — official zoning districts. Verify permitted uses and dimensional standards with the county.",
+            "url": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer",
+            "sourceUrl": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer",
+            "sourceField": "ZONE_"
+          },
+          "agencies": {
+            "county": "Stevens",
+            "status": "configured",
+            "jurisdiction": "Stevens County (unincorporated areas)",
+            "catalogQueries": [
+              "Stevens County GIS zoning Washington",
+              "Stevens County Washington zoning districts"
+            ],
+            "serviceCandidates": [
+              {
+                "url": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer",
+                "title": "Stevens County GIS — official zoning districts"
+              }
+            ],
+            "codeFields": [
+              "ZONE",
+              "ZONING",
+              "ZONE_CODE",
+              "ZONING_CODE",
+              "ZONINGDISTRICT",
+              "ZONING_DISTRICT",
+              "DESIGNATION"
+            ],
+            "nameFields": [
+              "ZONE_NAME",
+              "ZONING_NAME",
+              "ZONE_DESC",
+              "DESCRIPTION",
+              "DISTRICT",
+              "DESIGNATION"
+            ],
+            "layerNamePattern": {},
+            "planningAgency": "Stevens County Land Services — Planning Division",
+            "healthAgency": "Northeast Tri County Health District",
+            "roadAgency": "Stevens County Public Works",
+            "planningUrl": "https://www.stevenscountywa.gov/20841/land-services",
+            "zoningMapUrl": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer",
+            "permitUrl": "https://www.stevenscountywa.gov/20841/land-services",
+            "septicUrl": "https://www.stevenscountywa.gov/20841/land-services",
+            "preferredOwners": [
+              "Stevens County GIS"
+            ]
+          },
+          "permits": [
+            {
+              "name": "Land-use / zoning verification",
+              "agency": "Stevens County Land Services — Planning Division",
+              "status": "Verify",
+              "reason": "Confirm allowed use, setbacks, minimum lot size and overlays before design.",
+              "url": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer"
+            },
+            {
+              "name": "Building permit",
+              "agency": "Stevens County Land Services — Planning Division",
+              "status": "Likely",
+              "reason": "Normally required for a new residence, shop or other permitted structure.",
+              "url": "https://www.stevenscountywa.gov/20841/land-services"
+            },
+            {
+              "name": "On-site septic approval",
+              "agency": "Northeast Tri County Health District",
+              "status": "Likely",
+              "reason": "Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.",
+              "url": "https://www.stevenscountywa.gov/20841/land-services"
+            },
+            {
+              "name": "Well notice / water review",
+              "agency": "Washington Department of Ecology and local health authority",
+              "status": "Possible",
+              "reason": "Well construction, water availability and drinking-water requirements vary by project and location.",
+              "url": "https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells"
+            },
+            {
+              "name": "Driveway / road approach permit",
+              "agency": "Stevens County Public Works",
+              "status": "Possible",
+              "reason": "Often required for a new or modified connection to a county or state road.",
+              "url": "https://www.stevenscountywa.gov/20841/land-services"
+            },
+            {
+              "name": "Critical-areas review",
+              "agency": "Stevens County Land Services — Planning Division",
+              "status": "Possible",
+              "reason": "Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.",
+              "url": "https://www.stevenscountywa.gov/20841/land-services"
+            },
+            {
+              "name": "Existing septic as-built / permit record search",
+              "agency": "Northeast Tri County Health District",
+              "status": "Not verified",
+              "reason": "Search the public NETCHD portal by parcel or address. A missing online result does not prove no system exists; request a staff search when necessary.",
+              "url": "https://www.netchd.org/227/Sewage-Permit-Record-Search"
+            },
+            {
+              "name": "Septic soil / site evaluation",
+              "agency": "Northeast Tri County Health District",
+              "status": "Possible",
+              "reason": "For new on-site sewage systems, obtain site evaluation and design/permit approval. Existing records do not confirm system condition or capacity.",
+              "url": "https://www.netchd.org/226/Applications-Forms-Resources"
+            },
+            {
+              "name": "Residential site analysis",
+              "agency": "Stevens County Land Services — Planning",
+              "status": "Verify",
+              "reason": "Determine whether a site analysis and critical-area/shoreline review is needed before building or placing a manufactured home.",
+              "url": "https://www.stevenscountywa.gov/21344"
+            },
+            {
+              "name": "Manufactured/mobile home placement permit",
+              "agency": "Stevens County Land Services — Building",
+              "status": "If applicable",
+              "reason": "Manufactured and mobile homes use a placement permit, not the standard residential building permit for IRC modular homes.",
+              "url": "https://www.stevenscountywa.gov/20898/Building-Permit"
+            }
+          ],
+          "permitHistory": [],
+          "permitHistoryStatus": "not_configured"
+        }
+      }
+    },
+    "requests": [
+      "GET https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/3/query?f=json&where=1%3D1&geometry=-117.9%2C48.2&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false",
+      "GET https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer?f=json"
+    ]
+  }
+}

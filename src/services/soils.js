@@ -1,6 +1,10 @@
-import { fetchWithTimeout } from '../shared/http.js';
+import { upstreamJson } from '../shared/upstream.js';
 
 const USDA_SOIL_URL = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
+// Was one 20 s attempt (headers only). Now 12 s + one retry at 8 s, both covering the body, so the
+// worst case stays about 20 s.
+export const SOIL_TIMEOUT_MS = 12000;
+export const SOIL_RETRY_TIMEOUT_MS = 8000;
 
 function classifyFeasibility({ drainage, hydrologicGroup, slopePct }) {
   const drainageText = String(drainage || '').toLowerCase();
@@ -47,28 +51,31 @@ export async function soilAt(lon, lat) {
     ORDER BY c.comppct_r DESC
   `;
 
-  const response = await fetchWithTimeout(USDA_SOIL_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      service: 'query',
-      request: 'query',
-      query,
-      format: 'JSON+COLUMNNAME'
-    }),
-    cf: { cacheTtl: 2592000, cacheEverything: true }
-  }, 20000);
-
-  let data = null;
+  let data;
   try {
-    data = await response.json();
-  } catch {
-    throw new Error(`USDA soil service returned ${response.status} with an invalid response.`);
-  }
-
-  if (!response.ok) {
-    const upstream = data?.error || data?.message || data?.Error || data?.Messages?.[0];
-    throw new Error(upstream ? `USDA soil service: ${upstream}` : `USDA soil service returned ${response.status}.`);
+    data = await upstreamJson(USDA_SOIL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service: 'query',
+        request: 'query',
+        query,
+        format: 'JSON+COLUMNNAME'
+      }),
+      timeoutMs: SOIL_TIMEOUT_MS,
+      retryTimeoutMs: SOIL_RETRY_TIMEOUT_MS,
+      label: 'usda-sda-soil',
+      agency: 'USDA soil service'
+    });
+  } catch (error) {
+    if (error.kind === 'json') throw new Error(`USDA soil service returned ${error.status} with an invalid response.`);
+    if (error.kind === 'http') {
+      const body = error.body;
+      if (!body || typeof body !== 'object') throw new Error(`USDA soil service returned ${error.status} with an invalid response.`);
+      const upstream = body.error || body.message || body.Error || body.Messages?.[0];
+      throw new Error(upstream ? `USDA soil service: ${upstream}` : `USDA soil service returned ${error.status}.`);
+    }
+    throw error;
   }
 
   const row = parseSoilTable(data.Table);

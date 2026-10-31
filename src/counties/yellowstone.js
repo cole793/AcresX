@@ -1,4 +1,13 @@
-import { fetchWithTimeout } from '../shared/http.js';
+import { cachedJson, upstreamJson } from '../shared/upstream.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
+
+// Answers are cached per parcel for a day (Cache API), only when every layer query that ran
+// succeeded (a failed layer could hide the controlling zone).
+// Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
+// stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
+// prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
+export const YELLOWSTONE_CACHE_PREFIX = 'https://acresx.internal/cache/yellowstone-intelligence/v2/';
+const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 const ZONING_SERVICE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer';
 
@@ -63,22 +72,22 @@ async function queryLayer(layerId, { lon, lat, geometry } = {}) {
   url.searchParams.set('returnGeometry', 'false');
   url.searchParams.set('resultRecordCount', '10');
 
-  const response = await fetchWithTimeout(url, {
-    cf: { cacheTtl: 3600, cacheEverything: true }
-  }, 15000);
-  if (!response.ok) throw new Error(`Yellowstone zoning layer ${layerId} returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || `Yellowstone zoning layer ${layerId} failed`);
+  // Was one 15 s attempt; now 9 s + one retry at 6 s (body included).
+  const data = await upstreamJson(url, {
+    timeoutMs: 9000, retryTimeoutMs: 6000, arcgis: true, label: `yellowstone-zoning-${layerId}`,
+    agency: `Yellowstone zoning layer ${layerId}`, arcgisMessage: `Yellowstone zoning layer ${layerId} failed`
+  });
   return data.features || [];
 }
 
-async function queryJurisdiction(lon, lat, geometry) {
+async function queryJurisdiction(lon, lat, geometry, failures) {
   try {
     let features = await queryLayer(7, { lon, lat });
     if (!features.length && geometry) features = await queryLayer(7, { geometry });
     const attrs = features[0]?.attributes || {};
     return valueFrom(attrs, ['JURISDICTION','JURISDICT','NAME','AGENCY','ENTITY','CITY']) || fallbackZoneValue(attrs);
-  } catch {
+  } catch (error) {
+    failures.push(error);
     return '';
   }
 }
@@ -120,12 +129,13 @@ async function findBaseZone(lon, lat, geometry, errors) {
   return null;
 }
 
-async function findEntrywayOverlay(lon, lat, geometry) {
+async function findEntrywayOverlay(lon, lat, geometry, failures) {
   try {
     let features = await queryLayer(ENTRYWAY_LAYER.id, { lon, lat });
     if (!features.length && geometry) features = await queryLayer(ENTRYWAY_LAYER.id, { geometry });
     return features.length ? { layer: ENTRYWAY_LAYER, attrs: features[0].attributes || {} } : null;
-  } catch {
+  } catch (error) {
+    failures.push(error);
     return null;
   }
 }
@@ -135,11 +145,18 @@ export async function getYellowstoneCountyIntelligence(body) {
   const lon = Number(body.lon);
   const geometry = body.geometry || null;
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Yellowstone zoning requires parcel coordinates.');
+  const failures = [];
+  return cachedJson(YELLOWSTONE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS,
+    async () => withoutPersonalFields(await lookupYellowstone(lon, lat, geometry, failures)),
+    { isValid: () => failures.length === 0 });
+}
 
-  const jurisdictionName = await queryJurisdiction(lon, lat, geometry);
+async function lookupYellowstone(lon, lat, geometry, failures) {
+  const jurisdictionName = await queryJurisdiction(lon, lat, geometry, failures);
   const errors = [];
   const match = await findBaseZone(lon, lat, geometry, errors);
-  const entryway = await findEntrywayOverlay(lon, lat, geometry);
+  failures.push(...errors);
+  const entryway = await findEntrywayOverlay(lon, lat, geometry, failures);
 
   if (!match && entryway) {
     const jurisdiction = jurisdictionName || 'Yellowstone County';

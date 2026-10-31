@@ -10,7 +10,15 @@
 // fields, so every answer would carry owner names and mailing addresses. Query takes outFields,
 // and KC_ASSESSOR_FIELDS lists only non-personal fields. mapKootenaiAssessorRecord() also copies
 // named fields only, so owner data cannot reach the response even if the server sent it.
-// (Not shared/http.js fetchWithTimeout: each request here also needs a shared cancel signal.)
+//
+// Requests go through the shared client (src/shared/upstream.js) with the first-hit cancel
+// signal: at most 4 run against map.kcgov.us at once (the per-host cap; the rest wait, and are
+// never sent once a hit cancels them), one attempt each. Each layer's 10 s timeout starts when
+// it is sent and covers the body; the wait for a slot has its own 12 s budget, so a layer queued
+// behind slow ones still gets its full 10 s (a 6 s server finds a PIN in layer 11 at ~12 s).
+// The cap stays at 4 on purpose: 7 assessor queries at once is what this cap was added for. Found records are cached per PIN for 7 days (Cache API); misses and errors are not.
+import { arcgisQuery, cachedJson } from '../shared/upstream.js';
+import { isFallbackEligible } from '../shared/fallback.js';
 
 export const KC_ASSESSOR = 'https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer';
 export const KC_ASSESSOR_LAYERS = [5, 6, 7, 8, 9, 10, 11];
@@ -22,6 +30,12 @@ export const KC_ASSESSOR_FIELDS = [
   'AssessValue_Date', 'AssessValue_Land', 'AssessValue_Imp', 'AssessValue_Net', 'HO_Exemption', 'PclArea_Acres'
 ].join(',');
 const TIMEOUT_MS = 10000;
+// A little over TIMEOUT_MS, so a layer queued behind four that hang is still sent when they time out.
+const QUEUE_TIMEOUT_MS = 12000;
+// The cached value is the mapped record (named non-personal fields only). Bump the version in
+// the prefix whenever KC_ASSESSOR_FIELDS or the record mapping changes.
+export const KC_ASSESSOR_CACHE_PREFIX = 'https://acresx.internal/cache/kootenai-assessor/v1/';
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function sql(value) { return String(value || '').replaceAll("'", "''"); }
 function num(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
@@ -34,25 +48,15 @@ export function kootenaiAssessorWhere(parcelId) {
   return `PIN='${id}' OR PID='${id}'`;
 }
 
-// One layer query. It stops at TIMEOUT_MS (including reading the body) or as soon as `cancel`
-// aborts, which getKootenaiAssessment() does once another layer has found the record.
-async function queryLayer(layerId, where, cancel) {
-  const url = new URL(`${KC_ASSESSOR}/${layerId}/query`);
-  for (const [k, v] of Object.entries({ where, outFields: KC_ASSESSOR_FIELDS, returnGeometry: 'false', f: 'json' })) url.searchParams.set(k, v);
-  const controller = new AbortController();
-  const onCancel = () => controller.abort();
-  cancel.addEventListener('abort', onCancel);
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const response = await fetch(url, { cf: { cacheTtl: 900, cacheEverything: true }, signal: controller.signal });
-    if (!response.ok) throw new Error(`Kootenai County Assessor layer ${layerId} returned ${response.status}`);
-    const data = await response.json();
-    if (data.error) throw new Error(`Kootenai County Assessor layer ${layerId}: ${data.error.message || 'query failed'}`);
-    return data.features || [];
-  } finally {
-    clearTimeout(timer);
-    cancel.removeEventListener('abort', onCancel);
-  }
+// One layer query. It stops TIMEOUT_MS after it is sent (reading the body included), after
+// QUEUE_TIMEOUT_MS waiting for a host slot without being sent, or as soon as `cancel` aborts, which getKootenaiAssessment() does once another layer has
+// found the record.
+function queryLayer(layerId, where, cancel) {
+  return arcgisQuery(`${KC_ASSESSOR}/${layerId}`, { where, outFields: KC_ASSESSOR_FIELDS, returnGeometry: 'false' }, {
+    timeoutMs: TIMEOUT_MS, queueTimeoutMs: QUEUE_TIMEOUT_MS, retries: 0, signal: cancel, label: `kootenai-assessor-${layerId}`,
+    agency: `Kootenai County Assessor layer ${layerId}`,
+    arcgisMessage: message => `Kootenai County Assessor layer ${layerId}: ${message || 'query failed'}`
+  });
 }
 
 // AssessValue_Date is an integer yyyymmdd (20260101).
@@ -89,16 +93,18 @@ export function mapKootenaiAssessorRecord(attrs = {}, layerId = null) {
 function errorMessage(failures) {
   const reason = failures[0];
   const detail = String(reason?.message || 'query failed');
-  const message = reason?.name === 'AbortError' ? 'Kootenai County Assessor timed out'
+  const message = reason?.kind === 'timeout' || reason?.name === 'AbortError' ? 'Kootenai County Assessor timed out'
     : detail.startsWith('Kootenai County Assessor') ? detail : `Kootenai County Assessor unavailable: ${detail}`;
   return failures.length > 1 ? `${message} (${failures.length} of ${KC_ASSESSOR_LAYERS.length} layers failed)` : message;
 }
 
-// { status: 'found', record } | { status: 'not_found' } | { status: 'error', error }.
+// { status: 'found', record } | { status: 'not_found' } | { status: 'error', error, browserFallback }.
+// browserFallback is true when some layer failed in a way a browser might get past
+// (src/shared/fallback.js); error answers are never cached.
 // The first layer that returns a record wins at once, and the other layer requests are aborted,
 // so one slow layer does not delay a found answer. With no hit, it waits for every layer: a layer
 // that failed makes the answer an error, because the PIN may be in that layer.
-export function getKootenaiAssessment(parcelId) {
+export function queryKootenaiAssessment(parcelId) {
   const where = kootenaiAssessorWhere(parcelId);
   const cancel = new AbortController();
   const failures = [];
@@ -110,8 +116,16 @@ export function getKootenaiAssessment(parcelId) {
         features => { if (features.length) finish({ status: 'found', record: mapKootenaiAssessorRecord(features[0].attributes || {}, layerId) }); },
         error => { if (!done) failures.push(error); }
       ).finally(() => {
-        if (--pending === 0) finish(failures.length ? { status: 'error', error: errorMessage(failures) } : { status: 'not_found' });
+        if (--pending === 0) finish(failures.length ? { status: 'error', error: errorMessage(failures), browserFallback: failures.some(isFallbackEligible) } : { status: 'not_found' });
       });
     }
+  });
+}
+
+// Same answer, with found records cached per PIN (validated answers only).
+export function getKootenaiAssessment(parcelId, { ctx } = {}) {
+  const key = String(parcelId || '').trim().toUpperCase();
+  return cachedJson(KC_ASSESSOR_CACHE_PREFIX, key, CACHE_TTL_SECONDS, () => queryKootenaiAssessment(parcelId), {
+    ctx, isValid: result => result?.status === 'found' && Boolean(result.record?.pin)
   });
 }

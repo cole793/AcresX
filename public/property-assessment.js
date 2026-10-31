@@ -178,6 +178,11 @@
   async function loadAssessment() {
     const search = currentSearch();
     if (!search) return;
+    // Once per search: the summary re-renders as sections arrive (progressive-loading.js).
+    const sections = window.AcresXSections;
+    if (sections && !sections.claim('assessment')) return;
+    const searchId = sections?.searchId;
+    const stale = () => (sections && !sections.isCurrent(searchId));
     const requestId = ++assessmentRequestId;
     document.getElementById('overviewAssessorClassWrap')?.remove();
 
@@ -193,13 +198,15 @@
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || `Assessment lookup returned ${response.status}`);
-      if (requestId !== assessmentRequestId) return;
+      if (requestId !== assessmentRequestId || stale()) return;
       if (typeof last !== 'undefined') last.propertyAssessment = data;
       renderAssessment(normalize(data));
+      sections?.settle('assessment');
     } catch (error) {
-      if (requestId !== assessmentRequestId) return;
+      if (requestId !== assessmentRequestId || stale()) return;
       console.warn('Property assessment lookup failed', error);
       renderAssessment(null);
+      sections?.settle('assessment', 'failed');
     }
   }
 

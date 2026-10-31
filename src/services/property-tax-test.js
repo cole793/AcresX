@@ -1,19 +1,25 @@
-import { fetchWithTimeout, json } from '../shared/http.js';
+import { json } from '../shared/http.js';
+import { upstreamJson } from '../shared/upstream.js';
 import { getKootenaiAssessment, KC_ASSESSOR, KC_ASSESSOR_SOURCE } from '../counties/kootenai-assessor.js';
+import { FALLBACK_KINDS, fallbackHint } from '../shared/fallback.js';
+import { MONTANA_CADASTRAL_FIELDS } from '../states/montana/parcels.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
 
 const SPOKANE = 'https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query';
 const YELLOWSTONE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query';
 const MT_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query';
 const ID_PARCELS = 'https://services1.arcgis.com/CNPdEkvnGl65jCX8/ArcGIS/rest/services/Public_Idaho_Parcels_/FeatureServer/7/query';
 
-async function arcgis(url, params) {
+// Was one 20 s attempt; now 12 s + one retry at 8 s (body included). The Montana statewide
+// candidate loop ignores failures, so it asks once per candidate (retries: 0).
+async function arcgis(url, params, { retries = 1, label = 'assessment-query' } = {}) {
   const q = new URL(url);
   for (const [key, value] of Object.entries(params)) q.searchParams.set(key, value);
   q.searchParams.set('f', 'json'); q.searchParams.set('returnGeometry', 'false');
-  const response = await fetchWithTimeout(q, { cf: { cacheTtl: 300, cacheEverything: true } }, 20000);
-  if (!response.ok) throw new Error(`Source returned ${response.status}`);
-  const data = await response.json(); if (data.error) throw new Error(data.error.message || 'ArcGIS query failed');
-  return data.features || [];
+  const data = await upstreamJson(q, { timeoutMs: retries ? 12000 : 20000, retryTimeoutMs: 8000, retries, arcgis: true, label, agency: 'Source', arcgisMessage: 'ArcGIS query failed' });
+  // No owner names or mailing addresses (owner decision, 2026-10-29): every query names its
+  // fields, and the records are stripped as well in case a layer adds one.
+  return withoutPersonalFields(data.features || []);
 }
 function digits(value) { return String(value || '').replace(/\D/g, ''); }
 function safe(value) { return String(value || '').replace(/'/g, "''"); }
@@ -26,7 +32,7 @@ async function findMontanaStateRecord(parcelId) {
   for (const candidate of candidates) {
     for (const field of ['ParcelID','Geocode','AssessmentCode']) {
       try {
-        const records = await arcgis(MT_CADASTRAL, { where: `${field}='${safe(candidate)}'`, outFields: '*' });
+        const records = await arcgis(MT_CADASTRAL, { where: `${field}='${safe(candidate)}'`, outFields: MONTANA_CADASTRAL_FIELDS }, { retries: 0, label: 'mt-cadastral-assessment' });
         if (records.length) return { records, formatted };
       } catch (_) {}
     }
@@ -42,7 +48,7 @@ export async function handlePropertyTaxTest(request) {
   if (!parcelId) return json({ error: 'parcelId is required' }, 400, 'no-store');
 
   if (state === 'WA' && /^spokane$/i.test(county)) {
-    const features = await arcgis(SPOKANE, { where: `PID_NUM='${safe(parcelId)}'`, outFields: 'PID_NUM,tax_year,asmt_year,land_value,exmp_amt,asmt_year_exmp_amt,acreage,site_address,prop_use_desc' });
+    const features = await arcgis(SPOKANE, { where: `PID_NUM='${safe(parcelId)}'`, outFields: 'PID_NUM,tax_year,asmt_year,land_value,exmp_amt,asmt_year_exmp_amt,acreage,site_address,prop_use_desc' }, { label: 'spokane-assessor-values' });
     return json({ available: Boolean(features.length), state, county: 'Spokane', parcelId, source: 'Spokane County Assessor SCOUTSimple', records: features.map(f => f.attributes || {}) }, 200, 'no-store');
   }
 
@@ -53,7 +59,7 @@ export async function handlePropertyTaxTest(request) {
       const compactId = digits(parcelId);
       const candidates = [...new Set([parcelId, compactId, statewide.formatted].filter(Boolean))];
       for (const candidate of candidates) {
-        countyRecords = await arcgis(YELLOWSTONE, { where: `GEOCODE='${safe(candidate)}' OR GEO_CODE='${safe(candidate)}'`, outFields: 'GEOCODE,GEO_CODE,TAX_ID,TAXID,PROP_ID,FULLADD,SHORTLEGAL' });
+        countyRecords = await arcgis(YELLOWSTONE, { where: `GEOCODE='${safe(candidate)}' OR GEO_CODE='${safe(candidate)}'`, outFields: 'GEOCODE,GEO_CODE,TAX_ID,TAXID,PROP_ID,FULLADD,SHORTLEGAL' }, { label: 'yellowstone-taxparcel-assessment' });
         if (countyRecords.length) break;
       }
     }
@@ -72,7 +78,8 @@ export async function handlePropertyTaxTest(request) {
     const base = { state, county: 'Kootenai', parcelId, countySource: KC_ASSESSOR_SOURCE, countySourceUrl: KC_ASSESSOR };
     if (result.status === 'found') return json({ available: true, ...base, countyRecords: [result.record] }, 200, 'no-store');
     if (result.status === 'error') console.warn('Kootenai assessor lookup failed', result.error);
-    return json({ available: false, ...base, countyRecords: [], ...(result.status === 'error' ? { error: result.error } : { note: 'No Kootenai County Assessor record matched this parcel number.' }) }, 200, 'no-store');
+    const fallback = result.status === 'error' && result.browserFallback ? { fallback: fallbackHint(FALLBACK_KINDS.kootenaiAssessor, { parcelId }) } : {};
+    return json({ available: false, ...base, countyRecords: [], ...(result.status === 'error' ? { error: result.error } : { note: 'No Kootenai County Assessor record matched this parcel number.' }), ...fallback }, 200, 'no-store');
   }
 
   if (state === 'ID') {
@@ -82,12 +89,12 @@ export async function handlePropertyTaxTest(request) {
     let features = await arcgis(ID_PARCELS, {
       where: `UPPER(County)='${countySafe}' AND (UPPER(PARCEL_ID)='${rawSafe}' OR UPPER(FP_ID)='${rawSafe}')`,
       outFields: 'PARCEL_ID,FP_ID,County,UPDATED,ASR_ACRES,ASR_CATS,VAL_LAND,VAL_IMPVTS,VAL_TOTAL,HOME_EXMPT,WEBSITE,SITE_ADD,SITE_CITY,SITE_ZIP'
-    });
+    }, { label: 'idaho-statewide-assessment' });
     if (!features.length && compactId !== parcelId.toUpperCase()) {
       features = await arcgis(ID_PARCELS, {
         where: `UPPER(County)='${countySafe}' AND (UPPER(PARCEL_ID)='${safe(compactId)}' OR UPPER(FP_ID)='${safe(compactId)}')`,
         outFields: 'PARCEL_ID,FP_ID,County,UPDATED,ASR_ACRES,ASR_CATS,VAL_LAND,VAL_IMPVTS,VAL_TOTAL,HOME_EXMPT,WEBSITE,SITE_ADD,SITE_CITY,SITE_ZIP'
-      });
+      }, { label: 'idaho-statewide-assessment' });
     }
     return json({ available: Boolean(features.length), state, county, parcelId, statewideSource: 'Idaho Statewide Standardized Parcel Layer', statewideRecords: features.map(f => f.attributes || {}) }, 200, 'no-store');
   }

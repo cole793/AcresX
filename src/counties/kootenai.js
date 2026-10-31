@@ -1,6 +1,7 @@
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
 import { ringsFromGeometry, samplePoints, coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
 import { findCityJurisdiction, findCityImpactArea, getCityZoning } from './kootenai-cities.js';
+import { FALLBACK_KINDS, fallbackHint, hintGeometry, isFallbackEligible } from '../shared/fallback.js';
 
 const KC_PARCELS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
 const KC_ZONING = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21';
@@ -11,7 +12,8 @@ function sql(value) { return String(value || '').replaceAll("'", "''"); }
 function requestedParcelId(body) {
   return body.parcelId || body.parcelID || body.apn || body.pin || body.taxParcelId || body?.parcel?.properties?.ORIG_PARCEL_ID || body?.parcel?.properties?.PARCEL_ID_NR || body?.parcel?.properties?.PIN || '';
 }
-const arcQuery = (base, params) => arcgisQuery(base, params, { agency: 'Kootenai County GIS' });
+// Through the shared client (src/shared/arcgis.js -> upstream.js): 12 s + one retry at 8 s.
+const arcQuery = (base, params, label) => arcgisQuery(base, params, { agency: 'Kootenai County GIS', label });
 // The Ownership_Display parcel layer has no ZONING field (zoning comes from Data_Layers/21), and
 // ArcGIS fails the whole query when outFields or where names a field the layer lacks. Every field
 // below is in the layer's field list (checked live 2026-10-27; it has KTCA/STCA, not TCA). An
@@ -22,11 +24,11 @@ async function queryParcel(parcelId) {
   const id=String(parcelId||'').trim().toUpperCase(); if(!id) return [];
   const params={returnGeometry:'true',outSR:'4326'};
   try {
-    return await arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS});
+    return await arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}' OR UPPER(PID)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS},'kootenai-ownership-parcel');
   } catch(e) {
     if(!e?.arcgisError) throw e;
     console.warn(`Kootenai ownership parcel query failed (${e.message}); retrying with minimal fields ${KC_PARCEL_FIELDS_MINIMAL}`);
-    return arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS_MINIMAL});
+    return arcQuery(KC_PARCELS,{...params,where:`UPPER(PIN)='${sql(id)}'`,outFields:KC_PARCEL_FIELDS_MINIMAL},'kootenai-ownership-parcel-minimal');
   }
 }
 function centerFromGeometry(geometry) {
@@ -61,6 +63,18 @@ function buildingUsesForZone(zoneRaw) {
 
 const round3 = n => Math.round(n * 1000) / 1000;
 
+// What public/browser-fallback.js needs to run this lookup itself (src/shared/fallback.js): the
+// parcel number, the point and the outline the browser sent. Added to the answer only when the
+// county zoning, city limits or city zoning layer failed in a way a browser might get past.
+function browserFallback(body) {
+  const lat = Number(body.lat), lon = Number(body.lon), geometry = hintGeometry(body.geometry);
+  return fallbackHint(FALLBACK_KINDS.kootenaiZoning, {
+    parcelId: String(requestedParcelId(body) || ''),
+    ...(Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : {}),
+    ...(geometry ? { geometry } : {})
+  });
+}
+
 export async function getKootenaiCountyIntelligence(body) {
   const parcelId=requestedParcelId(body); let parcelFeatures=[];
   try { parcelFeatures=await queryParcel(parcelId); } catch(e) { console.warn('Kootenai ownership parcel lookup failed',e); }
@@ -77,18 +91,24 @@ export async function getKootenaiCountyIntelligence(body) {
   const matchMethod=rings?'parcel area (sampled)':'parcel location';
 
   // Who zones it. If the city-limits layer fails, carry on with county zoning (the old behaviour).
-  const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'}).then(features=>({features}),error=>({error}));
+  const countyZoning=arcQuery(KC_ZONING,{...spatialParams(where),outFields:'ZONE_NAME,LABEL,ACRES'},'kootenai-zoning').then(features=>({features}),error=>({error}));
   const impactArea=findCityImpactArea(where,samples).catch(e=>{ console.warn('Kootenai city impact area lookup failed',e); return null; });
-  let city=null, cityLimitsUnavailable=false;
-  try { city=await findCityJurisdiction(where,samples); } catch(e) { cityLimitsUnavailable=true; console.warn('Kootenai city limits lookup failed; using county zoning',e); }
+  let city=null, cityLimitsUnavailable=false, fallback=null;
+  try { city=await findCityJurisdiction(where,samples); } catch(e) { cityLimitsUnavailable=true; if(isFallbackEligible(e)) fallback=browserFallback(body); console.warn('Kootenai city limits lookup failed; using county zoning',e); }
   if(city) {
     const jurisdictionNote=city.straddles?` About ${pct(city.share)} of the parcel is inside ${city.name} limits; the rest may fall under another jurisdiction.`:'';
-    return getCityZoning(city,where,samples,{parcelAttrs,matchMethod,jurisdictionNote});
+    return getCityZoning(city,where,samples,{parcelAttrs,matchMethod,jurisdictionNote,fallback:browserFallback(body)});
   }
 
-  const {features:zoningFeatures,error}=await countyZoning; if(error) throw error;
+  const {features:zoningFeatures,error}=await countyZoning;
+  // src/index.js copies error.fallback into its 502 answer.
+  if(error) { if(isFallbackEligible(error)) error.fallback=browserFallback(body); throw error; }
+  const result=countyResult(parcelFeatures,parcelAttrs,zoningFeatures,samples,matchMethod,await impactArea,cityLimitsUnavailable);
+  return fallback?{...result,fallback}:result;
+}
+
+function countyResult(parcelFeatures,parcelAttrs,zoningFeatures,samples,matchMethod,impact,cityLimitsUnavailable) {
   const covered=coverageShares(samples,zoningFeatures,a=>String(a.LABEL||a.ZONE_NAME||'').trim()).filter(s=>s.key);
-  const impact=await impactArea;
   const impactNote=impact?` Inside the ${impact.city} area of city impact; Kootenai County zoning applies outside city limits.`:'';
   const top=covered[0];
   if(!top) return noZoneResult(parcelFeatures,matchMethod,impactNote,impact,cityLimitsUnavailable);

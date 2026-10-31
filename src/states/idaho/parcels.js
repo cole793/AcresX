@@ -1,5 +1,7 @@
-import { fetchWithTimeout } from '../../shared/http.js';
+import { cachedJson, upstreamJson } from '../../shared/upstream.js';
 import { findKootenaiCountyParcel } from '../../counties/kootenai-parcels.js';
+import { PERSONAL_FIELD } from '../../shared/personal-fields.js';
+import { FALLBACK_KINDS, fallbackHint, isFallbackEligible } from '../../shared/fallback.js';
 
 const IDAHO_PARCELS = 'https://services1.arcgis.com/CNPdEkvnGl65jCX8/ArcGIS/rest/services/Public_Idaho_Parcels_/FeatureServer/7';
 const IDWR_PARCELS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/FeatureServer/0';
@@ -9,30 +11,54 @@ function sql(value) { return String(value ?? '').replaceAll("'", "''"); }
 
 // ArcGIS Online answers a rate limit either as HTTP 429 or as HTTP 200 with
 // {error:{code:429, message:'Unable to perform query. Too many requests.'}}.
-function isRateLimit(status, error) { return status === 429 || Number(error?.code) === 429 || /too many requests/i.test(String(error?.message || '')); }
+function isRateLimit(error) { return error?.status === 429 || Number(error?.code) === 429 || /too many requests/i.test(String(error?.message || '')); }
+// Wait before the one retry of a statewide query (tests shorten it).
 export const RATE_LIMIT_RETRY_MS = { value: 600 };
 
-async function queryService(service, where, count = 20, { retryRateLimit = false } = {}) {
+// No owner names or mailing addresses (owner decision, 2026-10-29). Each layer is asked for its
+// non-personal fields by name (every field the layer had on 2026-10-29 except the owner and
+// mailing ones, so the answer is what outFields '*' gave minus those), and every feature also
+// has its owner fields removed (withoutOwnerProperties) before it is stored or used.
+// Never add here: statewide OWNER1, OWNER2, PUBLIC_STD, MAIL_ADD1, MAIL_ADD2, MAIL_CITY,
+// MAIL_STATE, MAIL_ZIP, MAIL_CNTRY; IDWR OWNER.
+export const IDAHO_STATEWIDE_FIELDS = 'OBJECTID,PARCEL_ID,STEWARD,County,UPDATED,WEBSITE,FIPS,ASR_ACRES,LAT_DD,LONG_DD,IDTM_N,IDTM_E,SITE_ADD,SITE_CITY,SITE_ZIP,ASR_CATS,LGL_DESCR,VAL_LAND,VAL_IMPVTS,VAL_TOTAL,HOME_EXMPT,FP_ID,Shape__Area,Shape__Length';
+export const IDWR_PARCEL_FIELDS = 'OBJECTID,PIN,COUNTY,Shape__Area,Shape__Length';
+
+// Every statewide and IDWR query (every Idaho county) is cached: feature lists that found
+// parcels, owner-free, per query for 7 days; errors and empty answers (a parcel may be added)
+// are never cached.
+// Bump the version in the prefix whenever the fields requested or stripped change, so no entry
+// in the old shape survives (v2 held outFields '*' answers, stripped).
+export const IDAHO_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/idaho-parcels/v3/';
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+// Through the shared client (src/shared/upstream.js). Was one 20 s attempt (plus one retry on a
+// statewide rate limit); now 12 s + one retry at 8 s (body included) on a timeout, network error,
+// 5xx or non-4xx ArcGIS error, and for the statewide layer also on a rate limit.
+// signal: a deadline for the whole lookup (one attempt each, no retry), used for IDWR while the
+// Kootenai county layer is down.
+async function fetchService(service, where, count, { retryRateLimit, label, signal }) {
   const url = new URL(`${service}/query`);
   url.searchParams.set('f', 'geojson');
   url.searchParams.set('where', where);
-  url.searchParams.set('outFields', '*');
+  url.searchParams.set('outFields', service === IDWR_PARCELS ? IDWR_PARCEL_FIELDS : IDAHO_STATEWIDE_FIELDS);
   url.searchParams.set('returnGeometry', 'true');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('resultRecordCount', String(count));
-  for (let attempt = 0; ; attempt++) {
-    const response = await fetchWithTimeout(url, { cf: { cacheTtl: 3600, cacheEverything: true } }, 20000);
-    const data = response.ok ? await response.json() : null;
-    if (retryRateLimit && attempt === 0 && isRateLimit(response.status, data?.error)) {
-      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_RETRY_MS.value));
-      continue;
-    }
-    if (!response.ok) throw new Error(`Idaho parcel service returned ${response.status}`);
-    if (data.error) throw new Error(data.error.message || 'Idaho parcel search failed');
-    return data.features || [];
-  }
+  const data = await upstreamJson(url, {
+    timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label, agency: 'Idaho parcel service', arcgisMessage: 'Idaho parcel search failed',
+    ...(retryRateLimit ? { backoffMs: RATE_LIMIT_RETRY_MS.value, retryOn: error => isRateLimit(error) || Boolean(error.retryable) } : {}),
+    ...(signal ? { signal, retries: 0 } : {})
+  });
+  return data.features || [];
 }
-async function query(where, count = 20) { return queryService(IDAHO_PARCELS, where, count, { retryRateLimit: true }); }
+
+function queryService(service, where, count = 20, { retryRateLimit = false, label = 'idaho-parcels', signal } = {}) {
+  return cachedJson(IDAHO_PARCEL_CACHE_PREFIX, { service, where, count }, CACHE_TTL_SECONDS,
+    async () => (await fetchService(service, where, count, { retryRateLimit, label, signal })).map(withoutOwnerProperties),
+    { isValid: features => Array.isArray(features) && features.length > 0 });
+}
+async function query(where, count = 20) { return queryService(IDAHO_PARCELS, where, count, { retryRateLimit: true, label: 'idaho-statewide-parcels' }); }
 
 function normalizeFeature(feature, requestedId, county = '') {
   const attrs = feature.properties || {};
@@ -57,17 +83,17 @@ function kootenaiVariants(raw) {
   return [...variants].filter(Boolean);
 }
 
-async function findKootenaiIdwr(raw) {
+async function findKootenaiIdwr(raw, { signal } = {}) {
   const compact = normalize(raw);
   const variants = kootenaiVariants(raw);
   for (const candidate of variants) {
-    const features = await queryService(IDWR_PARCELS, `UPPER(PIN)='${sql(candidate)}' AND UPPER(COUNTY)='KOOTENAI'`, 20);
+    const features = await queryService(IDWR_PARCELS, `UPPER(PIN)='${sql(candidate)}' AND UPPER(COUNTY)='KOOTENAI'`, 20, { label: 'idwr-parcels', signal });
     const exact = features.filter(f => normalize(f.properties?.PIN) === compact);
     if (exact.length) return exact;
   }
   // County assessor PINs are canonical without dashes; normalize punctuation if IDWR retained it.
   const prefix = compact.slice(0, Math.min(8, compact.length));
-  const broad = await queryService(IDWR_PARCELS, `UPPER(COUNTY)='KOOTENAI' AND UPPER(PIN) LIKE '${sql(prefix)}%'`, 200);
+  const broad = await queryService(IDWR_PARCELS, `UPPER(COUNTY)='KOOTENAI' AND UPPER(PIN) LIKE '${sql(prefix)}%'`, 200, { label: 'idwr-parcels', signal });
   return broad.filter(f => normalize(f.properties?.PIN) === compact);
 }
 
@@ -106,17 +132,28 @@ function pickOne(features, raw, county) {
 const NOT_FOUND = 'Parcel not found in available Idaho parcel sources. Confirm the county and assessor parcel number.';
 
 // Owner name and mailing address fields of the statewide (OWNER1, OWNER2, PUBLIC_STD, MAIL_*)
-// and IDWR (OWNER) layers. Kootenai answers never carry them.
+// and IDWR (OWNER) layers, plus anything PERSONAL_FIELD matches. No Idaho answer carries them.
 const OWNER_FIELD = /^(OWNER\d*|PUBLIC_STD|MAIL_.*|Name)$/i;
-function withoutOwnerFields(feature, source) {
+const isOwnerField = key => OWNER_FIELD.test(key) || PERSONAL_FIELD.test(key);
+function withoutOwnerProperties(feature) {
   const properties = {};
-  for (const [k, v] of Object.entries(feature.properties || {})) if (!OWNER_FIELD.test(k)) properties[k] = v;
-  properties._source = source;
+  for (const [k, v] of Object.entries(feature?.properties || {})) if (!isOwnerField(k)) properties[k] = v;
   return { ...feature, properties };
+}
+function withoutOwnerFields(feature, source) {
+  const stripped = withoutOwnerProperties(feature);
+  stripped.properties._source = source;
+  return stripped;
 }
 
 // Kootenai: county Ownership_Display layer first, then the statewide layer, then IDWR. Each
 // source that errors or misses hands on to the next; an ambiguous county match is final.
+// A county-layer outage a browser might get past (timeout, network error, 403/429/5xx) skips the
+// statewide layer (it has no Kootenai parcels) and gives IDWR, which republishes the county
+// outlines, one KOOTENAI_IDWR_WINDOW_MS window: that still answers when only the county is down.
+// If IDWR does not find the parcel in time, the answer is the 502 with a browser fallback hint
+// (src/shared/fallback.js; src/index.js copies it into the 502). Worst case before the hand-off:
+// the 8 s county attempt plus this window. A county-layer miss keeps the fallback order.
 async function findKootenaiParcel(raw, county) {
   const errors = [];
   try {
@@ -124,6 +161,7 @@ async function findKootenaiParcel(raw, county) {
     if (parcel) return parcel;
   } catch (error) {
     if (error.ambiguous) throw error;
+    if (isFallbackEligible(error)) return findKootenaiIdwrOrHint(raw, county, error);
     errors.push(error); console.warn(`Kootenai county parcel layer failed (${error.message}); trying the statewide Idaho layer.`);
   }
   const fallbacks = [
@@ -137,6 +175,21 @@ async function findKootenaiParcel(raw, county) {
   }
   if (errors.length) throw new Error(`Idaho parcel sources failed for Kootenai: ${errors.map(e => e.message).join('; ')}`);
   throw new Error(NOT_FOUND);
+}
+
+export const KOOTENAI_IDWR_WINDOW_MS = 5000;
+const IDWR_SOURCE = { name: 'IDWR statewide parcel compilation', url: IDWR_PARCELS };
+
+async function findKootenaiIdwrOrHint(raw, county, countyError) {
+  let detail = '';
+  try {
+    const features = await findKootenaiIdwr(raw, { signal: AbortSignal.timeout(KOOTENAI_IDWR_WINDOW_MS) });
+    if (features.length) return withoutOwnerFields(pickOne(features, raw, county), IDWR_SOURCE);
+  } catch (error) {
+    if (/^Multiple Idaho parcels/.test(error?.message || '')) throw error;
+    detail = `; ${error?.message || 'IDWR parcel search failed'}`;
+  }
+  throw Object.assign(new Error(`Idaho parcel sources failed for Kootenai: ${countyError.message}${detail}`), { fallback: fallbackHint(FALLBACK_KINDS.kootenaiParcel, { parcelId: raw }) });
 }
 
 export async function findIdahoParcel(parcelInput, county = '') {

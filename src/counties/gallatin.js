@@ -1,4 +1,13 @@
-import { fetchWithTimeout } from '../shared/http.js';
+import { cachedJson, upstreamJson } from '../shared/upstream.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
+
+// The zoning-layer answer for a parcel center is cached for a day (Cache API) when the query
+// succeeded; errors are never cached.
+// Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
+// stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
+// prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
+export const GALLATIN_CACHE_PREFIX = 'https://acresx.internal/cache/gallatin-zoning/v2/';
+const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 // Official Gallatin County zoning service. Layer 42 contains the county zoning
 // districts and an explicit polygon for areas that are unzoned.
@@ -29,14 +38,14 @@ async function queryPoint(lon, lat) {
   params.set('returnGeometry', 'false');
   params.set('resultRecordCount', '10');
 
-  const response = await fetchWithTimeout(`${ZONING_LAYER}/query`, {
+  // Was one 15 s attempt; now 9 s + one retry at 6 s (body included).
+  const data = await upstreamJson(`${ZONING_LAYER}/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body: params.toString()
-  }, 15000);
-  if (!response.ok) throw new Error(`Gallatin zoning service returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Gallatin zoning query failed');
+    body: params.toString(),
+    timeoutMs: 9000, retryTimeoutMs: 6000, arcgis: true, label: 'gallatin-zoning',
+    agency: 'Gallatin zoning service', arcgisMessage: 'Gallatin zoning query failed'
+  });
   return data.features || [];
 }
 
@@ -45,7 +54,7 @@ export async function getGallatinCountyIntelligence(body) {
   const lon = Number(body.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Gallatin zoning requires parcel coordinates.');
 
-  const features = await queryPoint(lon, lat);
+  const features = await cachedJson(GALLATIN_CACHE_PREFIX, { lon, lat }, CACHE_TTL_SECONDS, async () => withoutPersonalFields(await queryPoint(lon, lat)), { isValid: Array.isArray });
   if (!features.length) {
     return {
       available: true,

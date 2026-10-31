@@ -1,4 +1,13 @@
-import { fetchWithTimeout } from '../shared/http.js';
+import { cachedJson, upstreamJson } from '../shared/upstream.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
+
+// The five layer answers for one parcel are cached for a day (Cache API), only when all five
+// answered; the response is rebuilt from them each time, so profile/text changes apply at once.
+// Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
+// stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
+// prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
+export const SPOKANE_CACHE_PREFIX = 'https://acresx.internal/cache/spokane-intelligence/v2/';
+const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 const SPOKANE_GIS = {
   zoningBase: 'https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer',
@@ -34,7 +43,7 @@ function geoJsonToEsriPolygon(geometry) {
   };
 }
 
-async function queryOfficialLayer(layerUrl, { lat, lon, geometry, outFields = '*', where = '1=1', limit = 100 } = {}) {
+async function queryOfficialLayer(layerUrl, { lat, lon, geometry, outFields = '*', where = '1=1', limit = 100, label = 'spokane-gis' } = {}) {
   const q = new URL(`${layerUrl.replace(/\/$/, '')}/query`);
   q.searchParams.set('f', 'json');
   q.searchParams.set('where', where);
@@ -53,11 +62,9 @@ async function queryOfficialLayer(layerUrl, { lat, lon, geometry, outFields = '*
   q.searchParams.set('returnGeometry', 'false');
   q.searchParams.set('resultRecordCount', String(limit));
 
-  const response = await fetchWithTimeout(q, { cf: { cacheTtl: 86400, cacheEverything: true } }, 20000);
-  if (!response.ok) throw new Error(`Spokane County GIS returned ${response.status}`);
-
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Spokane County GIS query failed');
+  // Was one 20 s attempt; now 12 s + one retry at 8 s (body included). A long polygon query
+  // goes as a form POST.
+  const data = await upstreamJson(q, { timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label, agency: 'Spokane County GIS' });
   return data.features || [];
 }
 
@@ -107,13 +114,17 @@ export async function getSpokaneCountyIntelligence(body, profile) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Valid parcel coordinates are required for Spokane County intelligence.');
 
   const geometry = body.geometry || null;
-  const [zoningR, compR, ugaR, jurisdictionR, permitsR] = await Promise.allSettled([
-    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/3`, { lat, lon, outFields: 'ZONECLASS,ZONEDESC,ZFILENUM,COMMENTS,URL,DevFileNum,DevURL' }),
-    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/4`, { lat, lon, outFields: 'LANDUSECODE,LANDUSEDESC,COMMENTS,DevFileNum,DevURL' }),
-    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/2`, { lat, lon, outFields: 'NAME,TYPE' }),
-    queryOfficialLayer(`${SPOKANE_GIS.permittingBase}/0`, { lat, lon, outFields: '*' }),
-    queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100 })
-  ]);
+  const queryLayers = async () => (await Promise.allSettled([
+    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/3`, { lat, lon, outFields: 'ZONECLASS,ZONEDESC,ZFILENUM,COMMENTS,URL,DevFileNum,DevURL', label: 'spokane-zoning' }),
+    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/4`, { lat, lon, outFields: 'LANDUSECODE,LANDUSEDESC,COMMENTS,DevFileNum,DevURL', label: 'spokane-comp-plan' }),
+    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/2`, { lat, lon, outFields: 'NAME,TYPE', label: 'spokane-uga' }),
+    queryOfficialLayer(`${SPOKANE_GIS.permittingBase}/0`, { lat, lon, outFields: '*', label: 'spokane-permit-jurisdiction' }),
+    queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100, label: 'spokane-permits' })
+  ])).map(r => (r.status === 'fulfilled' ? { status: r.status, value: withoutPersonalFields(r.value) } : r));
+  const [zoningR, compR, ugaR, jurisdictionR, permitsR] = await cachedJson(
+    SPOKANE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS, queryLayers,
+    { isValid: settled => settled.every(r => r.status === 'fulfilled') }
+  );
 
   const zAttrs = zoningR.status === 'fulfilled' ? zoningR.value[0]?.attributes || {} : {};
   const cAttrs = compR.status === 'fulfilled' ? compR.value[0]?.attributes || {} : {};

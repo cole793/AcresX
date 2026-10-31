@@ -67,9 +67,11 @@
       // mapped coordinates inside the parcel, or a strong owner-linked well record.
       // Listing-confirmed wells are handled independently by the MLS scanner.
       const confirmedExisting = Boolean(evidence.insideParcel || evidence.ownerMatch);
-      const metric = document.getElementById('wellMetric');
-      const status = document.getElementById('waterStatus');
-      const note = document.getElementById('wellNote');
+      // While nearby wells are pending or timed out, the card keeps that placeholder.
+      const wellsShown = !window.AcresXSections?.placeholder('wells');
+      const metric = wellsShown ? document.getElementById('wellMetric') : null;
+      const status = wellsShown ? document.getElementById('waterStatus') : null;
+      const note = wellsShown ? document.getElementById('wellNote') : null;
       const depth = Number(data.match.completedDepth);
       if (confirmedExisting) {
         if (metric) metric.textContent = Number.isFinite(depth) && depth > 0
@@ -123,8 +125,6 @@
         ? (evidence.insideParcel ? 'Well coordinates map within the selected parcel' : 'Well-record owner matches the current assessor owner') + ' · verify record and current well status'
         : escHtml(data.confidence) + ' confidence · match score ' + Number(data.score || 0) + '/100 · not confirmation of an existing well on this parcel'}</div>
       <div class="data-grid">
-        <div class="datum"><span>Current assessor owner</span><strong>${escHtml(data.currentOwner || 'Not returned')}</strong></div>
-        <div class="datum"><span>Well record owner</span><strong>${escHtml(m.ownerName || 'Not reported')}</strong></div>
         <div class="datum"><span>Well parcel number</span><strong>${escHtml(m.parcelNumber || 'Not reported')}</strong></div>
         <div class="datum"><span>Well tag</span><strong>${escHtml(m.wellTag || 'Not reported')}</strong></div>
         <div class="datum"><span>Completed depth</span><strong>${m.completedDepth ? `${escHtml(m.completedDepth)} ft` : 'Not reported'}</strong></div>
@@ -141,26 +141,40 @@
     root.insertBefore(block, root.firstChild);
   }
 
-  async function loadExistingWell() {
+  // The request for this search, or null when it has no inputs yet or already fired. Claimed
+  // synchronously in the renderSummary wrapper, so the cost card knows to wait for it.
+  function claimExistingWell() {
     const payload = currentParcelPayload();
-    if (!payload?.parcelId || !payload?.geometry) return;
+    if (!payload?.parcelId || !payload?.geometry) return null;
+    const sections = window.AcresXSections;
+    if (sections && !sections.claim('existingWell')) return null;
+    return { payload, searchId: sections?.searchId };
+  }
+
+  async function loadExistingWell(job) {
+    if (!job) return;
+    const sections = window.AcresXSections;
+    const stale = () => (sections && !sections.isCurrent(job.searchId));
     const id = ++requestId;
     try {
       const response = await fetch('/api/existing-well', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(job.payload),
+        signal: sections?.timeoutSignal()
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `Existing well screening returned ${response.status}`);
-      if (id !== requestId || typeof last === 'undefined') return;
+      if (id !== requestId || stale() || typeof last === 'undefined') return;
       last.existingWell = data;
       renderCard(data);
       renderWellDetails();
+      sections?.settle('existingWell');
     } catch (error) {
-      if (id !== requestId || typeof last === 'undefined') return;
+      if (id !== requestId || stale() || typeof last === 'undefined') return;
       last.existingWell = { available: false, label: 'Well-record screening unavailable', error: error.message };
       renderCard(last.existingWell);
+      sections?.settle('existingWell');
     }
   }
 
@@ -170,7 +184,10 @@
     const base = renderSummary;
     renderSummary = function (...args) {
       const result = base.apply(this, args);
-      requestAnimationFrame(loadExistingWell);
+      // A re-render (progressive-loading.js) rewrites the well card: show the answer again.
+      if (typeof last !== 'undefined' && last?.existingWell) renderCard(last.existingWell);
+      const job = claimExistingWell();
+      if (job) requestAnimationFrame(() => loadExistingWell(job));
       return result;
     };
   }

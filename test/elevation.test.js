@@ -308,7 +308,8 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   assert.equal(body.terrain.available, false);
   assert.equal(body.landCover.available, false);
   assert.equal(body.soil.available, false);
-  assert.equal(calls.length, 1 + (2 + 9) + (2 + CANOPY_FALLBACK_MAX_POINTS));
+  // Soil: one attempt plus the shared client's one retry on a network error.
+  assert.equal(calls.length, 2 + (2 + 9) + (2 + CANOPY_FALLBACK_MAX_POINTS));
   assert.ok(calls.length < 40, `land-analysis worst case made ${calls.length} requests`);
 
   calls = [];
