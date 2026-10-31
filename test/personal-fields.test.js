@@ -219,3 +219,44 @@ test('the Spokane well panel no longer shows owner rows', () => {
   const ui = readFileSync(new URL('../public/existing-well.js', import.meta.url), 'utf8');
   assert.doesNotMatch(ui, /Current assessor owner<|Well record owner<|currentOwner|\.ownerName/);
 });
+
+// Browser fallback hints (src/shared/fallback.js): when the blocked hosts answer 403 with an error
+// body that itself carries owner and mailing fields, the hinted answers still hold none, and the
+// hint's input is only the parcel number, point and outline.
+// Another parcel than the cases above, so none of their cached answers apply.
+const HINT_PARCEL = 'P7654321';
+const hintPoint = { lat: LAT + 0.011, lon: LON + 0.011 };
+const hintRing = ring.map(([x, y]) => [x + 0.01, y + 0.01]);
+const hintParcel = { parcelId: HINT_PARCEL, geometry: { type: 'Polygon', coordinates: [hintRing] }, address: '200 SITE RD', ...hintPoint };
+const HINTED = [
+  ['parcel-search ID Kootenai (county layer blocked)', post('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId: HINT_PARCEL }), 'kootenai-parcel', 502],
+  ['zoning-permits Kootenai (county GIS blocked)', post('/api/zoning-permits', { county: 'Kootenai', ...hintParcel }), 'kootenai-zoning', 502],
+  ['well-search ID (IDWR blocked)', post('/api/well-search', { state: 'ID', ...hintPoint }), 'idaho-wells', 502],
+  ['property-assessment ID Kootenai (assessor blocked)', post('/api/property-assessment', { state: 'ID', county: 'Kootenai', parcelId: HINT_PARCEL }), 'kootenai-assessor', 200],
+  ['hazards flood (FEMA blocked)', post('/api/hazards', { kind: 'flood', ...hintParcel }), 'fema-flood', 200]
+];
+const BLOCKED_HOSTS = new Set(['map.kcgov.us', 'gis.idwr.idaho.gov', 'hazards.fema.gov']);
+
+test('hinted answers (browser fallback) carry no owner or mailing field', async () => {
+  const blocked = (input, init) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    if (BLOCKED_HOSTS.has(url.hostname)) return new Response(JSON.stringify({ error: 'blocked', ...PLANTED }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    return reply(input, init);
+  };
+  const saved = globalThis.fetch;
+  globalThis.fetch = async (input, init) => blocked(input, init);
+  try {
+    for (const [label, request, kind, status] of HINTED) {
+      const response = await worker.fetch(request.clone(), env, ctx);
+      const body = JSON.parse(await response.text());
+      assert.equal(response.status, status, label);
+      assert.equal(body.fallback?.mode, 'browser', label);
+      assert.equal(body.fallback.kind, kind, label);
+      assert.deepEqual(Object.keys(body.fallback.input).filter(k => !['parcelId', 'lat', 'lon', 'geometry'].includes(k)), [], `${label}: hint input`);
+      assertNoPersonalData(body, label);
+    }
+    await Promise.all(waits);
+  } finally {
+    globalThis.fetch = saved;
+  }
+});

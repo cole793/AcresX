@@ -12,8 +12,8 @@
 // - Only the hard-coded layer URLs below, on ALLOWED_HOSTS, are ever requested. Nothing in the
 //   /api answer is used as a URL; `input` is checked (parcel number, point, polygon) and only
 //   fills query parameters.
-// - Same field lists as the Worker, and never owner or mailing fields. (The Worker's IDWR well
-//   query also asks for Owner; this one does not, so ProjectName falls back to WellUse.)
+// - Same field lists as the Worker, and never owner or mailing fields. Answers are also stripped
+//   with the Worker's personal-field pattern (src/shared/personal-fields.js PERSONAL_FIELD).
 // - One attempt per request, 12 s each, no cookies. If any request this kind depends on fails,
 //   the Worker's own (degraded) answer is kept.
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
@@ -494,7 +494,11 @@
     return { available: true, county: 'Kootenai', state: 'ID', countyStatus: 'kootenai-data-layers-v3', jurisdiction: 'Kootenai County', permitJurisdiction: { name: 'Kootenai County' }, zoning: { status: 'gis_match', code: zone, name: zone, label: zone, note: `Mapped zoning designation from Kootenai County KCEarth/Data_Layers.${shareNote}${impactNote}`, sourceUrl: KC_ZONING, url: KC_PLANNING, ...(others.length ? { otherZones: others.map(s => ({ code: s.key, share: round3(s.share) })) } : {}), ...(impact ? { cityImpactArea: impact } : {}) }, allowedBuildings, permittedUses: allowedBuildings, comprehensivePlan: {}, urbanGrowthArea: { intersects: false }, overlays: [], permits: [], permitHistory: [], permitHistoryStatus: 'unavailable', source: { agency: KC_AGENCY, service: 'NewServices/Data_Layers', layerId: 21, matchMethod, attributes: zoningAttrs, parcelAttributes: parcelAttrs } };
   }
 
-  // ---- 2. IDWR wells (copy of src/states/idaho/wells.js, without the Owner field)
+  // Copy of src/shared/personal-fields.js PERSONAL_FIELD: owner, taxpayer and mailing field names.
+  const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|legalpartytype)/i;
+  const withoutPersonalFields = props => Object.fromEntries(Object.entries(props || {}).filter(([key]) => !PERSONAL_FIELD.test(key)));
+
+  // ---- 2. IDWR wells (copy of src/states/idaho/wells.js)
 
   const IDAHO_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0';
   const IDAHO_WELL_FIELDS = 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,WellAddress,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude';
@@ -512,7 +516,7 @@
       if (features.length >= 5) break;
     }
     const wells = features.map(feature => {
-      const { Owner, ...p } = feature.properties || {}; // never kept, even if a server sent it
+      const p = withoutPersonalFields(feature.properties); // as the Worker: dropped even if a server sent them
       return {
         type: 'Feature',
         geometry: feature.geometry,

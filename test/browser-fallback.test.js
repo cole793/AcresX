@@ -287,33 +287,34 @@ function idwr({ params }) {
   return { type: 'FeatureCollection', features };
 }
 
-test('idaho-wells parity: same wells as the Worker, minus the Owner field the browser never asks for', async () => {
+test('idaho-wells parity: same wells as the Worker, same fields, same ProjectName rule', async () => {
   const w = recorder(idwr);
   const expected = await apiJson('/api/well-search', { state: 'ID', county: 'Kootenai', lat: 47.7, lon: -116.8 }, w.fetch);
   assert.equal(expected.status, 200);
   const b = recorder(idwr);
   const { api: fb } = browser(b.fetch);
   const actual = plain(await fb.run('idaho-wells', { lat: 47.7, lon: -116.8 }));
-  // The Worker asks IDWR for Owner and uses it as ProjectName; the browser never does.
-  const withoutOwner = plain(expected.body);
-  for (const well of withoutOwner.wells) { delete well.properties.Owner; well.properties.ProjectName = well.properties.WellUse || 'Idaho well record'; }
-  assert.deepEqual(actual, withoutOwner);
+  assert.deepEqual(actual, expected.body);
+  assert.ok(actual.wells.some(w => w.properties.ProjectName === 'Idaho well record') && actual.wells.some(w => w.properties.ProjectName === 'Domestic'), 'both ProjectName branches covered');
   assert.equal(actual.wells.length, 5, 'the radius widened to 5 mi like the Worker');
   assert.ok(actual.wells.every(well => !('Owner' in well.properties)));
   assert.deepEqual(b.calls.map(c => c.params.get('distance')), w.calls.map(c => c.params.get('distance')));
-  const workerFields = w.calls[0].params.get('outFields').split(',');
-  assert.deepEqual(b.calls[0].params.get('outFields').split(','), workerFields.filter(f => f !== 'Owner'));
+  assert.equal(b.calls[0].params.get('outFields'), w.calls[0].params.get('outFields'));
+  assert.equal(w.calls[0].params.get('outFields').split(',').includes('Owner'), false);
   for (const name of ['f', 'where', 'geometry', 'geometryType', 'inSR', 'spatialRel', 'units', 'returnGeometry', 'outSR', 'resultRecordCount']) {
     assert.equal(b.calls[0].params.get(name), w.calls[0].params.get(name), name);
   }
   assertSafe(b.calls);
 });
 
-test('idaho-wells: Owner is dropped even if a server sends it', async () => {
-  const b = recorder(() => ({ type: 'FeatureCollection', features: Array.from({ length: 5 }, (_, i) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [-116.8, 47.7] }, properties: { WellID: i, TotalDepth: 100, Owner: 'OWNER PLACEHOLDER' } })) }));
-  const { api: fb } = browser(b.fetch);
+test('idaho-wells: owner and mailing fields are dropped even if a server sends them, as the Worker does', async () => {
+  const answer = () => ({ type: 'FeatureCollection', features: Array.from({ length: 5 }, (_, i) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [-116.8, 47.7] }, properties: { WellID: i, TotalDepth: 100, Owner: 'OWNER PLACEHOLDER', OwnerAddress: 'MAIL PLACEHOLDER', MailCity: 'MAIL PLACEHOLDER' } })) });
+  const expected = await apiJson('/api/well-search', { state: 'ID', county: 'Kootenai', lat: 47.7, lon: -116.8 }, recorder(answer).fetch);
+  const { api: fb } = browser(recorder(answer).fetch);
   const result = plain(await fb.run('idaho-wells', { lat: 47.7, lon: -116.8 }));
-  assert.ok(result.wells.every(well => !('Owner' in well.properties) && well.properties.ProjectName === 'Idaho well record'));
+  assert.deepEqual(result, expected.body);
+  assert.equal(JSON.stringify(result).includes('PLACEHOLDER'), false);
+  assert.ok(result.wells.every(well => well.properties.ProjectName === 'Idaho well record'));
 });
 
 // ---- 3. Kootenai assessor
@@ -390,13 +391,12 @@ test('end to end: each kind recovers from a blocked Worker with the answer the W
   const zoningData = fixture(`kootenai-zoning-${pin}.json`);
   const cases = [
     { path: '/api/zoning-permits', body: { county: 'Kootenai', parcelId: pin, lat: 47.7, lon: -116.9 }, down: blocked(403), up: () => replay(zoningData.responses) },
-    { path: '/api/well-search', body: { state: 'ID', county: 'Kootenai', lat: 47.7, lon: -116.8 }, down: blocked(503), up: () => recorder(idwr), dropOwner: true },
+    { path: '/api/well-search', body: { state: 'ID', county: 'Kootenai', lat: 47.7, lon: -116.8 }, down: blocked(503), up: () => recorder(idwr) },
     { path: '/api/property-assessment', body: { state: 'ID', county: 'Kootenai', parcelId: '47N03W052200' }, down: recorder(() => { throw new TypeError('fetch failed'); }), up: () => recorder(assessorAnswers()) },
     { path: '/api/hazards', body: { kind: 'flood', geometry: floodGeometry }, down: recorder(({ base }) => (base === ESRI ? { features: [{ attributes: { FLD_ZONE: 'AE', SFHA_TF: 'T' } }] } : new Response('Forbidden', { status: 403 }))), up: () => recorder(() => fixture('fema-nfhl-flood.json')) }
   ];
   for (const c of cases) {
     const healthy = plain((await apiJson(c.path, c.body, c.up().fetch)).body);
-    if (c.dropOwner) for (const well of healthy.wells) { delete well.properties.Owner; well.properties.ProjectName = well.properties.WellUse || 'Idaho well record'; }
     const failed = await api(c.path, c.body, c.down.fetch);
     const hint = (await failed.clone().json()).fallback;
     assert.equal(hint?.mode, 'browser', c.path);
