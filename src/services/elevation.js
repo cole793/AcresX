@@ -89,7 +89,8 @@ async function epqsFeet(point) {
   url.searchParams.set('wkid', '4326');
   url.searchParams.set('units', 'Feet');
   url.searchParams.set('includeDate', 'false');
-  const response = await fetchWithTimeout(url, {}, POINT_FALLBACK_TIMEOUT_MS);
+  // The capped per-point fallback runs in parallel: allow all of its points past the per-host cap.
+  const response = await fetchWithTimeout(url, { maxPerHost: POINT_FALLBACK_MAX_POINTS }, POINT_FALLBACK_TIMEOUT_MS);
   if (!response.ok) throw new Error(`USGS EPQS returned ${response.status}`);
   const data = await response.json();
   const feet = Number(data?.value ?? data?.USGS_Elevation_Point_Query_Service?.Elevation_Query?.Elevation);

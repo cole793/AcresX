@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { getKootenaiCountyIntelligence } from '../src/counties/kootenai.js';
 import { ringsFromGeometry, samplePoints, pointInRings, coverageShares } from '../src/shared/polygon-coverage.js';
+import { configureUpstream } from '../src/shared/upstream.js';
 
 const PARCELS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query';
 const ZONING = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21/query';
@@ -70,8 +71,9 @@ const down = () => reply('Service Unavailable', 503);
 const realFetch = globalThis.fetch;
 const realWarn = console.warn;
 let warnings;
-beforeEach(() => { globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; warnings = []; console.warn = (...args) => warnings.push(args.map(String).join(' ')); });
-afterEach(() => { globalThis.fetch = realFetch; console.warn = realWarn; });
+let restoreUpstream;
+beforeEach(() => { globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; warnings = []; console.warn = (...args) => warnings.push(args.map(String).join(' ')); restoreUpstream = configureUpstream({ backoffMs: 0 }); });
+afterEach(() => { globalThis.fetch = realFetch; console.warn = realWarn; restoreUpstream(); });
 
 const env = { ASSETS: { fetch: async () => new Response('') } };
 async function api(path, body) {
@@ -133,10 +135,11 @@ test('Kootenai zoning uses the outline the browser sent when the county parcel q
   assert.equal(result.source.matchMethod, 'parcel area (sampled)');
 });
 
-test('Kootenai parcel query is not retried after an HTTP failure', async () => {
+test('Kootenai parcel query: an HTTP failure gets one transport retry, never the minimal-fields query', async () => {
   globalThis.fetch = stub({ [PARCELS]: down });
   const result = await zoningPermits({ county: 'Kootenai', parcelId: 'P1', lat: 47.705, lon: -116.795 });
-  assert.equal(parcelCalls().length, 1);
+  assert.equal(parcelCalls().length, 2, 'the shared client retries a 5xx once');
+  for (const call of parcelCalls()) assert.equal(call.params.get('outFields'), 'PIN,PID,Acres,Legal,Loc_Addr,Loc_City,Ex_Value,Net_Val,Gross_Val,KTCA');
   assert.equal(result.available, true);
 });
 
@@ -367,6 +370,57 @@ test('/api/zoning-rules does not apply county rules to Kootenai city zones', asy
   assert.match(city.note, /City zoning rules aren't mapped/);
   const county = await api('/api/zoning-rules', { county: 'Kootenai', zoneCode: 'AGRICULTURE', jurisdiction: 'Kootenai County' });
   assert.equal(county.available, true);
+});
+
+// --- Shared upstream client (src/shared/upstream.js via src/shared/arcgis.js) ---
+
+test('Kootenai zoning requests go through the shared client: labelled log lines, no cf, polygon POST above 1,800 chars', async () => {
+  const logs = [];
+  const restore = configureUpstream({ log: line => logs.push(JSON.parse(line)) });
+  try {
+    // A 60-vertex outline: the GET URL would be about 2,300 chars, under the shared client's
+    // 3,500 default but over the 1,800 limit the polygon callers keep.
+    const circle = Array.from({ length: 60 }, (_, i) => [-116.795 + 0.004 * Math.cos(i * Math.PI / 30), 47.705 + 0.004 * Math.sin(i * Math.PI / 30)].map(n => Math.round(n * 1e6) / 1e6));
+    circle.push([...circle[0]]);
+    const inner = stub({ [PARCELS]: { features: [{ ...parcelAnswer.features[0], geometry: { rings: [circle] } }] } });
+    const inits = [];
+    globalThis.fetch = async (input, init) => { inits.push(init || {}); return inner(input, init); };
+    const result = await getKootenaiCountyIntelligence({ parcelId: 'P50N04W123456' });
+    assert.equal(result.zoning.code, 'Rural');
+    assert.ok(inits.every(init => !('cf' in init)), 'no cf edge-cache option reaches fetch');
+    assert.equal(parcelCalls()[0].method, 'GET');
+    for (const base of [ZONING, CITY_LIMITS, IMPACT]) assert.equal(callsTo(base)[0].method, 'POST', base);
+    assert.deepEqual(logs.map(l => l.label).sort(), ['kootenai-city-impact', 'kootenai-city-limits', 'kootenai-ownership-parcel', 'kootenai-zoning']);
+    assert.ok(logs.every(l => l.evt === 'upstream' && l.host === 'map.kcgov.us' && l.ok === true && l.attempt === 1));
+  } finally { restore(); }
+});
+
+test('Coeur d\'Alene zoning: a 503 is retried once, then only the city layer degrades', async () => {
+  const { fetch } = fixture('C72150030040', { [CDA]: down });
+  globalThis.fetch = fetch;
+  const result = await getKootenaiCountyIntelligence({ parcelId: 'C72150030040' });
+  assert.equal(callsTo(CDA).length, 2);
+  assert.equal(result.zoning.status, 'unavailable');
+  assert.match(result.zoning.note, /City of Coeur d'Alene GIS returned 503/);
+  assert.equal(result.jurisdiction, "City of Coeur d'Alene");
+});
+
+test('Coeur d\'Alene zoning: an ArcGIS 400 error body is not retried and its message is kept', async () => {
+  const { fetch } = fixture('C72150030040', { [CDA]: () => reply(arcgisError) });
+  globalThis.fetch = fetch;
+  const result = await getKootenaiCountyIntelligence({ parcelId: 'C72150030040' });
+  assert.equal(callsTo(CDA).length, 1);
+  assert.equal(result.zoning.status, 'unavailable');
+  assert.match(result.zoning.note, /\(Failed to execute query\.\)/);
+  assert.equal(result.source.error, 'Failed to execute query.');
+});
+
+test('Kootenai county zoning: a 503 then a good answer gives the normal result', async () => {
+  globalThis.fetch = stub({ [ZONING]: (params, n) => (n === 1 ? down() : zoningAnswer) });
+  const result = await zoningPermits({ county: 'Kootenai', parcelId: 'P50N04W123456', lat: 47.705, lon: -116.795 });
+  assert.equal(callsTo(ZONING).length, 2);
+  assert.equal(result.available, true);
+  assert.equal(result.zoning.code, 'Rural');
 });
 
 // --- Coverage helper ---

@@ -1,4 +1,10 @@
-import { fetchWithTimeout } from '../../shared/http.js';
+import { upstreamJson } from '../../shared/upstream.js';
+
+// Not cached: these layers are queried with outFields '*' and /api/parcel-search returns their
+// owner fields (OwnerName, OWNER, ...), so a cached answer would store owner and mailing data in
+// the Cache API, and stripping it would change the response (a decision pending with the owner).
+// If caching comes back, strip with src/shared/personal-fields.js first and use a new prefix
+// (montana-parcels/v1 entries may exist from PR previews).
 
 const YELLOWSTONE_TAX_PARCEL = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1';
 const MONTANA_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0';
@@ -8,7 +14,7 @@ const MONTANA_CADASTRAL_APP = 'https://svc.mt.gov/msl/cadastral/';
 function normalize(value) { return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function sql(value) { return String(value ?? '').replaceAll("'", "''"); }
 
-async function queryLayer(layer, where, count = 20) {
+async function fetchLayer(layer, where, count, label) {
   const url = new URL(`${layer}/query`);
   url.searchParams.set('f', 'geojson');
   url.searchParams.set('where', where);
@@ -16,11 +22,13 @@ async function queryLayer(layer, where, count = 20) {
   url.searchParams.set('returnGeometry', 'true');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('resultRecordCount', String(count));
-  const response = await fetchWithTimeout(url, { cf: { cacheTtl: 3600, cacheEverything: true } }, 20000);
-  if (!response.ok) throw new Error(`Montana parcel service returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Montana parcel search failed');
+  // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
+  const data = await upstreamJson(url, { timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label, agency: 'Montana parcel service', arcgisMessage: 'Montana parcel search failed' });
   return data.features || [];
+}
+
+function queryLayer(layer, where, count = 20, label = 'montana-parcels') {
+  return fetchLayer(layer, where, count, label);
 }
 
 function normalizeFeature(feature, requestedId, county = '') {
@@ -48,7 +56,7 @@ export async function findMontanaParcel(parcelInput, county = '') {
   if (!compact) throw new Error('Parcel number is required.');
   const candidates = [`UPPER(PARCELID)='${sql(compact)}'`, `UPPER(Geocode)='${sql(compact)}'`, `UPPER(AssessmentCode)='${sql(compact)}'`];
   if (/^\d+$/.test(compact) && compact.length < 12) candidates.push(`PropertyID=${Number(compact)}`);
-  const features = await queryLayer(MONTANA_CADASTRAL, `(${candidates.join(' OR ')})`, 10);
+  const features = await queryLayer(MONTANA_CADASTRAL, `(${candidates.join(' OR ')})`, 10, 'mt-cadastral-parcel');
   if (!features.length) throw new Error('Parcel not found in the Montana statewide cadastral database. Try the 17-digit geocode shown on the Montana property record.');
   const unique = new Map();
   for (const feature of features) {
@@ -66,7 +74,7 @@ export async function findYellowstoneParcel(parcelInput) {
   if (!compact) throw new Error('Parcel number is required.');
   const candidates = [`UPPER(GEOCODE)='${sql(compact)}'`, `UPPER(GEO_CODE)='${sql(compact)}'`, `UPPER(TAX_ID)='${sql(compact)}'`, `UPPER(TAXID)='${sql(compact)}'`];
   if (/^\d+$/.test(compact)) candidates.push(`PROP_ID=${Number(compact)}`);
-  const features = await queryLayer(YELLOWSTONE_TAX_PARCEL, `(${candidates.join(' OR ')})`, 10);
+  const features = await queryLayer(YELLOWSTONE_TAX_PARCEL, `(${candidates.join(' OR ')})`, 10, 'yellowstone-taxparcel');
   if (!features.length) return findMontanaParcel(raw, 'Yellowstone');
   const exact = features.filter(feature => {
     const p = feature.properties || {};

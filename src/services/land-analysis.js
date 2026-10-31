@@ -1,4 +1,5 @@
-import { fetchWithTimeout, json } from '../shared/http.js';
+import { json } from '../shared/http.js';
+import { upstreamJson } from '../shared/upstream.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { soilAt } from './soils.js';
 import {
@@ -56,10 +57,13 @@ async function treeCanopyAt(point) {
   url.searchParams.set('returnCatalogItems', 'false');
   url.searchParams.set('f', 'json');
 
-  const response = await fetchWithTimeout(url, {}, POINT_FALLBACK_TIMEOUT_MS);
-  if (!response.ok) throw new Error(`USFS tree-canopy service returned ${response.status}`);
-  const data = await response.json();
-  if (data?.error) throw new Error(data.error.message || 'USFS tree-canopy service error');
+  // One attempt per point, as before. The fallback already caps the points, and they run in
+  // parallel (a federal service), so the per-host cap is raised to that cap.
+  const data = await upstreamJson(url, {
+    timeoutMs: POINT_FALLBACK_TIMEOUT_MS, retries: 0, arcgis: true, label: 'usfs-canopy-identify',
+    maxPerHost: CANOPY_FALLBACK_MAX_POINTS,
+    agency: 'USFS tree-canopy service', arcgisMessage: 'USFS tree-canopy service error'
+  });
 
   const raw = Number(data.value ?? data.properties?.Value ?? data.properties?.value);
   if (!Number.isFinite(raw) || raw < 0 || raw > 100) {

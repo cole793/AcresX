@@ -1,9 +1,11 @@
 // Offline tests for /api/property-assessment (src/services/property-tax-test.js).
 // Network is stubbed: upstream county/state answers are canned objects or recorded fixtures.
-import { test, beforeEach, afterEach } from 'node:test';
+import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import worker from '../src/index.js';
+import { getKootenaiAssessment, KC_ASSESSOR_LAYERS } from '../src/counties/kootenai-assessor.js';
+import { inFlight, queued } from '../src/shared/upstream.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 const env = { ASSETS: { fetch: async () => new Response('', { status: 404 }) } };
@@ -19,7 +21,7 @@ function stubFetch(handler) {
   };
 }
 beforeEach(() => { requested = []; globalThis.fetch = async () => { throw new Error('network disabled in tests'); }; });
-afterEach(() => { globalThis.fetch = realFetch; });
+afterEach(() => { globalThis.fetch = realFetch; mock.timers.reset(); });
 
 const arcgisJson = body => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } });
 const features = list => arcgisJson({ features: list.map(attributes => ({ attributes })) });
@@ -99,8 +101,11 @@ test('kootenai assessment: maps values and property class from the recorded answ
     propertyClass: '512', propertyClassDescription: 'Rural residential tract'
   }]);
   assertNoPersonalData(body);
-  // One query per district layer, never the rate-limited statewide service, never owner fields requested.
-  assert.deepEqual(requested.map(layerOf).sort((a, b) => a - b), [5, 6, 7, 8, 9, 10, 11]);
+  // At most one query per district layer, in layer order (at most 4 at once, so a layer queued
+  // behind the hit is never sent), never the rate-limited statewide service, never owner fields.
+  const layers = requested.map(layerOf);
+  assert.ok(layers.includes(10), 'the hit layer was queried');
+  assert.deepEqual(layers, [5, 6, 7, 8, 9, 10, 11].slice(0, layers.length));
   for (const url of requested) {
     assert.equal(url.searchParams.get('returnGeometry'), 'false');
     const out = url.searchParams.get('outFields').split(',');
@@ -171,8 +176,8 @@ test('kootenai assessment: the first hit answers at once and the other layer req
     hitLayer: 5,
     other: (url, init) => {
       signals[layerOf(url)] = init.signal;
-      // Layer 9 hangs until it is aborted (the 10 s timeout would be the only other way out).
-      if (layerOf(url) === 9) return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
+      // Layers 7 and 9 hang until aborted (the 10 s timeout would be the only other way out).
+      if (layerOf(url) === 7 || layerOf(url) === 9) return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))));
       return new Promise(resolve => setTimeout(() => resolve(arcgisJson(recorded.miss)), 50));
     }
   }));
@@ -182,8 +187,58 @@ test('kootenai assessment: the first hit answers at once and the other layer req
   assert.equal(body.available, true);
   assert.equal(body.countyRecords[0].layerId, 5);
   assert.ok(elapsed < 500, `answered in ${elapsed} ms`);
-  assert.equal(signals[9].aborted, true, 'the hanging layer request was aborted');
+  // Layers 5-8 start (the per-host cap is 4); 9-11 wait for a slot and are never sent once
+  // layer 5 has answered. Any request still pending is aborted.
+  assert.equal(signals[7].aborted, true, 'the hanging layer request was aborted');
+  assert.equal(signals[9], undefined, 'a layer waiting behind the cap is not sent after the hit');
   assert.equal(signals[6].aborted, true, 'other pending layer requests were aborted');
+});
+
+test('kootenai assessment: a slow host with the hit in a layer queued behind the cap still finds it', async () => {
+  // Every layer answers in 6 s; the PIN is in layer 11, which waits for a slot behind 5-8. The
+  // 10 s timeout starts when a layer is sent, so 11 (sent at ~6 s) answers at ~12 s.
+  // The mocked clock starts at real time, and earlier tests must leave no map.kcgov.us request
+  // waiting or holding a slot (a leftover would delay this one).
+  assert.equal(queued('map.kcgov.us'), 0, 'no leftover queue entries');
+  assert.equal(inFlight('map.kcgov.us'), 0, 'no leftover slots');
+  mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
+  const sent = {};
+  stubFetch(kootenaiUpstream({ hitLayer: -1, other: url => new Promise(resolve => {
+    sent[layerOf(url)] = Date.now();
+    setTimeout(() => resolve(arcgisJson(layerOf(url) === 11 ? recorded.hit : recorded.miss)), 6000);
+  }) }));
+  const started = Date.now();
+  let result = null;
+  const pending = getKootenaiAssessment('47N03W052200').then(value => { result = value; });
+  for (let ms = 0; ms < 20000 && !result; ms += 10) {
+    mock.timers.tick(10);
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setImmediate(resolve));
+  }
+  await pending;
+  assert.equal(result.status, 'found');
+  assert.equal(result.record.layerId, 11);
+  assert.ok(sent[11] - started >= 6000, 'layer 11 waited for a slot');
+  assert.ok(Date.now() - started < 13000, `found at ${Date.now() - started} ms`);
+  assert.equal(queued('map.kcgov.us'), 0, 'cancelled layers left the queue');
+});
+
+test('kootenai assessment: a quick hit in a queued layer is found while layers 5-8 hang', async () => {
+  // The queue budget (12 s) is a little longer than the 10 s timeout of the layers ahead, so a
+  // queued layer is still sent when they time out.
+  mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
+  stubFetch(kootenaiUpstream({ hitLayer: 9, other: (url, init) => (layerOf(url) <= 8 ? new Promise((_, reject) => init.signal?.addEventListener('abort', () => reject(init.signal.reason))) : arcgisJson(recorded.miss)) }));
+  const started = Date.now();
+  let result = null;
+  const pending = getKootenaiAssessment('47N03W052200').then(value => { result = value; });
+  for (let ms = 0; ms < 20000 && !result; ms += 10) {
+    mock.timers.tick(10);
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setImmediate(resolve));
+  }
+  await pending;
+  assert.equal(result.status, 'found');
+  assert.equal(result.record.layerId, 9);
+  assert.ok(Date.now() - started < 11000, `found at ${Date.now() - started} ms`);
+  assert.equal(queued('map.kcgov.us'), 0);
 });
 
 test('kootenai assessment: with no hit, a hanging-then-failing layer still makes it an error, not not-found', async () => {
@@ -210,4 +265,37 @@ test('kootenai assessment: quotes in the parcel number are escaped', async () =>
   await kootenai("47n03w'052200");
   assert.equal(requested.length, 7);
   for (const url of requested) assert.equal(url.searchParams.get('where'), "PIN='47N03W''052200' OR PID='47N03W''052200'");
+});
+
+// ---- Kootenai assessor cache (Cache API, validated answers only)
+
+function fakeCache() {
+  const store = new Map();
+  const puts = [];
+  globalThis.caches = { default: {
+    async match(req) { const hit = store.get(req.url); return hit ? hit.clone() : undefined; },
+    async put(req, res) { puts.push(req.url); store.set(req.url, res.clone()); }
+  } };
+  return { puts };
+}
+
+test('kootenai assessor: found records are cached per PIN; misses and errors are not', async t => {
+  const { puts } = fakeCache();
+  t.after(() => { delete globalThis.caches; });
+  const hit = { features: [{ attributes: { PIN: '47N03W052200', PID: '47N03W-05-2200', AssessValue_Land: 1000, AssessValue_Date: 20260101 } }] };
+  stubFetch(url => (layerOf(url) === 6 ? arcgisJson(hit) : arcgisJson({ features: [] })));
+  const first = await getKootenaiAssessment('47N03W052200');
+  assert.equal(first.status, 'found');
+  const sent = requested.length;
+  assert.ok(sent <= KC_ASSESSOR_LAYERS.length);
+  const second = await getKootenaiAssessment('47n03w052200 ');
+  assert.deepEqual(second, first);
+  assert.equal(requested.length, sent, 'second lookup made no requests');
+  assert.equal(puts.length, 1);
+
+  stubFetch(() => arcgisJson({ features: [] }));
+  assert.equal((await getKootenaiAssessment('99N99W999999')).status, 'not_found');
+  stubFetch(() => new Response('x', { status: 500 }));
+  assert.equal((await getKootenaiAssessment('98N98W999999')).status, 'error');
+  assert.equal(puts.length, 1, 'misses and errors are not cached');
 });

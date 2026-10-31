@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from '../../shared/http.js';
+import { upstreamJson } from '../../shared/upstream.js';
 
 const IDAHO_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0';
 
@@ -22,10 +22,8 @@ export async function findIdahoWells({ lat, lon }) {
     url.searchParams.set('returnGeometry', 'true');
     url.searchParams.set('outSR', '4326');
     url.searchParams.set('resultRecordCount', '200');
-    const response = await fetchWithTimeout(url, { cf: { cacheTtl: 3600, cacheEverything: true } }, 20000);
-    if (!response.ok) throw new Error(`Idaho well service returned ${response.status}`);
-    const data = await response.json();
-    if (data.error) throw new Error(data.error.message || 'Idaho well search failed');
+    // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
+    const data = await upstreamJson(url, { timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label: 'idwr-wells', agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed' });
     features = (data.features || []).filter(f => Number(f?.properties?.TotalDepth) > 0);
     if (features.length >= 5) break;
   }

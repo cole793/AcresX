@@ -1,21 +1,21 @@
-import { fetchWithTimeout } from './http.js';
+// ArcGIS helpers for parcel-area (polygon) queries. Requests go through the shared upstream
+// client (src/shared/upstream.js): the timeout covers the body, one retry on a timeout, network
+// error, 5xx or non-4xx ArcGIS error, per-host cap, a log line per attempt, and no `cf` edge
+// caching. This file only adds the defaults the polygon callers rely on.
+import { arcgisQuery as upstreamArcgisQuery } from './upstream.js';
 
 // GET while the URL stays short; a parcel polygon can make it too long for some servers, so
-// longer queries go as a form POST (every ArcGIS REST query endpoint accepts both).
-const MAX_GET_URL = 1800;
+// longer queries go as a form POST (every ArcGIS REST query endpoint accepts both). Lower than
+// the shared client's default (3,500) on purpose: this is what PR #21 checked live.
+export const ARCGIS_MAX_GET_URL = 1800;
 
-export async function arcgisQuery(base, params, { agency = 'ArcGIS service', timeoutMs = 20000 } = {}) {
-  const url = new URL(`${base}/query`);
-  url.searchParams.set('f', 'json');
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
-  const cache = { cf: { cacheTtl: 900, cacheEverything: true } };
-  const response = url.href.length > MAX_GET_URL
-    ? await fetchWithTimeout(`${base}/query`, { ...cache, method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: url.searchParams.toString() }, timeoutMs)
-    : await fetchWithTimeout(url, cache, timeoutMs);
-  if (!response.ok) throw new Error(`${agency} returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw Object.assign(new Error(data.error.message || `${agency} query failed`), { arcgisError: true });
-  return data.features || [];
+// Was one 20 s attempt; now 12 s + one retry at 8 s (body included), like the other county layers.
+// Same signature and result (features[]) as before; an ArcGIS {error} body still throws an error
+// with arcgisError: true and the server's message (else `${agency} query failed`), and an HTTP
+// error still reads `${agency} returned ${status}`. Any other shared-client option (label, retries,
+// signal, ...) can be passed through.
+export function arcgisQuery(base, params, { agency = 'ArcGIS service', timeoutMs = 12000, retryTimeoutMs = 8000, ...opts } = {}) {
+  return upstreamArcgisQuery(base, params, { maxGetUrlLength: ARCGIS_MAX_GET_URL, ...opts, agency, timeoutMs, retryTimeoutMs });
 }
 
 // Spatial filter params for a parcel polygon (rings, lon/lat) or, without one, a point.

@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from '../shared/http.js';
+import { upstreamJson } from '../shared/upstream.js';
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -74,14 +74,13 @@ async function overpassQuery(query) {
   let lastError;
   for (const endpoint of OVERPASS_ENDPOINTS) {
     try {
-      const response = await fetchWithTimeout(endpoint, {
+      // One attempt per endpoint (the second endpoint is the retry), 18 s each as before.
+      return await upstreamJson(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: `data=${encodeURIComponent(query)}`,
-        cf: { cacheTtl: 86400, cacheEverything: true }
-      }, 18000);
-      if (!response.ok) throw new Error(`Overpass returned ${response.status}`);
-      return await response.json();
+        timeoutMs: 18000, retries: 0, label: 'overpass-power', agency: 'Overpass'
+      });
     } catch (error) {
       lastError = error;
     }

@@ -11,13 +11,20 @@
 // fields, and mapKootenaiParcel() copies named fields only, so owner data cannot reach the
 // response even if the server sent it.
 
-import { fetchWithTimeout } from '../shared/http.js';
+import { arcgisJson, cachedJson } from '../shared/upstream.js';
 
 export const KC_PARCEL_LAYER = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
 export const KC_PARCEL_SOURCE = 'Kootenai County GIS (Ownership_Display parcel layer)';
 // Never add Name here: it is the owner's name.
 export const KC_PARCEL_SEARCH_FIELDS = 'PIN,PID,Acres,Loc_Addr,Loc_City';
+// One 10 s attempt (body included), no retry: the statewide and IDWR layers behind it are the
+// retry. Answers that found rows are cached 7 days (Cache API); empty answers and errors are not.
 const TIMEOUT_MS = 10000;
+// Only the KC_PARCEL_SEARCH_FIELDS attributes and the outline are kept (before caching and before
+// use), so owner fields the server might send anyway are never stored. Bump the version in the
+// prefix whenever KC_PARCEL_SEARCH_FIELDS changes, so no entry in the old shape survives.
+export const KC_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/kootenai-parcels/v3/';
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function sql(value) { return String(value ?? '').replaceAll("'", "''"); }
 function normalize(value) { return String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
@@ -111,14 +118,22 @@ export function mapKootenaiParcel(attrs = {}, geometry = null) {
   };
 }
 
-async function queryLayer(where) {
-  const url = new URL(`${KC_PARCEL_LAYER}/query`);
-  for (const [k, v] of Object.entries({ where, outFields: KC_PARCEL_SEARCH_FIELDS, returnGeometry: 'true', outSR: '4326', resultRecordCount: '20', f: 'json' })) url.searchParams.set(k, v);
-  const response = await fetchWithTimeout(url, { cf: { cacheTtl: 3600, cacheEverything: true } }, TIMEOUT_MS);
-  if (!response.ok) throw new Error(`Kootenai County parcel layer returned ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(`Kootenai County parcel layer: ${data.error.message || 'query failed'}`);
-  return Array.isArray(data.features) ? data.features : [];
+async function fetchLayer(where) {
+  const data = await arcgisJson(`${KC_PARCEL_LAYER}/query`, { where, outFields: KC_PARCEL_SEARCH_FIELDS, returnGeometry: 'true', outSR: '4326', resultRecordCount: '20' }, {
+    timeoutMs: TIMEOUT_MS, retries: 0, label: 'kootenai-parcel-search', agency: 'Kootenai County parcel layer',
+    arcgisMessage: message => `Kootenai County parcel layer: ${message || 'query failed'}`
+  });
+  return Array.isArray(data?.features) ? data.features.map(searchFieldsOnly) : [];
+}
+const SEARCH_FIELDS = KC_PARCEL_SEARCH_FIELDS.split(',');
+function searchFieldsOnly(feature) {
+  const attrs = feature?.attributes || {};
+  const attributes = {};
+  for (const key of SEARCH_FIELDS) if (key in attrs) attributes[key] = attrs[key];
+  return { attributes, geometry: feature?.geometry ?? null };
+}
+function queryLayer(where) {
+  return cachedJson(KC_PARCEL_CACHE_PREFIX, { where }, CACHE_TTL_SECONDS, () => fetchLayer(where), { isValid: features => Array.isArray(features) && features.length > 0 });
 }
 
 // Returns the parcel Feature, or null when the county layer has no such PIN/PID.
