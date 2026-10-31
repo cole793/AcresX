@@ -7,6 +7,11 @@ const ECOLOGY_WELLS = 'https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/
 // assessor was 15 s per query, Ecology 20 s.
 const ASSESSOR_TIMEOUTS = { timeoutMs: 9000, retryTimeoutMs: 6000 };
 const ECOLOGY_TIMEOUTS = { timeoutMs: 12000, retryTimeoutMs: 8000 };
+// Owner names (owner decision, 2026-10-29): the assessor owner/taxpayer name and the well
+// record's OwnerName are still requested, because matching them is one of the well-match
+// signals (+25 for a match, +12 for a partial one), but they are compared here only and never
+// returned: the answer has no currentOwner and no ownerName per well, only the derived
+// evidence (ownerMatch, partialOwnerMatch, ownerSimilarity).
 
 function normParcel(value) { return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function normName(value) { return String(value || '').toUpperCase().replace(/\b(LLC|L\.L\.C|INC|CORP|CORPORATION|COMPANY|CO|TRUST|TRUSTEE|ET AL|ESTATE)\b/g, ' ').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
@@ -89,7 +94,7 @@ function scoreWell(well, assessor, parcelId, geometry) {
   const site = normAddress(assessor.siteAddress), wellAddress = normAddress(p.WellAddress); const addressMatch = Boolean(site && wellAddress && (site.includes(wellAddress) || wellAddress.includes(site)));
   const near150 = Number.isFinite(distanceFt) && distanceFt > 0 && distanceFt <= 150; const near300 = Number.isFinite(distanceFt) && distanceFt > 150 && distanceFt <= 300;
   let score = 0; if (parcelMatch) score += 80; if (insideParcel) score += 70; else if (near150) score += 45; else if (near300) score += 30; if (ownerMatch) score += 25; else if (partialOwnerMatch) score += 12; if (addressMatch) score += 25; score = Math.min(score, 100);
-  return { id: p.ID || null, wellTag: p.WellTagNr || '', projectName: p.ProjectName || '', ownerName: p.OwnerName || '', wellAddress: p.WellAddress || '', parcelNumber: p.ParcelNumber || '', completedDepth: p.CompletedDepth || null, completionDate: p.WorkCompletionDate || null, wellType: p.WellSubType || p.WellProjectType || '', drillerLicenseNumber: p.DrillerLicenseNumber || '', flowRateGPM: p.FlowRateGPM ?? null, latitude: Number(coords[1]) || null, longitude: Number(coords[0]) || null, evidence: { parcelMatch, insideParcel, nearParcel: near150 || near300, distanceToParcelFt: distanceFt, ownerMatch, partialOwnerMatch, addressMatch, ownerSimilarity: Math.round(ownerScore * 100) }, score };
+  return { id: p.ID || null, wellTag: p.WellTagNr || '', projectName: p.ProjectName || '', wellAddress: p.WellAddress || '', parcelNumber: p.ParcelNumber || '', completedDepth: p.CompletedDepth || null, completionDate: p.WorkCompletionDate || null, wellType: p.WellSubType || p.WellProjectType || '', drillerLicenseNumber: p.DrillerLicenseNumber || '', flowRateGPM: p.FlowRateGPM ?? null, latitude: Number(coords[1]) || null, longitude: Number(coords[0]) || null, evidence: { parcelMatch, insideParcel, nearParcel: near150 || near300, distanceToParcelFt: distanceFt, ownerMatch, partialOwnerMatch, addressMatch, ownerSimilarity: Math.round(ownerScore * 100) }, score };
 }
 function classify(best) {
   if (!best) return { status: 'no_match', label: 'No existing well match found', confidence: 'Low' };
@@ -106,5 +111,5 @@ export async function handleExistingWell(request) {
   if (!body.parcelId || !body.geometry) return json({ error: 'parcelId and geometry are required.' }, 400, 'no-store');
   const [assessor, wells] = await Promise.all([queryAssessor(body.parcelId), queryNearbyWells(body.geometry)]);
   const candidates = wells.map(well => scoreWell(well, assessor, body.parcelId, body.geometry)).sort((a, b) => b.score - a.score); const best = candidates[0] || null; const result = classify(best); const matched = result.status !== 'no_match';
-  return json({ available: true, county: 'Spokane', state: 'WA', parcelId: assessor.parcelId || body.parcelId, currentOwner: assessor.ownerName || '', siteAddress: assessor.siteAddress || body.address || '', ...result, score: best?.score || 0, match: matched ? best : null, candidateCount: candidates.length, methodology: 'Matches Washington Ecology well records to the current Spokane County assessor parcel using parcel number, mapped location, proximity to the parcel boundary, owner name, and site address.', caution: 'Well records are historical and mapped locations can be approximate. A match is screening evidence, not proof that a well is currently usable or legally serving the parcel.', sources: { assessor: 'Spokane County Assessor SCOUT', wells: 'Washington Department of Ecology Well Reports' } }, 200, 'public, max-age=300, s-maxage=900');
+  return json({ available: true, county: 'Spokane', state: 'WA', parcelId: assessor.parcelId || body.parcelId, siteAddress: assessor.siteAddress || body.address || '', ...result, score: best?.score || 0, match: matched ? best : null, candidateCount: candidates.length, methodology: 'Matches Washington Ecology well records to the current Spokane County assessor parcel using parcel number, mapped location, proximity to the parcel boundary, owner name, and site address.', caution: 'Well records are historical and mapped locations can be approximate. A match is screening evidence, not proof that a well is currently usable or legally serving the parcel.', sources: { assessor: 'Spokane County Assessor SCOUT', wells: 'Washington Department of Ecology Well Reports' } }, 200, 'public, max-age=300, s-maxage=900');
 }

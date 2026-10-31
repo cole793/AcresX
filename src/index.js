@@ -20,17 +20,20 @@ import { handleExistingWell } from './services/existing-well.js';
 import { handleResoListings } from './services/reso-listings.js';
 import { handleUpstreamHealth } from './services/upstream-health.js';
 import { json } from './shared/http.js';
+import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
 async function handleParcelSearch(request) {
   const body = await request.json(); const state = String(body.state || '').toUpperCase().trim(); const county = String(body.county || '').replace(/\s+County$/i, '').trim(); const parcelId = String(body.parcelId || '').trim();
-  if (state === 'MT') { const parcel = /^yellowstone$/i.test(county) ? await findYellowstoneParcel(parcelId) : await findMontanaParcel(parcelId, county); return json({ available: true, state: 'MT', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
-  if (state === 'ID') { const parcel = await findIdahoParcel(parcelId, county); return json({ available: true, state: 'ID', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
+  // Owner and mailing fields never leave the Worker (owner decision, 2026-10-29). The adapters do
+  // not request or keep them; this strip is the last guard.
+  if (state === 'MT') { const parcel = withoutPersonalFields(/^yellowstone$/i.test(county) ? await findYellowstoneParcel(parcelId) : await findMontanaParcel(parcelId, county)); return json({ available: true, state: 'MT', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
+  if (state === 'ID') { const parcel = withoutPersonalFields(await findIdahoParcel(parcelId, county)); return json({ available: true, state: 'ID', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
   return json({ available: false, error: 'This state/county parcel adapter is not supported by the new router yet.' }, 400, 'no-store');
 }
 async function handleWellSearch(request) {
   const body = await request.json(); const state = String(body.state || '').toUpperCase().trim();
-  if (state === 'MT') return json(await findMontanaWells({ lat: body.lat, lon: body.lon }), 200, 'public, max-age=3600, s-maxage=86400');
-  if (state === 'ID') return json(await findIdahoWells({ lat: body.lat, lon: body.lon }), 200, 'public, max-age=3600, s-maxage=86400');
+  if (state === 'MT') return json(withoutPersonalFields(await findMontanaWells({ lat: body.lat, lon: body.lon })), 200, 'public, max-age=3600, s-maxage=86400');
+  if (state === 'ID') return json(withoutPersonalFields(await findIdahoWells({ lat: body.lat, lon: body.lon })), 200, 'public, max-age=3600, s-maxage=86400');
   return json({ available: false, error: 'New well-search router currently supports Montana and Idaho.' }, 400, 'no-store');
 }
 async function handleZoningPermits(request) {
@@ -67,5 +70,7 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
     }
     try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}
   }
-  const response=await legacyWorker.fetch(request,env,ctx); return await maybeInjectUiPolish(request,response);
+  // Legacy routes pass upstream attributes through (/api/arcgis, the zoning-permits fallback), so
+  // their JSON answers lose owner and mailing fields here.
+  const response=await legacyWorker.fetch(request,env,ctx); if(url.pathname.startsWith('/api/'))return await responseWithoutPersonalFields(response); return await maybeInjectUiPolish(request,response);
 } catch(error){return json({error:error?.message||'Request failed'},502,'no-store');} } };

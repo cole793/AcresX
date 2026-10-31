@@ -327,7 +327,7 @@ test('mapKootenaiParcel copies named fields only', () => {
 // The shared upstream client retries a failed request once (timeout, network, 5xx), so a
 // scenario whose upstream fails now sends that request twice in a row; answers are unchanged.
 const withoutRetries = results => results.map(r => ({ ...r, requests: r.requests.filter((q, i) => i === 0 || JSON.stringify(q) !== JSON.stringify(r.requests[i - 1])) }));
-test('other Idaho counties and Montana answer exactly as before (snapshot from 2d12331)', async () => {
+test('other Idaho counties and Montana answer exactly as before, minus owner fields (snapshot from 2d12331)', async () => {
   const now = await runParcelScenarios(worker);
   assert.deepEqual(withoutRetries(now), withoutRetries(legacySnapshot));
   const ada500 = now.find(r => r.name === 'Ada upstream 500');
