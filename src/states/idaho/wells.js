@@ -1,4 +1,5 @@
 import { upstreamJson } from '../../shared/upstream.js';
+import { FALLBACK_KINDS, fallbackHint, isFallbackEligible } from '../../shared/fallback.js';
 import { withoutPersonalFields } from '../../shared/personal-fields.js';
 
 const IDAHO_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0';
@@ -24,7 +25,14 @@ export async function findIdahoWells({ lat, lon }) {
     url.searchParams.set('outSR', '4326');
     url.searchParams.set('resultRecordCount', '200');
     // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
-    const data = await upstreamJson(url, { timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label: 'idwr-wells', agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed' });
+    let data;
+    try {
+      data = await upstreamJson(url, { timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label: 'idwr-wells', agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed' });
+    } catch (error) {
+      // src/index.js copies error.fallback into its 502 answer (src/shared/fallback.js).
+      if (isFallbackEligible(error)) error.fallback = fallbackHint(FALLBACK_KINDS.idahoWells, { lat: y, lon: x });
+      throw error;
+    }
     features = (data.features || []).filter(f => Number(f?.properties?.TotalDepth) > 0);
     if (features.length >= 5) break;
   }

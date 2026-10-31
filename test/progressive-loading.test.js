@@ -5,6 +5,7 @@
 // DOM, clock and fetch from test/ui-harness.js; a small stand-in plays index.html's inline script.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { makeClock, makeContext, makeFetch, makeLazyContext, readPublic, acresToSqm } from './ui-harness.js';
 
 const card = (detail, metric, status) => ['article', { class: 'card snapshot-card', 'data-detail': detail }, '', [
@@ -487,4 +488,74 @@ test('a wetlands answer after another section timed out still renders, and a hun
   assert.equal(t.text('wetlandGrade'), 'Mapped on parcel');
   assert.deepEqual(t.acreage(), ACREAGE_SHOWN);
   assert.notEqual(t.text('scoreMetric'), 'Updating…');
+});
+
+// ---------- #24 follow-ups ----------
+
+test('the assessment follow-up settles its claim, whether the lookup answers or fails', async () => {
+  const t = setup({ followups: true });
+  await t.search();
+  for (const name of SECTIONS) t.answer(name);
+  await t.clock.advance(1000);
+  assert.equal(t.S.status('assessment'), 'done');
+  const saved = FOLLOWUP_ROUTES['/api/property-assessment'];
+  FOLLOWUP_ROUTES['/api/property-assessment'] = { delay: 100, status: 500, body: { error: 'Assessor down' } };
+  try {
+    await t.search('P2');
+    for (const name of SECTIONS) t.answer(name);
+    await t.clock.advance(1000);
+    assert.equal(t.S.status('assessment'), 'failed');
+  } finally {
+    FOLLOWUP_ROUTES['/api/property-assessment'] = saved;
+  }
+});
+
+test('index.html: the search form uses AcresXProgress, and the all-at-once handler if it did not load', () => {
+  const html = readPublic('index.html');
+  const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  assert.ok(inline.length > 0);
+  for (const code of inline) assert.doesNotThrow(() => new vm.Script(code), 'inline script parses');
+  const handlerLine = html.split('\n').find(l => l.startsWith("$('searchForm').addEventListener('submit'"));
+  assert.ok(handlerLine, 'submit handler present');
+  assert.ok(/async function searchAllAtOnce\(\)\{/.test(html), 'the all-at-once handler is kept');
+  const h = makeLazyContext();
+  h.run(`const $=id=>document.getElementById(id); let legacy=0; async function searchAllAtOnce(){ legacy++; }\n${handlerLine}`);
+  const submit = h.el('searchForm').listeners.submit;
+  let prevented = 0;
+  const event = { preventDefault() { prevented++; } };
+  assert.doesNotThrow(() => submit(event), 'no AcresXProgress: no throw');
+  assert.equal(h.run('legacy'), 1);
+  h.run('window.AcresXProgress = { search() { window.progressive = (window.progressive || 0) + 1; } }');
+  submit(event);
+  assert.equal(h.run('window.progressive'), 1);
+  assert.equal(h.run('legacy'), 1);
+  assert.equal(prevented, 2);
+});
+
+test('extend(signal, ms): once per attempt, only while that section is pending, only for a running section signal', async () => {
+  const t = setup();
+  await t.search();
+  const signal = t.asks.zoningPermits.at(-1).signal;
+  assert.equal(t.S.extend(undefined, 30000), false, 'no signal');
+  assert.equal(t.S.extend(new AbortController().signal, 30000), false, 'a signal no section owns');
+  assert.equal(t.S.extend(signal, 0), false, 'a non-positive time limit');
+  assert.equal(t.S.extend(signal, 30000), true, 'first extension');
+  assert.equal(t.S.extend(signal, 30000), false, 'once per attempt');
+  // Past the original 20 s limit, the extended section is still checking.
+  await t.clock.advance(25000);
+  assert.equal(t.S.status('zoningPermits'), 'pending');
+  await t.clock.advance(6000);
+  assert.equal(t.S.status('zoningPermits'), 'timeout', 'the extension is 30 s from when it was given');
+  // A settled section cannot be extended.
+  const wells = t.asks.wells.at(-1).signal;
+  t.answer('wells');
+  await t.clock.advance(200);
+  assert.equal(t.S.extend(wells, 30000), false, 'not pending any more');
+  // A retry is a new attempt: its signal can be extended once again; the old one cannot.
+  t.ctx.AcresXProgress.retry('zoningPermits');
+  await t.clock.flush();
+  const retried = t.asks.zoningPermits.at(-1).signal;
+  assert.notEqual(retried, signal);
+  assert.equal(t.S.extend(signal, 30000), false, 'the old attempt is gone');
+  assert.equal(t.S.extend(retried, 30000), true);
 });

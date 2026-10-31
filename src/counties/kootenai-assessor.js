@@ -18,6 +18,7 @@
 // behind slow ones still gets its full 10 s (a 6 s server finds a PIN in layer 11 at ~12 s).
 // The cap stays at 4 on purpose: 7 assessor queries at once is what this cap was added for. Found records are cached per PIN for 7 days (Cache API); misses and errors are not.
 import { arcgisQuery, cachedJson } from '../shared/upstream.js';
+import { isFallbackEligible } from '../shared/fallback.js';
 
 export const KC_ASSESSOR = 'https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer';
 export const KC_ASSESSOR_LAYERS = [5, 6, 7, 8, 9, 10, 11];
@@ -97,7 +98,9 @@ function errorMessage(failures) {
   return failures.length > 1 ? `${message} (${failures.length} of ${KC_ASSESSOR_LAYERS.length} layers failed)` : message;
 }
 
-// { status: 'found', record } | { status: 'not_found' } | { status: 'error', error }.
+// { status: 'found', record } | { status: 'not_found' } | { status: 'error', error, browserFallback }.
+// browserFallback is true when some layer failed in a way a browser might get past
+// (src/shared/fallback.js); error answers are never cached.
 // The first layer that returns a record wins at once, and the other layer requests are aborted,
 // so one slow layer does not delay a found answer. With no hit, it waits for every layer: a layer
 // that failed makes the answer an error, because the PIN may be in that layer.
@@ -113,7 +116,7 @@ export function queryKootenaiAssessment(parcelId) {
         features => { if (features.length) finish({ status: 'found', record: mapKootenaiAssessorRecord(features[0].attributes || {}, layerId) }); },
         error => { if (!done) failures.push(error); }
       ).finally(() => {
-        if (--pending === 0) finish(failures.length ? { status: 'error', error: errorMessage(failures) } : { status: 'not_found' });
+        if (--pending === 0) finish(failures.length ? { status: 'error', error: errorMessage(failures), browserFallback: failures.some(isFallbackEligible) } : { status: 'not_found' });
       });
     }
   });

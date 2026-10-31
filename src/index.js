@@ -22,6 +22,10 @@ import { handleUpstreamHealth } from './services/upstream-health.js';
 import { json } from './shared/http.js';
 import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
+// A failed lookup may carry a browser fallback hint (src/shared/fallback.js); it is the only
+// field added to these 502 answers.
+const fallbackOf = error => (error?.fallback?.mode === 'browser' ? { fallback: error.fallback } : {});
+
 async function handleParcelSearch(request) {
   const body = await request.json(); const state = String(body.state || '').toUpperCase().trim(); const county = String(body.county || '').replace(/\s+County$/i, '').trim(); const parcelId = String(body.parcelId || '').trim();
   // Owner and mailing fields never leave the Worker (owner decision, 2026-10-29). The adapters do
@@ -45,7 +49,7 @@ async function handleZoningPermits(request) {
   return null;
 }
 async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for(const test of tests){const r=new Request(request.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(test)});results.push(await(await handlePropertyTaxTest(r)).json());} return json({test:'AcresX property tax / assessment sources',results},200,'no-store'); }
-async function maybeInjectUiPolish(request,response) { if(request.method!=='GET')return response; const url=new URL(request.url); if(url.pathname!=='/'&&url.pathname!=='/index.html')return response; const contentType=response.headers.get('Content-Type')||''; if(!contentType.includes('text/html'))return response; const html=await response.text(); const scripts=[]; for(const s of ['flood-status','wetlands-status','acreage','ui-polish','parcel-preview','score-cost','zoning-potential','snapshot-accordion','state-selector','slope-map','screening-refinements','branding-polish','library-polish','loading-modal','property-assessment','compact-overview','parcel-summary-insights','map-polish','demo-housekeeping','existing-well','spokane-cost-model','reso-listing-context','property-report-v2']) if(!html.includes(`/${s}.js`))scripts.push(`<script src="/${s}.js"></script>`); if(!scripts.length)return new Response(html,response); const polished=html.replace('</body>',`${scripts.join('\n')}\n</body>`); const headers=new Headers(response.headers); headers.delete('Content-Length'); return new Response(polished,{status:response.status,statusText:response.statusText,headers}); }
+async function maybeInjectUiPolish(request,response) { if(request.method!=='GET')return response; const url=new URL(request.url); if(url.pathname!=='/'&&url.pathname!=='/index.html')return response; const contentType=response.headers.get('Content-Type')||''; if(!contentType.includes('text/html'))return response; const html=await response.text(); const scripts=[]; for(const s of ['flood-status','wetlands-status','acreage','ui-polish','parcel-preview','score-cost','zoning-potential','snapshot-accordion','state-selector','slope-map','screening-refinements','branding-polish','library-polish','loading-modal','property-assessment','compact-overview','parcel-summary-insights','map-polish','demo-housekeeping','existing-well','spokane-cost-model','reso-listing-context','property-report-v2','browser-fallback']) if(!html.includes(`/${s}.js`))scripts.push(`<script src="/${s}.js"></script>`); if(!scripts.length)return new Response(html,response); const polished=html.replace('</body>',`${scripts.join('\n')}\n</body>`); const headers=new Headers(response.headers); headers.delete('Content-Length'); return new Response(polished,{status:response.status,statusText:response.statusText,headers}); }
 export default { async scheduled(controller,env,ctx){const req=new Request('https://acresx.internal/api/reso-listings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sync:true,incremental:true})});ctx.waitUntil(handleResoListings(req,env));}, async fetch(request,env,ctx) { const url=new URL(request.url); try {
   if(url.pathname==='/api/upstream-health'&&request.method==='GET')return await handleUpstreamHealth();
   if(url.pathname==='/api/property-tax-test'&&request.method==='GET')return await runPropertyTaxBrowserTest(request);
@@ -66,11 +70,11 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
     try { const body=await clone.json(); county=String(body?.county||'').replace(/\s+County$/i,'').trim(); } catch (_) {}
     if(/^(gallatin|kootenai)$/i.test(county)) {
       try { const response=await handleZoningPermits(request); if(response)return response; }
-      catch(error){ const isKootenai=/^kootenai$/i.test(county); return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.'},502,'no-store'); }
+      catch(error){ const isKootenai=/^kootenai$/i.test(county); return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.',...fallbackOf(error)},502,'no-store'); }
     }
     try{const response=await handleZoningPermits(request);if(response)return response;}catch(error){console.warn('Modular county zoning adapter failed; using legacy fallback.',error);}
   }
   // Legacy routes pass upstream attributes through (/api/arcgis, the zoning-permits fallback), so
   // their JSON answers lose owner and mailing fields here.
   const response=await legacyWorker.fetch(request,env,ctx); if(url.pathname.startsWith('/api/'))return await responseWithoutPersonalFields(response); return await maybeInjectUiPolish(request,response);
-} catch(error){return json({error:error?.message||'Request failed'},502,'no-store');} } };
+} catch(error){return json({error:error?.message||'Request failed',...fallbackOf(error)},502,'no-store');} } };

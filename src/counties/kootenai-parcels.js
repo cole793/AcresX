@@ -17,9 +17,12 @@ export const KC_PARCEL_LAYER = 'https://map.kcgov.us/arcgis/rest/services/NewSer
 export const KC_PARCEL_SOURCE = 'Kootenai County GIS (Ownership_Display parcel layer)';
 // Never add Name here: it is the owner's name.
 export const KC_PARCEL_SEARCH_FIELDS = 'PIN,PID,Acres,Loc_Addr,Loc_City';
-// One 10 s attempt (body included), no retry: the statewide and IDWR layers behind it are the
-// retry. Answers that found rows are cached 7 days (Cache API); empty answers and errors are not.
-const TIMEOUT_MS = 10000;
+// One 8 s attempt (body included), no retry. If it times out (or another outage a browser might
+// get past), /api/parcel-search answers at once with a browser fallback hint; on an ArcGIS error
+// the statewide and IDWR layers are the retry. Answers that found rows are cached 7 days (Cache
+// API); empty answers and errors are not.
+export const KC_PARCEL_TIMEOUT_MS = 8000;
+const TIMEOUT_MS = KC_PARCEL_TIMEOUT_MS;
 // Only the KC_PARCEL_SEARCH_FIELDS attributes and the outline are kept (before caching and before
 // use), so owner fields the server might send anyway are never stored. Bump the version in the
 // prefix whenever KC_PARCEL_SEARCH_FIELDS changes, so no entry in the old shape survives.

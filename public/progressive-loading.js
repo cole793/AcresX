@@ -13,6 +13,10 @@
 //   settle(key)          a claimed follow-up finished; score/cost inputs re-render the summary.
 //   isCurrent(searchId)  false once a newer search started (drop that answer).
 //   ready('score'|'cost') whether every input of the buildability score / cost estimate settled.
+//   extend(signal, ms)   gives the pending section whose request carries `signal` a new time limit
+//                        of ms from now, once per attempt (public/browser-fallback.js calls it when a
+//                        Worker answer asks the browser to load that layer itself). The section
+//                        stays "Checking…" meanwhile; true if extended.
 //
 // Loaded by a <script> tag in index.html, before the injected modules. It wraps renderSummary
 // and renderResults on DOMContentLoaded, after every injected module has added its own wrapper,
@@ -70,6 +74,8 @@
 
   let searchSeq = 0;
   let run = null; // { id, status: {}, claims: Set, attempts: {}, controllers: Set, renderTimer, dirty, mapDirty, rendered }
+  // AbortSignal of a running section request -> function(ms) that extends its time limit once.
+  const extenders = new WeakMap();
 
   const S = {
     TIMEOUT_TEXT, PENDING_TEXT, SECTIONS, SCORE_INPUTS,
@@ -120,6 +126,10 @@
       return !run.dirty && S.waitingFor(kind).length === 0;
     },
     timedOut() { return run ? SECTION_NAMES.filter(n => run.status[n] === 'timeout') : []; },
+    extend(signal, ms) {
+      const extendOnce = signal && typeof signal === 'object' ? extenders.get(signal) : null;
+      return extendOnce ? extendOnce(ms) : false;
+    },
     allSettled() { return Boolean(run) && SECTION_NAMES.every(n => isSettled(run.status[n])); }
   };
 
@@ -141,15 +151,24 @@
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
     if (controller) current.controllers.add(controller);
     const parcel = last.parcel;
-    let timer;
+    let timer, extended = false;
     const TIMEOUT = {};
-    const timeout = new Promise(resolve => { timer = setTimeout(() => resolve(TIMEOUT), def.ms); });
+    const timeout = new Promise(resolve => {
+      timer = setTimeout(() => resolve(TIMEOUT), def.ms);
+      if (controller) extenders.set(controller.signal, ms => {
+        if (extended || run !== current || current.attempts[name] !== attempt || current.status[name] !== 'pending' || !(ms > 0)) return false;
+        extended = true;
+        clearTimeout(timer);
+        timer = setTimeout(() => resolve(TIMEOUT), ms);
+        return true;
+      });
+    });
     let call;
     try { call = Promise.resolve(root[def.fn](parcel, controller?.signal)); } catch (error) { call = Promise.reject(error); }
     const outcome = call.then(value => ({ ok: true, value }), error => ({ ok: false, error }));
     return Promise.race([outcome, timeout]).then(result => {
       clearTimeout(timer);
-      if (controller) current.controllers.delete(controller);
+      if (controller) { current.controllers.delete(controller); extenders.delete(controller.signal); }
       // A newer search, or a retry of this section, owns the result now.
       if (run !== current || current.attempts[name] !== attempt) return;
       if (result === TIMEOUT) {

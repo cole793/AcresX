@@ -6,8 +6,8 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
-import { esriPolygonToGeoJSON, mapKootenaiParcel, KC_PARCEL_LAYER, KC_PARCEL_SEARCH_FIELDS } from '../src/counties/kootenai-parcels.js';
-import { RATE_LIMIT_RETRY_MS } from '../src/states/idaho/parcels.js';
+import { esriPolygonToGeoJSON, mapKootenaiParcel, KC_PARCEL_LAYER, KC_PARCEL_SEARCH_FIELDS, KC_PARCEL_TIMEOUT_MS } from '../src/counties/kootenai-parcels.js';
+import { RATE_LIMIT_RETRY_MS, KOOTENAI_IDWR_WINDOW_MS } from '../src/states/idaho/parcels.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { runParcelScenarios, kootenaiIdwrScenario, idwrFeature } from './parcel-search-scenarios.js';
 
@@ -165,9 +165,23 @@ test('county miss answered by the statewide layer: owner and mailing fields are 
   assert.equal(callsTo('idwr').length, 0);
 });
 
-test('county error falls back; the IDWR answer matches the pre-change answer minus OWNER, plus _source', async () => {
-  const { reply } = kootenaiIdwrScenario; // county 502, statewide empty, IDWR hit
+test('county 502: IDWR finds it, 200 as before, and the answer matches the pre-change answer minus OWNER, plus _source', async () => {
+  const { reply } = kootenaiIdwrScenario; // county 502, IDWR hit
   stub({ county: () => reply('other', '', 0, KC_PARCEL_LAYER), statewide: () => geojson([]), idwr: () => geojson([idwrFeature]) });
+  const { status, body } = await search('47N03W052200');
+  assert.equal(status, idwrBase.status);
+  const expected = structuredClone(idwrBase.body);
+  delete expected.parcel.properties.OWNER;
+  expected.parcel.properties._source = { name: 'IDWR statewide parcel compilation', url: 'https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/FeatureServer/0' };
+  assert.deepEqual(body, expected);
+  assert.equal(callsTo('statewide').length, 0, 'a county outage skips the statewide layer (no Kootenai parcels)');
+});
+
+// A county ArcGIS query error (4xx) is not an outage: the statewide and IDWR layers are still asked.
+const countyQueryError = () => json({ error: { code: 400, message: 'Failed to execute query.', details: [] } });
+
+test('county query error falls back; the IDWR answer matches the pre-change answer minus OWNER, plus _source', async () => {
+  stub({ county: countyQueryError, statewide: () => geojson([]), idwr: () => geojson([idwrFeature]) });
   const { status, body } = await search('47N03W052200');
   assert.equal(status, idwrBase.status);
   const expected = structuredClone(idwrBase.body);
@@ -176,13 +190,45 @@ test('county error falls back; the IDWR answer matches the pre-change answer min
   assert.deepEqual(body, expected);
 });
 
-test('county ArcGIS error body and network error also fall back', async () => {
-  for (const county of [() => json({ error: { code: 500, message: 'Failed to execute query.' } }), () => { throw new Error('connect ECONNREFUSED'); }]) {
-    stub({ county, statewide: () => geojson([]), idwr: () => geojson([idwrFeature]) });
-    const { status, body } = await search('47N03W052200');
-    assert.equal(status, 200);
-    assert.equal(body.parcel.properties.PIN, '47N03W052200');
+test('a county miss still falls back to the statewide layer and IDWR', async () => {
+  stub({ county: () => json({ features: [] }), statewide: () => geojson([]), idwr: () => geojson([idwrFeature]) });
+  const { status, body } = await search('47N03W052200');
+  assert.equal(status, 200);
+  assert.equal(body.parcel.properties.PIN, '47N03W052200');
+  assert.equal(callsTo('statewide').length > 0 && callsTo('idwr').length > 0, true);
+});
+
+test('a county outage with IDWR missing or failing answers the browser hint; the statewide layer is not asked', async () => {
+  const timeout = () => { const e = new Error('The operation was aborted.'); e.name = 'AbortError'; throw e; };
+  const outages = {
+    'timeout': timeout, 'network error': () => { throw new Error('connect ECONNREFUSED'); },
+    'HTTP 403': () => new Response('Forbidden', { status: 403 }), 'HTTP 429': () => new Response('', { status: 429 }),
+    'HTTP 502': () => new Response('', { status: 502 }), 'ArcGIS 500': () => json({ error: { code: 500, message: 'Failed to execute query.' } })
+  };
+  const idwrAnswers = { 'IDWR miss': () => geojson([]), 'IDWR down': () => new Response('', { status: 503 }), 'IDWR timeout': timeout };
+  for (const [name, county] of Object.entries(outages)) {
+    for (const [idwrName, idwr] of Object.entries(idwrAnswers)) {
+      const label = `${name}, ${idwrName}`;
+      stub({ county, statewide: () => geojson([]), idwr });
+      const { status, body } = await search('47N03W052200');
+      assert.equal(status, 502, label);
+      assert.deepEqual(Object.keys(body), ['error', 'fallback'], label);
+      assert.match(body.error, /^Idaho parcel sources failed for Kootenai: /, label);
+      assert.deepEqual(body.fallback, { mode: 'browser', kind: 'kootenai-parcel', input: { parcelId: '47N03W052200' } }, label);
+      assert.equal(callsTo('county').length, 1, label);
+      assert.equal(callsTo('statewide').length, 0, `${label}: no statewide request`);
+      assert.ok(callsTo('idwr').length >= 1, `${label}: IDWR was asked`);
+      if (idwrName !== 'IDWR miss') assert.equal(callsTo('idwr').length, 1, `${label}: one IDWR attempt, no retry`);
+    }
   }
+});
+
+test('while the county layer is down, IDWR gets one 5 s window', () => {
+  assert.equal(KOOTENAI_IDWR_WINDOW_MS, 5000);
+});
+
+test('the Kootenai county parcel layer gets one 8 s attempt', () => {
+  assert.equal(KC_PARCEL_TIMEOUT_MS, 8000);
 });
 
 test('statewide rate limit (429 body or HTTP 429) is retried once', async () => {
@@ -219,11 +265,11 @@ test('all Kootenai sources miss: the same not-found error as before', async () =
 });
 
 test('all Kootenai sources fail: 502 with an error string naming each failure', async () => {
-  stub({ county: () => new Response('', { status: 503 }), statewide: tooMany, idwr: () => new Response('', { status: 500 }) });
+  stub({ county: countyQueryError, statewide: tooMany, idwr: () => new Response('', { status: 500 }) });
   const { status, body } = await search('47N03W052200');
   assert.equal(status, 502);
-  assert.deepEqual(Object.keys(body), ['error']);
-  assert.match(body.error, /Kootenai County parcel layer returned 503/);
+  assert.deepEqual(Object.keys(body), ['error'], 'a county query error is not an outage: no browser hint');
+  assert.match(body.error, /Kootenai County parcel layer: Failed to execute query\./);
   assert.match(body.error, /Too many requests/);
   assert.match(body.error, /returned 500/);
 });
@@ -234,7 +280,7 @@ test('county parcel layer: one attempt (the fallbacks are the retry), labelled l
   const logs = [], inits = [];
   const restore = configureUpstream({ log: line => logs.push(JSON.parse(line)) });
   try {
-    stub({ county: () => json({ error: { code: 500, message: 'Failed to execute query.' } }), statewide: () => geojson([]), idwr: () => new Response('', { status: 500 }) });
+    stub({ county: countyQueryError, statewide: () => geojson([]), idwr: () => new Response('', { status: 500 }) });
     const inner = globalThis.fetch;
     globalThis.fetch = async (input, init) => { inits.push(init || {}); return inner(input, init); };
     const { status, body } = await search('47N03W052200');

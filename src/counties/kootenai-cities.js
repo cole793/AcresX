@@ -9,6 +9,7 @@
 //   applies and link the city's planning page where one was verified to load.
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
 import { coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
+import { isFallbackEligible } from '../shared/fallback.js';
 
 export const KC_CITY_LIMITS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18';
 export const KC_CITY_IMPACT = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/17';
@@ -96,8 +97,9 @@ function tail(source) {
 
 // Zoning for a parcel inside a city. Cities with a zoning layer get a mapped result; the others
 // get an honest "city zoning applies" result. A failing city layer degrades to "unavailable" for
-// that city only, still naming the city as the jurisdiction.
-export async function getCityZoning(city, where, samples, { parcelAttrs = {}, matchMethod, jurisdictionNote = '' } = {}) {
+// that city only, still naming the city as the jurisdiction. `fallback` (src/shared/fallback.js
+// hint) is added to that "unavailable" answer when the failure is one a browser might get past.
+export async function getCityZoning(city, where, samples, { parcelAttrs = {}, matchMethod, jurisdictionNote = '', fallback = null } = {}) {
   const jurisdictionSource = { agency: 'Kootenai County GIS', service: 'NewServices/Data_Layers', layerId: 18, city: city.key, share: Math.round(city.share * 1000) / 1000 };
   const planning = city.planningUrl ? { url: city.planningUrl, urlLabel: `Open ${city.name} planning ↗` } : {};
   if (!city.zoning) {
@@ -118,7 +120,8 @@ export async function getCityZoning(city, where, samples, { parcelAttrs = {}, ma
     return {
       available: false, ...cityBase(city),
       zoning: { status: 'unavailable', label: `${city.name} zoning lookup unavailable`, note: `This parcel is inside ${city.name} limits, so city zoning applies. The city zoning map did not answer (${error?.message || 'request failed'}); check with the city.${jurisdictionNote}`, sourceUrl: z.url, ...planning },
-      ...tail({ ...source, error: error?.message || 'City zoning lookup failed' })
+      ...tail({ ...source, error: error?.message || 'City zoning lookup failed' }),
+      ...(fallback && isFallbackEligible(error) ? { fallback } : {})
     };
   }
   const shares = coverageShares(samples, features, a => String(a.ZONING || '').trim());
