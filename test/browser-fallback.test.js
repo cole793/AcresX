@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { getKootenaiCountyIntelligence } from '../src/counties/kootenai.js';
-import { makeLazyContext as makeContext, readPublic } from './ui-harness.js';
+import { makeLazyContext as makeContext, makeContext as makeDomContext, makeClock, readPublic } from './ui-harness.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 const plain = value => JSON.parse(JSON.stringify(value)); // what the page receives (and drops vm prototypes)
@@ -40,7 +40,7 @@ function recorder(handler) {
     if (init.body) new URLSearchParams(String(init.body)).forEach((v, k) => params.set(k, v));
     const n = (counts.get(base) || 0) + 1;
     counts.set(base, n);
-    calls.push({ base, host: url.hostname, protocol: url.protocol, params, method: init.method || 'GET', credentials: init.credentials, headers: init.headers || {} });
+    calls.push({ base, host: url.hostname, protocol: url.protocol, params, method: init.method || 'GET', credentials: init.credentials, redirect: init.redirect, headers: init.headers || {} });
     const answer = await handler({ base, params, n });
     return answer instanceof Response ? answer : new Response(JSON.stringify(answer), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
@@ -72,6 +72,7 @@ function assertSafe(calls) {
     assert.ok(ALLOWED.includes(c.host), `request to a host outside the allowlist: ${c.host}`);
     assert.equal(c.protocol, 'https:');
     assert.equal(c.credentials, 'omit', 'no cookies');
+    assert.equal(c.redirect, 'error', 'no redirects');
     const outFields = c.params.get('outFields');
     assert.ok(outFields, `${c.base} must name its outFields`);
     assert.notEqual(outFields.trim(), '*', `${c.base} must not ask for every field`);
@@ -425,27 +426,103 @@ test('end to end: the page\'s own fetch calls are recovered transparently', asyn
 
 // ---- Labels
 
-test('labels: a recovered section says where it was loaded from, and a new search clears it', async () => {
-  const before = 'function renderSummary(){ globalThis.rendered = (globalThis.rendered || 0) + 1; }';
-  const b = recorder(() => fixture('fema-nfhl-flood.json'));
-  const { h, api: fb } = browser(b.fetch, { before });
-  const inserted = [];
-  const target = h.el('overviewFlood');
-  target.parentNode = { querySelector: sel => inserted.find(n => sel.includes(`data-kind="${n.attrs['data-kind']}"`)) || null };
-  target.insertAdjacentElement = (where, el) => { assert.equal(where, 'afterend'); inserted.push(el); };
-  h.context.document.createElement = () => ({ attrs: {}, textContent: '', className: '', setAttribute(k, v) { this.attrs[k] = v; }, remove() { inserted.splice(inserted.indexOf(this), 1); } });
-  h.context.document.querySelectorAll = sel => (sel === '.acresx-fallback-note' ? [...inserted] : []);
-  await fb.run('fema-flood', { geometry: floodGeometry });
-  fb.applyLabels();
-  fb.applyLabels();
-  assert.equal(inserted.length, 1, 'one label, however often it is applied');
-  assert.equal(inserted[0].className, 'acresx-fallback-note');
-  assert.equal(inserted[0].textContent, 'Loaded directly from FEMA (National Flood Hazard Layer). Verify with the responsible agency.');
-  h.run('renderSummary()');
-  assert.equal(h.context.rendered, 1, 'renderSummary still runs');
-  fb.reset();
-  assert.equal(inserted.length, 0);
+// The real page has the label targets; these tests use the structured fake DOM from
+// test/ui-harness.js (selectors, siblings, remove) and its manual clock.
+function domBrowser(fetchImpl, body) {
+  const clock = makeClock();
+  const page = makeDomContext({ body, clock, fetch: fetchImpl, extra: { Response, Headers, URLSearchParams } });
+  page.run(readPublic('browser-fallback.js'), 'browser-fallback.js');
+  const notes = kind => page.document.querySelectorAll(`.acresx-fallback-note${kind ? `[data-kind="${kind}"]` : ''}`);
+  return { ...page, clock, api: page.ctx.AcresXFallback, notes };
+}
+const factEl = id => ['div', { class: 'property-overview-fact' }, '', [['span', {}, id], ['strong', { id }, '—']]];
+
+test('labels: a recovered section says where it was loaded from, once, and a new search clears it', async () => {
+  const p = domBrowser(recorder(() => fixture('fema-nfhl-flood.json')).fetch, [factEl('overviewFlood')]);
+  await p.api.run('fema-flood', { geometry: floodGeometry });
+  p.api.applyLabels();
+  p.api.applyLabels();
+  const notes = p.notes('fema-flood');
+  assert.equal(notes.length, 1, 'one label, however often it is applied');
+  assert.equal(notes[0].previousElementSibling.id, 'overviewFlood');
+  assert.equal(notes[0].textContent, 'Loaded directly from FEMA (National Flood Hazard Layer). Verify with the responsible agency.');
+  p.api.reset();
+  assert.equal(p.notes().length, 0);
+  assert.deepEqual(plain(p.api.loaded()), {});
+});
+
+test('labels: the parcel label shows once, even when its first target is re-rendered away and back', async () => {
+  const layer = fixture('kootenai-parcel-47N03W052200.json');
+  const p = domBrowser(recorder(() => layer).fetch, [factEl('overviewParcelId'), ['div', {}, '', [['span', { id: 'parcelAddress' }, '1 Test Rd']]]]);
+  await p.api.run('kootenai-parcel', { parcelId: '47N03W052200' });
+  p.api.applyLabels();
+  assert.equal(p.notes('kootenai-parcel').length, 1);
+  assert.equal(p.notes('kootenai-parcel')[0].previousElementSibling.id, 'overviewParcelId');
+  // The overview is rebuilt: its parcel id element is gone for a moment.
+  const id = p.document.getElementById('overviewParcelId');
+  const holder = id.parentNode;
+  id.remove();
+  p.api.applyLabels();
+  assert.equal(p.notes('kootenai-parcel').length, 1, 'moved to the other target, not duplicated');
+  assert.equal(p.notes('kootenai-parcel')[0].previousElementSibling.id, 'parcelAddress');
+  holder.prepend(id);
+  p.api.applyLabels();
+  assert.equal(p.notes('kootenai-parcel').length, 1, 'back after the parcel id, still one');
+  assert.equal(p.notes('kootenai-parcel')[0].previousElementSibling.id, 'overviewParcelId');
+  assert.equal(p.notes().length, 1);
+});
+
+test('labels: a browser answer that lands after a new search started labels nothing', async () => {
+  // A slow assessor fallback from search 1; search 2 starts (form submit -> reset) before it lands.
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const b = recorder(async ({ base }) => { await gate; return base.endsWith('/10/query') ? recordedAssessor.hit : recordedAssessor.miss; });
+  const p = domBrowser(b.fetch, [factEl('overviewAssessorValue'), ['div', { id: 'propertyAssessmentSource' }]]);
+  const late = p.api.run('kootenai-assessor', { parcelId: '47N03W052200' });
+  await new Promise(resolve => setImmediate(resolve));
+  for (const listener of p.document.listeners.submit || []) listener({ target: { id: 'searchForm' } });
+  release();
+  const body = plain(await late);
+  assert.equal(body.available, true, 'the answer still comes back; the caller drops it as stale');
+  assert.deepEqual(plain(p.api.loaded()), {});
+  p.api.applyLabels();
+  assert.equal(p.notes().length, 0, 'no "Loaded directly from" on the next search');
+
+  // Same with progressive loading's search id moving on, without a form submit.
+  let release2;
+  const gate2 = new Promise(resolve => { release2 = resolve; });
+  const p2 = domBrowser(recorder(async () => { await gate2; return fixture('fema-nfhl-flood.json'); }).fetch, [factEl('overviewFlood')]);
+  p2.run('window.AcresXSections = { searchId: 1 }');
+  const late2 = p2.api.run('fema-flood', { geometry: floodGeometry });
+  await new Promise(resolve => setImmediate(resolve));
+  p2.run('window.AcresXSections.searchId = 2');
+  release2();
+  await late2;
+  assert.deepEqual(plain(p2.api.loaded()), {});
+});
+
+test('run(): a section aborted while the browser answer was being parsed is cancelled, not labelled', async () => {
+  const controller = new AbortController();
+  const b = recorder(() => { controller.abort(); return fixture('fema-nfhl-flood.json'); });
+  const { api: fb } = browser(b.fetch);
+  await assert.rejects(fb.run('fema-flood', { geometry: floodGeometry }, { signal: controller.signal }), /cancelled/);
   assert.deepEqual(plain(fb.loaded()), {});
+  const aborted = new AbortController();
+  aborted.abort();
+  const rec = recorder(() => fixture('fema-nfhl-flood.json'));
+  const { api: fb2 } = browser(rec.fetch);
+  await assert.rejects(fb2.run('fema-flood', { geometry: floodGeometry }, { signal: aborted.signal }), /cancelled/);
+  assert.equal(rec.calls.length, 0, 'an already-aborted signal sends nothing');
+});
+
+test('requests refuse redirects (a redirect could leave the allowlist)', async () => {
+  const b = recorder(() => fixture('fema-nfhl-flood.json'));
+  const { api: fb } = browser(b.fetch);
+  await fb.run('fema-flood', { geometry: floodGeometry });
+  assert.equal(b.calls[0].redirect, 'error');
+  // What a browser does with redirect: 'error' when the server redirects: fetch rejects.
+  const { api: fb2 } = browser(async (url, init) => { if (init.redirect === 'error') throw new TypeError('Failed to fetch'); return new Response('{}'); });
+  await assert.rejects(fb2.run('fema-flood', { geometry: floodGeometry }), /Failed to fetch/);
 });
 
 test('labels: zoning names the agency that answered (city or county)', async () => {

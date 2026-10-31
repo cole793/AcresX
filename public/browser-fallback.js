@@ -14,7 +14,7 @@
 //   fills query parameters.
 // - Same field lists as the Worker, and never owner or mailing fields. Answers are also stripped
 //   with the Worker's personal-field pattern (src/shared/personal-fields.js PERSONAL_FIELD).
-// - One attempt per request, 12 s each, no cookies. If any request this kind depends on fails,
+// - One attempt per request, 12 s each, no cookies, no redirects (a redirect fails the request). If any request this kind depends on fails,
 //   the Worker's own (degraded) answer is kept.
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
 //   kootenai-assessor.js, src/shared/polygon-coverage.js, src/shared/arcgis.js spatialParams,
@@ -72,7 +72,8 @@
     if (signal) { if (signal.aborted) onCancel(); else signal.addEventListener('abort', onCancel, { once: true }); }
     let response, text;
     try {
-      response = await baseFetch(url, { ...init, credentials: 'omit', signal: controller.signal });
+      // redirect 'error': a redirect could lead off the allowlist, so it fails the request instead.
+      response = await baseFetch(url, { ...init, credentials: 'omit', redirect: 'error', signal: controller.signal });
       text = await response.text();
     } catch (error) {
       throw new Error(controller.signal.aborted ? `${agency} timed out after ${TIMEOUT_MS / 1000}s` : (error?.message || 'network error'));
@@ -681,6 +682,11 @@
   };
 
   let loaded = {};
+  // Which search a run belongs to: bumped by reset() (a new search form submit), and
+  // progressive loading's search id. A run that finishes after a newer search started still
+  // returns its answer (the caller drops stale answers) but labels nothing.
+  let generation = 0;
+  const currentSearch = () => `${generation}:${root.AcresXSections?.searchId ?? ''}`;
   const labelText = agency => `Loaded directly from ${agency}. Verify with the responsible agency.`;
 
   function ensureStyles() {
@@ -699,7 +705,11 @@
     for (const [kind, agency] of Object.entries(loaded)) {
       const target = KINDS[kind].targets.map(id => doc.getElementById(id)).find(el => el && el.parentNode);
       if (!target) continue;
-      let note = target.parentNode.querySelector?.(`.acresx-fallback-note[data-kind="${kind}"]`);
+      // One label per kind: keep the one right after the target, remove any other (e.g. one left
+      // after another target while the first was being re-rendered).
+      const notes = [...(doc.querySelectorAll?.(`.acresx-fallback-note[data-kind="${kind}"]`) || [])];
+      let note = notes.find(n => n.parentNode === target.parentNode && n.previousElementSibling === target) || null;
+      for (const other of notes) if (other !== note) other.remove?.();
       if (!note) {
         note = doc.createElement('small');
         note.className = 'acresx-fallback-note';
@@ -713,6 +723,7 @@
   function scheduleLabels() { for (const ms of [0, 400, 1500]) setTimeout(applyLabels, ms); }
 
   function reset() {
+    generation++;
     loaded = {};
     const notes = root.document?.querySelectorAll?.('.acresx-fallback-note') || [];
     for (const note of notes) note.remove?.();
@@ -724,10 +735,13 @@
   async function run(kind, input, { signal } = {}) {
     if (!Object.prototype.hasOwnProperty.call(KINDS, kind)) throw new Error(`AcresX fallback: unknown kind ${kind}`);
     if (signal?.aborted) throw new Error('AcresX fallback: cancelled');
+    const search = currentSearch();
     const body = await KINDS[kind].run(input || {}, signal);
     if (signal?.aborted) throw new Error('AcresX fallback: cancelled');
-    loaded[kind] = KINDS[kind].agency(body);
-    scheduleLabels();
+    if (search === currentSearch()) {
+      loaded[kind] = KINDS[kind].agency(body);
+      scheduleLabels();
+    }
     return body;
   }
 

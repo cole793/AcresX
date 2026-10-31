@@ -150,7 +150,7 @@ function page(config = {}) {
     if (init.body) new URLSearchParams(String(init.body)).forEach((v, k) => params.set(k, v));
     const n = (counts.get(base) || 0) + 1;
     counts.set(base, n);
-    const call = { base, host: url.hostname, params, at: clock.now, aborted: false };
+    const call = { base, host: url.hostname, params, at: clock.now, aborted: false, redirect: init.redirect, credentials: init.credentials };
     browserCalls.push(call);
     const list = recorded.responses.filter(r => r.url === base);
     const body = base in config.answers ? config.answers[base] : list.length ? list[Math.min(n, list.length) - 1].body : null;
@@ -196,6 +196,8 @@ function page(config = {}) {
 function assertBrowserSafe(calls) {
   for (const c of calls) {
     assert.ok(ALLOWED.includes(c.host), c.host);
+    assert.equal(c.redirect, 'error', `${c.base}: no redirects`);
+    assert.equal(c.credentials, 'omit', `${c.base}: no cookies`);
     const fields = c.params.get('outFields') || '';
     assert.ok(fields && fields !== '*', `${c.base} names its fields`);
     assert.doesNotMatch(fields, /(^|,)(Owner\w*|Name)(,|$)/i, `${c.base} asked for an owner field`);
