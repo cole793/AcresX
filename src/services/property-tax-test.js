@@ -2,6 +2,8 @@ import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
 import { getKootenaiAssessment, KC_ASSESSOR, KC_ASSESSOR_SOURCE } from '../counties/kootenai-assessor.js';
 import { FALLBACK_KINDS, fallbackHint } from '../shared/fallback.js';
+import { MONTANA_CADASTRAL_FIELDS } from '../states/montana/parcels.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
 
 const SPOKANE = 'https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query';
 const YELLOWSTONE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query';
@@ -15,7 +17,9 @@ async function arcgis(url, params, { retries = 1, label = 'assessment-query' } =
   for (const [key, value] of Object.entries(params)) q.searchParams.set(key, value);
   q.searchParams.set('f', 'json'); q.searchParams.set('returnGeometry', 'false');
   const data = await upstreamJson(q, { timeoutMs: retries ? 12000 : 20000, retryTimeoutMs: 8000, retries, arcgis: true, label, agency: 'Source', arcgisMessage: 'ArcGIS query failed' });
-  return data.features || [];
+  // No owner names or mailing addresses (owner decision, 2026-10-29): every query names its
+  // fields, and the records are stripped as well in case a layer adds one.
+  return withoutPersonalFields(data.features || []);
 }
 function digits(value) { return String(value || '').replace(/\D/g, ''); }
 function safe(value) { return String(value || '').replace(/'/g, "''"); }
@@ -28,7 +32,7 @@ async function findMontanaStateRecord(parcelId) {
   for (const candidate of candidates) {
     for (const field of ['ParcelID','Geocode','AssessmentCode']) {
       try {
-        const records = await arcgis(MT_CADASTRAL, { where: `${field}='${safe(candidate)}'`, outFields: '*' }, { retries: 0, label: 'mt-cadastral-assessment' });
+        const records = await arcgis(MT_CADASTRAL, { where: `${field}='${safe(candidate)}'`, outFields: MONTANA_CADASTRAL_FIELDS }, { retries: 0, label: 'mt-cadastral-assessment' });
         if (records.length) return { records, formatted };
       } catch (_) {}
     }
