@@ -8,7 +8,6 @@
   const ID_COUNTIES = ['Ada','Adams','Bannock','Bear Lake','Benewah','Bingham','Blaine','Boise','Bonner','Bonneville','Boundary','Butte','Camas','Canyon','Caribou','Cassia','Clark','Clearwater','Custer','Elmore','Franklin','Fremont','Gem','Gooding','Idaho','Jefferson','Jerome','Kootenai','Latah','Lemhi','Lewis','Lincoln','Madison','Minidoka','Nez Perce','Oneida','Owyhee','Payette','Power','Shoshone','Teton','Twin Falls','Valley','Washington'];
   const oldFindParcel = typeof findParcel === 'function' ? findParcel : null;
   const oldFindWells = typeof findWells === 'function' ? findWells : null;
-  const oldFindUtility = typeof findUtility === 'function' ? findUtility : null;
 
   const stateEl = document.createElement('select');
   stateEl.id = 'state';
@@ -102,18 +101,7 @@
     };
   }
 
-  if (oldFindUtility) {
-    window.findUtility = async function (parcel, signal) {
-      if (stateEl.value === 'WA') return oldFindUtility(parcel, signal);
-      const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
-      try {
-        const response = await fetch('/api/utility-territory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}), signal });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data?.error || `Utility territory service returned ${response.status}`);
-        return Array.isArray(data.providers) ? data.providers : [];
-      } catch (error) { console.warn('Utility territory lookup failed', error); return []; }
-    };
-  }
+  // findUtility (index.html) calls /api/utility-territory for every state, WA included.
 
   const style = document.createElement('style');
   style.id = 'stateSelectorStyles';
