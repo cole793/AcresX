@@ -1405,12 +1405,14 @@
         "source": "Spokane County SCOUT / Building & Planning GIS",
         "sourceUrl": "https://cp.spokanecounty.org/scout/propertyinformation/",
         "zoning": {
-          "status": "no_match",
+          "status": "unavailable",
           "code": null,
           "name": "",
-          "label": "No mapped zoning result",
-          "note": "Spokane zoning service error: Spokane County GIS returned 500",
-          "url": "https://cp.spokanecounty.org/scout/propertyinformation/"
+          "label": "Spokane County zoning lookup unavailable",
+          "note": "The Spokane County SCOUT zoning map did not answer (Spokane County GIS returned 500), so this parcel's county zone is not known. Check SCOUT or Spokane County Building & Planning.",
+          "url": "https://cp.spokanecounty.org/scout/propertyinformation/",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3",
+          "error": "Spokane County GIS returned 500"
         },
         "comprehensivePlan": {
           "available": true,
@@ -1543,12 +1545,14 @@
         "source": "Spokane County SCOUT / Building & Planning GIS",
         "sourceUrl": "https://cp.spokanecounty.org/scout/propertyinformation/",
         "zoning": {
-          "status": "no_match",
+          "status": "unavailable",
           "code": null,
           "name": "",
-          "label": "No mapped zoning result",
-          "note": "Spokane zoning service error: Spokane County GIS query failed",
-          "url": "https://cp.spokanecounty.org/scout/propertyinformation/"
+          "label": "Spokane County zoning lookup unavailable",
+          "note": "The Spokane County SCOUT zoning map did not answer (Spokane County GIS query failed), so this parcel's county zone is not known. Check SCOUT or Spokane County Building & Planning.",
+          "url": "https://cp.spokanecounty.org/scout/propertyinformation/",
+          "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3",
+          "error": "Spokane County GIS query failed"
         },
         "comprehensivePlan": {
           "available": true,

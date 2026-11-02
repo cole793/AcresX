@@ -130,7 +130,15 @@ const settle = promise => promise.then(value => ({ status: 'fulfilled', value: w
 function countyZoning(zoningR, samples, decision, matchMethod) {
   const jurisdiction = jurisdictionNote(decision);
   const noMatch = note => ({ status: 'no_match', code: null, name: '', label: 'No mapped zoning result', note, url: SPOKANE_GIS.scoutUrl });
-  if (zoningR.status !== 'fulfilled') return noMatch(`Spokane zoning service error: ${zoningR.reason?.message || 'unavailable'}`);
+  // A failed lookup is not "no zoning here": say the map did not answer.
+  if (zoningR.status !== 'fulfilled') {
+    const message = zoningR.reason?.message || 'unavailable';
+    return {
+      status: 'unavailable', code: null, name: '', label: 'Spokane County zoning lookup unavailable',
+      note: `The Spokane County SCOUT zoning map did not answer (${message}), so this parcel's county zone is not known. Check SCOUT or Spokane County Building & Planning.${jurisdiction}`,
+      url: SPOKANE_GIS.scoutUrl, sourceUrl: `${SPOKANE_GIS.zoningBase}/3`, error: message
+    };
+  }
   const covered = (zoningR.value || []).filter(s => s.key);
   const top = covered[0];
   if (!top) return noMatch(`The official Spokane County zoning layer returned no zoning ${matchMethod === 'parcel location' ? 'at the parcel location' : 'on this parcel'}.${jurisdiction}`);

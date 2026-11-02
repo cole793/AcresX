@@ -191,6 +191,22 @@ test('a failing city zoning layer degrades to "unavailable" for that city only',
   assert.equal(store.size, 0);
 });
 
+test('a county zoning-layer error is "unavailable" with an honest note, not "no zoning found"', async () => {
+  const fx = fixture('07123.9075');
+  stub(fx, [[/ZoningLookup\/MapServer\/3\/query/, down]]);
+  const result = await getSpokaneCountyIntelligence(bodyOf(fx), profile);
+  assert.equal(result.jurisdiction, 'Spokane County');
+  const z = result.zoning;
+  assert.equal(z.status, 'unavailable');
+  assert.equal(z.code, null);
+  assert.equal(z.label, 'Spokane County zoning lookup unavailable');
+  assert.match(z.note, /did not answer \(Spokane County GIS returned 500\)/);
+  assert.doesNotMatch(z.note, /returned no zoning/);
+  assert.match(z.error, /returned 500/);
+  assertExtras(result);
+  assert.equal(store.size, 0);
+});
+
 // ---- Likely permits: the city's departments inside a city, the county's outside.
 
 const byName = permits => Object.fromEntries(permits.map(p => [p.name, p]));
