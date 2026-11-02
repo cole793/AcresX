@@ -8,7 +8,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { getGallatinCountyIntelligence, districtLabel, GALLATIN_ZONING_LAYER, GALLATIN_CITY_LIMITS, BOZEMAN_ZONING } from '../src/counties/gallatin.js';
-import { getYellowstoneCountyIntelligence, jurisdictionFromEntity } from '../src/counties/yellowstone.js';
+import { getYellowstoneCountyIntelligence, jurisdictionFromEntity, parseZone } from '../src/counties/yellowstone.js';
+import { ringsFromGeometry, pointInRings } from '../src/shared/polygon-coverage.js';
+import { zoningPoint as validatorZoningPoint } from '../scripts/validate-county.mjs';
 import { configureUpstream } from '../src/shared/upstream.js';
 
 const G_ZONING = `${GALLATIN_ZONING_LAYER}/query`;
@@ -268,16 +270,33 @@ test('Gallatin district labels read naturally', () => {
 
 // ---------------------------------------------------------------- Yellowstone
 
-test('Yellowstone 03103333215010000 (recorded): a Billings parcel shows "City of Billings", not "2"', async () => {
+test('Yellowstone 03103333215010000 (recorded): a Billings parcel shows "City of Billings" and the zone covering the outline (P1), not the neighbour at its vertex average (NX3)', async () => {
   const f = fixture('yellowstone-zoning-03103333215010000');
   globalThis.fetch = f.fetch;
   const r = await getYellowstoneCountyIntelligence(f.data.request);
   assert.equal(r.jurisdiction, 'City of Billings');
   assert.equal(r.permitJurisdiction.name, 'City of Billings');
-  assert.equal(r.zoning.code, 'NX3');
-  // The recorded layer 7 row carries VALIDATIONSTATUS 2, the value the old fallback showed.
-  const layer7 = f.data.responses.find(x => x.url === `${YS}/7/query`).body.features[0].attributes;
-  assert.equal(layer7.VALIDATIONSTATUS, 2);
+  assert.equal(r.zoning.code, 'P1');
+  assert.equal(r.zoning.otherZones, undefined, 'NX2 only touches the edge');
+  assert.equal(r.source.matchMethod, 'parcel area (sampled)');
+  // The request's vertex average lies outside this curved outline (that point hit NX3 before).
+  const rings = ringsFromGeometry(f.data.request.geometry);
+  assert.equal(pointInRings(f.data.request.lon, f.data.request.lat, rings), false);
+  // Every layer is read with the outline and named fields only.
+  const zoningCalls = calls.filter(c => c.base.startsWith(YS));
+  assert.equal(zoningCalls.length, 6);
+  for (const c of zoningCalls) { assert.equal(c.params.get('geometryType'), 'esriGeometryPolygon'); assert.notEqual(c.params.get('outFields'), '*'); }
+});
+
+test('Yellowstone 03072527101010000 (recorded): a county special district reads "Special Zoning District 16", not "D16 — 16"', async () => {
+  const f = fixture('yellowstone-zoning-03072527101010000');
+  globalThis.fetch = f.fetch;
+  const r = await getYellowstoneCountyIntelligence(f.data.request);
+  assert.equal(r.jurisdiction, 'Yellowstone County');
+  assert.equal(r.zoning.code, 'D16');
+  assert.equal(r.zoning.name, 'Special Zoning District 16');
+  assert.equal(r.zoning.label, 'Special Zoning District 16');
+  assert.equal(r.zoning.url, 'https://www.billingsmt.gov/755/Zoning-Information');
 });
 
 test('Yellowstone 03113520290010000 (recorded): a rural parcel outside every zoning layer reads as unzoned', async () => {
@@ -307,16 +326,77 @@ function yellowstoneLayers(hits = {}, failing = new Set()) {
 const ysBody = { lat: 45.67, lon: -108.77, geometry: { type: 'Polygon', coordinates: [square(-108.771, 45.669, -108.769, 45.671)] } };
 
 test('Yellowstone: Laurel and Broadview parcels name their city or town', async () => {
-  globalThis.fetch = yellowstoneLayers({ '7:point': { ZoningJurisdictions_Entity: 'LAUREL' }, '8:point': { ZONE_CODE: 'CBD', ZONE_NAME: 'CBD', City: 'LAUREL' } });
+  globalThis.fetch = yellowstoneLayers({ '7:polygon': { ZoningJurisdictions_Entity: 'LAUREL' }, '8:polygon': { ZONE_CODE: 'CBD', ZONE_NAME: 'CBD', City: 'LAUREL' } });
   let r = await getYellowstoneCountyIntelligence(ysBody);
   assert.equal(r.jurisdiction, 'City of Laurel');
   assert.equal(r.zoning.code, 'CBD');
+  assert.equal(r.zoning.label, 'CBD');
 
   // Broadview has no polygon in layer 7; its zoning layer names it.
-  globalThis.fetch = yellowstoneLayers({ '0:point': { ZONE_CODE: 'CC', ZONE_NAME: 'Community Commercial', City: 'BROADVIEW' } });
+  globalThis.fetch = yellowstoneLayers({ '0:polygon': { ZONE_CODE: 'CC', ZONE_NAME: 'Community Commercial', City: 'BROADVIEW' } });
   r = await getYellowstoneCountyIntelligence({ ...ysBody, lat: 46.098, lon: -108.877 });
   assert.equal(r.jurisdiction, 'Town of Broadview');
   assert.equal(r.zoning.code, 'CC');
+});
+
+test('Yellowstone: the zone covering most of the parcel wins and the others are noted', async () => {
+  // N3 covers the west 70% of the parcel (-108.771 to -108.769), NX2 the east 30%.
+  calls = [];
+  globalThis.fetch = async (input, init) => {
+    const { base } = await record(input, init);
+    const id = base.match(/\/MapServer\/(\d+)\/query$/)?.[1];
+    if (id === '7') return reply({ features: [feature({ ZoningJurisdictions_Entity: 'BILLINGS' }, square(-108.78, 45.66, -108.76, 45.68))] });
+    if (id === '4') return reply({ features: [
+      feature({ ZONE_CODE: 'NX2', ZONE_NAME: 'NX2 - Mixed Residential 2' }, square(-108.7696, 45.66, -108.76, 45.68)),
+      feature({ ZONE_CODE: 'N3', ZONE_NAME: 'N3 - Suburban Neighborhood' }, square(-108.78, 45.66, -108.7696, 45.68))
+    ] });
+    return reply(empty);
+  };
+  const r = await getYellowstoneCountyIntelligence({ ...ysBody, lat: 45.6702 });
+  assert.equal(r.jurisdiction, 'City of Billings');
+  assert.equal(r.zoning.code, 'N3');
+  assert.equal(r.zoning.otherZones.length, 1);
+  assert.equal(r.zoning.otherZones[0].code, 'NX2');
+  assert.ok(r.zoning.otherZones[0].share > 0.2 && r.zoning.otherZones[0].share < 0.4, String(r.zoning.otherZones[0].share));
+  assert.match(r.zoning.note, /Covers about (6|7)\d% of the parcel; also partly NX2 \(about (2|3)\d%\)/);
+});
+
+test('Yellowstone: special district labels', () => {
+  assert.deepEqual(parseZone({ CODE: 'D16', DIST_NO: 16, Name: '16' }, { special: true }), { code: 'D16', name: 'Special Zoning District 16', label: 'Special Zoning District 16' });
+  assert.deepEqual(parseZone({ CODE: 'D12', Name: '12' }, { special: true }), { code: 'D12', name: 'Special Zoning District 12', label: 'Special Zoning District 12' });
+  assert.deepEqual(parseZone({ ZONE_CODE: 'NX3', ZONE_NAME: 'NX3 - Mixed Residential 3' }, {}), { code: 'NX3', name: 'NX3 - Mixed Residential 3', label: 'NX3 — NX3 - Mixed Residential 3' });
+});
+
+// An L-shaped parcel whose vertex average (-108.76833, 45.67167) lies outside it, in the notch.
+const lParcel = { type: 'Polygon', coordinates: [[[-108.77, 45.67], [-108.766, 45.67], [-108.766, 45.671], [-108.769, 45.671], [-108.769, 45.674], [-108.77, 45.674], [-108.77, 45.67]]] };
+
+test('Validator: the zoning lookup point is inside the parcel even when the vertex average is not', () => {
+  const p = validatorZoningPoint(lParcel);
+  const rings = ringsFromGeometry(lParcel);
+  assert.equal(pointInRings(-108.76833, 45.67167, rings), false, 'vertex average is outside');
+  assert.equal(pointInRings(p.lon, p.lat, rings), true);
+  // A square keeps its centroid.
+  assert.deepEqual(validatorZoningPoint({ type: 'Polygon', coordinates: [square(0, 0, 2, 2)] }), { lon: 1, lat: 1 });
+});
+
+test('Browser: findZoningPermits sends a point inside the parcel (zoningPoint in public/index.html)', () => {
+  const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+  const source = html.match(/function zoningPoint\(parcel\)\{.*?\n/)?.[0];
+  assert.ok(source, 'zoningPoint is defined');
+  assert.match(html, /async function findZoningPermits\(parcel,signal\)\{const p=parcel\.properties,\[lon,lat\]=zoningPoint\(parcel\)/);
+  const rings = ringsFromGeometry(lParcel);
+  const ring = lParcel.coordinates[0].slice(0, -1);
+  const turf = {
+    centroid: () => ({ geometry: { coordinates: [ring.reduce((t, p) => t + p[0], 0) / ring.length, ring.reduce((t, p) => t + p[1], 0) / ring.length] } }),
+    bbox: () => [-108.77, 45.67, -108.766, 45.674],
+    booleanPointInPolygon: ([x, y]) => pointInRings(x, y, rings)
+  };
+  const zoningPoint = new Function('turf', `${source}; return zoningPoint;`)(turf);
+  const [x, y] = zoningPoint({ type: 'Feature', geometry: lParcel });
+  assert.equal(pointInRings(x, y, rings), true);
+  // The test stubs elsewhere only provide centroid: then the centroid is used as before.
+  const centroidOnly = new Function('turf', `${source}; return zoningPoint;`)({ centroid: turf.centroid });
+  assert.deepEqual(centroidOnly({}), turf.centroid().geometry.coordinates);
 });
 
 test('Yellowstone: jurisdiction names come only from ZoningJurisdictions_Entity', () => {
@@ -327,7 +407,7 @@ test('Yellowstone: jurisdiction names come only from ZoningJurisdictions_Entity'
 });
 
 test('Yellowstone: no zone found while a layer failed stays "No mapped zoning district found", never unzoned', async () => {
-  globalThis.fetch = yellowstoneLayers({}, new Set(['2:point', '2:polygon']));
+  globalThis.fetch = yellowstoneLayers({}, new Set(['2:polygon']));
   const r = await getYellowstoneCountyIntelligence({ ...ysBody, lat: 45.6701 });
   assert.equal(r.available, false);
   assert.equal(r.zoning.status, 'no_mapped_result');

@@ -218,23 +218,23 @@ export const scenarios = [
   },
 
   {
-    name: 'yellowstone: county zoning at the parcel center', requests: true,
-    route: url => yellowstoneLayers(url, { '7:point': { JURISDICTION: 'Yellowstone County' }, '2:point': { ZONE: 'A-1', ZONE_NAME: 'Agricultural Open Space' } }),
+    name: 'yellowstone: county special zoning district across the parcel', requests: true,
+    route: url => yellowstoneLayers(url, { '2:polygon': { CODE: 'D16', DIST_NO: 16, Name: '16' } }),
     run: () => getYellowstoneCountyIntelligence({ lat: 45.7805, lon: -108.4995, geometry: yellowstoneParcel })
   },
   {
     name: 'yellowstone: parcel intersection plus entryway', requests: true,
-    route: url => yellowstoneLayers(url, { '4:polygon': { ZONING: 'R-96', NAME: 'Residential 9600' }, '1:polygon': { NAME: 'Entryway' } }),
+    route: url => yellowstoneLayers(url, { '7:polygon': { ZoningJurisdictions_Entity: 'BILLINGS' }, '4:polygon': { ZONE_CODE: 'R-96', ZONE_NAME: 'Residential 9600' }, '1:polygon': { OBJECTID: 1 } }),
     run: () => getYellowstoneCountyIntelligence({ lat: 45.7805, lon: -108.4995, geometry: yellowstoneParcel })
   },
   {
     name: 'yellowstone: entryway only',
-    route: url => yellowstoneLayers(url, { '1:point': { NAME: 'Entryway' } }),
+    route: url => yellowstoneLayers(url, { '1:point': { OBJECTID: 1 } }),
     run: () => getYellowstoneCountyIntelligence({ lat: 45.7805, lon: -108.4995 })
   },
   {
     name: 'yellowstone: failing layers and no match',
-    route: url => yellowstoneLayers(url, {}, new Set(['4:point', '8:polygon'])),
+    route: url => yellowstoneLayers(url, {}, new Set(['4:polygon', '8:polygon'])),
     run: () => getYellowstoneCountyIntelligence({ lat: 45.7805, lon: -108.4995, geometry: yellowstoneParcel })
   },
 

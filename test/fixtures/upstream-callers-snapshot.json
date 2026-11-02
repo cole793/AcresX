@@ -1672,7 +1672,7 @@
       }
     }
   },
-  "yellowstone: county zoning at the parcel center": {
+  "yellowstone: county special zoning district across the parcel": {
     "output": {
       "ok": {
         "available": true,
@@ -1685,12 +1685,12 @@
         },
         "zoning": {
           "status": "gis_match",
-          "code": "A-1",
-          "name": "Agricultural Open Space",
-          "label": "A-1 — Agricultural Open Space",
-          "note": "Mapped Yellowstone County Zoning result from Yellowstone County GIS using parcel center.",
+          "code": "D16",
+          "name": "Special Zoning District 16",
+          "label": "Special Zoning District 16",
+          "note": "Mapped Yellowstone County Zoning result from Yellowstone County GIS using parcel area (sampled).",
           "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2",
-          "url": "https://gis.yellowstonecountymt.gov/"
+          "url": "https://www.billingsmt.gov/755/Zoning-Information"
         },
         "comprehensivePlan": {},
         "urbanGrowthArea": {
@@ -1705,18 +1705,17 @@
           "agency": "Yellowstone County GIS",
           "service": "Yellowstone County Zoning",
           "layerId": 2,
-          "matchMethod": "parcel center"
+          "matchMethod": "parcel area (sampled)"
         }
       }
     },
     "requests": [
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/0/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/8/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10"
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/0/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=false&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=OBJECTID",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZoningJurisdictions_Entity",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/8/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName"
     ]
   },
   "yellowstone: parcel intersection plus entryway": {
@@ -1735,7 +1734,7 @@
           "code": "R-96",
           "name": "Residential 9600",
           "label": "R-96 — Residential 9600",
-          "note": "Mapped Billings Zoning result from Yellowstone County GIS using parcel intersection. Entryway Zoning District also intersects the parcel.",
+          "note": "Mapped Billings Zoning result from Yellowstone County GIS using parcel area (sampled). Entryway Zoning District also intersects the parcel.",
           "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4",
           "url": "https://gis.yellowstonecountymt.gov/"
         },
@@ -1757,20 +1756,17 @@
           "agency": "Yellowstone County GIS",
           "service": "Billings Zoning",
           "layerId": 4,
-          "matchMethod": "parcel intersection"
+          "matchMethod": "parcel area (sampled)"
         }
       }
     },
     "requests": [
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/0/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10",
-      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/8/query?f=json&where=1%3D1&geometry=-108.4995%2C45.7805&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10"
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/0/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/1/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=false&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=OBJECTID",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZoningJurisdictions_Entity",
+      "GET https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/8/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-108.5%2C45.78%5D%2C%5B-108.499%2C45.78%5D%2C%5B-108.499%2C45.781%5D%2C%5B-108.5%2C45.781%5D%2C%5B-108.5%2C45.78%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CDIST_NO%2CName"
     ]
   },
   "yellowstone: entryway only": {
@@ -1829,7 +1825,7 @@
         "zoning": {
           "status": "no_mapped_result",
           "label": "No mapped zoning district found",
-          "note": "AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers, but at least one layer did not answer, so a zone may be missing. Verify with the applicable planning authority before relying on this result.",
+          "note": "AcresX checked the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers, but at least one layer did not answer, so a zone may be missing. Verify with the applicable planning authority before relying on this result.",
           "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer"
         },
         "permits": [],
@@ -1837,7 +1833,7 @@
         "permitHistoryStatus": "unavailable",
         "permitHistoryError": "Yellowstone permit-history adapter has not been connected yet.",
         "errors": [
-          "Billings Zoning point query: Yellowstone zoning layer 4 returned 500",
+          "Billings Zoning parcel query: Yellowstone zoning layer 4 returned 500",
           "Laurel Zoning parcel query: Yellowstone zoning layer 8 returned 500"
         ]
       }

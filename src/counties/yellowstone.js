@@ -1,85 +1,47 @@
-import { cachedJson, upstreamJson } from '../shared/upstream.js';
+import { cachedJson } from '../shared/upstream.js';
+import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
+import { ringsFromGeometry, samplePoints, coverageShares, coverageNote } from '../shared/polygon-coverage.js';
 
 // Answers are cached per parcel for a day (Cache API), only when every layer query that ran
 // succeeded (a failed layer could hide the controlling zone).
 // Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
 // stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
 // prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
-export const YELLOWSTONE_CACHE_PREFIX = 'https://acresx.internal/cache/yellowstone-intelligence/v2/';
+// v3: layers are read across the parcel outline with named fields only.
+export const YELLOWSTONE_CACHE_PREFIX = 'https://acresx.internal/cache/yellowstone-intelligence/v3/';
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 const ZONING_SERVICE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer';
-// City-County Planning serves both Billings and Yellowstone County (page loaded 2026-11-02).
+// City-County Planning serves both Billings and Yellowstone County (pages loaded 2026-11-02). The
+// Zoning Information page links each special zoning district's regulations.
 const YELLOWSTONE_PLANNING = 'https://www.billingsmt.gov/184/CityCounty-Planning';
+const YELLOWSTONE_ZONING_INFO = 'https://www.billingsmt.gov/755/Zoning-Information';
 
+// Earlier layers win where polygons overlap. Layer 2 holds the county's special zoning districts
+// 12-20 (CODE 'D16', DIST_NO 16, Name '16'); the city layers hold ZONE_CODE / ZONE_NAME.
 const BASE_ZONE_LAYERS = [
   { id: 4, jurisdiction: 'City of Billings', label: 'Billings Zoning' },
   { id: 8, jurisdiction: 'City of Laurel', label: 'Laurel Zoning' },
   { id: 0, jurisdiction: 'Town of Broadview', label: 'Broadview Zoning' },
-  { id: 2, jurisdiction: 'Yellowstone County', label: 'Yellowstone County Zoning' }
+  { id: 2, jurisdiction: 'Yellowstone County', label: 'Yellowstone County Zoning', special: true }
 ];
-
+const LAYER_BY_ID = Object.fromEntries(BASE_ZONE_LAYERS.map(l => [l.id, l]));
+// Field lists checked live 2026-11-02 (`<layer>?f=json`). Layer 1 (Entryway) has no attribute
+// besides ids and edit stamps, so only its presence is read.
+const ZONE_FIELDS = 'ZONE_CODE,ZONE_NAME,CODE,DIST_NO,Name';
+const JURISDICTION_LAYER = 7;
 const ENTRYWAY_LAYER = { id: 1, jurisdiction: 'Yellowstone County', label: 'Entryway Zoning District' };
 
-function normalize(value) {
-  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-}
+const text = value => String(value ?? '').trim();
+const round3 = n => Math.round(n * 1000) / 1000;
 
-function valueFrom(attrs, candidates) {
-  const entries = Object.entries(attrs || {});
-  for (const candidate of candidates) {
-    const wanted = normalize(candidate);
-    const match = entries.find(([key]) => normalize(key) === wanted);
-    if (match && match[1] != null && String(match[1]).trim()) return String(match[1]).trim();
-  }
-  return '';
-}
-
-function fallbackZoneValue(attrs) {
-  const ignored = /OBJECTID|GLOBALID|SHAPE|CREATED|EDITED|USER|DATE|AREA|LENGTH/i;
-  for (const [key, value] of Object.entries(attrs || {})) {
-    if (ignored.test(key) || value == null || String(value).trim() === '') continue;
-    const text = String(value).trim();
-    if (text.length <= 100) return text;
-  }
-  return '';
-}
-
-function geoJsonToEsriPolygon(geometry) {
-  if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) return null;
-  return {
-    rings: geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat(),
-    spatialReference: { wkid: 4326 }
-  };
-}
-
-async function queryLayer(layerId, { lon, lat, geometry } = {}) {
-  const url = new URL(`${ZONING_SERVICE}/${layerId}/query`);
-  url.searchParams.set('f', 'json');
-  url.searchParams.set('where', '1=1');
-
-  const esriPolygon = geoJsonToEsriPolygon(geometry);
-  if (esriPolygon) {
-    url.searchParams.set('geometry', JSON.stringify(esriPolygon));
-    url.searchParams.set('geometryType', 'esriGeometryPolygon');
-  } else {
-    url.searchParams.set('geometry', `${lon},${lat}`);
-    url.searchParams.set('geometryType', 'esriGeometryPoint');
-  }
-
-  url.searchParams.set('inSR', '4326');
-  url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
-  url.searchParams.set('outFields', '*');
-  url.searchParams.set('returnGeometry', 'false');
-  url.searchParams.set('resultRecordCount', '10');
-
-  // Was one 15 s attempt; now 9 s + one retry at 6 s (body included).
-  const data = await upstreamJson(url, {
-    timeoutMs: 9000, retryTimeoutMs: 6000, arcgis: true, label: `yellowstone-zoning-${layerId}`,
-    agency: `Yellowstone zoning layer ${layerId}`, arcgisMessage: `Yellowstone zoning layer ${layerId} failed`
+function queryLayer(layerId, where, extra = {}) {
+  // Was 9 s + one retry at 6 s; same budget through the shared ArcGIS helper.
+  return arcgisQuery(`${ZONING_SERVICE}/${layerId}`, { ...spatialParams(where), ...extra }, {
+    agency: `Yellowstone zoning layer ${layerId}`, label: `yellowstone-zoning-${layerId}`,
+    arcgisMessage: `Yellowstone zoning layer ${layerId} failed`, timeoutMs: 9000, retryTimeoutMs: 6000
   });
-  return data.features || [];
 }
 
 // Layer 7 ("Zoning Jurisdictions") has no NAME value; its only label is
@@ -94,84 +56,58 @@ export function jurisdictionFromEntity(value) {
   return JURISDICTION_NAMES[key] || `City of ${key.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())}`;
 }
 
-async function queryJurisdiction(lon, lat, geometry, failures) {
-  try {
-    let features = await queryLayer(7, { lon, lat });
-    if (!features.length && geometry) features = await queryLayer(7, { geometry });
-    return jurisdictionFromEntity(features[0]?.attributes?.ZoningJurisdictions_Entity);
-  } catch (error) {
-    failures.push(error);
-    return '';
+// { code, name, label } for one zoning feature. Special districts read "Special Zoning District
+// 16" (code D16) instead of the layer's bare "D16 — 16".
+export function parseZone(attrs, layer) {
+  if (layer?.special) {
+    const number = text(attrs.DIST_NO) || text(attrs.Name) || text(attrs.CODE).replace(/^D/i, '');
+    const code = text(attrs.CODE) || (number ? `D${number}` : '');
+    const name = number ? `Special Zoning District ${number}` : '';
+    return { code, name, label: name || code };
   }
-}
-
-function parseZone(attrs) {
-  const code = valueFrom(attrs, ['ZONE','ZONE_CODE','ZONECODE','ZONING','ZONING_CODE','DISTRICT','DISTRICT_NO','DISTRICTNO','CODE','ZONE_ID','ZONEID']);
-  const name = valueFrom(attrs, ['ZONE_NAME','ZONENAME','ZONING_NAME','DISTRICT_NAME','DISTRICTNAME','DESCRIPTION','DESC','NAME','LABEL']);
-  const fallback = fallbackZoneValue(attrs);
-  return {
-    code: code || fallback || '',
-    name: name && normalize(name) !== normalize(code) ? name : ''
-  };
-}
-
-async function findBaseZone(lon, lat, geometry, errors) {
-  // First use the parcel centroid because that gives one clear controlling zone in most cases.
-  for (const layer of BASE_ZONE_LAYERS) {
-    try {
-      const features = await queryLayer(layer.id, { lon, lat });
-      if (features.length) return { layer, attrs: features[0].attributes || {}, matchMethod: 'parcel center' };
-    } catch (error) {
-      errors.push(`${layer.label} point query: ${error.message}`);
-    }
-  }
-
-  // If the center point misses, intersect the entire parcel. This catches edge parcels,
-  // irregular parcels and polygons that straddle a mapped jurisdiction boundary.
-  if (geometry) {
-    for (const layer of BASE_ZONE_LAYERS) {
-      try {
-        const features = await queryLayer(layer.id, { geometry });
-        if (features.length) return { layer, attrs: features[0].attributes || {}, matchMethod: 'parcel intersection' };
-      } catch (error) {
-        errors.push(`${layer.label} parcel query: ${error.message}`);
-      }
-    }
-  }
-
-  return null;
-}
-
-async function findEntrywayOverlay(lon, lat, geometry, failures) {
-  try {
-    let features = await queryLayer(ENTRYWAY_LAYER.id, { lon, lat });
-    if (!features.length && geometry) features = await queryLayer(ENTRYWAY_LAYER.id, { geometry });
-    return features.length ? { layer: ENTRYWAY_LAYER, attrs: features[0].attributes || {} } : null;
-  } catch (error) {
-    failures.push(error);
-    return null;
-  }
+  const code = text(attrs.ZONE_CODE) || text(attrs.Name) || text(attrs.CODE);
+  const rawName = text(attrs.ZONE_NAME);
+  const name = rawName && rawName.toUpperCase() !== code.toUpperCase() ? rawName : '';
+  return { code, name, label: [code, name].filter(Boolean).join(' — ') };
 }
 
 export async function getYellowstoneCountyIntelligence(body) {
   const lat = Number(body.lat);
   const lon = Number(body.lon);
-  const geometry = body.geometry || null;
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Yellowstone zoning requires parcel coordinates.');
+  const rings = ringsFromGeometry(body.geometry);
   const failures = [];
-  return cachedJson(YELLOWSTONE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS,
-    async () => withoutPersonalFields(await lookupYellowstone(lon, lat, geometry, failures)),
+  return cachedJson(YELLOWSTONE_CACHE_PREFIX, { lat, lon, rings }, CACHE_TTL_SECONDS,
+    async () => withoutPersonalFields(await lookupYellowstone(lon, lat, rings, failures)),
     { isValid: () => failures.length === 0 });
 }
 
-async function lookupYellowstone(lon, lat, geometry, failures) {
-  const jurisdictionName = await queryJurisdiction(lon, lat, geometry, failures);
+async function lookupYellowstone(lon, lat, rings, failures) {
+  const where = { rings, lon, lat };
+  const samples = rings ? samplePoints(rings) : [[lon, lat]];
+  const matchMethod = rings ? 'parcel area (sampled)' : 'parcel location';
+  const kind = rings ? 'parcel' : 'point';
   const errors = [];
-  const match = await findBaseZone(lon, lat, geometry, errors);
-  failures.push(...errors);
-  const entryway = await findEntrywayOverlay(lon, lat, geometry, failures);
 
-  if (!match && entryway) {
+  // Every layer at once, each read across the parcel outline (or at the point without one).
+  const settle = (promise, label) => promise.catch(error => { errors.push(`${label} ${kind} query: ${error.message}`); failures.push(error); return null; });
+  const [jurisdictionFeatures, entrywayFeatures, ...zoneAnswers] = await Promise.all([
+    settle(queryLayer(JURISDICTION_LAYER, where, { outFields: 'ZoningJurisdictions_Entity' }), 'Zoning Jurisdictions'),
+    settle(queryLayer(ENTRYWAY_LAYER.id, where, { outFields: 'OBJECTID', returnGeometry: 'false' }), ENTRYWAY_LAYER.label),
+    ...BASE_ZONE_LAYERS.map(layer => settle(queryLayer(layer.id, where, { outFields: ZONE_FIELDS }), layer.label))
+  ]);
+
+  const jurisdictionName = majorityJurisdiction(samples, jurisdictionFeatures || []);
+  const entryway = Boolean(entrywayFeatures?.length);
+  // In layer order, so where zones overlap the earlier layer covers the sample point.
+  const zoneFeatures = BASE_ZONE_LAYERS.flatMap((layer, i) => (zoneAnswers[i] || []).map(f => ({ attributes: { ...(f.attributes || {}), __layer: layer.id }, geometry: f.geometry })));
+  const covered = coverageShares(samples, zoneFeatures, a => {
+    const code = parseZone(a, LAYER_BY_ID[a.__layer]).code;
+    return code ? `${a.__layer}:${code}` : '';
+  }).filter(s => s.key);
+  const top = covered[0];
+
+  if (!top && entryway) {
     const jurisdiction = jurisdictionName || 'Yellowstone County';
     return {
       available: true,
@@ -200,7 +136,7 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
     };
   }
 
-  if (!match) {
+  if (!top) {
     // Unzoned, but only when every layer answered: a failed layer could hide the controlling zone.
     // Source: the Yellowstone County Zoning Regulations (Dec 2020, billingsmt.gov/DocumentCenter/
     // View/54714) say "This chapter applies to all lands within the Yellowstone County zoning
@@ -212,6 +148,7 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
     // special zoning districts 12-20 and Entryway); a parcel in none of them is outside zoning.
     const jurisdiction = jurisdictionName || 'Yellowstone County';
     const allAnswered = failures.length === 0;
+    const checked = rings ? 'the full parcel boundary' : 'the parcel location';
     return {
       available: allAnswered,
       county: 'Yellowstone',
@@ -224,13 +161,13 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
         code: 'UNZONED',
         name: 'Unzoned area',
         label: 'Unzoned (no county zoning district mapped)',
-        note: 'No county zoning district is mapped here; much of rural Yellowstone County is unzoned. Verify with Yellowstone County Planning. AcresX checked the parcel center and the full parcel boundary against the Billings, Laurel, Broadview, special zoning district and Entryway layers.',
+        note: `No county zoning district is mapped here; much of rural Yellowstone County is unzoned. Verify with Yellowstone County Planning. AcresX checked ${checked} against the Billings, Laurel, Broadview, special zoning district and Entryway layers.`,
         sourceUrl: `${ZONING_SERVICE}`,
         url: YELLOWSTONE_PLANNING
       } : {
         status: 'no_mapped_result',
         label: 'No mapped zoning district found',
-        note: 'AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers, but at least one layer did not answer, so a zone may be missing. Verify with the applicable planning authority before relying on this result.',
+        note: `AcresX checked ${checked} against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers, but at least one layer did not answer, so a zone may be missing. Verify with the applicable planning authority before relying on this result.`,
         sourceUrl: `${ZONING_SERVICE}`
       },
       permits: [],
@@ -241,8 +178,14 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
     };
   }
 
-  const zone = parseZone(match.attrs);
-  const jurisdiction = jurisdictionName || match.layer.jurisdiction;
+  const layer = LAYER_BY_ID[top.attributes.__layer];
+  const zone = parseZone(top.attributes, layer);
+  const display = s => { const a = s.attributes || {}; const z = parseZone(a, LAYER_BY_ID[a.__layer]); return LAYER_BY_ID[a.__layer]?.special ? z.name || z.code : z.code; };
+  const others = covered.slice(1).filter(s => s.share >= 0.05);
+  const shareNote = samples.length > 1
+    ? coverageNote({ key: display(top), share: top.share }, others.map(s => ({ key: display(s), share: s.share })), 1 - covered.reduce((t, s) => t + s.share, 0), 'zoning district')
+    : '';
+  const jurisdiction = jurisdictionName || layer.jurisdiction;
   const overlays = entryway ? [{ code: 'ENTRYWAY', name: 'Entryway Zoning District' }] : [];
   return {
     available: true,
@@ -254,11 +197,12 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
     zoning: {
       status: 'gis_match',
       code: zone.code,
-      name: zone.name || match.layer.label,
-      label: [zone.code, zone.name].filter(Boolean).join(' — ') || match.layer.label,
-      note: `Mapped ${match.layer.label} result from Yellowstone County GIS using ${match.matchMethod}.${entryway ? ' Entryway Zoning District also intersects the parcel.' : ''}`,
-      sourceUrl: `${ZONING_SERVICE}/${match.layer.id}`,
-      url: 'https://gis.yellowstonecountymt.gov/'
+      name: zone.name || layer.label,
+      label: zone.label || layer.label,
+      note: `Mapped ${layer.label} result from Yellowstone County GIS using ${matchMethod}.${shareNote}${entryway ? ' Entryway Zoning District also intersects the parcel.' : ''}`,
+      sourceUrl: `${ZONING_SERVICE}/${layer.id}`,
+      url: layer.special ? YELLOWSTONE_ZONING_INFO : 'https://gis.yellowstonecountymt.gov/',
+      ...(others.length ? { otherZones: others.map(s => ({ code: display(s), share: round3(s.share) })) } : {})
     },
     comprehensivePlan: {},
     urbanGrowthArea: { intersects: false },
@@ -269,9 +213,18 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
     permitHistoryError: 'Recorded permit-history screening for Yellowstone County is not connected yet.',
     source: {
       agency: 'Yellowstone County GIS',
-      service: match.layer.label,
-      layerId: match.layer.id,
-      matchMethod: match.matchMethod
+      service: layer.label,
+      layerId: layer.id,
+      matchMethod
     }
   };
+}
+
+// The zoning jurisdiction (layer 7) covering most of the parcel, or '' when most of it is outside
+// every jurisdiction polygon.
+function majorityJurisdiction(samples, features) {
+  const merged = new Map();
+  for (const s of coverageShares(samples, features, a => text(a.ZoningJurisdictions_Entity).toUpperCase())) merged.set(s.key || '', (merged.get(s.key || '') || 0) + s.share);
+  const [topKey] = [...merged.entries()].sort((a, b) => b[1] - a[1])[0] || [''];
+  return jurisdictionFromEntity(topKey);
 }

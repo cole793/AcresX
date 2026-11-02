@@ -68,7 +68,9 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
 });
 
 test('cache prefixes moved past every version that could have held owner fields', () => {
-  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  for (const prefix of [SPOKANE_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  // yellowstone-intelligence v3: layers read across the parcel outline with named fields only.
+  assert.match(YELLOWSTONE_CACHE_PREFIX, /\/yellowstone-intelligence\/v3\/$/);
   // gallatin-zoning v3: answers keyed by parcel outline and built from named fields only.
   assert.match(GALLATIN_CACHE_PREFIX, /\/gallatin-zoning\/v3\/$/);
   // idaho-parcels v2 held outFields '*' answers (stripped); v3 holds the named-field answers.
@@ -123,14 +125,14 @@ function yellowstoneLayers(url, hits, failing = new Set()) {
 const ysBody = { lat: 45.7805, lon: -108.4995, geometry: square(-108.5, 45.78) };
 
 test('Yellowstone: a full answer is cached without owner fields; a failed layer caches nothing', async () => {
-  stub(url => yellowstoneLayers(url, { '7:point': { JURISDICTION: 'Yellowstone County', OWNER: 'TEST OWNER' }, '2:point': { ZONE: 'A-1', ZONE_NAME: 'Agricultural Open Space', OwnerName: 'TEST OWNER' } }));
+  stub(url => yellowstoneLayers(url, { '7:polygon': { ZoningJurisdictions_Entity: 'BILLINGS', OWNER: 'TEST OWNER' }, '4:polygon': { ZONE_CODE: 'N3', ZONE_NAME: 'N3 - Suburban Neighborhood', OwnerName: 'TEST OWNER' } }));
   const fresh = await getYellowstoneCountyIntelligence(ysBody);
   assert.equal(store.size, 1);
   assertNoPersonalData(stored()[0].value);
   assert.deepEqual(stored()[0].value.value, fresh);
 
   store.clear();
-  stub(url => yellowstoneLayers(url, {}, new Set(['4:point', '8:polygon'])));
+  stub(url => yellowstoneLayers(url, {}, new Set(['4:polygon', '8:polygon'])));
   await getYellowstoneCountyIntelligence({ ...ysBody, lat: 45.79 });
   assert.equal(store.size, 0);
 });
