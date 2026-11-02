@@ -17,6 +17,8 @@ const ZONING_SERVICE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services
 // Zoning Information page links each special zoning district's regulations.
 const YELLOWSTONE_PLANNING = 'https://www.billingsmt.gov/184/CityCounty-Planning';
 const YELLOWSTONE_ZONING_INFO = 'https://www.billingsmt.gov/755/Zoning-Information';
+// Laurel's planning page loaded 2026-11-02; Billings zoning is run by City-County Planning.
+const CITY_PLANNING = { 'City of Billings': YELLOWSTONE_PLANNING, 'City of Laurel': 'https://cityoflaurelmontana.com/1314/Planning' };
 
 // Earlier layers win where polygons overlap. Layer 2 holds the county's special zoning districts
 // 12-20 (CODE 'D16', DIST_NO 16, Name '16'); the city layers hold ZONE_CODE / ZONE_NAME.
@@ -133,6 +135,32 @@ async function lookupYellowstone(lon, lat, rings, failures) {
       permitHistoryStatus: 'unavailable',
       permitHistoryError: 'Recorded permit-history screening for Yellowstone County is not connected yet.',
       source: { agency: 'Yellowstone County GIS', service: ENTRYWAY_LAYER.label, layerId: ENTRYWAY_LAYER.id }
+    };
+  }
+
+  if (!top && jurisdictionName) {
+    // Inside a city's zoning jurisdiction (layer 7) but no polygon on that city's zoning map:
+    // the city zones it, so this is never "unzoned" county land.
+    const planningUrl = CITY_PLANNING[jurisdictionName];
+    return {
+      available: false,
+      county: 'Yellowstone',
+      state: 'MT',
+      countyStatus: 'yellowstone-v2',
+      jurisdiction: jurisdictionName,
+      permitJurisdiction: { name: jurisdictionName },
+      zoning: {
+        status: 'no_mapped_result',
+        label: `No mapped ${jurisdictionName} zoning district`,
+        note: `This parcel is inside the ${jurisdictionName} zoning jurisdiction, but the ${jurisdictionName} zoning map has no district here; verify with the city.${failures.length ? ' At least one zoning layer did not answer, so a zone may be missing.' : ''}`,
+        sourceUrl: `${ZONING_SERVICE}/${JURISDICTION_LAYER}`,
+        ...(planningUrl ? { url: planningUrl } : {})
+      },
+      permits: [],
+      permitHistory: [],
+      permitHistoryStatus: 'unavailable',
+      permitHistoryError: 'Yellowstone permit-history adapter has not been connected yet.',
+      errors
     };
   }
 

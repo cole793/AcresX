@@ -414,6 +414,21 @@ test('Yellowstone: no zone found while a layer failed stays "No mapped zoning di
   assert.match(r.zoning.note, /at least one layer did not answer/);
 });
 
+for (const [entity, city, url] of [['BILLINGS', 'City of Billings', /billingsmt\.gov\/184/], ['LAUREL', 'City of Laurel', /cityoflaurelmontana\.com/]]) {
+  test(`Yellowstone: inside the ${city} zoning jurisdiction with no city zone mapped is "no mapped district", never unzoned`, async () => {
+    globalThis.fetch = yellowstoneLayers({ '7:polygon': { ZoningJurisdictions_Entity: entity } });
+    const r = await getYellowstoneCountyIntelligence({ ...ysBody, lat: 45.6703 });
+    assert.equal(r.available, false);
+    assert.equal(r.jurisdiction, city);
+    assert.equal(r.zoning.status, 'no_mapped_result');
+    assert.equal(r.zoning.code, undefined);
+    assert.equal(r.zoning.label, `No mapped ${city} zoning district`);
+    assert.match(r.zoning.note, new RegExp(`the ${city} zoning map has no district here; verify with the city\\.$`));
+    assert.doesNotMatch(r.zoning.note, /unzoned/i);
+    assert.match(r.zoning.url, url);
+  });
+}
+
 test('Yellowstone: an unzoned parcel gets no made-up zoning rules', async () => {
   const { body } = await api('/api/zoning-rules', { county: 'Yellowstone', zoneCode: 'UNZONED', jurisdiction: 'Yellowstone County' });
   assert.equal(body.available, false);
