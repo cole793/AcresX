@@ -1829,7 +1829,7 @@
         "zoning": {
           "status": "no_mapped_result",
           "label": "No mapped zoning district found",
-          "note": "AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers. No mapped zoning polygon intersected the parcel. Some Yellowstone County land may be outside a mapped zoning district; verify with the applicable planning authority before relying on this result.",
+          "note": "AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers, but at least one layer did not answer, so a zone may be missing. Verify with the applicable planning authority before relying on this result.",
           "sourceUrl": "https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer"
         },
         "permits": [],

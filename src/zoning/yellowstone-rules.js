@@ -60,7 +60,8 @@ function fallbackProfile(code, jurisdiction, zoneName = '') {
 
 export function getYellowstoneZoneDevelopmentPotential(zoneCode, context = {}) {
   const code = cleanCode(zoneCode);
-  if (!code) return null;
+  // Unzoned land (src/counties/yellowstone.js) has no zoning rules to show.
+  if (!code || code === 'UNZONED') return null;
   const jurisdiction = String(context.jurisdiction || '').toLowerCase();
   const isBillings = jurisdiction.includes('billings');
   const source = isBillings ? BILLINGS_SOURCE : COUNTY_SOURCE;

@@ -10,6 +10,8 @@ export const YELLOWSTONE_CACHE_PREFIX = 'https://acresx.internal/cache/yellowsto
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 const ZONING_SERVICE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer';
+// City-County Planning serves both Billings and Yellowstone County (page loaded 2026-11-02).
+const YELLOWSTONE_PLANNING = 'https://www.billingsmt.gov/184/CityCounty-Planning';
 
 const BASE_ZONE_LAYERS = [
   { id: 4, jurisdiction: 'City of Billings', label: 'Billings Zoning' },
@@ -199,17 +201,36 @@ async function lookupYellowstone(lon, lat, geometry, failures) {
   }
 
   if (!match) {
+    // Unzoned, but only when every layer answered: a failed layer could hide the controlling zone.
+    // Source: the Yellowstone County Zoning Regulations (Dec 2020, billingsmt.gov/DocumentCenter/
+    // View/54714) say "This chapter applies to all lands within the Yellowstone County zoning
+    // jurisdiction" (Sec. 27-103), and City-County Planning's Special Zoning Districts FAQ
+    // (billingsmt.gov/DocumentCenter/View/56399) says "Outside incorporated cities, there are many
+    // smaller settlements in Yellowstone County ... Most of these areas do not have any land use
+    // plans or development standards other than basic health and sanitary regulations." This
+    // service holds every zoning layer the county publishes (Billings, Laurel, Broadview, the
+    // special zoning districts 12-20 and Entryway); a parcel in none of them is outside zoning.
+    const jurisdiction = jurisdictionName || 'Yellowstone County';
+    const allAnswered = failures.length === 0;
     return {
-      available: false,
+      available: allAnswered,
       county: 'Yellowstone',
       state: 'MT',
       countyStatus: 'yellowstone-v2',
-      jurisdiction: jurisdictionName || 'Yellowstone County',
-      permitJurisdiction: { name: jurisdictionName || 'Yellowstone County' },
-      zoning: {
+      jurisdiction,
+      permitJurisdiction: { name: jurisdiction },
+      zoning: allAnswered ? {
+        status: 'unzoned',
+        code: 'UNZONED',
+        name: 'Unzoned area',
+        label: 'Unzoned (no county zoning district mapped)',
+        note: 'No county zoning district is mapped here; much of rural Yellowstone County is unzoned. Verify with Yellowstone County Planning. AcresX checked the parcel center and the full parcel boundary against the Billings, Laurel, Broadview, special zoning district and Entryway layers.',
+        sourceUrl: `${ZONING_SERVICE}`,
+        url: YELLOWSTONE_PLANNING
+      } : {
         status: 'no_mapped_result',
         label: 'No mapped zoning district found',
-        note: 'AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers. No mapped zoning polygon intersected the parcel. Some Yellowstone County land may be outside a mapped zoning district; verify with the applicable planning authority before relying on this result.',
+        note: 'AcresX checked the parcel center and the full parcel boundary against Yellowstone County, Billings, Laurel, Broadview and Entryway zoning layers, but at least one layer did not answer, so a zone may be missing. Verify with the applicable planning authority before relying on this result.',
         sourceUrl: `${ZONING_SERVICE}`
       },
       permits: [],

@@ -280,6 +280,18 @@ test('Yellowstone 03103333215010000 (recorded): a Billings parcel shows "City of
   assert.equal(layer7.VALIDATIONSTATUS, 2);
 });
 
+test('Yellowstone 03113520290010000 (recorded): a rural parcel outside every zoning layer reads as unzoned', async () => {
+  const f = fixture('yellowstone-zoning-03113520290010000');
+  globalThis.fetch = f.fetch;
+  const r = await getYellowstoneCountyIntelligence(f.data.request);
+  assert.equal(r.available, true);
+  assert.equal(r.jurisdiction, 'Yellowstone County');
+  assert.equal(r.zoning.status, 'unzoned');
+  assert.equal(r.zoning.code, 'UNZONED');
+  assert.match(r.zoning.note, /^No county zoning district is mapped here; much of rural Yellowstone County is unzoned\. Verify with Yellowstone County Planning\./);
+  assert.equal(r.zoning.url, 'https://www.billingsmt.gov/184/CityCounty-Planning');
+});
+
 // layerHits maps "layerId:point|polygon" to attributes; failing names layers that answer 500.
 function yellowstoneLayers(hits = {}, failing = new Set()) {
   calls = [];
@@ -312,4 +324,18 @@ test('Yellowstone: jurisdiction names come only from ZoningJurisdictions_Entity'
   assert.equal(jurisdictionFromEntity(' laurel '), 'City of Laurel');
   assert.equal(jurisdictionFromEntity('BROADVIEW'), 'Town of Broadview');
   assert.equal(jurisdictionFromEntity(null), '');
+});
+
+test('Yellowstone: no zone found while a layer failed stays "No mapped zoning district found", never unzoned', async () => {
+  globalThis.fetch = yellowstoneLayers({}, new Set(['2:point', '2:polygon']));
+  const r = await getYellowstoneCountyIntelligence({ ...ysBody, lat: 45.6701 });
+  assert.equal(r.available, false);
+  assert.equal(r.zoning.status, 'no_mapped_result');
+  assert.match(r.zoning.note, /at least one layer did not answer/);
+});
+
+test('Yellowstone: an unzoned parcel gets no made-up zoning rules', async () => {
+  const { body } = await api('/api/zoning-rules', { county: 'Yellowstone', zoneCode: 'UNZONED', jurisdiction: 'Yellowstone County' });
+  assert.equal(body.available, false);
+  assert.equal(body.status, 'zone_not_mapped');
 });
