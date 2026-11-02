@@ -3,7 +3,7 @@
 // layer and the county guess table ("Avista Utilities" for all of Spokane) are gone. Federal power
 // marketing administrations (BPA, WAPA) are wholesale/transmission and are not shown as the
 // provider. A failed lookup shows "Not identified — contact the county" and scores like an
-// unidentified utility.
+// unidentified utility. Also: the overview location line names the parcel's real state.
 //
 // Runs the real findUtility/renderSummary from public/index.html with the real ui-polish.js
 // (power-intelligence follow-up), parcel-preview.js, screening-refinements.js (score) and
@@ -130,6 +130,7 @@ test('a Stevens parcel shows Avista (the old county table showed nothing)', asyn
   await t.search();
   assert.equal(t.text('utilityMetric'), 'AVISTA CORP');
   assert.equal(t.text('overviewUtility'), 'AVISTA CORP');
+  assert.equal(t.text('overviewLocation'), 'Stevens County, Washington');
   const power = t.calls.filter(c => c.path === '/api/power-intelligence');
   assert.deepEqual([...power[0].body.providers], ['AVISTA CORP']);
   assert.equal(t.powerChip(), '78');
@@ -182,6 +183,18 @@ test('an empty territory answer (no failure) still reads plain "Not identified"'
   await t.search();
   assert.equal(t.text('utilityMetric'), 'Not identified');
   assert.equal(t.powerChip(), '45');
+});
+
+test('the overview location line names the parcel state: Kootenai is Idaho, Gallatin is Montana, Spokane is Washington', async () => {
+  const k = setup('kootenai');
+  await k.search();
+  assert.equal(k.text('overviewLocation'), 'Kootenai County, Idaho');
+  const g = setup('gallatin');
+  await g.search();
+  assert.equal(g.text('overviewLocation'), 'Gallatin County, Montana');
+  const s = setup('spokaneCity');
+  await s.search();
+  assert.equal(s.text('overviewLocation'), 'Spokane County, Washington');
 });
 
 test('index.html no longer calls the Ecology CPR layer or guesses a provider by county; state-selector.js no longer overrides findUtility', () => {
