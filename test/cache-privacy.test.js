@@ -68,7 +68,9 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
 });
 
 test('cache prefixes moved past every version that could have held owner fields', () => {
-  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  // gallatin-zoning v3: answers keyed by parcel outline and built from named fields only.
+  assert.match(GALLATIN_CACHE_PREFIX, /\/gallatin-zoning\/v3\/$/);
   // idaho-parcels v2 held outFields '*' answers (stripped); v3 holds the named-field answers.
   assert.match(IDAHO_PARCEL_CACHE_PREFIX, /\/idaho-parcels\/v3\/$/);
   assert.match(KC_PARCEL_CACHE_PREFIX, /\/kootenai-parcels\/v3\/$/);
@@ -136,7 +138,7 @@ test('Yellowstone: a full answer is cached without owner fields; a failed layer 
 // ---- Gallatin zoning
 
 test('Gallatin: a zoning answer is cached without owner fields; an HTTP or ArcGIS error caches nothing', async () => {
-  stub(() => features([{ ZONING: 'AS', ZONE_NAME: 'Agricultural Suburban', OWNER1: 'TEST OWNER' }]));
+  stub(() => features([{ INNERZONE: 'AS', DISTRICT_N: 'GALLATIN COUNTY / BOZEMAN AREA', ZONED: 'AGRICULTURE SUBURBAN', OWNER1: 'TEST OWNER' }]));
   await getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 });
   assert.equal(store.size, 1);
   assertNoPersonalData(stored()[0].value);

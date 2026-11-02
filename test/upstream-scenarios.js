@@ -238,8 +238,8 @@ export const scenarios = [
     run: () => getYellowstoneCountyIntelligence({ lat: 45.7805, lon: -108.4995, geometry: yellowstoneParcel })
   },
 
-  { name: 'gallatin: zoning district', requests: true, route: gallatinLayer({ ZONING: 'AS', ZONE_NAME: 'Agricultural Suburban' }), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },
-  { name: 'gallatin: unzoned polygon', route: gallatinLayer({ ZONING: 'UNZONED', NAME: 'Unzoned' }), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },
+  { name: 'gallatin: zoning district', requests: true, route: gallatinLayer({ INNERZONE: 'AS', DISTRICT_N: 'GALLATIN COUNTY / BOZEMAN AREA', LANDUSE: 'RURAL RESIDENTIAL', ZONED: 'AGRICULTURE SUBURBAN' }), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },
+  { name: 'gallatin: unzoned polygon', route: gallatinLayer({ INNERZONE: 'UNZ', DISTRICT_N: 'GALLATIN COUNTY', ZONED: 'UNZONED' }), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },
   { name: 'gallatin: no polygon', route: gallatinLayer(null), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },
   { name: 'gallatin: HTTP 500', route: () => new Response('x', { status: 500 }), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },
   { name: 'gallatin: ArcGIS error', route: () => arcgisError(400, 'Invalid geometry'), run: () => getGallatinCountyIntelligence({ lat: 45.68, lon: -111.05 }) },

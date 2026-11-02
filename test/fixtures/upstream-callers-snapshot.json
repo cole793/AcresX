@@ -1849,7 +1849,7 @@
         "available": true,
         "county": "Gallatin",
         "state": "MT",
-        "countyStatus": "gallatin-v2",
+        "countyStatus": "gallatin-v3",
         "jurisdiction": "Gallatin County",
         "permitJurisdiction": {
           "name": "Gallatin County"
@@ -1857,9 +1857,11 @@
         "zoning": {
           "status": "gis_match",
           "code": "AS",
-          "name": "Agricultural Suburban",
-          "label": "AS — Agricultural Suburban",
-          "note": "Mapped zoning result from Gallatin County GIS using the parcel center.",
+          "name": "AGRICULTURE SUBURBAN",
+          "label": "AS — AGRICULTURE SUBURBAN",
+          "district": "Gallatin County / Bozeman Area zoning district",
+          "landUse": "Rural Residential",
+          "note": "Mapped zoning from Gallatin County GIS (Gallatin County / Bozeman Area zoning district).",
           "sourceUrl": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
           "url": "https://www.gallatinmt.gov/588/Zoning-Guide"
         },
@@ -1875,16 +1877,19 @@
           "agency": "Gallatin County GIS",
           "service": "County Zoning Districts",
           "layerId": 42,
-          "matchMethod": "parcel center",
+          "matchMethod": "parcel location",
           "attributes": {
-            "ZONING": "AS",
-            "ZONE_NAME": "Agricultural Suburban"
+            "INNERZONE": "AS",
+            "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+            "LANDUSE": "RURAL RESIDENTIAL",
+            "ZONED": "AGRICULTURE SUBURBAN"
           }
         }
       }
     },
     "requests": [
-      "POST https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query BODY f=json&where=1%3D1&geometry=%7B%22x%22%3A-111.05%2C%22y%22%3A45.68%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=10"
+      "GET https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?f=json&where=1%3D1&geometry=%7B%22x%22%3A-111.05%2C%22y%22%3A45.68%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=false&outFields=INNERZONE%2CDISTRICT_N%2CLANDUSE%2CZONED",
+      "GET https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/Gallatin_Incorporated_Cities_and_Towns/FeatureServer/267/query?f=json&where=1%3D1&geometry=%7B%22x%22%3A-111.05%2C%22y%22%3A45.68%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=false&outFields=NAME%2CTYPE"
     ]
   },
   "gallatin: unzoned polygon": {
@@ -1893,7 +1898,7 @@
         "available": true,
         "county": "Gallatin",
         "state": "MT",
-        "countyStatus": "gallatin-v2",
+        "countyStatus": "gallatin-v3",
         "jurisdiction": "Gallatin County",
         "permitJurisdiction": {
           "name": "Gallatin County"
@@ -1903,7 +1908,7 @@
           "code": "UNZONED",
           "name": "Unzoned area",
           "label": "Unzoned",
-          "note": "Gallatin County GIS maps this location within its unzoned-area polygon. Verify development requirements with County Planning.",
+          "note": "Gallatin County GIS maps this parcel within its unzoned-area polygon. Verify development requirements with County Planning.",
           "sourceUrl": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
           "url": "https://www.gallatinmt.gov/588/Zoning-Guide"
         },
@@ -1919,10 +1924,12 @@
           "agency": "Gallatin County GIS",
           "service": "County Zoning Districts",
           "layerId": 42,
-          "matchMethod": "parcel center",
+          "matchMethod": "parcel location",
           "attributes": {
-            "ZONING": "UNZONED",
-            "NAME": "Unzoned"
+            "INNERZONE": "UNZ",
+            "DISTRICT_N": "GALLATIN COUNTY",
+            "LANDUSE": "",
+            "ZONED": "UNZONED"
           }
         }
       }
@@ -1931,10 +1938,10 @@
   "gallatin: no polygon": {
     "output": {
       "ok": {
-        "available": true,
+        "available": false,
         "county": "Gallatin",
         "state": "MT",
-        "countyStatus": "gallatin-v2",
+        "countyStatus": "gallatin-v3",
         "jurisdiction": "Gallatin County",
         "permitJurisdiction": {
           "name": "Gallatin County"
@@ -1942,7 +1949,7 @@
         "zoning": {
           "status": "no_mapped_result",
           "label": "No mapped zoning district",
-          "note": "No Gallatin County zoning polygon intersects the parcel center. This may be an unzoned location or an area requiring Planning Department verification.",
+          "note": "Gallatin County GIS maps neither a zoning district nor its unzoned area at the parcel location. That can mean the land was left out of a district map or was recently annexed into a city. Verify with Gallatin County Planning.",
           "sourceUrl": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
           "url": "https://www.gallatinmt.gov/588/Zoning-Guide"
         },
@@ -1958,7 +1965,7 @@
           "agency": "Gallatin County GIS",
           "service": "County Zoning Districts",
           "layerId": 42,
-          "matchMethod": "parcel center"
+          "matchMethod": "parcel location"
         }
       }
     }
