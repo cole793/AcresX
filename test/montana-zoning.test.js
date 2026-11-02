@@ -339,3 +339,42 @@ test('Yellowstone: an unzoned parcel gets no made-up zoning rules', async () => 
   assert.equal(body.available, false);
   assert.equal(body.status, 'zone_not_mapped');
 });
+
+// ---------------------------------------------------------------- validation configs
+
+const CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0';
+// The cadastral layer's real field list (checked 2026-11-02) includes owner and mailing fields.
+const CADASTRAL_FIELDS = ['OBJECTID', 'PARCELID', 'COUNTYCD', 'GISAcres', 'AddressLine1', 'AddressLine2', 'CityStateZip', 'OwnerName', 'OwnerAddress1', 'OwnerCity', 'OwnerZipCode', 'CareOfTaxpayer'];
+
+for (const [name, countycd] of [['yellowstone', 3], ['gallatin', 6]]) {
+  test(`validation/counties/${name}.json: 12 saved parcels, at least 3 with hand-checked zoning, and discovery never asks for owner fields`, async () => {
+    const { discoverParcels } = await import('../scripts/validate-county.mjs');
+    const config = JSON.parse(readFileSync(new URL(`../validation/counties/${name}.json`, import.meta.url), 'utf8'));
+    assert.equal(config.state, 'MT');
+    assert.equal(config.parcels.length, 12);
+    for (const p of config.parcels) { assert.match(p.parcelId, new RegExp(`^0${countycd}\\d{15}$`)); assert.ok(p.why.length > 40, p.parcelId); }
+    const checked = config.parcels.filter(p => p.expected['zoning.code']);
+    assert.ok(checked.length >= 3, `${checked.length} parcels with expected zoning`);
+    for (const p of checked) assert.match(p.why, /https:\/\/\S+\/query\?/, `${p.parcelId} quotes its source query`);
+    assert.equal(config.discover.layerUrl, CADASTRAL);
+    assert.equal(config.discover.where, `COUNTYCD=${countycd} AND PARCELID IS NOT NULL`);
+    assert.equal(config.discover.cityField, undefined);
+
+    const urls = [];
+    const fetchImpl = async input => {
+      const url = new URL(String(input));
+      urls.push(url);
+      if (url.pathname.endsWith('/FeatureServer/0')) return reply({ fields: CADASTRAL_FIELDS.map(n => ({ name: n })) });
+      if (url.searchParams.get('returnCountOnly')) return reply({ count: 3 });
+      return reply({ features: [{ attributes: { PARCELID: `0${countycd}0000000000000001`, GISAcres: 2, AddressLine1: '1 TEST RD' } }] });
+    };
+    const { parcels } = await discoverParcels({ ...config, discover: { ...config.discover, delayMs: 0 } }, { fetchImpl });
+    assert.ok(parcels.length >= 1);
+    const asked = urls.map(u => u.searchParams.get('outFields')).filter(Boolean);
+    assert.ok(asked.length > 0);
+    for (const fields of asked) {
+      assert.equal(fields, 'PARCELID,GISAcres,AddressLine1');
+      assert.doesNotMatch(fields, /owner|mail|taxpayer|\*/i);
+    }
+  });
+}

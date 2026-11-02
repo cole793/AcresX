@@ -1,0 +1,127 @@
+{
+  "county": "Gallatin",
+  "state": "MT",
+  "parcels": [
+    {
+      "parcelId": "06079621201790000",
+      "label": "no locality, 19.33 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant land in the county unzoned area.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06079611101010000",
+      "label": "MANHATTAN, 316.8 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved parcel near Manhattan, outside town limits, in the county unzoned area.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06069818101020000",
+      "label": "BOZEMAN, 2.97 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel with a Bozeman mailing locality, outside city limits, in the county unzoned area.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06079801358210000",
+      "label": "no locality, 0.1 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was \"No mapped zoning district\", now City of Bozeman zoning. Expected values checked by hand on 2026-11-02 (read-only): Gallatin city limits layer 267 returns NAME Bozeman: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/Gallatin_Incorporated_Cities_and_Towns/FeatureServer/267/query?geometry=-111.056899%2C45.687377&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME&returnGeometry=false&f=json; City of Bozeman Zoning returns ZONING R-3: https://gisweb.bozeman.net/arcgis/rest/services/Open_Data/Zoning/FeatureServer/0/query?geometry=-111.056899%2C45.687377&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING&returnGeometry=false&f=json; county layer 42 returns no feature; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).",
+      "expected": {
+        "zoning": "ok",
+        "zoning.code": "R-3",
+        "zoning.jurisdiction": "City of Bozeman",
+        "flood.zones": "X"
+      }
+    },
+    {
+      "parcelId": "06069905302080000",
+      "label": "BOZEMAN, 9.88 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county parcel south of Bozeman (Hyalite district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RR-10, DISTRICT_N HYALITE: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.016503%2C45.599720&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RR-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).",
+      "expected": {
+        "zoning": "ok",
+        "zoning.code": "RR-10",
+        "zoning.jurisdiction": "Gallatin County",
+        "flood.zones": "X"
+      }
+    },
+    {
+      "parcelId": "06069624301010000",
+      "label": "no locality, 158.98 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vacant parcel in the county unzoned area (INNERZONE UNZ). Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE UNZ, ZONED UNZONED: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.305586%2C45.558961&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).",
+      "expected": {
+        "zoning": "ok",
+        "zoning.code": "UNZONED",
+        "zoning.jurisdiction": "Gallatin County",
+        "flood.zones": "D"
+      }
+    },
+    {
+      "parcelId": "06033804413010000",
+      "label": "BIG SKY, 3.32 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (Big Sky zoning district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RC-SF-10, DISTRICT_N BIG SKY: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.360143%2C45.246635&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RC-SF-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).",
+      "expected": {
+        "zoning": "ok",
+        "zoning.code": "RC-SF-10",
+        "zoning.jurisdiction": "Gallatin County",
+        "flood.zones": "D"
+      }
+    },
+    {
+      "parcelId": "06033908402700000",
+      "label": "GALLATIN GATEWAY, 0.42 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improved lot near Big Sky / Gallatin Gateway (R-SF-11000); returned an empty zone code before the fix.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06110827101470000",
+      "label": "MANHATTAN, 19.79 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel near Manhattan in a gap of the county zoning map (no district and no unzoned polygon), outside mapped town limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06101033302010000",
+      "label": "no locality, 74.64 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt parcel near Belgrade (River Rock area) in a gap of the county zoning map (no district and no unzoned polygon), outside mapped city limits.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06042734301530000",
+      "label": "no locality, 2.76 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (RC-SF-2.5); returned an empty zone code before the fix.",
+      "expected": {}
+    },
+    {
+      "parcelId": "06079812230210000",
+      "label": "no locality, 0.26 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was \"No mapped zoning district\", now City of Bozeman zoning (R-2).",
+      "expected": {}
+    }
+  ],
+  "discover": {
+    "layerUrl": "https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0",
+    "idField": "PARCELID",
+    "acresField": "GISAcres",
+    "addressField": "AddressLine1",
+    "where": "COUNTYCD=6 AND PARCELID IS NOT NULL",
+    "acreBands": [
+      {
+        "label": "under 1 ac",
+        "max": 1
+      },
+      {
+        "label": "1-5 ac",
+        "min": 1,
+        "max": 5
+      },
+      {
+        "label": "5-40 ac",
+        "min": 5,
+        "max": 40
+      },
+      {
+        "label": "40+ ac",
+        "min": 40
+      }
+    ],
+    "perQuery": 50,
+    "delayMs": 300
+  }
+}
