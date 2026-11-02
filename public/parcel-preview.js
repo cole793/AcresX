@@ -83,7 +83,8 @@
     const parcelId = p.ORIG_PARCEL_ID || p.PARCEL_ID_NR || 'Unknown';
     const address = [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', ') || `Parcel ${parcelId}`;
     const county = p._countyDisplay || p.COUNTY_NM || '—';
-    const utility = Array.isArray(last.utility) && last.utility.length ? last.utility.join(' / ') : 'Not identified';
+    // utilityText (index.html) says "Not identified — contact the county" when the lookup failed.
+    const utility = typeof utilityText === 'function' ? utilityText(last.utility) : Array.isArray(last.utility) && last.utility.length ? last.utility.join(' / ') : 'Not identified';
     return { parcelId, address, county, utility };
   }
 

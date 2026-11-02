@@ -266,12 +266,13 @@ export function renderReport({ data, mappedSqm, dir }) {
   return h.opened.at(-1);
 }
 
-// renderSummary from public/index.html (plus the two helpers it calls), with `last` as given.
+// renderSummary from public/index.html (plus the helpers it calls), with `last` as given.
 export function renderScore({ last, dir }) {
   const lines = readPublic('index.html', dir).split('\n');
-  const pick = name => lines.find(l => l.startsWith(`function ${name}(`));
+  const pick = name => lines.find(l => l.startsWith(`function ${name}(`)) || '';
+  const pickConst = name => lines.find(l => l.startsWith(`const ${name}=`)) || '';
   const h = makeLazyContext({ last });
-  h.run(`const $=id=>document.getElementById(id);\n${pick('gradeWellDepth')}\n${pick('setTraffic')}\n${pick('renderSummary')}`);
+  h.run(`const $=id=>document.getElementById(id);\n${pickConst('UTILITY_LOOKUP_FAILED')}\n${pick('utilityText')}\n${pick('gradeWellDepth')}\n${pick('setTraffic')}\n${pick('renderSummary')}`);
   h.run('renderSummary(last.parcel)');
   return { score: h.el('scoreMetric').textContent, dataDot: h.el('dataGrade').textContent, evidence: h.el('evidenceMetric').textContent, listing: h.el('listingGrade').textContent };
 }
