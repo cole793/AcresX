@@ -191,6 +191,48 @@ test('a failing city zoning layer degrades to "unavailable" for that city only',
   assert.equal(store.size, 0);
 });
 
+// ---- Likely permits: the city's departments inside a city, the county's outside.
+
+const byName = permits => Object.fromEntries(permits.map(p => [p.name, p]));
+const SHARED = ['On-site septic approval', 'Well notice / water review'];
+
+test('permits: a city parcel names the city departments and links its page; state and health items stay', async () => {
+  const county = byName((await (async () => { const fx = fixture('07123.9075'); stub(fx); return getSpokaneCountyIntelligence(bodyOf(fx), profile); })()).permits);
+  const fx = fixture('45012.1111');
+  stub(fx);
+  const { permits } = await getSpokaneCountyIntelligence(bodyOf(fx), profile);
+  const p = byName(permits);
+  assert.deepEqual(Object.keys(p), Object.keys(county), 'same items, same order');
+  assert.equal(p['Building permit'].agency, 'City of Spokane Valley building / permit department');
+  assert.equal(p['Land-use / zoning verification'].agency, 'City of Spokane Valley planning / community development');
+  assert.equal(p['Critical-areas review'].agency, 'City of Spokane Valley planning / community development');
+  assert.equal(p['Driveway / road approach permit'].agency, 'City of Spokane Valley public works / streets');
+  assert.match(p['Driveway / road approach permit'].reason, /a city or state road/);
+  for (const name of ['Building permit', 'Land-use / zoning verification', 'Critical-areas review', 'Driveway / road approach permit']) {
+    assert.equal(p[name].url, 'https://www.spokanevalleywa.gov/269/Planning-and-Zoning', name);
+  }
+  assert.doesNotMatch(JSON.stringify(permits), /Spokane County Building|Spokane County Public Works|spokanecounty\.org/);
+  for (const name of SHARED) assert.deepEqual(p[name], county[name], name);
+  for (const p of permits) assert.deepEqual(Object.keys(p).sort(), ['agency', 'name', 'reason', 'status', 'url'], 'item shape');
+});
+
+test('permits: a city without a verified page gets no link; unincorporated land keeps the county agencies', async () => {
+  stub(synthetic({
+    [J]: { features: [{ attributes: { NAME: 'Millwood', MUNITYP: 'City' }, geometry: square(-117.31, 47.49, -117.28, 47.52) }] },
+    [Z]: { features: [] }
+  }));
+  const millwood = byName((await getSpokaneCountyIntelligence({ county: 'Spokane', ...synthetic({}).parcel }, profile)).permits);
+  assert.equal(millwood['Building permit'].agency, 'City of Millwood building / permit department');
+  assert.equal(millwood['Building permit'].url, '');
+  const fx = fixture('07123.9075');
+  stub(fx);
+  const county = byName((await getSpokaneCountyIntelligence(bodyOf(fx), profile)).permits);
+  assert.equal(county['Building permit'].agency, 'Spokane County Building & Planning');
+  assert.equal(county['Building permit'].url, 'https://www.spokanecounty.org/194/Building-Planning');
+  assert.equal(county['Driveway / road approach permit'].agency, 'Spokane County Public Works');
+  assert.match(county['Driveway / road approach permit'].reason, /a county or state road/);
+});
+
 // ---- Synthetic outlines: shares across the parcel.
 
 const square = (x0, y0, x1, y1) => ({ rings: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] });

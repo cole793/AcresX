@@ -102,14 +102,23 @@ function permitRecord(attrs = {}) {
   };
 }
 
-function permitList(profile) {
+// Likely approvals. Inside a city (or the air base) its own departments handle zoning, building,
+// road-approach and critical-areas review, linked to the city page in spokane-cities.js ('' when
+// no page was verified; the UI then shows no link). The health-district and state items are the
+// same everywhere. Unincorporated land (and an unknown jurisdiction) keeps the county agencies.
+function permitList(profile, city = null) {
+  const local = !city
+    ? { planning: profile.planningAgency, building: profile.planningAgency, road: profile.roadAgency, roads: 'a county or state road', zoningUrl: profile.zoningMapUrl, permitUrl: profile.permitUrl, planningUrl: profile.planningUrl }
+    : city.federal
+      ? { planning: city.name, building: city.name, road: city.name, roads: 'a base or state road', zoningUrl: '', permitUrl: '', planningUrl: '' }
+      : { planning: `${city.name} planning / community development`, building: `${city.name} building / permit department`, road: `${city.name} public works / streets`, roads: 'a city or state road', zoningUrl: city.planningUrl || '', permitUrl: city.planningUrl || '', planningUrl: city.planningUrl || '' };
   return [
-    { name: 'Land-use / zoning verification', agency: profile.planningAgency, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: profile.zoningMapUrl },
-    { name: 'Building permit', agency: profile.planningAgency, status: 'Likely', reason: 'Normally required for a new residence, shop or other permitted structure.', url: profile.permitUrl },
+    { name: 'Land-use / zoning verification', agency: local.planning, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: local.zoningUrl },
+    { name: 'Building permit', agency: local.building, status: 'Likely', reason: 'Normally required for a new residence, shop or other permitted structure.', url: local.permitUrl },
     { name: 'On-site septic approval', agency: profile.healthAgency, status: 'Likely', reason: 'Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.', url: profile.septicUrl },
     { name: 'Well notice / water review', agency: 'Washington Department of Ecology and local health authority', status: 'Possible', reason: 'Well construction, water availability and drinking-water requirements vary by project and location.', url: 'https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells' },
-    { name: 'Driveway / road approach permit', agency: profile.roadAgency, status: 'Possible', reason: 'Often required for a new or modified connection to a county or state road.', url: profile.planningUrl },
-    { name: 'Critical-areas review', agency: profile.planningAgency, status: 'Possible', reason: 'Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.', url: profile.planningUrl }
+    { name: 'Driveway / road approach permit', agency: local.road, status: 'Possible', reason: `Often required for a new or modified connection to ${local.roads}.`, url: local.planningUrl },
+    { name: 'Critical-areas review', agency: local.planning, status: 'Possible', reason: 'Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.', url: local.planningUrl }
   ];
 }
 
@@ -248,6 +257,6 @@ export async function getSpokaneCountyIntelligence(body, profile) {
     permitHistoryStatus: permitsR.status === 'fulfilled' ? (permitHistory.length ? 'found' : 'none') : 'unavailable',
     permitHistoryError: permitsR.status === 'rejected' ? permitsR.reason?.message || 'Permit service unavailable' : '',
     agencies: profile,
-    permits: permitList(profile)
+    permits: permitList(profile, city)
   };
 }
