@@ -80,12 +80,23 @@ async function queryLayer(layerId, { lon, lat, geometry } = {}) {
   return data.features || [];
 }
 
+// Layer 7 ("Zoning Jurisdictions") has no NAME value; its only label is
+// ZoningJurisdictions_Entity ('BILLINGS' or 'LAUREL', checked live 2026-11-02). The old generic
+// fallback picked the first other non-empty attribute instead, so Billings parcels showed
+// jurisdiction "2". Broadview has no polygon there; its zoning layer names it instead.
+const JURISDICTION_NAMES = { BILLINGS: 'City of Billings', LAUREL: 'City of Laurel', BROADVIEW: 'Town of Broadview' };
+
+export function jurisdictionFromEntity(value) {
+  const key = String(value || '').trim().toUpperCase();
+  if (!key) return '';
+  return JURISDICTION_NAMES[key] || `City of ${key.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())}`;
+}
+
 async function queryJurisdiction(lon, lat, geometry, failures) {
   try {
     let features = await queryLayer(7, { lon, lat });
     if (!features.length && geometry) features = await queryLayer(7, { geometry });
-    const attrs = features[0]?.attributes || {};
-    return valueFrom(attrs, ['JURISDICTION','JURISDICT','NAME','AGENCY','ENTITY','CITY']) || fallbackZoneValue(attrs);
+    return jurisdictionFromEntity(features[0]?.attributes?.ZoningJurisdictions_Entity);
   } catch (error) {
     failures.push(error);
     return '';

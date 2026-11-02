@@ -1,4 +1,5 @@
-// Offline tests for the Montana zoning adapters (src/counties/gallatin.js). fetch is stubbed with canned or recorded ArcGIS answers; nothing
+// Offline tests for the Montana zoning adapters (src/counties/gallatin.js and
+// src/counties/yellowstone.js). fetch is stubbed with canned or recorded ArcGIS answers; nothing
 // touches the county or city servers. The recorded fixtures
 // (test/fixtures/{gallatin,yellowstone}-zoning-<PARCELID>.json) were captured live on 2026-11-02;
 // editor user names were replaced with placeholders, and no owner field was requested.
@@ -7,11 +8,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { getGallatinCountyIntelligence, districtLabel, GALLATIN_ZONING_LAYER, GALLATIN_CITY_LIMITS, BOZEMAN_ZONING } from '../src/counties/gallatin.js';
+import { getYellowstoneCountyIntelligence, jurisdictionFromEntity } from '../src/counties/yellowstone.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 
 const G_ZONING = `${GALLATIN_ZONING_LAYER}/query`;
 const G_CITY = `${GALLATIN_CITY_LIMITS}/query`;
 const BOZ = `${BOZEMAN_ZONING}/query`;
+const YS = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer';
 
 let calls;
 const reply = (body, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -261,4 +264,52 @@ test('Gallatin district labels read naturally', () => {
   assert.equal(districtLabel('GALLATIN COUNTY / BOZEMAN AREA'), 'Gallatin County / Bozeman Area zoning district');
   assert.equal(districtLabel('ZONING DISTRICT 1'), 'Zoning District 1');
   assert.equal(districtLabel(''), '');
+});
+
+// ---------------------------------------------------------------- Yellowstone
+
+test('Yellowstone 03103333215010000 (recorded): a Billings parcel shows "City of Billings", not "2"', async () => {
+  const f = fixture('yellowstone-zoning-03103333215010000');
+  globalThis.fetch = f.fetch;
+  const r = await getYellowstoneCountyIntelligence(f.data.request);
+  assert.equal(r.jurisdiction, 'City of Billings');
+  assert.equal(r.permitJurisdiction.name, 'City of Billings');
+  assert.equal(r.zoning.code, 'NX3');
+  // The recorded layer 7 row carries VALIDATIONSTATUS 2, the value the old fallback showed.
+  const layer7 = f.data.responses.find(x => x.url === `${YS}/7/query`).body.features[0].attributes;
+  assert.equal(layer7.VALIDATIONSTATUS, 2);
+});
+
+// layerHits maps "layerId:point|polygon" to attributes; failing names layers that answer 500.
+function yellowstoneLayers(hits = {}, failing = new Set()) {
+  calls = [];
+  return async (input, init) => {
+    const { base, params } = await record(input, init);
+    const m = base.match(/\/Zoning\/MapServer\/(\d+)\/query$/);
+    if (!m) throw new Error(`unexpected request ${base}`);
+    const key = `${m[1]}:${params.get('geometryType') === 'esriGeometryPolygon' ? 'polygon' : 'point'}`;
+    if (failing.has(key)) return reply('upstream down', 500);
+    return reply({ features: hits[key] ? [{ attributes: { VALIDATIONSTATUS: 2, ...hits[key] } }] : [] });
+  };
+}
+const ysBody = { lat: 45.67, lon: -108.77, geometry: { type: 'Polygon', coordinates: [square(-108.771, 45.669, -108.769, 45.671)] } };
+
+test('Yellowstone: Laurel and Broadview parcels name their city or town', async () => {
+  globalThis.fetch = yellowstoneLayers({ '7:point': { ZoningJurisdictions_Entity: 'LAUREL' }, '8:point': { ZONE_CODE: 'CBD', ZONE_NAME: 'CBD', City: 'LAUREL' } });
+  let r = await getYellowstoneCountyIntelligence(ysBody);
+  assert.equal(r.jurisdiction, 'City of Laurel');
+  assert.equal(r.zoning.code, 'CBD');
+
+  // Broadview has no polygon in layer 7; its zoning layer names it.
+  globalThis.fetch = yellowstoneLayers({ '0:point': { ZONE_CODE: 'CC', ZONE_NAME: 'Community Commercial', City: 'BROADVIEW' } });
+  r = await getYellowstoneCountyIntelligence({ ...ysBody, lat: 46.098, lon: -108.877 });
+  assert.equal(r.jurisdiction, 'Town of Broadview');
+  assert.equal(r.zoning.code, 'CC');
+});
+
+test('Yellowstone: jurisdiction names come only from ZoningJurisdictions_Entity', () => {
+  assert.equal(jurisdictionFromEntity('BILLINGS'), 'City of Billings');
+  assert.equal(jurisdictionFromEntity(' laurel '), 'City of Laurel');
+  assert.equal(jurisdictionFromEntity('BROADVIEW'), 'Town of Broadview');
+  assert.equal(jurisdictionFromEntity(null), '');
 });
