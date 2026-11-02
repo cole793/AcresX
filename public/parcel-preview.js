@@ -77,14 +77,19 @@
     return { text: 'No mapped wetlands', cls: 'good' };
   }
 
+  const STATE_NAMES = { WA: 'Washington', ID: 'Idaho', MT: 'Montana' };
+
   function propertyIdentity() {
     if (typeof last === 'undefined' || !last?.parcel) return null;
     const p = last.parcel.properties || {};
     const parcelId = p.ORIG_PARCEL_ID || p.PARCEL_ID_NR || 'Unknown';
     const address = [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', ') || `Parcel ${parcelId}`;
     const county = p._countyDisplay || p.COUNTY_NM || '—';
-    const utility = Array.isArray(last.utility) && last.utility.length ? last.utility.join(' / ') : 'Not identified';
-    return { parcelId, address, county, utility };
+    // utilityText (index.html) says "Not identified — contact the county" when the lookup failed.
+    const utility = typeof utilityText === 'function' ? utilityText(last.utility) : Array.isArray(last.utility) && last.utility.length ? last.utility.join(' / ') : 'Not identified';
+    // WA parcels come from the statewide layer, which has no state field; ID and MT parcels carry _stateDisplay.
+    const state = p._stateDisplay || STATE_NAMES[p._stateCode] || 'Washington';
+    return { parcelId, address, county, state, utility };
   }
 
   function averageNearbyWellDepth() {
@@ -213,7 +218,7 @@
     const wellDepth = averageNearbyWellDepth();
 
     document.getElementById('overviewAddress').textContent = identity.address;
-    document.getElementById('overviewLocation').textContent = `${identity.county} County, Washington`;
+    document.getElementById('overviewLocation').textContent = `${identity.county} County, ${identity.state}`;
     document.getElementById('overviewParcelId').textContent = identity.parcelId;
     document.getElementById('overviewCounty').textContent = identity.county;
     document.getElementById('overviewUtility').textContent = identity.utility;
