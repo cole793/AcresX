@@ -28,7 +28,7 @@
         "zoning": "ok",
         "zoning.code": "R-3",
         "zoning.jurisdiction": "City of Bozeman",
-        "flood.zones": "X"
+        "flood.high": false
       }
     },
     {
@@ -39,7 +39,7 @@
         "zoning": "ok",
         "zoning.code": "RR-10",
         "zoning.jurisdiction": "Gallatin County",
-        "flood.zones": "X"
+        "flood.high": false
       }
     },
     {
@@ -50,7 +50,7 @@
         "zoning": "ok",
         "zoning.code": "UNZONED",
         "zoning.jurisdiction": "Gallatin County",
-        "flood.zones": "D"
+        "flood.high": false
       }
     },
     {
@@ -61,7 +61,7 @@
         "zoning": "ok",
         "zoning.code": "RC-SF-10",
         "zoning.jurisdiction": "Gallatin County",
-        "flood.zones": "D"
+        "flood.high": false
       }
     },
     {

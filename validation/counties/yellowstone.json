@@ -10,7 +10,7 @@
         "zoning": "ok",
         "zoning.code": "UNZONED",
         "zoning.jurisdiction": "Yellowstone County",
-        "flood.zones": "X"
+        "flood.high": false
       }
     },
     {
@@ -22,9 +22,12 @@
     {
       "parcelId": "03103333215010000",
       "label": "BILLINGS, 2.9 ac",
-      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside the Billings zoning jurisdiction (layer 7 entity BILLINGS); the parcel that showed jurisdiction \"2\". No expected zone: its outline touches NX2 and P1, while the center point used today lands on a neighbouring NX3 polygon. Expected values checked by hand on 2026-11-02 (read-only): layer 7 at an interior point returns ZoningJurisdictions_Entity BILLINGS: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?geometry=-108.506970%2C45.796300&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json.",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside the Billings zoning jurisdiction (layer 7 entity BILLINGS); the parcel that showed jurisdiction \"2\". Its outline is curved, so the vertex average falls outside it on a neighbouring NX3 polygon (the old answer); the outline itself is P1 with an edge touching NX2. Expected values checked by hand on 2026-11-02 (read-only): layer 7 at an interior point returns ZoningJurisdictions_Entity BILLINGS: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?geometry=-108.506970%2C45.796300&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; Billings zoning layer 4 at the same interior point returns ZONE_CODE P1: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?geometry=-108.506970%2C45.796300&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; layer 4 queried with the parcel outline returns P1 and NX2; sampled over about 1,300 points P1 covers 99.7% of the parcel and NX2 only touches its edge; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).",
       "expected": {
-        "zoning.jurisdiction": "City of Billings"
+        "zoning": "ok",
+        "zoning.code": "P1",
+        "zoning.jurisdiction": "City of Billings",
+        "flood.high": false
       }
     },
     {
@@ -35,7 +38,7 @@
         "zoning": "ok",
         "zoning.code": "N3",
         "zoning.jurisdiction": "City of Billings",
-        "flood.zones": "X"
+        "flood.high": false
       }
     },
     {
@@ -52,7 +55,7 @@
         "zoning": "ok",
         "zoning.code": "D16",
         "zoning.jurisdiction": "Yellowstone County",
-        "flood.zones": "D"
+        "flood.high": false
       }
     },
     {
