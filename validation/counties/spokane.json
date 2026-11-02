@@ -5,22 +5,29 @@
     {
       "parcelId": "35204.2729",
       "label": "City of Spokane, 0.14 ac",
-      "why": "Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum \"under 1 ac | city-named locality\"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02). Expected to mismatch until the Spokane city zoning fix ships.",
+      "why": "Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum \"under 1 ac | city-named locality\"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02; this is the layer src/counties/spokane-cities.js reads, code from ZoneLabel). The jurisdiction comes from the City of Spokane zoning added in PR #32.",
       "expected": {
-        "zoning.code": "R1"
+        "zoning.code": "R1",
+        "zoning.jurisdiction": "City of Spokane"
       }
     },
     {
       "parcelId": "35234.0602",
       "label": "City of Spokane Valley, 0.42 ac",
-      "why": "Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zoning polygon at the centroid (-117.331914,47.642933); the city's layer says R-3 (https://arcgis.spokanevalley.org/arcgis/rest/services/CommunityDevelopment/Zoning/MapServer/1/query?f=json&geometry=-117.331914,47.642933&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Zoning&returnGeometry=false, checked 2026-11-02). No expected value yet: AcresX has no Spokane Valley zoning source.",
-      "expected": {}
+      "why": "Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zoning polygon at the centroid (-117.331914,47.642933); the city's layer used by src/counties/spokane-cities.js says R-3, Single-Family Residential (R-3) (https://arcgis.spokanevalley.org/arcgis/rest/services/ViewerV3/LandUse/MapServer/1/query?f=json&geometry=-117.331914,47.642933&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Zoning,Zoning_Desg&returnGeometry=false, checked 2026-11-02).",
+      "expected": {
+        "zoning.code": "R-3",
+        "zoning.jurisdiction": "City of Spokane Valley"
+      }
     },
     {
       "parcelId": "13013.2211",
       "label": "City of Cheney, 0.16 ac",
-      "why": "Small lot inside the City of Cheney (3175 Pheasant St). No county zoning polygon at the centroid (-117.575987,47.510249), so city zoning applies.",
-      "expected": {}
+      "why": "Small lot inside the City of Cheney (3175 Pheasant St). No county zoning polygon at the centroid (-117.575987,47.510249), so city zoning applies. The City of Cheney layer used by src/counties/spokane-cities.js says R-1, Single Family Residential (https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3/query?f=json&geometry=-117.575987,47.510249&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneCODE,ZONE&returnGeometry=false, checked 2026-11-02).",
+      "expected": {
+        "zoning.code": "R-1",
+        "zoning.jurisdiction": "City of Cheney"
+      }
     },
     {
       "parcelId": "57344.0125",
@@ -36,12 +43,11 @@
     {
       "parcelId": "43341.0110",
       "label": "unincorporated, 1.5 ac, LTA, wetlands",
-      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning LTA Large Tract Agricultural from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.217847,47.448652&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02.",
+      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning LTA Large Tract Agricultural from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.217847,47.448652&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: when NFHL doesn't answer, the Esri fallback holds high/moderate-risk zones only and returns no X.",
       "expected": {
         "zoning.code": "LTA",
         "zoning.jurisdiction": "Spokane County",
-        "flood.high": false,
-        "flood.zones": "X"
+        "flood.high": false
       }
     },
     {
@@ -59,11 +65,10 @@
     {
       "parcelId": "57302.9016",
       "label": "Mead, 9.78 ac, RCV, wetlands",
-      "why": "Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning RCV from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.173978,47.813929&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02.",
+      "why": "Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning RCV from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.173978,47.813929&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: on 2026-11-02 NFHL didn't answer for this parcel and the Esri fallback (high/moderate-risk zones only) returned no zones.",
       "expected": {
         "zoning.code": "RCV",
-        "flood.high": false,
-        "flood.zones": "X"
+        "flood.high": false
       }
     },
     {
