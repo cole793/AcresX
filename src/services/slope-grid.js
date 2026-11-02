@@ -2,7 +2,8 @@ import { json } from '../shared/http.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { elevationSamplesFt } from './elevation.js';
 
-export const SLOPE_CACHE_PREFIX = 'https://acresx.internal/cache/slope-grid/v1/';
+// v2 (2026-11-02): every answer carries elevationSources; v1 entries are left to expire.
+export const SLOPE_CACHE_PREFIX = 'https://acresx.internal/cache/slope-grid/v2/';
 export const GRID_SIZE = 5;
 export const FALLBACK_GRID_SIZE = 3;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;

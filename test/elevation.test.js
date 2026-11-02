@@ -2,7 +2,7 @@
 // /api/land-analysis and /api/slope-grid. fetch is stubbed with responses recorded live on
 // 2026-10-27; no live USGS, USFS or USDA calls. Elevation source fallback (getSamples, 3DEP
 // identify, EPQS) is covered at the end of this file.
-import { test, beforeEach, afterEach } from 'node:test';
+import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
@@ -73,7 +73,7 @@ function stubFetch(handlers = {}) {
     const url = String(input instanceof Request ? input.url : input);
     const k = kind(url);
     seen[k] = (seen[k] || 0) + 1;
-    const call = { url, kind: k, method: init.method || 'GET', body: init.body == null ? null : String(init.body), headers: init.headers || {}, cf: init.cf };
+    const call = { url, kind: k, method: init.method || 'GET', body: init.body == null ? null : String(init.body), headers: init.headers || {}, cf: init.cf, signal: init.signal };
     calls.push(call);
     if (handlers[k]) return handlers[k](call, seen[k]);
     if (k === '3dep' || k === 'tcc') return jsonResponse(recordedSamples(k, call.body));
@@ -563,4 +563,84 @@ test('elevationSamplesFt: a getSamples value replaces a hedge value; NoData is n
     assert.equal(partial.values[1], null);
     assert.equal(calls.length, 1, 'point 1 was a NoData answer, not a failure');
   } finally { restore(); }
+});
+
+test('hedges: once the points are in, requests still in flight are cancelled at once', async () => {
+  const restore = configureElevation({ ...FAST, budgetMs: 5000 });
+  try {
+    // getSamples and EPQS hang; identify (the 100 ms hedge) answers every terrain point.
+    stubFetch({ '3dep': hang, epqs: hang });
+    const started = Date.now();
+    const { body } = await landAnalysis();
+    assert.ok(Date.now() - started < 1000, `took ${Date.now() - started} ms`);
+    assert.deepEqual(body.terrain.elevationSources, ['identify']);
+    const getSamplesCall = calls.find(c => c.kind === '3dep');
+    assert.ok(getSamplesCall.signal, 'the shared client passes a signal');
+    // Its own timeout is ~5 s away, so only the lookup's cancel can have aborted it by now.
+    assert.equal(getSamplesCall.signal.aborted, true, 'the pending getSamples was cancelled');
+    assert.equal(count('epqs'), 0, 'EPQS (the 200 ms hedge) was never needed');
+  } finally { restore(); }
+});
+
+test('hedges: an EPQS hedge still in flight is cancelled when identify completes the points', async () => {
+  const restore = configureElevation({ ...FAST, budgetMs: 5000, identifyAfterMs: 50, epqsAfterMs: 100 });
+  try {
+    // identify answers after 200 ms, by when the EPQS hedge (100 ms) is in flight and hanging.
+    stubFetch({ '3dep': hang, identify: later(200, call => elevIdentifyAnswer(call.url)), epqs: hang });
+    const { body } = await landAnalysis();
+    assert.deepEqual(body.terrain.elevationSources, ['identify']);
+    const epqsCalls = calls.filter(c => c.kind === 'epqs');
+    assert.equal(epqsCalls.length, 9);
+    assert.ok(epqsCalls.every(c => c.signal?.aborted), 'every pending EPQS request was cancelled');
+  } finally { restore(); }
+});
+
+test('cache guard: a slope answer that mixes getSamples and identify values is not cached', async () => {
+  const store = fakeCache();
+  const restore = configureElevation(FAST);
+  try {
+    // identify answers grid point 0 (south-west corner) at the 100 ms hedge and hangs on the rest;
+    // getSamples answers at 250 ms with point 0 as NoData, so point 0 keeps the identify value.
+    const isPoint0 = call => { const p = pointOf(call.url); return p.x === bounds.minLon && p.y === bounds.minLat; };
+    stubFetch({
+      '3dep': later(250, call => {
+        const answer = recordedSamples('3dep', call.body);
+        answer.samples = answer.samples.filter(s => s.locationId !== 0);
+        return jsonResponse(answer);
+      }),
+      identify: call => (isPoint0(call) ? elevIdentifyAnswer(call.url) : hang()),
+      epqs: hang
+    });
+    const { body } = await slopeGrid();
+    assert.equal(body.available, true);
+    assert.deepEqual(body.elevationSources, ['getSamples', 'identify']);
+    assert.equal(body.sampleCount, 25);
+    assert.equal(body.partial, false, 'complete, so only the source guard keeps it out of the cache');
+    assert.equal(body.cells.length, 16);
+    assert.ok(![...store.keys()].some(k => k.startsWith(SLOPE_CACHE_PREFIX)), 'mixed-source slope answer not cached');
+  } finally { restore(); }
+});
+
+test('cache: terrain and slope use the v2 prefixes (answers carry elevationSources)', () => {
+  assert.equal(TERRAIN_CACHE_PREFIX, 'https://acresx.internal/cache/terrain/v2/');
+  assert.equal(SLOPE_CACHE_PREFIX, 'https://acresx.internal/cache/slope-grid/v2/');
+});
+
+test('hedges: a hedge starts when its timer fires, even if the clock reads short of the delay', async () => {
+  // Node can fire a timer with Date.now() about 1 ms before its delay (seen in 2 of 200 CI runs).
+  // Mocking setTimeout but not Date fires the identify timer with no time passed at all.
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    stubFetch({ '3dep': hang, epqs: hang });
+    const points = [{ lon: -116.76, lat: 47.5446 }];
+    let result = null;
+    const pending = elevationSamplesFt(points).then(r => { result = r; });
+    for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(count('identify'), 0, 'not before the hedge timer');
+    mock.timers.tick(6000); // ELEVATION_TIMING.identifyAfterMs
+    for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(count('identify'), 1, 'identify started on its timer');
+    await pending;
+    assert.deepEqual(result.from, ['identify']);
+  } finally { mock.timers.reset(); }
 });

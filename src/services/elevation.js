@@ -220,13 +220,14 @@ export async function elevationSamplesFt(points, { fallbackIndices } = {}) {
     }));
   };
 
+  // `due` is set by the stage's own timer, never by comparing clocks: a Node timer can fire with
+  // Date.now() a millisecond short of its delay, which used to leave a hedge unstarted.
   const stages = [
-    { at: 0, run: runGetSamples, state: 'waiting' },
-    { at: t.identifyAfterMs, run: perPoint('identify', identifyFeet), state: 'waiting' },
-    { at: t.epqsAfterMs, run: perPoint('epqs', epqsFeet), state: 'waiting' }
+    { at: 0, run: runGetSamples, state: 'waiting', due: true },
+    { at: t.identifyAfterMs, run: perPoint('identify', identifyFeet), state: 'waiting', due: false },
+    { at: t.epqsAfterMs, run: perPoint('epqs', epqsFeet), state: 'waiting', due: false }
   ];
   const timers = [];
-  const started = Date.now();
 
   function advance() {
     if (done) return;
@@ -236,7 +237,7 @@ export async function elevationSamplesFt(points, { fallbackIndices } = {}) {
       const stage = stages[k];
       if (stage.state !== 'waiting') continue;
       const earlierFinished = stages.slice(0, k).every(s => s.state === 'settled' || s.state === 'skipped');
-      if (Date.now() - started < stage.at && !earlierFinished) continue;
+      if (!stage.due && !earlierFinished) continue;
       const needed = k === 0 ? points.length > 0 : fallback.some(i => !resolved(i));
       if (!needed || remaining() < t.minStageMs) { stage.state = 'skipped'; continue; }
       stage.state = 'running';
@@ -245,7 +246,9 @@ export async function elevationSamplesFt(points, { fallbackIndices } = {}) {
     if (stages.every(s => s.state === 'settled' || s.state === 'skipped')) finish();
   }
 
-  for (const stage of stages) if (stage.at > 0) timers.push(setTimeout(advance, stage.at));
+  for (const stage of stages) {
+    if (!stage.due) timers.push(setTimeout(() => { stage.due = true; advance(); }, stage.at));
+  }
   timers.push(setTimeout(() => finish(), t.budgetMs + 250));
   advance();
   await finished;

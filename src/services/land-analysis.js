@@ -6,7 +6,8 @@ import {
   elevationSamplesFt, getSamplesWithRetry, spreadPick, POINT_FALLBACK_TIMEOUT_MS
 } from './elevation.js';
 
-export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v1/';
+// v2 (2026-11-02): every terrain answer carries elevationSources; v1 entries are left to expire.
+export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v2/';
 export const CANOPY_CACHE_PREFIX = 'https://acresx.internal/cache/canopy/v1/';
 export const CANOPY_FALLBACK_MAX_POINTS = 12;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
