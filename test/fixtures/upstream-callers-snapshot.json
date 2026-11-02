@@ -1263,9 +1263,15 @@
         "permitJurisdiction": {
           "name": "Spokane County",
           "attributes": {
-            "JURISDICTION": "Spokane County"
+            "NAME": "Spokane County",
+            "MUNITYP": "Other"
           },
           "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+        },
+        "zoningMatch": {
+          "method": "parcel area (sampled)",
+          "jurisdictionShare": 1,
+          "otherJurisdictions": []
         },
         "permitHistory": [
           {
@@ -1381,9 +1387,9 @@
     },
     "requests": [
       "GET https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/BPPublic/MapServer/5/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-117.4%2C47.6%5D%2C%5B-117.399%2C47.6%5D%2C%5B-117.399%2C47.601%5D%2C%5B-117.4%2C47.601%5D%2C%5B-117.4%2C47.6%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=100",
-      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=100",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-117.4%2C47.6%5D%2C%5B-117.399%2C47.6%5D%2C%5B-117.399%2C47.601%5D%2C%5B-117.4%2C47.601%5D%2C%5B-117.4%2C47.6%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=NAME%2CMUNITYP",
       "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/2/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME%2CTYPE&returnGeometry=false&resultRecordCount=100",
-      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS%2CZONEDESC%2CZFILENUM%2CCOMMENTS%2CURL%2CDevFileNum%2CDevURL&returnGeometry=false&resultRecordCount=100",
+      "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&where=1%3D1&geometry=%7B%22rings%22%3A%5B%5B%5B-117.4%2C47.6%5D%2C%5B-117.399%2C47.6%5D%2C%5B-117.399%2C47.601%5D%2C%5B-117.4%2C47.601%5D%2C%5B-117.4%2C47.6%5D%5D%5D%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&maxAllowableOffset=0.00001&geometryPrecision=6&outFields=ZONECLASS%2CZONEDESC%2CZFILENUM%2CCOMMENTS%2CURL%2CDevFileNum%2CDevURL",
       "GET https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/4/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=LANDUSECODE%2CLANDUSEDESC%2CCOMMENTS%2CDevFileNum%2CDevURL&returnGeometry=false&resultRecordCount=100"
     ]
   },
@@ -1423,9 +1429,15 @@
         "permitJurisdiction": {
           "name": "Spokane County",
           "attributes": {
-            "JURISDICTION": "Spokane County"
+            "NAME": "Spokane County",
+            "MUNITYP": "Other"
           },
           "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+        },
+        "zoningMatch": {
+          "method": "parcel area (sampled)",
+          "jurisdictionShare": 1,
+          "otherJurisdictions": []
         },
         "permitHistory": [],
         "permitHistoryStatus": "unavailable",
@@ -1555,9 +1567,15 @@
         "permitJurisdiction": {
           "name": "Spokane County",
           "attributes": {
-            "JURISDICTION": "Spokane County"
+            "NAME": "Spokane County",
+            "MUNITYP": "Other"
           },
           "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+        },
+        "zoningMatch": {
+          "method": "parcel location",
+          "jurisdictionShare": 1,
+          "otherJurisdictions": []
         },
         "permitHistory": [
           {
