@@ -40,6 +40,7 @@
       zoneCode: z.code,
       zoneName: z.name || '',
       jurisdiction: zp.jurisdiction || zp.permitJurisdiction?.name || '',
+      jurisdictionType: z.jurisdictionType || '',
       uga: Boolean(zp.urbanGrowthArea?.intersects),
       developmentAgreement: z.developmentAgreement || zp.comprehensivePlan?.developmentAgreement || ''
     };
@@ -50,6 +51,9 @@
     if (!identity) return null;
     const county = String(identity.county).replace(/\s+County$/i, '').trim();
     if (!/^(spokane|stevens|yellowstone|kootenai)$/i.test(county)) return null;
+    // Spokane County rules are for unincorporated land only: a city zone code (City of Spokane,
+    // Spokane Valley, Cheney, ...) never gets them, even if it shares letters with a county zone.
+    if (/^spokane$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^spokane county$/i.test(identity.jurisdiction)))) return null;
 
     const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
     if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;

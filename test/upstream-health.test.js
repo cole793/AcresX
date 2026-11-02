@@ -45,7 +45,7 @@ test('upstream health: probes every target once in parallel and reports per-host
   assert.equal(byHost['hazards.fema.gov'].status, 200);
   for (const host of ['hazards.fema.gov', 'sdmdataaccess.sc.egov.usda.gov', 'elevation.nationalmap.gov', 'fwspublicservices.wim.usgs.gov',
     'services3.arcgis.com', 'map.kcgov.us', 'gis.idwr.idaho.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org', 'gis.cdaid.org',
-    'gis.postfalls.gov', 'services.arcgis.com', 'gis.dnrc.mt.gov', 'services1.arcgis.com']) assert.ok(byHost[host], `probes ${host}`);
+    'gis.postfalls.gov', 'services.arcgis.com', 'gis.dnrc.mt.gov', 'services1.arcgis.com', 'arcgis.spokanevalley.org', 'services6.arcgis.com']) assert.ok(byHost[host], `probes ${host}`);
   // Read-only: GETs, plus the one-row SDA catalog query; no secrets in any request.
   for (const call of calls) {
     assert.ok(call.init.method === 'GET' || call.url.includes('sdmdataaccess'), call.url);

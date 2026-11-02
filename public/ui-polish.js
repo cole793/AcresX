@@ -150,7 +150,7 @@
     if (title) title.textContent = 'Power Proximity';
 
     const power = typeof last !== 'undefined' ? last?.powerIntelligence : null;
-    const provider = power?.provider || (Array.isArray(last?.utility) ? last.utility.join(' / ') : '') || 'Not identified';
+    const provider = power?.provider || (typeof utilityText === 'function' ? utilityText(last?.utility) : (Array.isArray(last?.utility) ? last.utility.join(' / ') : '') || 'Not identified');
     if (!power) {
       root.innerHTML = `<div class="notice"><strong>${esc(provider)}</strong><br>AcresX is checking nearby mapped power infrastructure.</div>`;
       return;

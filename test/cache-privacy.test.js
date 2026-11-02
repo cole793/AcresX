@@ -68,7 +68,9 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
 });
 
 test('cache prefixes moved past every version that could have held owner fields', () => {
-  for (const prefix of [SPOKANE_CACHE_PREFIX, YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  for (const prefix of [YELLOWSTONE_CACHE_PREFIX, GALLATIN_CACHE_PREFIX, MONTANA_PARCEL_CACHE_PREFIX]) assert.match(prefix, /\/v2\/$/, prefix);
+  // spokane-intelligence v3 stores jurisdiction-first, whole-parcel zoning shares (city zoning).
+  assert.match(SPOKANE_CACHE_PREFIX, /\/spokane-intelligence\/v3\/$/);
   // idaho-parcels v2 held outFields '*' answers (stripped); v3 holds the named-field answers.
   assert.match(IDAHO_PARCEL_CACHE_PREFIX, /\/idaho-parcels\/v3\/$/);
   assert.match(KC_PARCEL_CACHE_PREFIX, /\/kootenai-parcels\/v3\/$/);
@@ -83,7 +85,7 @@ function spokaneLayers(url, { permits } = {}) {
   if (path.includes('ZoningLookup/MapServer/3/')) return features([{ ZONECLASS: 'RR-5', ZONEDESC: 'Rural Residential 5' }]);
   if (path.includes('ZoningLookup/MapServer/4/')) return features([{ LANDUSECODE: 'RR', LANDUSEDESC: 'Rural Residential' }]);
   if (path.includes('ZoningLookup/MapServer/2/')) return features([]);
-  if (path.includes('PermittingLookup/MapServer/0/')) return features([{ JURISDICTION: 'Spokane County', OWNER_NAME: 'TEST OWNER' }]);
+  if (path.includes('PermittingLookup/MapServer/0/')) return features([{ NAME: 'Spokane County', MUNITYP: 'Other', OWNER_NAME: 'TEST OWNER' }]);
   if (path.includes('BPPublic/MapServer/5/')) return permits ? permits() : features([{ PERMITNUM: 'B-1', PERMITTYPE: 'Residential', STATUS: 'Final', ADDRESS: '123 TEST RD', OWNER_NAME: 'SMITH JOHN', OWNERADDRESS: '1 MAIL ST' }]);
   throw new Error(`unexpected ${path}`);
 }

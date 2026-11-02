@@ -29,6 +29,10 @@ export const HEALTH_TARGETS = [
   arcgisInfo('USFS tree canopy', 'https://imagery.geoplatform.gov/iipp'),
   arcgisInfo('HIFLD electric retail territories', 'https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis'),
   arcgisInfo('Spokane County GIS', 'https://gismo.spokanecounty.org/arcgis'),
+  // Spokane County city zoning (src/counties/spokane-cities.js). The City of Spokane, Cheney and
+  // Liberty Lake layers are on services.arcgis.com, already probed by the WA Ecology target.
+  arcgisInfo('City of Spokane Valley GIS', 'https://arcgis.spokanevalley.org/arcgis'),
+  arcgisInfo('City of Airway Heights GIS', 'https://services6.arcgis.com/yrsL3gWPR8ZySnTr/arcgis'),
   arcgisInfo('WA Ecology well reports', 'https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS'),
   arcgisInfo('Stevens County GIS', 'https://gis.stevenscountywa.gov/server'),
   arcgisInfo('Kootenai County GIS', 'https://map.kcgov.us/arcgis'),

@@ -7,7 +7,8 @@
 
   function read(key) { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
   function write(key, items) { localStorage.setItem(key, JSON.stringify(items)); }
-  function stateName(code) { return code === 'MT' ? 'Montana' : code === 'WA' ? 'Washington' : code || ''; }
+  const STATE_NAMES = { WA: 'Washington', ID: 'Idaho', MT: 'Montana' };
+  function stateName(code) { return STATE_NAMES[String(code || '').toUpperCase()] || code || ''; }
 
   function currentState() {
     const parcel = window.last?.parcel || (typeof last !== 'undefined' ? last?.parcel : null);

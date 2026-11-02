@@ -343,7 +343,7 @@ test('follow-up requests fire once per search, only after their inputs exist', a
 const pickIndexFunctions = (...names) => {
   const lines = readPublic('index.html').split('\n');
   return names.map(name => {
-    const line = lines.find(l => l.startsWith(`function ${name}(`));
+    const line = lines.find(l => l.startsWith(`function ${name}(`) || l.startsWith(`const ${name}=`));
     assert.ok(line, `index.html defines ${name}`);
     return line;
   }).join('\n');
@@ -354,7 +354,7 @@ let activeTab = 'wells';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '');
 const log = [];
-${pickIndexFunctions('gradeWellDepth', 'setTraffic', 'renderSummary')}
+${pickIndexFunctions('UTILITY_LOOKUP_FAILED', 'utilityText', 'gradeWellDepth', 'setTraffic', 'renderSummary')}
 function renderMap(fit) { log.push('map:' + fit); }
 function renderResults() { $('results').innerHTML = 'details for ' + activeTab; }
 async function findParcel(county, input) { return __ctl('parcel', null, input); }
@@ -414,7 +414,7 @@ function standaloneScore(last) {
   const h = makeLazyContext({ last });
   h.run(readPublic('flood-status.js'));
   h.run(readPublic('wetlands-status.js'));
-  h.run(`const $=id=>document.getElementById(id);\n${pickIndexFunctions('gradeWellDepth', 'setTraffic', 'renderSummary')}`);
+  h.run(`const $=id=>document.getElementById(id);\n${pickIndexFunctions('UTILITY_LOOKUP_FAILED', 'utilityText', 'gradeWellDepth', 'setTraffic', 'renderSummary')}`);
   h.run('renderSummary(last.parcel)');
   return h.el('scoreMetric').textContent;
 }

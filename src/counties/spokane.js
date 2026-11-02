@@ -1,17 +1,22 @@
 import { cachedJson, upstreamJson } from '../shared/upstream.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
+import { ringsFromGeometry, samplePoints, coverageNote } from '../shared/polygon-coverage.js';
+import { layerShares, queryJurisdictionShares, decideJurisdiction, queryCityZoningShares, cityZoning, jurisdictionNote, SPOKANE_JURISDICTIONS } from './spokane-cities.js';
 
-// The five layer answers for one parcel are cached for a day (Cache API), only when all five
-// answered; the response is rebuilt from them each time, so profile/text changes apply at once.
-// Owner and mailing fields are removed (src/shared/personal-fields.js) before an answer is
-// stored or used, so neither a cache hit nor a fresh answer carries them. Bump the version in the
-// prefix whenever the fields requested or stripped change, so no entry in the old shape survives.
-export const SPOKANE_CACHE_PREFIX = 'https://acresx.internal/cache/spokane-intelligence/v2/';
+// The layer answers for one parcel (jurisdiction, county or city zoning, comp plan, UGA, permits)
+// are cached for a day (Cache API), only when every layer asked answered; the response is rebuilt
+// from them each time, so profile/text changes apply at once. Zoning and jurisdiction are stored
+// as coverage shares over the parcel (no outlines). Owner and mailing fields are removed
+// (src/shared/personal-fields.js) before an answer is stored or used, so neither a cache hit nor
+// a fresh answer carries them. Bump the version in the prefix whenever what is stored changes, so
+// no entry in the old shape survives. v3: jurisdiction first, whole-parcel shares, city zoning.
+export const SPOKANE_CACHE_PREFIX = 'https://acresx.internal/cache/spokane-intelligence/v3/';
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
+// The jurisdiction layer (SCOUT/PermittingLookup/MapServer/0) and the city zoning layers are in
+// spokane-cities.js.
 const SPOKANE_GIS = {
   zoningBase: 'https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer',
-  permittingBase: 'https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer',
   permitsLayer: 'https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/BPPublic/MapServer/5',
   scoutUrl: 'https://cp.spokanecounty.org/scout/propertyinformation/'
 };
@@ -97,15 +102,75 @@ function permitRecord(attrs = {}) {
   };
 }
 
-function permitList(profile) {
+// Likely approvals. Inside a city (or the air base) its own departments handle zoning, building,
+// road-approach and critical-areas review, linked to the city page in spokane-cities.js ('' when
+// no page was verified; the UI then shows no link). The health-district and state items are the
+// same everywhere. Unincorporated land (and an unknown jurisdiction) keeps the county agencies.
+function permitList(profile, city = null) {
+  const local = !city
+    ? { planning: profile.planningAgency, building: profile.planningAgency, road: profile.roadAgency, roads: 'a county or state road', zoningUrl: profile.zoningMapUrl, permitUrl: profile.permitUrl, planningUrl: profile.planningUrl }
+    : city.federal
+      ? { planning: city.name, building: city.name, road: city.name, roads: 'a base or state road', zoningUrl: '', permitUrl: '', planningUrl: '' }
+      : { planning: `${city.name} planning / community development`, building: `${city.name} building / permit department`, road: `${city.name} public works / streets`, roads: 'a city or state road', zoningUrl: city.planningUrl || '', permitUrl: city.planningUrl || '', planningUrl: city.planningUrl || '' };
   return [
-    { name: 'Land-use / zoning verification', agency: profile.planningAgency, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: profile.zoningMapUrl },
-    { name: 'Building permit', agency: profile.planningAgency, status: 'Likely', reason: 'Normally required for a new residence, shop or other permitted structure.', url: profile.permitUrl },
+    { name: 'Land-use / zoning verification', agency: local.planning, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: local.zoningUrl },
+    { name: 'Building permit', agency: local.building, status: 'Likely', reason: 'Normally required for a new residence, shop or other permitted structure.', url: local.permitUrl },
     { name: 'On-site septic approval', agency: profile.healthAgency, status: 'Likely', reason: 'Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.', url: profile.septicUrl },
     { name: 'Well notice / water review', agency: 'Washington Department of Ecology and local health authority', status: 'Possible', reason: 'Well construction, water availability and drinking-water requirements vary by project and location.', url: 'https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells' },
-    { name: 'Driveway / road approach permit', agency: profile.roadAgency, status: 'Possible', reason: 'Often required for a new or modified connection to a county or state road.', url: profile.planningUrl },
-    { name: 'Critical-areas review', agency: profile.planningAgency, status: 'Possible', reason: 'Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.', url: profile.planningUrl }
+    { name: 'Driveway / road approach permit', agency: local.road, status: 'Possible', reason: `Often required for a new or modified connection to ${local.roads}.`, url: local.planningUrl },
+    { name: 'Critical-areas review', agency: local.planning, status: 'Possible', reason: 'Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.', url: local.planningUrl }
   ];
+}
+
+const COUNTY_ZONING_FIELDS = 'ZONECLASS,ZONEDESC,ZFILENUM,COMMENTS,URL,DevFileNum,DevURL';
+const settle = promise => promise.then(value => ({ status: 'fulfilled', value: withoutPersonalFields(value) }), reason => ({ status: 'rejected', reason }));
+
+// Unincorporated parcels: Spokane County SCOUT zoning, read across the parcel outline. The zone
+// covering most of the parcel is reported; others covering 5% or more are listed in otherZones.
+function countyZoning(zoningR, samples, decision, matchMethod) {
+  const jurisdiction = jurisdictionNote(decision);
+  const noMatch = note => ({ status: 'no_match', code: null, name: '', label: 'No mapped zoning result', note, url: SPOKANE_GIS.scoutUrl });
+  // A failed lookup is not "no zoning here": say the map did not answer.
+  if (zoningR.status !== 'fulfilled') {
+    const message = zoningR.reason?.message || 'unavailable';
+    return {
+      status: 'unavailable', code: null, name: '', label: 'Spokane County zoning lookup unavailable',
+      note: `The Spokane County SCOUT zoning map did not answer (${message}), so this parcel's county zone is not known. Check SCOUT or Spokane County Building & Planning.${jurisdiction}`,
+      url: SPOKANE_GIS.scoutUrl, sourceUrl: `${SPOKANE_GIS.zoningBase}/3`, error: message
+    };
+  }
+  const covered = (zoningR.value || []).filter(s => s.key);
+  const top = covered[0];
+  if (!top) return noMatch(`The official Spokane County zoning layer returned no zoning ${matchMethod === 'parcel location' ? 'at the parcel location' : 'on this parcel'}.${jurisdiction}`);
+  const zAttrs = top.attributes || {};
+  const others = covered.slice(1).filter(s => s.share >= 0.05);
+  const shareNote = samples.length > 1 ? coverageNote(top, others, 1 - covered.reduce((t, s) => t + s.share, 0), 'county zone') : '';
+  return {
+    status: 'gis_match',
+    code: top.key,
+    name: attrValue(zAttrs, ['ZONEDESC']),
+    label: 'Official mapped zoning',
+    note: `Mapped directly from Spokane County SCOUT zoning. Verify allowed uses, density, setbacks and overlays with Spokane County or the applicable city.${shareNote}${jurisdiction}`,
+    url: SPOKANE_GIS.scoutUrl,
+    sourceUrl: `${SPOKANE_GIS.zoningBase}/3`,
+    sourceField: 'ZONECLASS',
+    zoneFileNumber: attrValue(zAttrs, ['ZFILENUM']),
+    developmentAgreement: attrValue(zAttrs, ['DevFileNum']),
+    developmentAgreementUrl: attrValue(zAttrs, ['DevURL']),
+    ...(others.length ? { otherZones: others.map(s => ({ code: s.key, share: s.share })) } : {})
+  };
+}
+
+// Without the jurisdiction answer AcresX cannot tell city from county land, so only zoning
+// degrades: no county zone is shown (it could be the wrong jurisdiction's), everything else stays.
+function jurisdictionUnavailable(reason) {
+  const message = reason?.message || 'unavailable';
+  return {
+    status: 'unavailable', code: null, name: '',
+    label: 'Zoning lookup unavailable – jurisdiction unknown',
+    note: `The Spokane County jurisdiction layer did not answer (${message}), so AcresX cannot tell whether city or Spokane County zoning applies to this parcel. Check with Spokane County Building & Planning or the city.`,
+    url: SPOKANE_GIS.scoutUrl, sourceUrl: SPOKANE_JURISDICTIONS, error: message
+  };
 }
 
 export async function getSpokaneCountyIntelligence(body, profile) {
@@ -114,26 +179,42 @@ export async function getSpokaneCountyIntelligence(body, profile) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Valid parcel coordinates are required for Spokane County intelligence.');
 
   const geometry = body.geometry || null;
-  const queryLayers = async () => (await Promise.allSettled([
-    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/3`, { lat, lon, outFields: 'ZONECLASS,ZONEDESC,ZFILENUM,COMMENTS,URL,DevFileNum,DevURL', label: 'spokane-zoning' }),
-    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/4`, { lat, lon, outFields: 'LANDUSECODE,LANDUSEDESC,COMMENTS,DevFileNum,DevURL', label: 'spokane-comp-plan' }),
-    queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/2`, { lat, lon, outFields: 'NAME,TYPE', label: 'spokane-uga' }),
-    queryOfficialLayer(`${SPOKANE_GIS.permittingBase}/0`, { lat, lon, outFields: '*', label: 'spokane-permit-jurisdiction' }),
-    queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100, label: 'spokane-permits' })
-  ])).map(r => (r.status === 'fulfilled' ? { status: r.status, value: withoutPersonalFields(r.value) } : r));
-  const [zoningR, compR, ugaR, jurisdictionR, permitsR] = await cachedJson(
-    SPOKANE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS, queryLayers,
-    { isValid: settled => settled.every(r => r.status === 'fulfilled') }
-  );
+  // Jurisdiction and zoning are read across the parcel outline (sampled), not at its center,
+  // which can fall in a gap of the zoning map or on the wrong side of a city boundary.
+  const rings = ringsFromGeometry(geometry);
+  const where = { rings, lon, lat };
+  const samples = rings ? samplePoints(rings) : [[lon, lat]];
+  const matchMethod = rings ? 'parcel area (sampled)' : 'parcel location';
 
-  const zAttrs = zoningR.status === 'fulfilled' ? zoningR.value[0]?.attributes || {} : {};
+  const queryLayers = async () => {
+    // County zoning is asked alongside the jurisdiction so an unincorporated parcel needs one
+    // round trip; it is used only when the parcel is not inside a city.
+    const [jurisdiction, countyZoningR, comp, uga, permits] = await Promise.all([
+      settle(queryJurisdictionShares(where, samples)),
+      settle(layerShares(`${SPOKANE_GIS.zoningBase}/3`, where, samples, { outFields: COUNTY_ZONING_FIELDS, keyOf: a => attrValue(a, ['ZONECLASS']), agency: 'Spokane County GIS', label: 'spokane-zoning' })),
+      settle(queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/4`, { lat, lon, outFields: 'LANDUSECODE,LANDUSEDESC,COMMENTS,DevFileNum,DevURL', label: 'spokane-comp-plan' })),
+      settle(queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/2`, { lat, lon, outFields: 'NAME,TYPE', label: 'spokane-uga' })),
+      settle(queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100, label: 'spokane-permits' }))
+    ]);
+    const city = jurisdiction.status === 'fulfilled' ? decideJurisdiction(jurisdiction.value).city : null;
+    const cityZoningR = city?.zoning ? await settle(queryCityZoningShares(city, where, samples)) : null;
+    return { jurisdiction, countyZoning: countyZoningR, cityZoning: cityZoningR, comp, uga, permits };
+  };
+  const layers = await cachedJson(
+    SPOKANE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS, queryLayers,
+    { isValid: answer => Object.values(answer).every(r => r === null || r.status === 'fulfilled') }
+  );
+  const { jurisdiction: jurisdictionR, countyZoning: zoningR, cityZoning: cityZoningR, comp: compR, uga: ugaR, permits: permitsR } = layers;
+
+  const decision = jurisdictionR.status === 'fulfilled' ? decideJurisdiction(jurisdictionR.value) : null;
+  const city = decision?.city || null;
   const cAttrs = compR.status === 'fulfilled' ? compR.value[0]?.attributes || {} : {};
   const uAttrs = ugaR.status === 'fulfilled' ? ugaR.value[0]?.attributes || {} : {};
-  const jAttrs = jurisdictionR.status === 'fulfilled' ? jurisdictionR.value[0]?.attributes || {} : {};
 
-  const zoningCode = attrValue(zAttrs, ['ZONECLASS']);
-  const zoningName = attrValue(zAttrs, ['ZONEDESC']);
-  const jurisdictionName = attrValue(jAttrs, ['JURISDICTION','JURIS_NAME','NAME','AGENCY','SERVICEPROVIDER','SERVICE_PROVIDER','DESCRIPTION']) || profile.jurisdiction || 'Spokane County';
+  const jurisdictionName = !decision ? 'Jurisdiction unknown' : city ? city.name : profile.jurisdiction || 'Spokane County';
+  const zoning = !decision ? jurisdictionUnavailable(jurisdictionR.reason)
+    : city ? cityZoning(city, cityZoningR, samples, decision)
+      : countyZoning(zoningR, samples, decision, matchMethod);
 
   const permitHistory = permitsR.status === 'fulfilled'
     ? permitsR.value
@@ -154,28 +235,7 @@ export async function getSpokaneCountyIntelligence(body, profile) {
     countyStatus: 'official_adapter',
     source: 'Spokane County SCOUT / Building & Planning GIS',
     sourceUrl: SPOKANE_GIS.scoutUrl,
-    zoning: zoningCode ? {
-      status: 'gis_match',
-      code: zoningCode,
-      name: zoningName,
-      label: 'Official mapped zoning',
-      note: 'Mapped directly from Spokane County SCOUT zoning. Verify allowed uses, density, setbacks and overlays with Spokane County or the applicable city.',
-      url: SPOKANE_GIS.scoutUrl,
-      sourceUrl: `${SPOKANE_GIS.zoningBase}/3`,
-      sourceField: 'ZONECLASS',
-      zoneFileNumber: attrValue(zAttrs, ['ZFILENUM']),
-      developmentAgreement: attrValue(zAttrs, ['DevFileNum']),
-      developmentAgreementUrl: attrValue(zAttrs, ['DevURL'])
-    } : {
-      status: 'no_match',
-      code: null,
-      name: '',
-      label: 'No mapped zoning result',
-      note: zoningR.status === 'rejected'
-        ? `Spokane zoning service error: ${zoningR.reason?.message || 'unavailable'}`
-        : 'The official Spokane zoning layer returned no intersecting designation for the parcel center.',
-      url: SPOKANE_GIS.scoutUrl
-    },
+    zoning,
     comprehensivePlan: {
       available: Boolean(attrValue(cAttrs, ['LANDUSECODE','LANDUSEDESC'])),
       code: attrValue(cAttrs, ['LANDUSECODE']),
@@ -192,13 +252,19 @@ export async function getSpokaneCountyIntelligence(body, profile) {
     },
     permitJurisdiction: {
       name: jurisdictionName,
-      attributes: jAttrs,
-      sourceUrl: `${SPOKANE_GIS.permittingBase}/0`
+      attributes: decision?.attributes || {},
+      sourceUrl: SPOKANE_JURISDICTIONS
+    },
+    // How jurisdiction and zoning were read (additive): sampled across the parcel outline or at
+    // one point, and how much of the parcel the deciding jurisdiction covers.
+    zoningMatch: {
+      method: matchMethod,
+      ...(decision ? { jurisdictionShare: decision.share, otherJurisdictions: decision.others } : { jurisdictionError: jurisdictionR.reason?.message || 'unavailable' })
     },
     permitHistory,
     permitHistoryStatus: permitsR.status === 'fulfilled' ? (permitHistory.length ? 'found' : 'none') : 'unavailable',
     permitHistoryError: permitsR.status === 'rejected' ? permitsR.reason?.message || 'Permit service unavailable' : '',
     agencies: profile,
-    permits: permitList(profile)
+    permits: permitList(profile, city)
   };
 }
