@@ -125,6 +125,39 @@ export function centroid(geometry) {
   return n ? { lon: sx / n, lat: sy / n } : null;
 }
 
+function polygonsOf(geometry) {
+  return geometry?.type === 'Polygon' ? [geometry.coordinates] : geometry?.type === 'MultiPolygon' ? geometry.coordinates : [];
+}
+// Inside any polygon (even-odd per polygon, so holes count as outside), like turf.booleanPointInPolygon.
+function insideGeometry(x, y, geometry) {
+  return polygonsOf(geometry).some(polygon => {
+    let inside = false;
+    for (const ring of polygon || []) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  });
+}
+
+// The zoning lookup point the browser sends (zoningPoint in public/index.html): the centroid when
+// it is inside the parcel, else the point of a 24x24 bounding-box grid inside the parcel nearest
+// to it. The vertex average can fall outside an L-shaped or curved parcel.
+export function zoningPoint(geometry) {
+  const c = centroid(geometry);
+  if (!c || geometry.type === 'Point' || insideGeometry(c.lon, c.lat, geometry)) return c;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const polygon of polygonsOf(geometry)) for (const ring of polygon || []) for (const [x, y] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  let best = null, bd = Infinity;
+  for (let i = 1; i < 24; i++) for (let j = 1; j < 24; j++) {
+    const x = x0 + (x1 - x0) * i / 24, y = y0 + (y1 - y0) * j / 24;
+    if (!insideGeometry(x, y, geometry)) continue;
+    const d = (x - c.lon) ** 2 + (y - c.lat) ** 2;
+    if (d < bd) { bd = d; best = { lon: x, lat: y }; }
+  }
+  return best || c;
+}
+
 function milesBetween(a, b) {
   const r = 3958.8, toRad = d => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
@@ -350,7 +383,8 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
   const floodRes = await call('/api/hazards', { kind: 'flood', geometry });
   layers.flood = interpretLayer('flood', floodRes);
   layers.wetlands = interpretLayer('wetlands', await call('/api/hazards', { kind: 'wetlands', geometry }));
-  const zoningRes = await call('/api/zoning-permits', { county: parcelCounty, parcelId: resolvedId, address, lat, lon, geometry, dataLink: p.DATA_LINK || '' });
+  const zoningAt = zoningPoint(geometry) || center;
+  const zoningRes = await call('/api/zoning-permits', { county: parcelCounty, parcelId: resolvedId, address, lat: zoningAt.lat, lon: zoningAt.lon, geometry, dataLink: p.DATA_LINK || '' });
   layers.zoning = interpretLayer('zoning', zoningRes);
   const landRes = await call('/api/land-analysis', { geometry });
   layers.soil = interpretLayer('soil', landRes);
