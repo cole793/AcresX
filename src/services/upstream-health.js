@@ -3,13 +3,19 @@
 // One tiny read-only request per target, all in parallel, each bounded by 10 s (no retry),
 // through the shared client (so each probe is also a Workers Logs line). ArcGIS servers get
 // <server>/rest/info?f=json (a few hundred bytes); USDA SDA gets a one-row catalog query; EPQS one
-// point. No secrets, no writes, no owner data. Answer:
+// point; 3DEP one getSamples point (the call terrain and slope depend on). No secrets, no writes,
+// no owner data. Answer:
 //   { checkedAt, results: [{ host, name, ok, status, ms, error }] }   (Cache-Control: no-store)
+// A target with slowMs that answers but takes longer than that stays ok: true, with
+// error "slow: answered in N s (over M s)".
 // Cheap enough to call by hand; the app does not call it. Answers are reused for 60 s (below).
 import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
 
 export const HEALTH_TIMEOUT_MS = 10000;
+// Terrain and slope gave up on getSamples after 6 s before 2026-11-02; above this it is "slow".
+export const ELEVATION_SLOW_MS = 6000;
+const ELEVATION_PROBE_POINT = { x: -117.4, y: 47.6, spatialReference: { wkid: 4326 } };
 
 const arcgisInfo = (name, server) => ({ name, url: `${server}/rest/info?f=json`, arcgis: true });
 
@@ -17,8 +23,21 @@ export const HEALTH_TARGETS = [
   arcgisInfo('FEMA NFHL flood', 'https://hazards.fema.gov/arcgis'),
   arcgisInfo('Esri USA Flood Hazard Areas (flood backup)', 'https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis'),
   // elevation.nationalmap.gov/arcgis/rest/info answered 502 on 2026-10-28 while the ImageServer
-  // itself worked, so this probe reads the service we use (about 11 KB).
-  { name: 'USGS 3DEP elevation', url: 'https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer?f=json', arcgis: true },
+  // itself worked, and on 2026-11-02 ImageServer?f=json answered fast while getSamples took
+  // 3-19 s. So this probe samples one point with getSamples, the call terrain and slope make.
+  {
+    name: 'USGS 3DEP elevation',
+    url: `https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples?${new URLSearchParams({
+      geometry: JSON.stringify(ELEVATION_PROBE_POINT), geometryType: 'esriGeometryPoint',
+      returnFirstValueOnly: 'true', interpolation: 'RSP_NearestNeighbor', f: 'json'
+    })}`,
+    arcgis: true,
+    slowMs: ELEVATION_SLOW_MS,
+    validate: data => {
+      const value = data?.samples?.[0]?.value;
+      if (value === undefined || value === null || value === '' || !Number.isFinite(Number(value))) throw new Error('getSamples returned no elevation sample');
+    }
+  },
   { name: 'USGS EPQS elevation point', url: 'https://epqs.nationalmap.gov/v1/json?x=-117.4&y=47.6&wkid=4326&units=Feet&includeDate=false' },
   {
     name: 'USDA Soil Data Access', url: 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest', method: 'POST',
@@ -49,9 +68,12 @@ async function probe(target, timeoutMs) {
   try {
     await upstreamJson(target.url, {
       method: target.method || 'GET', headers: target.headers, body: target.body, arcgis: Boolean(target.arcgis),
-      timeoutMs, retries: 0, label: `health:${target.name}`, agency: host, meta
+      timeoutMs, retries: 0, label: `health:${target.name}`, agency: host, meta, validate: target.validate
     });
-    return { host, name: target.name, ok: true, status: meta.status ?? null, ms: Date.now() - started, error: null };
+    const ms = Date.now() - started;
+    const slow = target.slowMs && ms > target.slowMs
+      ? `slow: answered in ${Math.round(ms / 100) / 10} s (over ${target.slowMs / 1000} s)` : null;
+    return { host, name: target.name, ok: true, status: meta.status ?? null, ms, error: slow };
   } catch (error) {
     return {
       host, name: target.name, ok: false, status: error?.status ?? null, ms: Date.now() - started,
