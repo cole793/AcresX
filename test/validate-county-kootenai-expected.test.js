@@ -7,9 +7,12 @@ import { compareExpected } from '../scripts/validate-county.mjs';
 const config = JSON.parse(readFileSync(new URL('../validation/counties/kootenai.json', import.meta.url), 'utf8'));
 
 test('Kootenai has hand-checked zoning, flood and assessor class for at least 4 parcels', () => {
-  const checked = config.parcels.filter(p => p.expected?.['zoning.code'] && p.expected['flood.zones'] && p.expected['assessment.propertyClass']);
+  const checked = config.parcels.filter(p => p.expected?.['zoning.code'] && typeof p.expected['flood.high'] === 'boolean' && p.expected['assessment.propertyClass']);
   assert.ok(checked.length >= 4, `${checked.length} parcels`);
   const byId = Object.fromEntries(config.parcels.map(p => [p.parcelId, p]));
+  // Zone X/D are not expected: the Esri flood fallback holds high/moderate-risk zones only.
+  assert.equal(byId['47N02W035500'].expected['flood.zones'], 'AE');
+  for (const p of checked) if (p.expected['flood.zones']) assert.equal(p.expected['flood.high'], true, p.parcelId);
   assert.equal(byId.C72150030040.expected['zoning.code'], 'R-12');
   assert.equal(byId.C72150030040.expected['zoning.jurisdiction'], "City of Coeur d'Alene");
   assert.equal(byId['0L8210010030'].expected['zoning.code'], 'RURAL');

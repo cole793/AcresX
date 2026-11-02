@@ -10,7 +10,6 @@
         "zoning.code": "RURAL",
         "zoning.jurisdiction": "Kootenai County",
         "flood.high": false,
-        "flood.zones": "X",
         "assessment.propertyClass": "515"
       }
     },
@@ -22,7 +21,6 @@
         "zoning.code": "RURAL",
         "zoning.jurisdiction": "Kootenai County",
         "flood.high": false,
-        "flood.zones": "D",
         "assessment.propertyClass": "537"
       }
     },
@@ -34,7 +32,6 @@
         "zoning.code": "R-12",
         "zoning.jurisdiction": "City of Coeur d'Alene",
         "flood.high": false,
-        "flood.zones": "X",
         "assessment.propertyClass": "541"
       }
     },
