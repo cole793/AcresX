@@ -11,6 +11,10 @@ export async function handleZoningRules(request) {
   if (!county || !zoneCode) return json({ error: 'County and zoneCode are required.' }, 400, 'no-store');
 
   if (/^spokane$/i.test(county)) {
+    // City zones share letters with county zones (Spokane Valley 'R-3', Cheney 'I-1') but not
+    // their rules. A jurisdiction other than the county never gets Spokane County rules.
+    const jurisdiction = String(body.jurisdiction || '').trim();
+    if (jurisdiction && !/^spokane county$/i.test(jurisdiction)) return json({ available: false, county: 'Spokane', jurisdiction, zoneCode, status: 'zone_not_mapped', note: "City zoning rules aren't mapped in AcresX yet; see the city's zoning code." }, 200, 'public, max-age=3600');
     const potential = getSpokaneZoneDevelopmentPotential(zoneCode, {
       uga: Boolean(body.uga),
       developmentAgreement: body.developmentAgreement || ''

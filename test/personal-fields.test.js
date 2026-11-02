@@ -70,6 +70,9 @@ function reply(input, init) {
   const p = params(url, init);
   if (url.hostname === 'sdmdataaccess.sc.egov.usda.gov') return json({ Table: [['mukey', 'muname'], ['1', 'Test loam']], ...PLANTED });
   if (url.hostname === 'google.serper.dev') return json({ organic: [{ title: `100 SITE RD ${PARCEL} land for sale`, link: 'https://listing.example/1', snippet: 'Power on site. Well installed.', ...PLANTED }] });
+  // The Spokane jurisdiction layer names unincorporated land 'Spokane County' (it decides county
+  // vs city zoning, so the generic NAME below would read as a city).
+  if (url.pathname.includes('SCOUT/PermittingLookup/MapServer/0/query')) return json({ features: [{ ...esriFeature, attributes: { NAME: 'Spokane County', MUNITYP: 'Other', ...PLANTED } }], ...PLANTED });
   if (/\/query$/.test(url.pathname) || /identify$/.test(url.pathname)) {
     const attrs = askedFor(p, url);
     return json(p.get('f') === 'geojson'
