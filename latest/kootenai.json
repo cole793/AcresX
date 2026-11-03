@@ -2,8 +2,8 @@
   "county": "Kootenai",
   "state": "ID",
   "baseUrl": "https://acresx.cole-groshens.workers.dev",
-  "startedAt": "2026-11-02T22:22:07.828Z",
-  "finishedAt": "2026-11-02T22:30:54.865Z",
+  "startedAt": "2026-11-03T20:09:39.355Z",
+  "finishedAt": "2026-11-03T20:19:49.785Z",
   "results": [
     {
       "parcelId": "0L8210010030",
@@ -13,7 +13,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 211,
+          "ms": 514,
           "status": "ok",
           "detail": "parcel 0L8210010030, 4.79 ac",
           "values": {
@@ -27,7 +27,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 1136,
+          "ms": 386,
           "status": "ok",
           "detail": "137 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -40,7 +40,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 326,
+          "ms": 336,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -53,7 +53,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 55,
+          "ms": 914,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -71,7 +71,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 63,
+          "ms": 260,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -83,7 +83,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 699,
+          "ms": 414,
           "status": "ok",
           "detail": "RURAL (Kootenai County)",
           "values": {
@@ -98,7 +98,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 371,
+          "ms": 14281,
           "status": "ok",
           "detail": "favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes)",
           "values": {
@@ -112,20 +112,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 371,
-          "status": "ok",
-          "detail": "avg grade 0.3%, max 1%",
-          "values": {
-            "gradePct": 0.3,
-            "maxGradePct": 1,
-            "reliefFt": 4,
-            "sampleCount": 9
-          }
+          "ms": 14281,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 44,
+          "ms": 21,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -135,7 +130,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 62,
+          "ms": 307,
           "status": "ok",
           "detail": "assessed $372,460, class 515 Rural residential sub, no tax amount",
           "values": {
@@ -154,7 +149,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 845,
+          "ms": 1275,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -166,7 +161,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 804,
+          "ms": 1190,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -179,7 +174,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 22,
+          "ms": 58,
           "status": "ok",
           "detail": "R: Rural Lands (7 uses)",
           "values": {
@@ -191,15 +186,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 28,
-          "status": "ok",
-          "detail": "16 cells, avg 0.8%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 0.8,
-            "maxSlopePct": 1.9,
-            "partial": false
-          }
+          "ms": 10384,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -212,7 +202,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 162,
+          "ms": 417,
           "status": "ok",
           "detail": "parcel 015270010070, 10.01 ac",
           "values": {
@@ -226,7 +216,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 770,
+          "ms": 360,
           "status": "ok",
           "detail": "39 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -239,7 +229,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 340,
+          "ms": 474,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -252,7 +242,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 39,
+          "ms": 568,
           "status": "ok",
           "detail": "zones D (via FEMA NFHL)",
           "values": {
@@ -270,7 +260,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 39,
+          "ms": 808,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -282,7 +272,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 959,
+          "ms": 421,
           "status": "ok",
           "detail": "RURAL (Kootenai County)",
           "values": {
@@ -297,7 +287,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 311,
+          "ms": 14283,
           "status": "ok",
           "detail": "limited (Santa ashy silt loam, 15 to 35 percent slopes)",
           "values": {
@@ -311,20 +301,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 311,
-          "status": "ok",
-          "detail": "avg grade 13.1%, max 28.1%",
-          "values": {
-            "gradePct": 13.1,
-            "maxGradePct": 28.1,
-            "reliefFt": 95,
-            "sampleCount": 9
-          }
+          "ms": 14283,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 65,
+          "ms": 115,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -334,7 +319,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 35,
+          "ms": 521,
           "status": "ok",
           "detail": "assessed $217,018, class 537 Imp res rural sub, no tax amount",
           "values": {
@@ -353,7 +338,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 796,
+          "ms": 1170,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -365,7 +350,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18493,
+          "ms": 18708,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -378,7 +363,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 23,
+          "ms": 19,
           "status": "ok",
           "detail": "R: Rural Lands (7 uses)",
           "values": {
@@ -390,15 +375,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 37,
-          "status": "ok",
-          "detail": "16 cells, avg 22.9%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 22.9,
-            "maxSlopePct": 37.5,
-            "partial": false
-          }
+          "ms": 14295,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -411,13 +391,13 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 8851,
+          "ms": 313,
           "status": "ok",
-          "detail": "parcel C72150030040",
+          "detail": "parcel C72150030040, 0.27 ac",
           "values": {
             "parcelId": "C72150030040",
-            "acres": null,
-            "address": null,
+            "acres": 0.27,
+            "address": "5811 N CHRISTOPHER DR, COEUR D ALENE",
             "lat": 47.724453,
             "lon": -116.803995
           }
@@ -425,7 +405,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 325,
+          "ms": 320,
           "status": "ok",
           "detail": "53 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -438,7 +418,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 299,
+          "ms": 456,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -451,23 +431,25 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1028,
+          "ms": 183,
           "status": "ok",
-          "detail": "no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)",
+          "detail": "zones X (via FEMA NFHL)",
           "values": {
             "high": false,
-            "intersects": false,
-            "zones": [],
-            "category": "limited",
-            "provider": "Esri USA Flood Hazard Areas",
-            "coverage": "high-and-moderate-risk-only",
-            "emptyResult": true
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
           }
         },
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 207,
+          "ms": 274,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -478,16 +460,23 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": null,
-          "ms": 30001,
-          "status": "error",
-          "detail": "timeout after 30s",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1732,
+          "status": "ok",
+          "detail": "R-12 (City of Coeur d'Alene)",
+          "values": {
+            "code": "R-12",
+            "jurisdiction": "City of Coeur d'Alene",
+            "countyStatus": "kootenai-city-zoning-v1",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "not_mapped",
+            "permitHistoryStatus": "unavailable"
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 218,
+          "ms": 14313,
           "status": "ok",
           "detail": "favorable (McGuire-Marble association, 0 to 7 percent slopes)",
           "values": {
@@ -501,20 +490,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 218,
-          "status": "ok",
-          "detail": "avg grade 4%, max 7.6%",
-          "values": {
-            "gradePct": 4,
-            "maxGradePct": 7.6,
-            "reliefFt": 7,
-            "sampleCount": 9
-          }
+          "ms": 14313,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 52,
+          "ms": 57,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -524,7 +508,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 32,
+          "ms": 286,
           "status": "ok",
           "detail": "assessed $496,440, class 541 Imp res lot/tract in city, no tax amount",
           "values": {
@@ -543,7 +527,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 771,
+          "ms": 4160,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -555,7 +539,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 763,
+          "ms": 1228,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -566,25 +550,22 @@
           }
         },
         "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 17,
           "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
+          "detail": "zone_not_mapped",
+          "values": {
+            "status": "zone_not_mapped"
+          }
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 31,
-          "status": "ok",
-          "detail": "16 cells, avg 5.5%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 5.5,
-            "maxSlopePct": 12.8,
-            "partial": false
-          }
+          "ms": 14327,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -597,13 +578,13 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 9011,
+          "ms": 364,
           "status": "ok",
-          "detail": "parcel 47N02W035500",
+          "detail": "parcel 47N02W035500, 51.64 ac",
           "values": {
             "parcelId": "47N02W035500",
-            "acres": null,
-            "address": null,
+            "acres": 51.64,
+            "address": "15047 E CAMERON RD, MEDIMONT",
             "lat": 47.453302,
             "lon": -116.577746
           }
@@ -611,7 +592,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 275,
+          "ms": 228,
           "status": "ok",
           "detail": "40 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -624,7 +605,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 275,
+          "ms": 438,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -637,7 +618,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 332,
+          "ms": 719,
           "status": "ok",
           "detail": "high-risk zone (A, X, AE) (via FEMA NFHL)",
           "values": {
@@ -657,7 +638,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 739,
+          "ms": 1314,
           "status": "ok",
           "detail": "16 NWI feature(s)",
           "values": {
@@ -668,16 +649,23 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": null,
-          "ms": 30000,
-          "status": "error",
-          "detail": "timeout after 30s",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 363,
+          "status": "ok",
+          "detail": "AGRICULTURE (Kootenai County)",
+          "values": {
+            "code": "AGRICULTURE",
+            "jurisdiction": "Kootenai County",
+            "countyStatus": "kootenai-data-layers-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "mapped_from_county_code",
+            "permitHistoryStatus": "unavailable"
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14286,
+          "ms": 14280,
           "status": "ok",
           "detail": "limited (Cougarbay silt loam)",
           "values": {
@@ -691,7 +679,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14286,
+          "ms": 14280,
           "status": "error",
           "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
           "values": {}
@@ -699,7 +687,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 18,
+          "ms": 55,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -709,7 +697,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 33,
+          "ms": 572,
           "status": "ok",
           "detail": "assessed $449,687, class 534 Imp res rural tract, no tax amount",
           "values": {
@@ -728,7 +716,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 791,
+          "ms": 1302,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -740,7 +728,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 438,
+          "ms": 18748,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -751,25 +739,24 @@
           }
         },
         "zoningRules": {
-          "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 77,
+          "status": "ok",
+          "detail": "A: Resource Lands (7 uses)",
+          "values": {
+            "code": "A",
+            "family": "Resource Lands",
+            "useCount": 7
+          }
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 44,
-          "status": "ok",
-          "detail": "16 cells, avg 6.3%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 6.3,
-            "maxSlopePct": 21.9,
-            "partial": false
-          }
+          "ms": 14315,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -782,7 +769,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 128,
+          "ms": 208,
           "status": "ok",
           "detail": "parcel 48N03W312100, 65.33 ac",
           "values": {
@@ -796,7 +783,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 773,
+          "ms": 227,
           "status": "ok",
           "detail": "40 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -809,7 +796,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 307,
+          "ms": 489,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -822,7 +809,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 39,
+          "ms": 158,
           "status": "ok",
           "detail": "high-risk zone (AE, X) (via FEMA NFHL)",
           "values": {
@@ -841,7 +828,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 34,
+          "ms": 786,
           "status": "ok",
           "detail": "7 NWI feature(s)",
           "values": {
@@ -853,7 +840,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 641,
+          "ms": 367,
           "status": "ok",
           "detail": "AGRICULTURE (Kootenai County)",
           "values": {
@@ -868,7 +855,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 319,
+          "ms": 14325,
           "status": "ok",
           "detail": "limited (Aeric Fluvaquents-Typic Fluvaquents-Typic Haplosaprist association, 0 to 1 percent slopes)",
           "values": {
@@ -882,20 +869,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 319,
-          "status": "ok",
-          "detail": "avg grade 2.2%, max 12.6%",
-          "values": {
-            "gradePct": 2.2,
-            "maxGradePct": 12.6,
-            "reliefFt": 161,
-            "sampleCount": 9
-          }
+          "ms": 14325,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 16,
+          "ms": 78,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -905,7 +887,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 52,
+          "ms": 549,
           "status": "ok",
           "detail": "assessed $677,433, class 534 Imp res rural tract, no tax amount",
           "values": {
@@ -924,7 +906,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 776,
+          "ms": 1201,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -936,7 +918,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 770,
+          "ms": 18227,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -949,7 +931,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 15,
+          "ms": 36,
           "status": "ok",
           "detail": "A: Resource Lands (7 uses)",
           "values": {
@@ -961,15 +943,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 58,
-          "status": "ok",
-          "detail": "16 cells, avg 5.6%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 5.6,
-            "maxSlopePct": 28.5,
-            "partial": false
-          }
+          "ms": 14292,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -982,13 +959,13 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 8404,
+          "ms": 186,
           "status": "ok",
-          "detail": "parcel 0K245001002B",
+          "detail": "parcel 0K245001002B, 1.62 ac",
           "values": {
             "parcelId": "0K245001002B",
-            "acres": null,
-            "address": null,
+            "acres": 1.62,
+            "address": "22311 N BIRDSONG LN, RATHDRUM",
             "lat": 47.874046,
             "lon": -116.855048
           }
@@ -996,7 +973,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 296,
+          "ms": 235,
           "status": "ok",
           "detail": "81 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1009,7 +986,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 278,
+          "ms": 559,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -1022,7 +999,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 222,
+          "ms": 182,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1040,7 +1017,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 94,
+          "ms": 156,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1051,16 +1028,23 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": null,
-          "ms": 30000,
-          "status": "error",
-          "detail": "timeout after 30s",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 287,
+          "status": "ok",
+          "detail": "RESTRICTED RESIDENTIAL (Kootenai County)",
+          "values": {
+            "code": "RESTRICTED RESIDENTIAL",
+            "jurisdiction": "Kootenai County",
+            "countyStatus": "kootenai-data-layers-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "not_mapped",
+            "permitHistoryStatus": "unavailable"
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1645,
+          "ms": 14273,
           "status": "ok",
           "detail": "favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes)",
           "values": {
@@ -1074,20 +1058,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1645,
-          "status": "ok",
-          "detail": "avg grade 2.3%, max 4.1%",
-          "values": {
-            "gradePct": 2.3,
-            "maxGradePct": 4.1,
-            "reliefFt": 20,
-            "sampleCount": 9
-          }
+          "ms": 14273,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 62,
+          "ms": 29,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1097,7 +1076,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 59,
+          "ms": 356,
           "status": "ok",
           "detail": "assessed $266,147, class 537 Imp res rural sub, no tax amount",
           "values": {
@@ -1116,7 +1095,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 696,
+          "ms": 1138,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1128,7 +1107,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18310,
+          "ms": 18206,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -1139,25 +1118,22 @@
           }
         },
         "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 46,
           "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
+          "detail": "zone_not_mapped",
+          "values": {
+            "status": "zone_not_mapped"
+          }
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 40,
-          "status": "ok",
-          "detail": "16 cells, avg 3.8%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 3.8,
-            "maxSlopePct": 8.2,
-            "partial": false
-          }
+          "ms": 14305,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -1170,13 +1146,13 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 8423,
+          "ms": 291,
           "status": "ok",
-          "detail": "parcel 49N03W324950",
+          "detail": "parcel 49N03W324950, 10 ac",
           "values": {
             "parcelId": "49N03W324950",
-            "acres": null,
-            "address": null,
+            "acres": 10,
+            "address": "178640 UNKNOWN",
             "lat": 47.545631,
             "lon": -116.757814
           }
@@ -1184,7 +1160,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 212,
+          "ms": 280,
           "status": "ok",
           "detail": "105 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1197,7 +1173,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 338,
+          "ms": 408,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -1210,7 +1186,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 210,
+          "ms": 1325,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1228,7 +1204,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 438,
+          "ms": 639,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -1239,16 +1215,23 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": null,
-          "ms": 30001,
-          "status": "error",
-          "detail": "timeout after 30s",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 431,
+          "status": "ok",
+          "detail": "RURAL (Kootenai County)",
+          "values": {
+            "code": "RURAL",
+            "jurisdiction": "Kootenai County",
+            "countyStatus": "kootenai-data-layers-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "mapped_from_county_code",
+            "permitHistoryStatus": "unavailable"
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5529,
+          "ms": 8716,
           "status": "ok",
           "detail": "limited (Blinn loam, 35 to 65 percent slopes, very stony)",
           "values": {
@@ -1262,20 +1245,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5529,
-          "status": "ok",
-          "detail": "avg grade 13.9%, max 30.7%",
-          "values": {
-            "gradePct": 13.9,
-            "maxGradePct": 30.7,
-            "reliefFt": 246,
-            "sampleCount": 9
-          }
+          "ms": 8716,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 63,
+          "ms": 58,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1285,15 +1263,26 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 20079,
-          "status": "error",
-          "detail": "Kootenai County Assessor timed out (7 of 7 layers failed)",
-          "values": {}
+          "ms": 861,
+          "status": "ok",
+          "detail": "assessed $154,534, class 512 Rural residential tract, no tax amount",
+          "values": {
+            "assessedValue": 154534,
+            "landValue": 154534,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": 5660,
+            "homeownerExemption": 0,
+            "taxYear": 2026,
+            "propertyClass": "512",
+            "propertyClassDescription": "Rural residential tract",
+            "source": "Kootenai County Assessor (Assessor_Layers)"
+          }
         },
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 863,
+          "ms": 1265,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1305,7 +1294,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 819,
+          "ms": 18239,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -1316,17 +1305,21 @@
           }
         },
         "zoningRules": {
-          "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 72,
+          "status": "ok",
+          "detail": "R: Rural Lands (7 uses)",
+          "values": {
+            "code": "R",
+            "family": "Rural Lands",
+            "useCount": 7
+          }
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 14322,
+          "ms": 14295,
           "status": "error",
           "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
           "values": {}
@@ -1342,7 +1335,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 79,
+          "ms": 1794,
           "status": "ok",
           "detail": "parcel 007740020050, 0.58 ac",
           "values": {
@@ -1356,7 +1349,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 880,
+          "ms": 3166,
           "status": "ok",
           "detail": "154 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1369,7 +1362,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 324,
+          "ms": 3077,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -1382,7 +1375,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 27,
+          "ms": 1542,
           "status": "ok",
           "detail": "zones D (via FEMA NFHL)",
           "values": {
@@ -1400,7 +1393,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 35,
+          "ms": 305,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1412,7 +1405,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 661,
+          "ms": 329,
           "status": "ok",
           "detail": "RURAL (Kootenai County)",
           "values": {
@@ -1427,7 +1420,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 208,
+          "ms": 8765,
           "status": "ok",
           "detail": "limited (Taney silt loam, 7 to 25 percent slopes)",
           "values": {
@@ -1441,20 +1434,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 208,
-          "status": "ok",
-          "detail": "avg grade 4%, max 6.8%",
-          "values": {
-            "gradePct": 4,
-            "maxGradePct": 6.8,
-            "reliefFt": 16,
-            "sampleCount": 9
-          }
+          "ms": 8765,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 19,
+          "ms": 41,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1464,7 +1452,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 27,
+          "ms": 637,
           "status": "ok",
           "detail": "assessed $95,000, class 515 Rural residential sub, no tax amount",
           "values": {
@@ -1483,7 +1471,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 701,
+          "ms": 1262,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1495,7 +1483,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 826,
+          "ms": 1187,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -1508,7 +1496,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 25,
+          "ms": 47,
           "status": "ok",
           "detail": "R: Rural Lands (7 uses)",
           "values": {
@@ -1520,15 +1508,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 3602,
-          "status": "ok",
-          "detail": "16 cells, avg 7%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 7,
-            "maxSlopePct": 11.6,
-            "partial": false
-          }
+          "ms": 14370,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -1541,13 +1524,13 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 8757,
+          "ms": 187,
           "status": "ok",
-          "detail": "parcel 0K2660010030",
+          "detail": "parcel 0K2660010030, 4.95 ac",
           "values": {
             "parcelId": "0K2660010030",
-            "acres": null,
-            "address": null,
+            "acres": 4.95,
+            "address": "25754 N CLASSIC DR, ATHOL",
             "lat": 47.905682,
             "lon": -116.770423
           }
@@ -1555,7 +1538,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 693,
+          "ms": 175,
           "status": "ok",
           "detail": "86 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1568,7 +1551,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 262,
+          "ms": 581,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -1581,7 +1564,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 735,
+          "ms": 185,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1599,7 +1582,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 94,
+          "ms": 118,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1610,16 +1593,23 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": null,
-          "ms": 30002,
-          "status": "error",
-          "detail": "timeout after 30s",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 300,
+          "status": "ok",
+          "detail": "RURAL (Kootenai County)",
+          "values": {
+            "code": "RURAL",
+            "jurisdiction": "Kootenai County",
+            "countyStatus": "kootenai-data-layers-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "mapped_from_county_code",
+            "permitHistoryStatus": "unavailable"
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14299,
+          "ms": 14273,
           "status": "ok",
           "detail": "favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes)",
           "values": {
@@ -1633,185 +1623,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14299,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 23,
-          "status": "unavailable",
-          "detail": "Existing-well matching is not configured for this county yet.",
-          "values": {
-            "status": "not_supported"
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 20028,
-          "status": "error",
-          "detail": "Kootenai County Assessor timed out (7 of 7 layers failed)",
-          "values": {}
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 778,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 933,
-          "status": "ok",
-          "detail": "KOOTENAI ELECTRIC COOPERATIVE",
-          "values": {
-            "provider": "KOOTENAI ELECTRIC COOPERATIVE",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 8815,
-          "status": "ok",
-          "detail": "16 cells, avg 1.7%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 1.7,
-            "maxSlopePct": 4.5,
-            "partial": false
-          }
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "0153400A001A",
-      "label": "POST FALLS, 9.52 ac",
-      "why": "Picked by discovery run 40391761739 (2026-10-26): first in locality POST FALLS. Locality is the parcel's situs city field, not proof it is inside city limits.",
-      "layers": {
-        "parcel": {
-          "route": "/api/parcel-search",
-          "httpStatus": 200,
-          "ms": 43,
-          "status": "ok",
-          "detail": "parcel 0153400A001A, 9.52 ac",
-          "values": {
-            "parcelId": "0153400A001A",
-            "acres": 9.52,
-            "address": "8109 N DAISY LN, POST FALLS",
-            "lat": 47.745887,
-            "lon": -116.866026
-          }
-        },
-        "wells": {
-          "route": "/api/well-search",
-          "httpStatus": 200,
-          "ms": 250,
-          "status": "ok",
-          "detail": "73 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 73,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.09,
-            "medianDepthFt": 304
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 320,
-          "status": "ok",
-          "detail": "AVISTA CORP",
-          "values": {
-            "providers": [
-              "AVISTA CORP"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 24,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 30,
-          "status": "ok",
-          "detail": "no NWI wetlands",
-          "values": {
-            "intersects": false,
-            "count": 0,
-            "coveragePct": 0
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 378,
-          "status": "ok",
-          "detail": "AGRICULTURE (Kootenai County)",
-          "values": {
-            "code": "AGRICULTURE",
-            "jurisdiction": "Kootenai County",
-            "countyStatus": "kootenai-data-layers-v3",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": "mapped_from_county_code",
-            "permitHistoryStatus": "unavailable"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 14294,
-          "status": "ok",
-          "detail": "favorable (Avonville fine gravelly silt loam, 0 to 7 percent slopes)",
-          "values": {
-            "feasibility": "favorable",
-            "mapUnit": "Avonville fine gravelly silt loam, 0 to 7 percent slopes",
-            "hydrologicGroup": "B",
-            "drainage": "Well drained",
-            "soilSlopePct": 4
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 14294,
+          "ms": 14273,
           "status": "error",
           "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
           "values": {}
@@ -1829,7 +1641,195 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 31,
+          "ms": 384,
+          "status": "ok",
+          "detail": "assessed $635,039, class 537 Imp res rural sub, no tax amount",
+          "values": {
+            "assessedValue": 635039,
+            "landValue": 343729,
+            "improvementValue": 291310,
+            "taxPresent": false,
+            "netValue": 510039,
+            "homeownerExemption": 125000,
+            "taxYear": 2026,
+            "propertyClass": "537",
+            "propertyClassDescription": "Imp res rural sub",
+            "source": "Kootenai County Assessor (Assessor_Layers)"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 1234,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18766,
+          "status": "ok",
+          "detail": "KOOTENAI ELECTRIC COOPERATIVE",
+          "values": {
+            "provider": "KOOTENAI ELECTRIC COOPERATIVE",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 28,
+          "status": "ok",
+          "detail": "R: Rural Lands (7 uses)",
+          "values": {
+            "code": "R",
+            "family": "Rural Lands",
+            "useCount": 7
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 14290,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "0153400A001A",
+      "label": "POST FALLS, 9.52 ac",
+      "why": "Picked by discovery run 40391761739 (2026-10-26): first in locality POST FALLS. Locality is the parcel's situs city field, not proof it is inside city limits.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 166,
+          "status": "ok",
+          "detail": "parcel 0153400A001A, 9.52 ac",
+          "values": {
+            "parcelId": "0153400A001A",
+            "acres": 9.52,
+            "address": "8109 N DAISY LN, POST FALLS",
+            "lat": 47.745887,
+            "lon": -116.866026
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 146,
+          "status": "ok",
+          "detail": "73 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 73,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.09,
+            "medianDepthFt": 304
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 404,
+          "status": "ok",
+          "detail": "AVISTA CORP",
+          "values": {
+            "providers": [
+              "AVISTA CORP"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 167,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 104,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 306,
+          "status": "ok",
+          "detail": "AGRICULTURE (Kootenai County)",
+          "values": {
+            "code": "AGRICULTURE",
+            "jurisdiction": "Kootenai County",
+            "countyStatus": "kootenai-data-layers-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "mapped_from_county_code",
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 14274,
+          "status": "ok",
+          "detail": "favorable (Avonville fine gravelly silt loam, 0 to 7 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Avonville fine gravelly silt loam, 0 to 7 percent slopes",
+            "hydrologicGroup": "B",
+            "drainage": "Well drained",
+            "soilSlopePct": 4
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 14274,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 39,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 759,
           "status": "ok",
           "detail": "assessed $5,825,620, class 438 Com Imp rural subdiv, no tax amount",
           "values": {
@@ -1848,7 +1848,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 704,
+          "ms": 629,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1860,7 +1860,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 835,
+          "ms": 18235,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -1873,7 +1873,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 14,
+          "ms": 40,
           "status": "ok",
           "detail": "A: Resource Lands (7 uses)",
           "values": {
@@ -1885,7 +1885,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 9092,
+          "ms": 14273,
           "status": "error",
           "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
           "values": {}
@@ -1901,7 +1901,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 110,
+          "ms": 241,
           "status": "ok",
           "detail": "parcel 47N02W040800, 99.74 ac",
           "values": {
@@ -1915,7 +1915,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 627,
+          "ms": 369,
           "status": "ok",
           "detail": "60 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1928,7 +1928,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 288,
+          "ms": 354,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -1941,7 +1941,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 48,
+          "ms": 429,
           "status": "ok",
           "detail": "high-risk zone (X, AE) (via FEMA NFHL)",
           "values": {
@@ -1960,7 +1960,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 51,
+          "ms": 1254,
           "status": "ok",
           "detail": "7 NWI feature(s)",
           "values": {
@@ -1972,7 +1972,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 753,
+          "ms": 287,
           "status": "ok",
           "detail": "AGRICULTURE (Kootenai County)",
           "values": {
@@ -1987,7 +1987,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 197,
+          "ms": 14313,
           "status": "ok",
           "detail": "limited (Lacy-Bobbitt association, 5 to 35 percent slopes, very stony)",
           "values": {
@@ -2001,20 +2001,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 197,
-          "status": "ok",
-          "detail": "avg grade 3.6%, max 8%",
-          "values": {
-            "gradePct": 3.6,
-            "maxGradePct": 8,
-            "reliefFt": 136,
-            "sampleCount": 9
-          }
+          "ms": 14313,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 18,
+          "ms": 44,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2024,7 +2019,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 35,
+          "ms": 540,
           "status": "ok",
           "detail": "assessed $549,398, class 534 Imp res rural tract, no tax amount",
           "values": {
@@ -2043,7 +2038,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 837,
+          "ms": 1190,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2055,7 +2050,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 761,
+          "ms": 1068,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -2068,7 +2063,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 69,
+          "ms": 24,
           "status": "ok",
           "detail": "A: Resource Lands (7 uses)",
           "values": {
@@ -2080,15 +2075,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 36,
-          "status": "ok",
-          "detail": "16 cells, avg 6.5%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 6.5,
-            "maxSlopePct": 17.5,
-            "partial": false
-          }
+          "ms": 8401,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -2101,13 +2091,13 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 8690,
+          "ms": 213,
           "status": "ok",
-          "detail": "parcel C72150040140",
+          "detail": "parcel C72150040140, 0.23 ac",
           "values": {
             "parcelId": "C72150040140",
-            "acres": null,
-            "address": null,
+            "acres": 0.23,
+            "address": "5726 N CHRISTOPHER DR, COEUR D ALENE",
             "lat": 47.723551,
             "lon": -116.803077
           }
@@ -2115,7 +2105,7 @@
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 326,
+          "ms": 255,
           "status": "ok",
           "detail": "55 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2128,7 +2118,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 287,
+          "ms": 360,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP",
           "values": {
@@ -2141,7 +2131,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 130,
+          "ms": 149,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2159,7 +2149,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 152,
+          "ms": 124,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -2170,16 +2160,23 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": null,
-          "ms": 30000,
-          "status": "error",
-          "detail": "timeout after 30s",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1909,
+          "status": "ok",
+          "detail": "R-12 (City of Coeur d'Alene)",
+          "values": {
+            "code": "R-12",
+            "jurisdiction": "City of Coeur d'Alene",
+            "countyStatus": "kootenai-city-zoning-v1",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": "not_mapped",
+            "permitHistoryStatus": "unavailable"
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 117,
+          "ms": 14273,
           "status": "ok",
           "detail": "favorable (McGuire-Marble association, 0 to 7 percent slopes)",
           "values": {
@@ -2193,20 +2190,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 117,
-          "status": "ok",
-          "detail": "avg grade 3.4%, max 13.6%",
-          "values": {
-            "gradePct": 3.4,
-            "maxGradePct": 13.6,
-            "reliefFt": 11,
-            "sampleCount": 9
-          }
+          "ms": 14273,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 20,
+          "ms": 35,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2216,7 +2208,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 67,
+          "ms": 420,
           "status": "ok",
           "detail": "assessed $533,760, class 541 Imp res lot/tract in city, no tax amount",
           "values": {
@@ -2235,7 +2227,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 672,
+          "ms": 1155,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2247,7 +2239,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 400,
+          "ms": 614,
           "status": "ok",
           "detail": "KOOTENAI ELECTRIC COOPERATIVE",
           "values": {
@@ -2258,25 +2250,22 @@
           }
         },
         "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 19,
           "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
+          "detail": "zone_not_mapped",
+          "values": {
+            "status": "zone_not_mapped"
+          }
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 39,
-          "status": "ok",
-          "detail": "16 cells, avg 6.6%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 6.6,
-            "maxSlopePct": 22.5,
-            "partial": false
-          }
+          "ms": 10363,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -2284,11 +2273,11 @@
   ],
   "summary": {
     "parcels": 12,
-    "failed": 7,
+    "failed": 12,
     "layerCounts": {
-      "ok": 125,
-      "unavailable": 30,
-      "error": 13,
+      "ok": 117,
+      "unavailable": 27,
+      "error": 24,
       "mismatch": 0,
       "skipped": 0
     }
