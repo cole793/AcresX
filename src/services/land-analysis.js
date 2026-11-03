@@ -3,10 +3,11 @@ import { upstreamJson } from '../shared/upstream.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { soilAt } from './soils.js';
 import {
-  epqsElevationsFt, getSamplesWithRetry, sampleElevationsFt, spreadPick, POINT_FALLBACK_TIMEOUT_MS
+  elevationSamplesFt, getSamplesWithRetry, spreadPick, POINT_FALLBACK_TIMEOUT_MS
 } from './elevation.js';
 
-export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v1/';
+// v2 (2026-11-02): every terrain answer carries elevationSources; v1 entries are left to expire.
+export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v2/';
 export const CANOPY_CACHE_PREFIX = 'https://acresx.internal/cache/canopy/v1/';
 export const CANOPY_FALLBACK_MAX_POINTS = 12;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -166,15 +167,9 @@ async function terrainAnalysis(geometry) {
     { lon: bounds.maxLon, lat: center.lat }
   ];
 
-  let elevations;
-  let fallback = false;
-  try {
-    elevations = await sampleElevationsFt(points);
-  } catch (error) {
-    console.warn('Terrain getSamples failed; using capped EPQS fallback', error?.message);
-    fallback = true;
-    elevations = await epqsElevationsFt(points);
-  }
+  // getSamples, then 3DEP identify, then EPQS, against one deadline (see elevation.js).
+  const { values: elevations, sources, errors } = await elevationSamplesFt(points);
+  if (Object.keys(errors).length) console.warn('Terrain elevation source errors', JSON.stringify(errors));
   // As before, terrain needs every point (the old code failed on any missing elevation).
   const missing = elevations.filter(value => value === null).length;
   if (missing) throw new Error(`USGS elevation was unavailable for ${missing} of ${points.length} terrain points.`);
@@ -189,7 +184,7 @@ async function terrainAnalysis(geometry) {
   );
 
   // Only getSamples answers are cached, so a fallback answer is replaced on the next lookup.
-  return { cacheable: !fallback, result: {
+  return { cacheable: sources.length === 1 && sources[0] === 'getSamples', result: {
     available: true,
     gradePct: grades.reduce((sum, grade) => sum + grade, 0) / grades.length,
     maxGradePct: Math.max(...grades),
@@ -198,7 +193,9 @@ async function terrainAnalysis(geometry) {
     centerFt: centerSample.elevation,
     reliefFt,
     sampleCount: samples.length,
-    source: 'USGS 3DEP / EPQS elevation'
+    source: 'USGS 3DEP / EPQS elevation',
+    // Additive: which elevation services supplied the values ('getSamples', 'identify', 'epqs').
+    elevationSources: sources
   } };
 }
 
