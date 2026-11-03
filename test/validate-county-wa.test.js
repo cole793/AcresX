@@ -54,6 +54,14 @@ function stubFetch(responses) {
   };
 }
 
+// findParcel's where clauses (public/index.html:112) for county Spokane (fips '063', shortFips '63'),
+// written out in full so dropping a branch (PARCEL_ID_NR, the FIPS-prefixed id, the short FIPS,
+// COUNTY_NM) fails a test. Exact for input '57344.0125'; LIKE for input '57344-0125' (normalised
+// to 573440125).
+const SPOKANE_COUNTY_WHERE = "(FIPS_NR='063' OR FIPS_NR='63' OR COUNTY_NM='Spokane' OR COUNTY_NM='63' OR COUNTY_NM='063')";
+const SPOKANE_EXACT_WHERE = `${SPOKANE_COUNTY_WHERE} AND (UPPER(ORIG_PARCEL_ID)='57344.0125' OR UPPER(PARCEL_ID_NR)='57344.0125' OR UPPER(PARCEL_ID_NR)='06357344.0125')`;
+const SPOKANE_LIKE_WHERE = `${SPOKANE_COUNTY_WHERE} AND (UPPER(ORIG_PARCEL_ID) LIKE '%573440125%' OR UPPER(PARCEL_ID_NR) LIKE '%573440125%')`;
+
 const runWa = (entry = { parcelId: '57344.0125' }, county = 'Spokane') => validateParcel(entry, { state: 'WA', county, baseUrl: BASE, requestDelayMs: 0 });
 
 test('Washington parcels are looked up through /api/arcgis like findParcel, never /api/parcel-search', async () => {
@@ -69,7 +77,8 @@ test('Washington parcels are looked up through /api/arcgis like findParcel, neve
   const parcelParams = calls[0].body.params;
   assert.equal(parcelParams.outFields, WA_PARCEL_FIELDS);
   assert.equal(parcelParams.f, 'geojson');
-  assert.equal(parcelParams.where, waParcelWhere('Spokane', '57344.0125').exactWhere);
+  assert.equal(parcelParams.where, SPOKANE_EXACT_WHERE);
+  assert.equal(waParcelWhere('Spokane', '57344.0125').exactWhere, SPOKANE_EXACT_WHERE);
   assert.match(parcelParams.where, /FIPS_NR='063'/);
 
   const geometry = fixture.parcel.features[0].geometry;
@@ -136,7 +145,9 @@ test('the LIKE fallback runs when the exact query finds nothing, and keeps only 
   const result = await runWa({ parcelId: '57344-0125' });
   const parcelCalls = calls.filter(c => c.body?.service === 'parcel');
   assert.equal(parcelCalls.length, 2);
-  assert.equal(parcelCalls[1].body.params.where, waParcelWhere('Spokane', '57344-0125').likeWhere);
+  assert.equal(parcelCalls[0].body.params.where, SPOKANE_EXACT_WHERE.replaceAll("'57344.0125'", "'57344-0125'").replace("'06357344.0125'", "'06357344-0125'"));
+  assert.equal(parcelCalls[1].body.params.where, SPOKANE_LIKE_WHERE);
+  assert.equal(waParcelWhere('Spokane', '57344-0125').likeWhere, SPOKANE_LIKE_WHERE);
   assert.equal(parcelCalls[1].body.params.resultRecordCount, '100');
   assert.equal(result.layers.parcel.status, 'ok');
   assert.equal(result.layers.parcel.values.parcelId, '57344.0125');
