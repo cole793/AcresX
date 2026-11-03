@@ -1,12 +1,14 @@
 // Offline tests for batched elevation / tree-canopy sampling (src/services/elevation.js) behind
 // /api/land-analysis and /api/slope-grid. fetch is stubbed with responses recorded live on
-// 2026-10-27; no live USGS, USFS or USDA calls.
-import { test, beforeEach, afterEach } from 'node:test';
+// 2026-10-27; no live USGS, USFS or USDA calls. Elevation source fallback (getSamples, 3DEP
+// identify, EPQS) is covered at the end of this file.
+import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import {
-  ELEVATION_IMAGE_SERVICE, EPQS_URL, SAMPLE_INTERPOLATION, POINT_FALLBACK_MAX_POINTS, getSamples
+  ELEVATION_IMAGE_SERVICE, EPQS_URL, SAMPLE_INTERPOLATION, POINT_FALLBACK_MAX_POINTS, getSamples,
+  configureElevation, elevationSamplesFt
 } from '../src/services/elevation.js';
 import { TCC_SERVICE, CANOPY_FALLBACK_MAX_POINTS, TERRAIN_CACHE_PREFIX, CANOPY_CACHE_PREFIX } from '../src/services/land-analysis.js';
 import { SLOPE_CACHE_PREFIX } from '../src/services/slope-grid.js';
@@ -16,6 +18,10 @@ const recorded = fixture('elevation-getsamples.json');
 const legacy = fixture('elevation-legacy-snapshot.json');
 const batched = fixture('elevation-batched-snapshot.json');
 const geometry = recorded.geometry;
+// The batched snapshots plus the additive elevationSources field.
+const terrainSnap = { ...batched.landAnalysis.terrain, elevationSources: ['getSamples'] };
+const slopeSnap = { ...batched.slopeGrid, elevationSources: ['getSamples'] };
+const strip = ({ elevationSources, ...rest }) => rest;
 
 const SOIL_URL = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
 const soilBody = { Table: [['mukey', 'muname', 'compname', 'comppct_r', 'drainagecl', 'hydgrp', 'slope_r'], ['1', 'Test loam', 'Test', '85', 'Well drained', 'B', '12']] };
@@ -30,6 +36,7 @@ const kind = url => {
   if (url.startsWith(`${TCC_SERVICE}/getSamples`)) return 'tcc';
   if (url.startsWith(`${TCC_SERVICE}/identify`)) return 'tccIdentify';
   if (url.startsWith(EPQS_URL)) return 'epqs';
+  if (url.startsWith(`${ELEVATION_IMAGE_SERVICE}/identify`)) return 'identify';
   if (url.startsWith(SOIL_URL)) return 'soil';
   if (url.startsWith(ELEVATION_IMAGE_SERVICE)) return '3depOther';
   return 'other';
@@ -45,10 +52,17 @@ function recordedSamples(service, body) {
   return structuredClone(entry.response);
 }
 // Deterministic EPQS answer in the recorded EPQS shape (feet), sloping east and north.
+const plane = (x, y) => 2500 + (x + 116.76) * 20000 + (y - 47.5446) * 30000;
 const epqsAnswer = url => {
   const u = new URL(url);
   const x = Number(u.searchParams.get('x')), y = Number(u.searchParams.get('y'));
-  return jsonResponse({ ...legacy.samples.epqs, location: { x, y, spatialReference: { wkid: 4326 } }, value: 2500 + (x + 116.76) * 20000 + (y - 47.5446) * 30000 });
+  return jsonResponse({ ...legacy.samples.epqs, location: { x, y, spatialReference: { wkid: 4326 } }, value: plane(x, y) });
+};
+// 3DEP identify answer in the live shape (2026-11-02): value is a meters string; same plane.
+const pointOf = url => JSON.parse(new URL(url).searchParams.get('geometry'));
+const elevIdentifyAnswer = url => {
+  const { x, y } = pointOf(url);
+  return jsonResponse({ objectId: 0, name: 'Pixel', value: String(plane(x, y) / 3.280839895), location: { x, y, spatialReference: { wkid: 4326 } }, properties: null, catalogItems: null, catalogItemVisibilities: [] });
 };
 const identifyAnswer = () => jsonResponse(legacy.samples.tccIdentify);
 
@@ -59,12 +73,13 @@ function stubFetch(handlers = {}) {
     const url = String(input instanceof Request ? input.url : input);
     const k = kind(url);
     seen[k] = (seen[k] || 0) + 1;
-    const call = { url, kind: k, method: init.method || 'GET', body: init.body == null ? null : String(init.body), headers: init.headers || {}, cf: init.cf };
+    const call = { url, kind: k, method: init.method || 'GET', body: init.body == null ? null : String(init.body), headers: init.headers || {}, cf: init.cf, signal: init.signal };
     calls.push(call);
     if (handlers[k]) return handlers[k](call, seen[k]);
     if (k === '3dep' || k === 'tcc') return jsonResponse(recordedSamples(k, call.body));
     if (k === 'soil') return jsonResponse(soilBody);
     if (k === 'epqs') return epqsAnswer(url);
+    if (k === 'identify') return elevIdentifyAnswer(url);
     if (k === 'tccIdentify') return identifyAnswer();
     throw new Error(`unexpected upstream call: ${url}`);
   };
@@ -123,7 +138,7 @@ test('land-analysis: terrain and canopy come from one getSamples request each', 
   const { response, body } = await landAnalysis();
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), legacy.landAnalysis.cacheControl);
-  assert.deepEqual(body.terrain, batched.landAnalysis.terrain);
+  assert.deepEqual(body.terrain, terrainSnap);
   assert.deepEqual(body.landCover, batched.landAnalysis.landCover);
   assert.equal(body.soil.available, true);
   assert.equal(count('3dep'), 1);
@@ -148,7 +163,7 @@ test('slope grid: 25 points in one getSamples request', async () => {
   const { response, body } = await slopeGrid();
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), legacy.slopeGrid.cacheControl);
-  assert.deepEqual(body, batched.slopeGrid);
+  assert.deepEqual(body, slopeSnap);
   assert.equal(body.cells.length, 16);
   assert.equal(calls.length, 1);
   assert.equal(pointsOf(calls[0].body).length, 25);
@@ -159,11 +174,11 @@ test('shape snapshot: batched answers match the legacy per-point answers for the
   const land = (await landAnalysis()).body;
   // Legacy values came from EPQS (feet); getSamples nearest-neighbour meters x 3.2808 agree to
   // ~0.0015 ft. Canopy values are identical.
-  assertSameShape(land.terrain, legacy.landAnalysis.terrain, 0.01);
+  assertSameShape(strip(land.terrain), legacy.landAnalysis.terrain, 0.01);
   assert.deepEqual(land.landCover, legacy.landAnalysis.landCover);
   calls = [];
   const slope = (await slopeGrid()).body;
-  assertSameShape(slope, legacy.slopeGrid.body, 0.01);
+  assertSameShape(strip(slope), legacy.slopeGrid.body, 0.01);
   assert.deepEqual(slope.cells.map(c => c.band), legacy.slopeGrid.body.cells.map(c => c.band));
 });
 
@@ -174,7 +189,7 @@ test('getSamples maps samples by locationId, not response order', async () => {
     return jsonResponse(answer);
   } });
   const { body } = await slopeGrid();
-  assert.deepEqual(body, batched.slopeGrid);
+  assert.deepEqual(body, slopeSnap);
 });
 
 // --- retry and fallback ----------------------------------------------------------------------
@@ -185,39 +200,40 @@ test('getSamples fails once, the retry succeeds', async () => {
     tcc: (call, n) => n === 1 ? jsonResponse({ error: { code: 500, message: 'Error performing getSamples' } }) : jsonResponse(recordedSamples('tcc', call.body))
   });
   const { body } = await landAnalysis();
-  assert.deepEqual(body.terrain, batched.landAnalysis.terrain);
+  assert.deepEqual(body.terrain, terrainSnap);
   assert.deepEqual(body.landCover, batched.landAnalysis.landCover);
   assert.equal(count('3dep'), 2);
   assert.equal(count('tcc'), 2);
+  assert.equal(count('identify'), 0);
   assert.equal(count('epqs'), 0);
   assert.equal(count('tccIdentify'), 0);
 });
 
-test('getSamples fails twice: terrain and canopy use the capped per-point fallback', async () => {
+test('getSamples fails twice: terrain uses 3DEP identify, canopy the capped per-point fallback', async () => {
   stubFetch({ '3dep': fail, tcc: () => new Response('down', { status: 502 }) });
   const { body } = await landAnalysis();
   assert.equal(count('3dep'), 2);
   assert.equal(count('tcc'), 2);
-  assert.equal(count('epqs'), 9);
+  assert.equal(count('identify'), 9);
+  assert.equal(count('epqs'), 0, 'identify answered every point, so EPQS is not asked');
   assert.equal(count('tccIdentify'), CANOPY_FALLBACK_MAX_POINTS);
   assert.equal(body.terrain.available, true);
   assert.equal(body.terrain.sampleCount, 9);
-  assertSameShape(body.terrain, batched.landAnalysis.terrain, Infinity);
+  assert.deepEqual(body.terrain.elevationSources, ['identify']);
+  assertSameShape(strip(body.terrain), batched.landAnalysis.terrain, Infinity);
   assert.equal(body.landCover.available, true);
   assert.equal(body.landCover.requestedSamples, CANOPY_FALLBACK_MAX_POINTS);
   assert.equal(body.landCover.sampleCount, CANOPY_FALLBACK_MAX_POINTS);
   assert.equal(body.landCover.woodedPct, Number(legacy.samples.tccIdentify.value));
-  for (const call of calls.filter(c => c.kind === 'epqs')) {
-    assert.equal(new URL(call.url).searchParams.get('units'), 'Feet');
-  }
 });
 
-test('getSamples fails twice: slope grid falls back to a 3 x 3 EPQS grid (partial)', async () => {
-  stubFetch({ '3dep': fail });
+test('getSamples and identify fail: slope grid falls back to a 3 x 3 EPQS grid (partial)', async () => {
+  stubFetch({ '3dep': fail, identify: fail });
   const { response, body } = await slopeGrid();
   assert.equal(count('3dep'), 2);
+  assert.equal(count('identify'), POINT_FALLBACK_MAX_POINTS);
   assert.equal(count('epqs'), POINT_FALLBACK_MAX_POINTS);
-  assert.equal(calls.length, 11);
+  assert.equal(calls.length, 2 + 9 + 9);
   assert.equal(response.status, 200);
   assert.equal(body.available, true);
   assert.equal(body.resolution, '2 x 2 parcel grid');
@@ -225,12 +241,13 @@ test('getSamples fails twice: slope grid falls back to a 3 x 3 EPQS grid (partia
   assert.equal(body.sampleCount, 9);
   assert.equal(body.partial, true);
   assert.equal(body.cells.length, 4);
-  assert.deepEqual(Object.keys(body).sort(), Object.keys(batched.slopeGrid).sort());
+  assert.deepEqual(body.elevationSources, ['epqs']);
+  assert.deepEqual(Object.keys(body).sort(), Object.keys(slopeSnap).sort());
   assert.deepEqual(Object.keys(body.cells[0]).sort(), Object.keys(batched.slopeGrid.cells[0]).sort());
 });
 
 test('slope grid fallback with too few EPQS answers is unavailable, not an error', async () => {
-  stubFetch({ '3dep': fail, epqs: (call, n) => n <= 6 ? fail() : epqsAnswer(call.url) });
+  stubFetch({ '3dep': fail, identify: fail, epqs: (call, n) => n <= 6 ? fail() : epqsAnswer(call.url) });
   const { response, body } = await slopeGrid();
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
@@ -272,6 +289,7 @@ test('NoData points: terrain degrades alone; canopy drops out-of-range values', 
   assert.equal(body.available, true);
   assert.equal(body.terrain.available, false);
   assert.match(body.terrain.error, /unavailable for 1 of 9/);
+  assert.equal(count('identify') + count('epqs'), 0, 'a NoData answer from getSamples is not asked again');
   assert.equal(body.landCover.available, true);
   assert.equal(body.landCover.sampleCount, 31);
   assert.equal(body.landCover.requestedSamples, 36);
@@ -301,7 +319,7 @@ test('request budget: normal path is 1 request per layer; worst case stays under
 
   // Everything down: every layer degrades, the route still answers.
   calls = [];
-  stubFetch({ soil: fail, '3dep': fail, tcc: fail, epqs: fail, tccIdentify: fail });
+  stubFetch({ soil: fail, '3dep': fail, identify: fail, tcc: fail, epqs: fail, tccIdentify: fail });
   const { response, body } = await landAnalysis();
   assert.equal(response.status, 200);
   assert.equal(body.available, false);
@@ -309,14 +327,14 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   assert.equal(body.landCover.available, false);
   assert.equal(body.soil.available, false);
   // Soil: one attempt plus the shared client's one retry on a network error.
-  assert.equal(calls.length, 2 + (2 + 9) + (2 + CANOPY_FALLBACK_MAX_POINTS));
+  assert.equal(calls.length, 2 + (2 + 9 + 9) + (2 + CANOPY_FALLBACK_MAX_POINTS));
   assert.ok(calls.length < 40, `land-analysis worst case made ${calls.length} requests`);
 
   calls = [];
-  stubFetch({ '3dep': fail, epqs: fail });
+  stubFetch({ '3dep': fail, identify: fail, epqs: fail });
   const slope = await slopeGrid();
   assert.equal(slope.body.available, false);
-  assert.equal(calls.length, 2 + 9);
+  assert.equal(calls.length, 2 + 9 + 9);
 });
 
 // --- cache -----------------------------------------------------------------------------------
@@ -337,9 +355,9 @@ test('cache: successes are reused, keyed per layer by rounded geometry', async (
   const land = (await landAnalysis()).body;
   const slope = (await slopeGrid()).body;
   assert.deepEqual(calls.map(c => c.kind), ['soil'], 'only soil goes upstream on a cache hit');
-  assert.deepEqual(land.terrain, batched.landAnalysis.terrain);
+  assert.deepEqual(land.terrain, terrainSnap);
   assert.deepEqual(land.landCover, batched.landAnalysis.landCover);
-  assert.deepEqual(slope, batched.slopeGrid);
+  assert.deepEqual(slope, slopeSnap);
 
   // A geometry differing only past 6 decimals shares the key.
   calls = [];
@@ -373,12 +391,256 @@ test('cache: failures, fallbacks and partial answers are never stored', async ()
 test('cache guard: works without caches and when the cache throws', async () => {
   stubFetch();
   assert.equal(typeof globalThis.caches, 'undefined');
-  assert.deepEqual((await slopeGrid()).body, batched.slopeGrid);
+  assert.deepEqual((await slopeGrid()).body, slopeSnap);
 
   fakeCache({ throws: true });
   calls = [];
   stubFetch();
   const land = (await landAnalysis()).body;
-  assert.deepEqual(land.terrain, batched.landAnalysis.terrain);
-  assert.deepEqual((await slopeGrid()).body, batched.slopeGrid);
+  assert.deepEqual(land.terrain, terrainSnap);
+  assert.deepEqual((await slopeGrid()).body, slopeSnap);
+});
+
+// --- elevation source fallback: getSamples, then 3DEP identify, then EPQS (2026-11-02) ----------
+// Live on 2026-11-02 every USGS source answered, but in 3-17 s, past the old fixed timeouts
+// (getSamples 6 s + 4 s retry, EPQS 4 s), so terrain and slope failed on nearly every parcel.
+
+const bounds = (() => {
+  const coords = [];
+  const walk = v => Array.isArray(v?.[0]) ? v.forEach(walk) : coords.push(v);
+  walk(geometry.coordinates);
+  const xs = coords.map(p => p[0]), ys = coords.map(p => p[1]);
+  return { minLon: Math.min(...xs), maxLon: Math.max(...xs), minLat: Math.min(...ys), maxLat: Math.max(...ys) };
+})();
+const down = () => new Response('<html>502 Bad Gateway</html>', { status: 502 });
+// Never answers; the shared client's timeout or the lookup's cancel ends it.
+const hang = () => new Promise(() => {});
+// Answers after ms (the lookup's cancel or timeout may end the request first).
+const later = (ms, answer) => call => new Promise(resolve => setTimeout(() => resolve(answer(call)), ms));
+const FAST = { budgetMs: 600, identifyAfterMs: 100, epqsAfterMs: 200, retryMinMs: 50, minStageMs: 50, backoffMs: 0 };
+
+test('getSamples down, EPQS OK: terrain and slope answer from EPQS', async () => {
+  const store = fakeCache();
+  stubFetch({ '3dep': down, identify: down });
+  const { body } = await landAnalysis();
+  assert.equal(body.terrain.available, true);
+  assert.equal(body.terrain.sampleCount, 9);
+  assert.deepEqual(body.terrain.elevationSources, ['epqs']);
+  assert.equal(body.terrain.source, 'USGS 3DEP / EPQS elevation');
+  assert.equal(body.terrain.minFt, plane(bounds.minLon, bounds.minLat));
+  assert.equal(count('epqs'), 9);
+  for (const call of calls.filter(c => c.kind === 'epqs')) assert.equal(new URL(call.url).searchParams.get('units'), 'Feet');
+
+  calls = [];
+  const slope = (await slopeGrid()).body;
+  assert.equal(slope.available, true);
+  assert.deepEqual(slope.elevationSources, ['epqs']);
+  assert.equal(slope.resolution, '2 x 2 parcel grid');
+  assert.equal(slope.partial, true);
+  assert.ok(![...store.keys()].some(k => k.startsWith(TERRAIN_CACHE_PREFIX) || k.startsWith(SLOPE_CACHE_PREFIX)), 'fallback answers are not cached');
+});
+
+test('getSamples and identify slow (the 2026-11-02 failure), EPQS OK: hedged EPQS answers within the budget', async () => {
+  const restore = configureElevation(FAST);
+  try {
+    stubFetch({ '3dep': hang, identify: hang });
+    const started = Date.now();
+    const { body } = await landAnalysis();
+    assert.ok(Date.now() - started < FAST.budgetMs, `took ${Date.now() - started} ms`);
+    assert.equal(body.terrain.available, true);
+    assert.deepEqual(body.terrain.elevationSources, ['epqs']);
+    assert.equal(count('3dep'), 1, 'a timed-out getSamples is not retried: it had the whole budget');
+    assert.equal(count('identify'), 9);
+    assert.equal(count('epqs'), 9);
+  } finally { restore(); }
+});
+
+test('EPQS down, getSamples OK: no per-point requests, answer cached', async () => {
+  const store = fakeCache();
+  stubFetch({ epqs: fail });
+  const { body } = await landAnalysis();
+  assert.deepEqual(body.terrain, terrainSnap);
+  calls = [];
+  stubFetch({ epqs: fail });
+  assert.deepEqual((await slopeGrid()).body, slopeSnap);
+  assert.equal(count('identify') + count('epqs'), 0);
+  assert.ok([...store.keys()].some(k => k.startsWith(TERRAIN_CACHE_PREFIX)));
+  assert.ok([...store.keys()].some(k => k.startsWith(SLOPE_CACHE_PREFIX)));
+});
+
+test('getSamples slower than the hedge but inside the budget still wins over the hedges', async () => {
+  const restore = configureElevation(FAST);
+  try {
+    stubFetch({ '3dep': later(250, call => jsonResponse(recordedSamples('3dep', call.body))), identify: hang, epqs: fail });
+    const { body } = await slopeGrid();
+    assert.deepEqual(body, slopeSnap, 'full 5 x 5 grid from getSamples');
+    assert.equal(count('identify'), POINT_FALLBACK_MAX_POINTS, 'identify was started as a hedge');
+  } finally { restore(); }
+});
+
+test('both down: terrain and slope are unavailable with the honest messages, in finite time', async () => {
+  stubFetch({ '3dep': down, identify: down, epqs: fail });
+  const { response, body } = await landAnalysis();
+  assert.equal(response.status, 200);
+  assert.equal(body.terrain.available, false);
+  assert.match(body.terrain.error, /USGS elevation was unavailable for 9 of 9 terrain points/);
+  assert.equal(body.soil.available, true, 'other layers are unaffected');
+  assert.equal(body.landCover.available, true);
+
+  calls = [];
+  const slope = await slopeGrid();
+  assert.equal(slope.response.headers.get('Cache-Control'), 'no-store');
+  assert.equal(slope.body.available, false);
+  assert.match(slope.body.error, /Not enough elevation samples were returned to build a reliable slope heat map/);
+  assert.deepEqual(slope.body.elevationSources, []);
+  assert.equal(slope.body.sampleCount, 0);
+  assert.equal(calls.length, 2 + 9 + 9);
+
+  const restore = configureElevation(FAST);
+  try {
+    stubFetch({ '3dep': hang, identify: hang, epqs: hang });
+    const started = Date.now();
+    const hung = (await slopeGrid()).body;
+    assert.equal(hung.available, false);
+    assert.ok(Date.now() - started < FAST.budgetMs + 500, `took ${Date.now() - started} ms`);
+  } finally { restore(); }
+});
+
+test('partial samples: identify answers some terrain points, EPQS only the rest', async () => {
+  // identify fails for the three points on the east edge.
+  stubFetch({ '3dep': down, identify: call => pointOf(call.url).x === bounds.maxLon ? down() : elevIdentifyAnswer(call.url) });
+  const { body } = await landAnalysis();
+  assert.equal(body.terrain.available, true);
+  assert.deepEqual(body.terrain.elevationSources, ['identify', 'epqs']);
+  assert.equal(count('identify'), 9);
+  assert.equal(count('epqs'), 3);
+  for (const call of calls.filter(c => c.kind === 'epqs')) assert.equal(Number(new URL(call.url).searchParams.get('x')), bounds.maxLon);
+  assert.ok(Math.abs(body.terrain.maxFt - plane(bounds.maxLon, bounds.maxLat)) < 1e-6);
+});
+
+test('partial samples: slope uses the coarse points that answered when enough exist', async () => {
+  // getSamples down, EPQS down, identify fails for the top row of the 3 x 3 grid: 6 of 9 left.
+  const topRow = bounds.minLat + (bounds.maxLat - bounds.minLat) * 0.75;
+  stubFetch({ '3dep': down, epqs: fail, identify: call => pointOf(call.url).y > topRow ? down() : elevIdentifyAnswer(call.url) });
+  const { body } = await slopeGrid();
+  assert.equal(body.available, true);
+  assert.equal(body.sampleCount, 6);
+  assert.equal(body.requestedSamples, 9);
+  assert.equal(body.partial, true);
+  assert.equal(body.cells.length, 2);
+  assert.deepEqual(body.elevationSources, ['identify']);
+
+  // Below the threshold (3 of 9) it stays unavailable.
+  const midRow = bounds.minLat + (bounds.maxLat - bounds.minLat) * 0.25;
+  stubFetch({ '3dep': down, epqs: fail, identify: call => pointOf(call.url).y > midRow ? down() : elevIdentifyAnswer(call.url) });
+  const few = (await slopeGrid()).body;
+  assert.equal(few.available, false);
+  assert.equal(few.sampleCount, 3);
+});
+
+test('elevationSamplesFt: a getSamples value replaces a hedge value; NoData is not asked again', async () => {
+  const restore = configureElevation(FAST);
+  try {
+    const points = [{ lon: -116.76, lat: 47.5446 }, { lon: -116.75, lat: 47.55 }];
+    // identify answers point 0 at once (at the 100 ms hedge) and never answers point 1; getSamples
+    // then answers both at 150 ms and its value replaces the identify one.
+    stubFetch({
+      '3dep': later(150, () => jsonResponse({ samples: [{ locationId: 0, value: '700' }, { locationId: 1, value: '710' }] })),
+      identify: call => pointOf(call.url).x === points[0].lon ? elevIdentifyAnswer(call.url) : hang(),
+      epqs: hang
+    });
+    const result = await elevationSamplesFt(points);
+    assert.equal(result.batch, true);
+    assert.deepEqual(result.from, ['getSamples', 'getSamples']);
+    assert.deepEqual(result.sources, ['getSamples']);
+    assert.equal(result.values[0], 700 * 3.280839895);
+    assert.equal(count('identify'), 2);
+
+    calls = [];
+    stubFetch({ '3dep': () => jsonResponse({ samples: [{ locationId: 0, value: '700' }] }) });
+    const partial = await elevationSamplesFt(points);
+    assert.deepEqual(partial.from, ['getSamples', null]);
+    assert.equal(partial.values[1], null);
+    assert.equal(calls.length, 1, 'point 1 was a NoData answer, not a failure');
+  } finally { restore(); }
+});
+
+test('hedges: once the points are in, requests still in flight are cancelled at once', async () => {
+  const restore = configureElevation({ ...FAST, budgetMs: 5000 });
+  try {
+    // getSamples and EPQS hang; identify (the 100 ms hedge) answers every terrain point.
+    stubFetch({ '3dep': hang, epqs: hang });
+    const started = Date.now();
+    const { body } = await landAnalysis();
+    assert.ok(Date.now() - started < 1000, `took ${Date.now() - started} ms`);
+    assert.deepEqual(body.terrain.elevationSources, ['identify']);
+    const getSamplesCall = calls.find(c => c.kind === '3dep');
+    assert.ok(getSamplesCall.signal, 'the shared client passes a signal');
+    // Its own timeout is ~5 s away, so only the lookup's cancel can have aborted it by now.
+    assert.equal(getSamplesCall.signal.aborted, true, 'the pending getSamples was cancelled');
+    assert.equal(count('epqs'), 0, 'EPQS (the 200 ms hedge) was never needed');
+  } finally { restore(); }
+});
+
+test('hedges: an EPQS hedge still in flight is cancelled when identify completes the points', async () => {
+  const restore = configureElevation({ ...FAST, budgetMs: 5000, identifyAfterMs: 50, epqsAfterMs: 100 });
+  try {
+    // identify answers after 200 ms, by when the EPQS hedge (100 ms) is in flight and hanging.
+    stubFetch({ '3dep': hang, identify: later(200, call => elevIdentifyAnswer(call.url)), epqs: hang });
+    const { body } = await landAnalysis();
+    assert.deepEqual(body.terrain.elevationSources, ['identify']);
+    const epqsCalls = calls.filter(c => c.kind === 'epqs');
+    assert.equal(epqsCalls.length, 9);
+    assert.ok(epqsCalls.every(c => c.signal?.aborted), 'every pending EPQS request was cancelled');
+  } finally { restore(); }
+});
+
+test('cache guard: a slope answer that mixes getSamples and identify values is not cached', async () => {
+  const store = fakeCache();
+  const restore = configureElevation(FAST);
+  try {
+    // identify answers grid point 0 (south-west corner) at the 100 ms hedge and hangs on the rest;
+    // getSamples answers at 250 ms with point 0 as NoData, so point 0 keeps the identify value.
+    const isPoint0 = call => { const p = pointOf(call.url); return p.x === bounds.minLon && p.y === bounds.minLat; };
+    stubFetch({
+      '3dep': later(250, call => {
+        const answer = recordedSamples('3dep', call.body);
+        answer.samples = answer.samples.filter(s => s.locationId !== 0);
+        return jsonResponse(answer);
+      }),
+      identify: call => (isPoint0(call) ? elevIdentifyAnswer(call.url) : hang()),
+      epqs: hang
+    });
+    const { body } = await slopeGrid();
+    assert.equal(body.available, true);
+    assert.deepEqual(body.elevationSources, ['getSamples', 'identify']);
+    assert.equal(body.sampleCount, 25);
+    assert.equal(body.partial, false, 'complete, so only the source guard keeps it out of the cache');
+    assert.equal(body.cells.length, 16);
+    assert.ok(![...store.keys()].some(k => k.startsWith(SLOPE_CACHE_PREFIX)), 'mixed-source slope answer not cached');
+  } finally { restore(); }
+});
+
+test('cache: terrain and slope use the v2 prefixes (answers carry elevationSources)', () => {
+  assert.equal(TERRAIN_CACHE_PREFIX, 'https://acresx.internal/cache/terrain/v2/');
+  assert.equal(SLOPE_CACHE_PREFIX, 'https://acresx.internal/cache/slope-grid/v2/');
+});
+
+test('hedges: a hedge starts when its timer fires, even if the clock reads short of the delay', async () => {
+  // Node can fire a timer with Date.now() about 1 ms before its delay (seen in 2 of 200 CI runs).
+  // Mocking setTimeout but not Date fires the identify timer with no time passed at all.
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    stubFetch({ '3dep': hang, epqs: hang });
+    const points = [{ lon: -116.76, lat: 47.5446 }];
+    let result = null;
+    const pending = elevationSamplesFt(points).then(r => { result = r; });
+    for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(count('identify'), 0, 'not before the hedge timer');
+    mock.timers.tick(6000); // ELEVATION_TIMING.identifyAfterMs
+    for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(count('identify'), 1, 'identify started on its timer');
+    await pending;
+    assert.deepEqual(result.from, ['identify']);
+  } finally { mock.timers.reset(); }
 });
