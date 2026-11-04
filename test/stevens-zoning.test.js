@@ -15,6 +15,7 @@ import { getStevensCountyIntelligence, countyDistrict, STEVENS_COUNTY_ZONING } f
 import { decideJurisdiction, stevensCityInfo } from '../src/counties/stevens-cities.js';
 import { getStevensZoneRules, stevensRulesKey } from '../src/zoning/stevens-rules.js';
 import { getZoningProfile } from '../src/zoning-counties.js';
+import { makeLazyContext, readPublic } from './ui-harness.js';
 
 const profile = getZoningProfile('Stevens');
 const realFetch = globalThis.fetch;
@@ -391,4 +392,71 @@ test('/api/zoning-rules maps the new named codes, the old numeric ones, and keep
   assert.equal(city.status, 'zone_not_mapped');
   // The old label still counts as the county.
   assert.equal((await rules({ county: 'Stevens', zoneCode: 'RA-5', jurisdiction: 'Stevens County (unincorporated areas)' })).available, true);
+});
+
+// ---- Browser fallback ('stevens-zoning')
+
+const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov'];
+function browser(fetchImpl) {
+  const h = makeLazyContext();
+  const timer = (fn, ms) => { const t = setTimeout(fn, ms); t.unref?.(); return t; };
+  Object.assign(h.context, { URL, URLSearchParams, AbortController, Response, Headers, fetch: fetchImpl, setTimeout: timer, clearTimeout });
+  h.run(readPublic('browser-fallback.js'));
+  return h.context.AcresXFallback;
+}
+function assertSafe(list) {
+  assert.ok(list.length > 0);
+  for (const c of list) {
+    assert.ok(ALLOWED.includes(c.host), c.host);
+    assert.equal(c.credentials, 'omit');
+    assert.equal(c.redirect, 'error');
+    const outFields = c.params.get('outFields');
+    assert.ok(outFields && outFields !== '*');
+    assert.ok(c.method === 'GET' || c.headers['Content-Type'] === 'application/x-www-form-urlencoded');
+  }
+}
+
+for (const [id, failing] of [['8974701', 1], ['2378001', 1], ['0231200', 2], ['0000500', 0], ['0648500', 1], ['0763202', 0]]) {
+  test(`stevens-zoning parity on recorded ${id}: a blocked layer ${failing} recovered in the browser equals the Worker's healthy answer`, async () => {
+    const fx = fixture(id);
+    const body = { ...bodyOf(fx), county: 'Stevens' };
+    stub(fx);
+    const healthy = plain(await (await worker.fetch(post('/api/zoning-permits', body), env, {})).json());
+    const healthyCalls = calls;
+    store.clear();
+    stub(fx, [[layer(failing), () => new Response('Forbidden', { status: 403 })]]);
+    const failed = await worker.fetch(post('/api/zoning-permits', body), env, {});
+    const hint = (await failed.clone().json()).fallback;
+    assert.equal(hint.kind, 'stevens-zoning');
+    const b = stubFetch(fx);
+    const fb = browser(b.fetch);
+    const recovered = await fb.recover('/api/zoning-permits', failed);
+    assert.equal(recovered.status, 200);
+    assert.deepEqual(await recovered.json(), healthy);
+    assert.deepEqual(Object.keys(fb.loaded()), ['stevens-zoning']);
+    assertSafe(b.calls);
+    // Same layers and fields as the Worker.
+    const fieldsOf = list => [...new Set(list.map(c => `${pathOf(c.url)} ${c.params.get('outFields')}`))].sort();
+    assert.deepEqual(fieldsOf(b.calls), fieldsOf(healthyCalls));
+  });
+}
+
+test('stevens-zoning: a decisive layer failing in the browser too keeps the Worker answer', async () => {
+  const fx = fixture('8974701');
+  const body = { ...bodyOf(fx), county: 'Stevens' };
+  stub(fx, [[layer(1), down]]);
+  const failed = await worker.fetch(post('/api/zoning-permits', body), env, {});
+  const b = stubFetch(fx, [[layer(1), down]]);
+  const fb = browser(b.fetch);
+  const kept = await fb.recover('/api/zoning-permits', failed);
+  assert.equal(kept, failed);
+  assert.deepEqual(Object.keys(fb.loaded()), []);
+});
+
+test('the Stevens rules module and county layer URL agree with the browser copy', () => {
+  const src = readPublic('browser-fallback.js');
+  assert.ok(src.includes(STEVENS_COUNTY_ZONING.replace(/\/1$/, '')));
+  for (const code of ['RA-5', 'RA-10', 'RA-20', 'AR-10', 'F', 'A', 'R-1', 'R-2', 'UO', 'B', 'I']) {
+    assert.ok(src.includes(`'${getStevensZoneRules(code).name}'`), code);
+  }
 });

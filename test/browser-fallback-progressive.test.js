@@ -14,7 +14,7 @@ import { makeClock, makeContext, readPublic } from './ui-harness.js';
 
 const recorded = JSON.parse(readFileSync(new URL('./fixtures/browser-fallback-50N04W323200.json', import.meta.url), 'utf8'));
 const PIN = '50N04W323200';
-const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov'];
+const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov'];
 const IDWR_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query';
 const KC_CITY_LIMITS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18/query';
 const KC_PARCELS = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query';
