@@ -147,3 +147,47 @@ test('report: other counties keep the four-column identity row with no assessor 
   assert.ok(!html.includes('Assessor Class'));
   assert.match(html, /<span>Assessed Value<\/span><strong>\$120,000<\/strong>/);
 });
+
+// ---- Stevens County WA (src/counties/stevens-assessor.js): same countyRecords shape as Kootenai.
+
+// The API's answer for 2342700 (test/fixtures/stevens-assessor.json, see test/stevens-assessor.test.js).
+const stevens = {
+  available: true, state: 'WA', county: 'Stevens', parcelId: '2342700', countySource: 'Stevens County Assessor (RealPropertyParcels_Public)',
+  countyRecords: [{
+    parcelNumber: '2342700', propertyId: 43102, landValue: 12794, improvementValue: 14000, totalValue: 26794, taxableValue: 26794,
+    marketLandValue: 336000, marketValue: 350000, netValue: 26794, taxYear: 2026, assessorAcres: 280, taxCodeArea: '021-115',
+    propertyClass: '88', propertyClassDescription: 'Designated forest land under chapter 84.33 RCW', propertyClassNote: 'Tax category, not zoning',
+    landSchedule: '88-DFL', currentUse: { status: 'classified', program: 'Designated forest land (RCW 84.33)' }
+  }]
+};
+
+test('overview: Stevens fills assessed, land and year, the land use code as a tax category, market value and current use', () => {
+  const { A, fact, document } = page();
+  A.renderAssessment(A.normalize(stevens));
+  assert.equal(fact('overviewAssessorValue'), '$26,794');
+  assert.equal(fact('overviewLandValue'), '$12,794');
+  assert.equal(fact('overviewAssessmentYear'), '2026');
+  assert.equal(fact('overviewAssessorClass'), '88 – Designated forest land under chapter 84.33 RCW');
+  assert.equal(document.getElementById('overviewAssessorClassWrap').querySelector('small.assessor-class-note').textContent, 'Tax category, not zoning');
+  assert.equal(document.getElementById('propertyAssessmentSource').innerHTML,
+    '<strong>Assessment source:</strong> Stevens County Assessor · Improvements $14,000 · Net taxable $26,794 · Market value $350,000 · Designated forest land (RCW 84.33). Assessor values are informational and are not the current tax bill.');
+});
+
+test('overview: a Stevens record with no values shows "Not available" and the note, never $0', () => {
+  const { A, fact, document } = page();
+  const empty = { ...stevens, countyRecords: [{ ...stevens.countyRecords[0], landValue: null, improvementValue: null, totalValue: null, taxableValue: null, marketLandValue: null, marketValue: null, netValue: null, propertyClass: '99', propertyClassDescription: 'Other undeveloped land', currentUse: { status: 'not_classified', program: null }, valuesNote: 'The assessor record for this parcel carries no values. Check with the Stevens County Assessor.' }] };
+  A.renderAssessment(A.normalize(empty));
+  assert.equal(fact('overviewAssessorValue'), 'Not available');
+  assert.equal(fact('overviewLandValue'), 'Not available');
+  assert.equal(fact('overviewAssessorClass'), '99 – Other undeveloped land');
+  const source = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.ok(!source.includes('$0'), source);
+  assert.match(source, /Not in a current-use program\. The assessor record for this parcel carries no values\./);
+});
+
+test('report: Stevens shows the assessor class next to zoning and the assessed value', () => {
+  const { report } = page();
+  const html = report({ parcel: { type: 'Feature', properties: { ORIG_PARCEL_ID: '2342700' }, geometry: null }, propertyAssessment: stevens, zoningPermits: { zoning: { code: 'AR-10' } } });
+  assert.match(html, /<span>Zoning<\/span><strong>AR-10<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>88 – Designated forest land under chapter 84.33 RCW<\/strong><small>Tax category, not zoning<\/small>/);
+  assert.match(html, /<span>Assessed Value<\/span><strong>\$26,794<\/strong><\/div><div><span>Land Value<\/span><strong>\$12,794<\/strong>/);
+});

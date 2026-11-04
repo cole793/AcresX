@@ -3,7 +3,7 @@
 // (public/property-report-v2.js), via public/acreage.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderOverview, renderReport, acresToSqm } from './ui-harness.js';
+import { renderOverview, renderOverviewWithAssessment, renderReport, acresToSqm } from './ui-harness.js';
 
 const NOTE = 'Assessor and mapped acreage differ; verify with the county.';
 const square = { type: 'Polygon', coordinates: [[[-116.6, 47.3], [-116.59, 47.3], [-116.59, 47.31], [-116.6, 47.31], [-116.6, 47.3]]] };
@@ -58,4 +58,22 @@ test('report density warning uses assessor acres when present, else mapped', () 
   assert.equal(densityNote(report(cases.far, density)), '2.89 acres (assessor)');
   assert.equal(densityNote(report(cases.mappedOnly, density)), '1.98 acres (mapped)');
   assert.equal(densityNote(report(cases.assessorOnly, density)), '2.89 acres (assessor)');
+});
+
+// Stevens: the WA statewide parcel record has no assessor acreage; the assessor's legal acres
+// arrive with /api/property-assessment and fill the "show both" display afterwards.
+test('overview: Stevens assessor acres from the assessment are shown next to mapped acreage', () => {
+  const stevensParcel = () => ({ type: 'Feature', geometry: square, properties: { ORIG_PARCEL_ID: '2611300', _countyDisplay: 'Stevens' } });
+  const before = renderOverview({ parcel: stevensParcel(), mappedSqm: acresToSqm(5.94) });
+  assert.match(before.detail, /sq ft · mapped area$/);
+  const after = renderOverviewWithAssessment({ parcel: stevensParcel(), mappedSqm: acresToSqm(5.94), assessorAcres: 6.5 });
+  assert.deepEqual(after.overview, { acres: '6.50', detail: '6.50 ac (assessor) · 5.94 ac mapped', note: '' });
+  assert.equal(after.properties.ACRES, 6.5);
+  // A parcel that already has assessor acreage (Kootenai county layer) keeps its own.
+  const kootenai = renderOverviewWithAssessment({ parcel: parcel({ ACRES: 2.888 }), mappedSqm: acresToSqm(1.977409), assessorAcres: 3.1 });
+  assert.equal(kootenai.properties.ACRES, 2.888);
+  assert.equal(kootenai.overview.acres, '2.89');
+  // No assessor acres (or a 0) changes nothing.
+  const none = renderOverviewWithAssessment({ parcel: stevensParcel(), mappedSqm: acresToSqm(5.94), assessorAcres: 0 });
+  assert.equal(none.properties.ACRES, undefined);
 });

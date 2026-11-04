@@ -247,6 +247,15 @@
     if (version) version.textContent = 'AcresX v0.11 Property Overview';
   }
 
+  // For late data that changes the acreage (Stevens assessor acres arrive with the assessment,
+  // public/property-assessment.js): redraw only the acreage facts.
+  window.AcresXOverview = {
+    refreshAcreage() {
+      if (typeof last === 'undefined' || !last?.parcel || !document.getElementById('overviewAcres')) return;
+      renderAcreage(mappedArea(last.parcel));
+    }
+  };
+
   if (typeof renderSummary === 'function') {
     const baseRenderSummary = renderSummary;
     renderSummary = function (...args) {
