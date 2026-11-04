@@ -274,6 +274,8 @@ test('saved WA configs: about 12 parcels, every acreage band, city and unincorpo
     assert.ok(checked.length >= 3, `${name}: ${checked.length} parcels with expected zoning`);
     for (const p of checked) assert.match(p.why, /https:\/\/\S+\/query\?f=json/, `${p.parcelId}: no source URL in why`);
   }
-  // Spokane has a FEMA AE parcel; Stevens has no FEMA NFHL panels, so none is expected there.
+  // Spokane has a FEMA AE parcel. Stevens has no FEMA NFHL panels; its A/AE parcels come from the
+  // county's digitized FEMA FIRM (src/counties/stevens-flood.js).
   assert.ok(readConfig('spokane').parcels.some(p => p.expected?.['flood.zones'] === 'AE' && p.expected['flood.high'] === true));
+  assert.ok(readConfig('stevens').parcels.some(p => p.expected?.['flood.high'] === true && /MapServer\/19\/query\?f=json/.test(p.why)));
 });

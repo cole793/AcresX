@@ -33,11 +33,11 @@
     {
       "parcelId": "2371220",
       "label": "Northport situs, 4.44 ac, RA-10, wetlands",
-      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=10, zoningtext RA-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.805819,48.913054&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). No Stevens panels in FEMA NFHL. Checked 2026-11-02.",
+      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=10, zoningtext RA-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.805819,48.913054&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). No Stevens panels in FEMA NFHL. Checked 2026-11-02. Flood (2026-11-04): FEMA NFHL has no features here, so AcresX asks the county's digitized FEMA FIRM. The parcel outline sent to that layer (esriGeometryPolygon, inSR 4326, outFields zone_,sfha,floodway,firm_panel) returns AE (sfha IN, panel 5301850125B) and X; the AE area is about 10% of the parcel, along the Columbia River at Northport. Point check inside it: https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19/query?f=json&geometry=-117.805072,48.912865&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zone_,sfha,floodway,firm_panel&returnGeometry=false returns zone_ AE, sfha IN.",
       "expected": {
         "zoning.code": "10",
         "zoningRules.code": "RA-10",
-        "flood.high": false
+        "flood.high": true
       }
     },
     {
@@ -61,8 +61,10 @@
     {
       "parcelId": "8673053",
       "label": "unincorporated, 17 ac, RA-5, wetlands",
-      "why": "Unincorporated 5-40 ac parcel with a blank situs city (picked by discovery 2026-11-02, seed 42).",
-      "expected": {}
+      "why": "Unincorporated 5-40 ac parcel with a blank situs city (picked by discovery 2026-11-02, seed 42). Flood (2026-11-04): no FEMA NFHL features; the parcel outline sent to the county's digitized FEMA FIRM returns zone A (sfha IN, panel 5301850420B) and X, the A area about 20% of the parcel. Point check inside it: https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19/query?f=json&geometry=-117.819443,48.316154&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zone_,sfha,floodway,firm_panel&returnGeometry=false returns zone_ A, sfha IN.",
+      "expected": {
+        "flood.high": true
+      }
     },
     {
       "parcelId": "2342700",
@@ -77,11 +79,11 @@
     {
       "parcelId": "5320900",
       "label": "Loon Lake, 190 ac, RA-10, wetlands",
-      "why": "Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=10, zoningtext RA-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.570428,48.174436&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). No Stevens panels in FEMA NFHL. Checked 2026-11-02.",
+      "why": "Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=10, zoningtext RA-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.570428,48.174436&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). No Stevens panels in FEMA NFHL. Checked 2026-11-02. Flood (2026-11-04): flood.high was false before AcresX asked the county's digitized FEMA FIRM; the parcel outline sent to that layer returns two zone A polygons (sfha IN, panel 5301850525B) and X, the A areas about 16% of the parcel. Point check inside one: https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19/query?f=json&geometry=-117.572478,48.174662&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zone_,sfha,floodway,firm_panel&returnGeometry=false returns zone_ A, sfha IN.",
       "expected": {
         "zoning.code": "10",
         "zoningRules.code": "RA-10",
-        "flood.high": false
+        "flood.high": true
       }
     },
     {
