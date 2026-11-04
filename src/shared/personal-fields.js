@@ -8,9 +8,10 @@
 // state layers AcresX reads (statewide Idaho OWNER1/OWNER2/PUBLIC_STD/MAIL_*, IDWR OWNER,
 // Montana OwnerName/OwnerAddress*/CareOfTaxpayer, Yellowstone OWNER/OWNER_NAME/MAILADDRESS*,
 // WA Ecology wells OwnerName, Kootenai Owner_*/Recipient_*/
-// DeliveryAddr_*/LastLine_*, Spokane owner_name/taxpayer_name). It is case-insensitive and
+// DeliveryAddr_*/LastLine_*, Spokane owner_name/taxpayer_name, Stevens assessor file_as_na/
+// last_name/first_name/owner_id/addr_*). It is case-insensitive and
 // anchored at the start, so it does not match zoning fields such as NAME or ZONE_NAME.
-export const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|legalpartytype)/i;
+export const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|(first|last|middle)_name|file_as|addr_|legalpartytype)/i;
 
 // Deep copy of `value` with every object key matching PERSONAL_FIELD removed.
 export function withoutPersonalFields(value, pattern = PERSONAL_FIELD) {

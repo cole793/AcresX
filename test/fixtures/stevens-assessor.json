@@ -1,0 +1,561 @@
+{
+  "note": "Recorded 2026-11-04 from https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query with where=PARCELN='<id>', outFields=STEVENS_ASSESSOR_FIELDS, returnGeometry=false, resultRecordCount=10, f=json. No owner or mailing field was requested; miss is PARCELN='9999999'.",
+  "answers": {
+    "2342700": {
+      "displayFieldName": "hood_name",
+      "fieldAliases": {
+        "PARCELN": "PARCELN",
+        "prop_id": "prop_id",
+        "year": "year",
+        "property_u": "property_u",
+        "Ag_Sched": "Ag_Sched",
+        "legal_acre": "legal_acre",
+        "tax_area_n": "tax_area_n",
+        "market_lan": "market_lan",
+        "assessed_l": "assessed_l",
+        "improvemen": "improvemen",
+        "market_1": "market_1",
+        "appraised_": "appraised_",
+        "taxable_va": "taxable_va"
+      },
+      "fields": [
+        {
+          "name": "PARCELN",
+          "type": "esriFieldTypeString",
+          "alias": "PARCELN",
+          "length": 7
+        },
+        {
+          "name": "prop_id",
+          "type": "esriFieldTypeDouble",
+          "alias": "prop_id"
+        },
+        {
+          "name": "year",
+          "type": "esriFieldTypeInteger",
+          "alias": "year"
+        },
+        {
+          "name": "property_u",
+          "type": "esriFieldTypeString",
+          "alias": "property_u",
+          "length": 254
+        },
+        {
+          "name": "Ag_Sched",
+          "type": "esriFieldTypeString",
+          "alias": "Ag_Sched",
+          "length": 254
+        },
+        {
+          "name": "legal_acre",
+          "type": "esriFieldTypeDouble",
+          "alias": "legal_acre"
+        },
+        {
+          "name": "tax_area_n",
+          "type": "esriFieldTypeString",
+          "alias": "tax_area_n",
+          "length": 254
+        },
+        {
+          "name": "market_lan",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_lan"
+        },
+        {
+          "name": "assessed_l",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_l"
+        },
+        {
+          "name": "improvemen",
+          "type": "esriFieldTypeInteger",
+          "alias": "improvemen"
+        },
+        {
+          "name": "market_1",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_1"
+        },
+        {
+          "name": "appraised_",
+          "type": "esriFieldTypeInteger",
+          "alias": "appraised_"
+        },
+        {
+          "name": "taxable_va",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_va"
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PARCELN": "2342700",
+            "prop_id": 43102.0,
+            "year": 2026,
+            "property_u": "88",
+            "Ag_Sched": "88-DFL",
+            "legal_acre": 280.0,
+            "tax_area_n": "021-115",
+            "market_lan": 336000,
+            "assessed_l": 12794,
+            "improvemen": 14000,
+            "market_1": 350000,
+            "appraised_": 26794,
+            "taxable_va": 26794
+          }
+        }
+      ]
+    },
+    "0231200": {
+      "displayFieldName": "hood_name",
+      "fieldAliases": {
+        "PARCELN": "PARCELN",
+        "prop_id": "prop_id",
+        "year": "year",
+        "property_u": "property_u",
+        "Ag_Sched": "Ag_Sched",
+        "legal_acre": "legal_acre",
+        "tax_area_n": "tax_area_n",
+        "market_lan": "market_lan",
+        "assessed_l": "assessed_l",
+        "improvemen": "improvemen",
+        "market_1": "market_1",
+        "appraised_": "appraised_",
+        "taxable_va": "taxable_va"
+      },
+      "fields": [
+        {
+          "name": "PARCELN",
+          "type": "esriFieldTypeString",
+          "alias": "PARCELN",
+          "length": 7
+        },
+        {
+          "name": "prop_id",
+          "type": "esriFieldTypeDouble",
+          "alias": "prop_id"
+        },
+        {
+          "name": "year",
+          "type": "esriFieldTypeInteger",
+          "alias": "year"
+        },
+        {
+          "name": "property_u",
+          "type": "esriFieldTypeString",
+          "alias": "property_u",
+          "length": 254
+        },
+        {
+          "name": "Ag_Sched",
+          "type": "esriFieldTypeString",
+          "alias": "Ag_Sched",
+          "length": 254
+        },
+        {
+          "name": "legal_acre",
+          "type": "esriFieldTypeDouble",
+          "alias": "legal_acre"
+        },
+        {
+          "name": "tax_area_n",
+          "type": "esriFieldTypeString",
+          "alias": "tax_area_n",
+          "length": 254
+        },
+        {
+          "name": "market_lan",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_lan"
+        },
+        {
+          "name": "assessed_l",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_l"
+        },
+        {
+          "name": "improvemen",
+          "type": "esriFieldTypeInteger",
+          "alias": "improvemen"
+        },
+        {
+          "name": "market_1",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_1"
+        },
+        {
+          "name": "appraised_",
+          "type": "esriFieldTypeInteger",
+          "alias": "appraised_"
+        },
+        {
+          "name": "taxable_va",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_va"
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PARCELN": "0231200",
+            "prop_id": 13056.0,
+            "year": 2026,
+            "property_u": "11",
+            "Ag_Sched": " ",
+            "legal_acre": 0.12,
+            "tax_area_n": "003-C 36",
+            "market_lan": 27000,
+            "assessed_l": 27000,
+            "improvemen": 63567,
+            "market_1": 90567,
+            "appraised_": 90567,
+            "taxable_va": 90567
+          }
+        }
+      ]
+    },
+    "2148112": {
+      "displayFieldName": "hood_name",
+      "fieldAliases": {
+        "PARCELN": "PARCELN",
+        "prop_id": "prop_id",
+        "year": "year",
+        "property_u": "property_u",
+        "Ag_Sched": "Ag_Sched",
+        "legal_acre": "legal_acre",
+        "tax_area_n": "tax_area_n",
+        "market_lan": "market_lan",
+        "assessed_l": "assessed_l",
+        "improvemen": "improvemen",
+        "market_1": "market_1",
+        "appraised_": "appraised_",
+        "taxable_va": "taxable_va"
+      },
+      "fields": [
+        {
+          "name": "PARCELN",
+          "type": "esriFieldTypeString",
+          "alias": "PARCELN",
+          "length": 7
+        },
+        {
+          "name": "prop_id",
+          "type": "esriFieldTypeDouble",
+          "alias": "prop_id"
+        },
+        {
+          "name": "year",
+          "type": "esriFieldTypeInteger",
+          "alias": "year"
+        },
+        {
+          "name": "property_u",
+          "type": "esriFieldTypeString",
+          "alias": "property_u",
+          "length": 254
+        },
+        {
+          "name": "Ag_Sched",
+          "type": "esriFieldTypeString",
+          "alias": "Ag_Sched",
+          "length": 254
+        },
+        {
+          "name": "legal_acre",
+          "type": "esriFieldTypeDouble",
+          "alias": "legal_acre"
+        },
+        {
+          "name": "tax_area_n",
+          "type": "esriFieldTypeString",
+          "alias": "tax_area_n",
+          "length": 254
+        },
+        {
+          "name": "market_lan",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_lan"
+        },
+        {
+          "name": "assessed_l",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_l"
+        },
+        {
+          "name": "improvemen",
+          "type": "esriFieldTypeInteger",
+          "alias": "improvemen"
+        },
+        {
+          "name": "market_1",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_1"
+        },
+        {
+          "name": "appraised_",
+          "type": "esriFieldTypeInteger",
+          "alias": "appraised_"
+        },
+        {
+          "name": "taxable_va",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_va"
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PARCELN": "2148112",
+            "prop_id": 39607.0,
+            "year": null,
+            "property_u": null,
+            "Ag_Sched": "88-DFL",
+            "legal_acre": 33.82,
+            "tax_area_n": "119-EMS 5 36",
+            "market_lan": null,
+            "assessed_l": null,
+            "improvemen": null,
+            "market_1": null,
+            "appraised_": null,
+            "taxable_va": null
+          }
+        },
+        {
+          "attributes": {
+            "PARCELN": "2148112",
+            "prop_id": 39627.0,
+            "year": null,
+            "property_u": null,
+            "Ag_Sched": "88-DFL",
+            "legal_acre": 33.82,
+            "tax_area_n": "119-EMS 5 36",
+            "market_lan": null,
+            "assessed_l": null,
+            "improvemen": null,
+            "market_1": null,
+            "appraised_": null,
+            "taxable_va": null
+          }
+        },
+        {
+          "attributes": {
+            "PARCELN": "2148112",
+            "prop_id": 67209.0,
+            "year": 2026,
+            "property_u": "88",
+            "Ag_Sched": "88-DFL",
+            "legal_acre": 33.82,
+            "tax_area_n": "119-EMS 5 36",
+            "market_lan": 101460,
+            "assessed_l": 48198,
+            "improvemen": 0,
+            "market_1": 101460,
+            "appraised_": 48198,
+            "taxable_va": 48198
+          }
+        }
+      ]
+    },
+    "8974701": {
+      "displayFieldName": "hood_name",
+      "fieldAliases": {
+        "PARCELN": "PARCELN",
+        "prop_id": "prop_id",
+        "year": "year",
+        "property_u": "property_u",
+        "Ag_Sched": "Ag_Sched",
+        "legal_acre": "legal_acre",
+        "tax_area_n": "tax_area_n",
+        "market_lan": "market_lan",
+        "assessed_l": "assessed_l",
+        "improvemen": "improvemen",
+        "market_1": "market_1",
+        "appraised_": "appraised_",
+        "taxable_va": "taxable_va"
+      },
+      "fields": [
+        {
+          "name": "PARCELN",
+          "type": "esriFieldTypeString",
+          "alias": "PARCELN",
+          "length": 7
+        },
+        {
+          "name": "prop_id",
+          "type": "esriFieldTypeDouble",
+          "alias": "prop_id"
+        },
+        {
+          "name": "year",
+          "type": "esriFieldTypeInteger",
+          "alias": "year"
+        },
+        {
+          "name": "property_u",
+          "type": "esriFieldTypeString",
+          "alias": "property_u",
+          "length": 254
+        },
+        {
+          "name": "Ag_Sched",
+          "type": "esriFieldTypeString",
+          "alias": "Ag_Sched",
+          "length": 254
+        },
+        {
+          "name": "legal_acre",
+          "type": "esriFieldTypeDouble",
+          "alias": "legal_acre"
+        },
+        {
+          "name": "tax_area_n",
+          "type": "esriFieldTypeString",
+          "alias": "tax_area_n",
+          "length": 254
+        },
+        {
+          "name": "market_lan",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_lan"
+        },
+        {
+          "name": "assessed_l",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_l"
+        },
+        {
+          "name": "improvemen",
+          "type": "esriFieldTypeInteger",
+          "alias": "improvemen"
+        },
+        {
+          "name": "market_1",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_1"
+        },
+        {
+          "name": "appraised_",
+          "type": "esriFieldTypeInteger",
+          "alias": "appraised_"
+        },
+        {
+          "name": "taxable_va",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_va"
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PARCELN": "8974701",
+            "prop_id": 72219.0,
+            "year": 2026,
+            "property_u": "99",
+            "Ag_Sched": " ",
+            "legal_acre": 0.75,
+            "tax_area_n": "000",
+            "market_lan": 0,
+            "assessed_l": 0,
+            "improvemen": 0,
+            "market_1": 0,
+            "appraised_": 0,
+            "taxable_va": 0
+          }
+        }
+      ]
+    },
+    "miss": {
+      "displayFieldName": "hood_name",
+      "fieldAliases": {
+        "PARCELN": "PARCELN",
+        "prop_id": "prop_id",
+        "year": "year",
+        "property_u": "property_u",
+        "Ag_Sched": "Ag_Sched",
+        "legal_acre": "legal_acre",
+        "tax_area_n": "tax_area_n",
+        "market_lan": "market_lan",
+        "assessed_l": "assessed_l",
+        "improvemen": "improvemen",
+        "market_1": "market_1",
+        "appraised_": "appraised_",
+        "taxable_va": "taxable_va"
+      },
+      "fields": [
+        {
+          "name": "PARCELN",
+          "type": "esriFieldTypeString",
+          "alias": "PARCELN",
+          "length": 7
+        },
+        {
+          "name": "prop_id",
+          "type": "esriFieldTypeDouble",
+          "alias": "prop_id"
+        },
+        {
+          "name": "year",
+          "type": "esriFieldTypeInteger",
+          "alias": "year"
+        },
+        {
+          "name": "property_u",
+          "type": "esriFieldTypeString",
+          "alias": "property_u",
+          "length": 254
+        },
+        {
+          "name": "Ag_Sched",
+          "type": "esriFieldTypeString",
+          "alias": "Ag_Sched",
+          "length": 254
+        },
+        {
+          "name": "legal_acre",
+          "type": "esriFieldTypeDouble",
+          "alias": "legal_acre"
+        },
+        {
+          "name": "tax_area_n",
+          "type": "esriFieldTypeString",
+          "alias": "tax_area_n",
+          "length": 254
+        },
+        {
+          "name": "market_lan",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_lan"
+        },
+        {
+          "name": "assessed_l",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_l"
+        },
+        {
+          "name": "improvemen",
+          "type": "esriFieldTypeInteger",
+          "alias": "improvemen"
+        },
+        {
+          "name": "market_1",
+          "type": "esriFieldTypeInteger",
+          "alias": "market_1"
+        },
+        {
+          "name": "appraised_",
+          "type": "esriFieldTypeInteger",
+          "alias": "appraised_"
+        },
+        {
+          "name": "taxable_va",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_va"
+        }
+      ],
+      "features": []
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
 import { getKootenaiAssessment, KC_ASSESSOR, KC_ASSESSOR_SOURCE } from '../counties/kootenai-assessor.js';
+import { getStevensAssessment, STEVENS_ASSESSOR, STEVENS_ASSESSOR_SOURCE } from '../counties/stevens-assessor.js';
 import { FALLBACK_KINDS, fallbackHint } from '../shared/fallback.js';
 import { MONTANA_CADASTRAL_FIELDS } from '../states/montana/parcels.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
@@ -50,6 +51,18 @@ export async function handlePropertyTaxTest(request) {
   if (state === 'WA' && /^spokane$/i.test(county)) {
     const features = await arcgis(SPOKANE, { where: `PID_NUM='${safe(parcelId)}'`, outFields: 'PID_NUM,tax_year,asmt_year,land_value,exmp_amt,asmt_year_exmp_amt,acreage,site_address,prop_use_desc' }, { label: 'spokane-assessor-values' });
     return json({ available: Boolean(features.length), state, county: 'Spokane', parcelId, source: 'Spokane County Assessor SCOUTSimple', records: features.map(f => f.attributes || {}) }, 200, 'no-store');
+  }
+
+  // Stevens: the county assessor layer, values only (owner fields are never requested). Failure
+  // degrades to available:false for this layer only, with a browser hint when a browser might
+  // get through. Same countyRecords shape as Kootenai.
+  if (state === 'WA' && /^stevens$/i.test(county)) {
+    const result = await getStevensAssessment(parcelId);
+    const base = { state, county: 'Stevens', parcelId, countySource: STEVENS_ASSESSOR_SOURCE, countySourceUrl: STEVENS_ASSESSOR };
+    if (result.status === 'found') return json({ available: true, ...base, countyRecords: [result.record] }, 200, 'no-store');
+    if (result.status === 'error') console.warn('Stevens assessor lookup failed', result.error);
+    const fallback = result.status === 'error' && result.browserFallback ? { fallback: fallbackHint(FALLBACK_KINDS.stevensAssessor, { parcelId }) } : {};
+    return json({ available: false, ...base, countyRecords: [], ...(result.status === 'error' ? { error: result.error } : { note: 'No Stevens County Assessor record matched this parcel number.' }), ...fallback }, 200, 'no-store');
   }
 
   if (state === 'MT') {
