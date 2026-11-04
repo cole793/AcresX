@@ -120,7 +120,7 @@ const CASES = [
   ['zoning-permits Yellowstone', post('/api/zoning-permits', { county: 'Yellowstone', ...parcel })],
   ['zoning-permits Gallatin', post('/api/zoning-permits', { county: 'Gallatin', ...parcel })],
   ['zoning-permits Kootenai', post('/api/zoning-permits', { county: 'Kootenai', ...parcel })],
-  ['zoning-permits Stevens (legacy)', post('/api/zoning-permits', { county: 'Stevens', ...parcel })],
+  ['zoning-permits Stevens', post('/api/zoning-permits', { county: 'Stevens', ...parcel }), b => assert.equal(b.countyStatus, 'stevens-official-adapter-v1')],
   ['arcgis parcel (legacy passthrough)', post('/api/arcgis', { service: 'parcel', params: { f: 'geojson', where: '1=1', outFields: '*' } }), b => assert.equal(b.features[0].properties.PARCELID, PARCEL)],
   ['arcgis wells (legacy passthrough)', post('/api/arcgis', { service: 'wells', params: { f: 'geojson', where: '1=1', outFields: '*' } }), b => assert.equal(b.features[0].properties.WellTagNr, 'BAA123')],
   ['arcgis utility (legacy passthrough)', post('/api/arcgis', { service: 'utility', params: { f: 'json', where: '1=1', outFields: '*' } }), b => assert.equal(b.features[0].attributes.NAME, 'TEST UTILITY')],

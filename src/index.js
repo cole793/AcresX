@@ -4,6 +4,7 @@ import { getSpokaneCountyIntelligence } from './counties/spokane.js';
 import { getYellowstoneCountyIntelligence } from './counties/yellowstone.js';
 import { getGallatinCountyIntelligence } from './counties/gallatin.js';
 import { getKootenaiCountyIntelligence } from './counties/kootenai.js';
+import { getStevensCountyIntelligence } from './counties/stevens.js';
 import { findYellowstoneParcel, findMontanaParcel } from './states/montana/parcels.js';
 import { findMontanaWells } from './states/montana/wells.js';
 import { findIdahoParcel } from './states/idaho/parcels.js';
@@ -46,6 +47,9 @@ async function handleZoningPermits(request) {
   if (/^yellowstone$/i.test(county)) return json(await getYellowstoneCountyIntelligence(body), 200, 'public, max-age=3600, s-maxage=86400');
   if (/^gallatin$/i.test(county)) return json(await getGallatinCountyIntelligence(body), 200, 'no-store');
   if (/^kootenai$/i.test(county)) return json(await getKootenaiCountyIntelligence(body), 200, 'no-store');
+  // Stevens: browser/edge caching only for an answer where every layer answered (the layer answers
+  // themselves are cached in src/counties/stevens.js on the same rule).
+  if (/^stevens$/i.test(county)) { const result = await getStevensCountyIntelligence(body, getZoningProfile('Stevens')); return json(result, 200, result.zoningMatch?.unavailableLayers?.length ? 'no-store' : 'public, max-age=3600, s-maxage=86400'); }
   return null;
 }
 async function runPropertyTaxBrowserTest(request) { const tests = [{ state: 'WA', county: 'Spokane', parcelId: '47174.9017' }, { state: 'MT', county: 'Yellowstone', parcelId: '03092727411010000' }]; const results = []; for(const test of tests){const r=new Request(request.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(test)});results.push(await(await handlePropertyTaxTest(r)).json());} return json({test:'AcresX property tax / assessment sources',results},200,'no-store'); }
@@ -68,6 +72,12 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   if(request.method==='POST'&&url.pathname==='/api/zoning-permits'){
     const clone=request.clone(); let county='';
     try { const body=await clone.json(); county=String(body?.county||'').replace(/\s+County$/i,'').trim(); } catch (_) {}
+    if(/^stevens$/i.test(county)) {
+      // src/counties/stevens.js degrades per layer and does not throw for a parcel with a point;
+      // anything else is an error here, never the legacy discovery path.
+      try { const response=await handleZoningPermits(request); if(response)return response; }
+      catch(error){ return json({available:false,county:'Stevens',state:'WA',countyStatus:'stevens-error',jurisdiction:'Stevens County',permitJurisdiction:{name:'Stevens County'},zoning:{status:'unavailable',label:'Stevens zoning lookup unavailable',note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.'},502,'no-store'); }
+    }
     if(/^(gallatin|kootenai)$/i.test(county)) {
       try { const response=await handleZoningPermits(request); if(response)return response; }
       catch(error){ const isKootenai=/^kootenai$/i.test(county); return json({available:false,county:isKootenai?'Kootenai':'Gallatin',state:isKootenai?'ID':'MT',countyStatus:`${county.toLowerCase()}-error`,jurisdiction:`${isKootenai?'Kootenai':'Gallatin'} County`,permitJurisdiction:{name:`${isKootenai?'Kootenai':'Gallatin'} County`},zoning:{status:'unavailable',label:`${isKootenai?'Kootenai':'Gallatin'} zoning lookup unavailable`,note:error?.message||'County GIS lookup failed.'},permits:[],error:error?.message||'County GIS lookup failed.',...fallbackOf(error)},502,'no-store'); }

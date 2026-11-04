@@ -1,0 +1,442 @@
+{
+ "recorded": "2026-11-04",
+ "note": "Live answers recorded read-only from the Stevens County GIS layers named by each key (Stevens_County_Zoning_Data/MapServer); owner/mailing fields stripped. parcel: statewide WA Current_Parcels geometry and the validator zoning point.",
+ "parcel": {
+  "county": "Stevens",
+  "parcelId": "0648500",
+  "address": "3997 MAPLE ST, LOON LAKE, 99148",
+  "lat": 48.0622654367221,
+  "lon": -117.63091053628301,
+  "geometry": {
+   "type": "Polygon",
+   "coordinates": [
+    [
+     [
+      -117.630658318144,
+      48.0623881009769
+     ],
+     [
+      -117.630658794391,
+      48.0621404654504
+     ],
+     [
+      -117.63116440585,
+      48.0621427286524
+     ],
+     [
+      -117.631160626747,
+      48.0623904518087
+     ],
+     [
+      -117.630658318144,
+      48.0623881009769
+     ]
+    ]
+   ]
+  }
+ },
+ "responses": {
+  "gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query": {
+   "displayFieldName": "NAME",
+   "fieldAliases": {
+    "name": "NAME"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "name",
+     "type": "esriFieldTypeString",
+     "alias": "NAME",
+     "length": 40
+    }
+   ],
+   "features": []
+  },
+  "gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/8/query": {
+   "displayFieldName": "Name",
+   "fieldAliases": {
+    "name": "Name",
+    "type": "Type"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "name",
+     "type": "esriFieldTypeString",
+     "alias": "Name",
+     "length": 20
+    },
+    {
+     "name": "type",
+     "type": "esriFieldTypeString",
+     "alias": "Type",
+     "length": 25
+    }
+   ],
+   "features": [
+    {
+     "attributes": {
+      "name": "Loon Lake",
+      "type": "Business"
+     },
+     "geometry": {
+      "rings": [
+       [
+        [
+         -117.630478,
+         48.06331
+        ],
+        [
+         -117.630478,
+         48.063238
+        ],
+        [
+         -117.629742,
+         48.063243
+        ],
+        [
+         -117.629742,
+         48.063398
+        ],
+        [
+         -117.629043,
+         48.063403
+        ],
+        [
+         -117.629044,
+         48.062746
+        ],
+        [
+         -117.629743,
+         48.062743
+        ],
+        [
+         -117.629904,
+         48.062633
+        ],
+        [
+         -117.6299,
+         48.062249
+        ],
+        [
+         -117.630478,
+         48.062246
+        ],
+        [
+         -117.630479,
+         48.061809
+        ],
+        [
+         -117.630261,
+         48.061663
+        ],
+        [
+         -117.629334,
+         48.061665
+        ],
+        [
+         -117.629134,
+         48.061641
+        ],
+        [
+         -117.629849,
+         48.060548
+        ],
+        [
+         -117.633985,
+         48.06178
+        ],
+        [
+         -117.633983,
+         48.062637
+        ],
+        [
+         -117.633832,
+         48.062752
+        ],
+        [
+         -117.632645,
+         48.062747
+        ],
+        [
+         -117.632646,
+         48.063231
+        ],
+        [
+         -117.63512,
+         48.063241
+        ],
+        [
+         -117.635116,
+         48.063313
+        ],
+        [
+         -117.636016,
+         48.063316
+        ],
+        [
+         -117.636021,
+         48.064569
+        ],
+        [
+         -117.633251,
+         48.064592
+        ],
+        [
+         -117.633256,
+         48.066494
+        ],
+        [
+         -117.630485,
+         48.066491
+        ],
+        [
+         -117.630478,
+         48.06331
+        ]
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  "gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query": {
+   "displayFieldName": "Name",
+   "fieldAliases": {
+    "zoning": "ZONING",
+    "zoningtext": "ZONINGText",
+    "name": "Name",
+    "type": "Type",
+    "zoning_nam": "zoning_nam"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "zoning",
+     "type": "esriFieldTypeInteger",
+     "alias": "ZONING"
+    },
+    {
+     "name": "zoningtext",
+     "type": "esriFieldTypeString",
+     "alias": "ZONINGText",
+     "length": 10
+    },
+    {
+     "name": "name",
+     "type": "esriFieldTypeString",
+     "alias": "Name",
+     "length": 20
+    },
+    {
+     "name": "type",
+     "type": "esriFieldTypeString",
+     "alias": "Type",
+     "length": 25
+    },
+    {
+     "name": "zoning_nam",
+     "type": "esriFieldTypeString",
+     "alias": "zoning_nam",
+     "length": 50
+    }
+   ],
+   "features": [
+    {
+     "attributes": {
+      "zoning": 0,
+      "zoningtext": " ",
+      "name": "Loon Lake",
+      "type": "Business",
+      "zoning_nam": "Loon Lake Business"
+     },
+     "geometry": {
+      "rings": [
+       [
+        [
+         -117.629043,
+         48.063403
+        ],
+        [
+         -117.629044,
+         48.062746
+        ],
+        [
+         -117.629743,
+         48.062743
+        ],
+        [
+         -117.629904,
+         48.062633
+        ],
+        [
+         -117.6299,
+         48.062249
+        ],
+        [
+         -117.630478,
+         48.062246
+        ],
+        [
+         -117.630479,
+         48.061809
+        ],
+        [
+         -117.630261,
+         48.061663
+        ],
+        [
+         -117.629334,
+         48.061665
+        ],
+        [
+         -117.629134,
+         48.061641
+        ],
+        [
+         -117.629849,
+         48.060548
+        ],
+        [
+         -117.633985,
+         48.06178
+        ],
+        [
+         -117.633983,
+         48.062637
+        ],
+        [
+         -117.633832,
+         48.062752
+        ],
+        [
+         -117.632645,
+         48.062747
+        ],
+        [
+         -117.632646,
+         48.063231
+        ],
+        [
+         -117.63512,
+         48.063241
+        ],
+        [
+         -117.635116,
+         48.063313
+        ],
+        [
+         -117.636016,
+         48.063316
+        ],
+        [
+         -117.636021,
+         48.064569
+        ],
+        [
+         -117.633251,
+         48.064592
+        ],
+        [
+         -117.633256,
+         48.066494
+        ],
+        [
+         -117.630485,
+         48.066491
+        ],
+        [
+         -117.630478,
+         48.063238
+        ],
+        [
+         -117.629742,
+         48.063243
+        ],
+        [
+         -117.629742,
+         48.063398
+        ],
+        [
+         -117.629043,
+         48.063403
+        ]
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  "gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/9/query": {
+   "displayFieldName": "Name",
+   "fieldAliases": {
+    "Name": "Name",
+    "Type": "Type"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "Name",
+     "type": "esriFieldTypeString",
+     "alias": "Name",
+     "length": 20
+    },
+    {
+     "name": "Type",
+     "type": "esriFieldTypeString",
+     "alias": "Type",
+     "length": 25
+    }
+   ],
+   "features": []
+  }
+ },
+ "liveResult": {
+  "jurisdiction": "Stevens County",
+  "zoning": {
+   "status": "gis_match",
+   "code": "B",
+   "name": "Loon Lake Business",
+   "label": "Official mapped zoning",
+   "jurisdictionType": "county",
+   "note": "Mapped from the Stevens County zoning map (Title 3 districts). Verify allowed uses, density, setbacks and overlays with Stevens County Land Services. This district is in the Loon Lake LAMIRD (limited area of more intensive rural development).",
+   "url": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer",
+   "sourceUrl": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1",
+   "sourceField": "type",
+   "numericCode": "0",
+   "district": {
+    "community": "Loon Lake",
+    "type": "Business",
+    "area": "lamird"
+   },
+   "rules": "mapped"
+  },
+  "urbanGrowthArea": {
+   "intersects": false,
+   "sourceUrl": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/9"
+  },
+  "lamird": {
+   "intersects": true,
+   "name": "Loon Lake",
+   "type": "Business",
+   "share": 1,
+   "sourceUrl": "https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/8"
+  }
+ }
+}
