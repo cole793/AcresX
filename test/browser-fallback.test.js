@@ -23,11 +23,12 @@ const IDWR = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells
 const ASSESSOR = id => `https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/${id}/query`;
 const FEMA = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
 const ESRI = 'https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis/rest/services/USA_Flood_Hazard_Areas_view/FeatureServer/0/query';
-const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov'];
+const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov'];
 
 // Owner names and mailing addresses in the layers this module reads (Kootenai parcel `Name`,
-// assessor *_Primary / Recipient / mailing fields, IDWR `Owner`, Idaho statewide OWNER*/MAIL_*).
-const PERSONAL = /^(owner\w*|name|\w*name_primary|recipient_\w*|attentionline_\w*|deliveryaddr_\w*|lastline_\w*|(city|state|postalcd|country)_primary|mail\w*|public_std)$/i;
+// assessor *_Primary / Recipient / mailing fields, IDWR `Owner`, Idaho statewide OWNER*/MAIL_*,
+// Stevens assessor file_as_na / last_name / first_name / owner_id / addr_*).
+const PERSONAL = /^(owner\w*|name|\w*name_primary|recipient_\w*|attentionline_\w*|deliveryaddr_\w*|lastline_\w*|(city|state|postalcd|country)_primary|mail\w*|public_std|file_as\w*|(first|last)_name|addr_\w*)$/i;
 
 // A recording fetch. handler({ base, params, n }) returns a body, a Response, or throws.
 function recorder(handler) {
@@ -112,7 +113,7 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'fema-flood']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'fema-flood']);
   assert.equal(typeof fb.run, 'function');
   assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
 });
@@ -355,6 +356,54 @@ test('kootenai-assessor: a failing layer with no hit keeps the Worker answer; a 
   const { api: fb2 } = browser(b.fetch);
   assert.equal((await fb2.run('kootenai-assessor', { parcelId: '47N03W052200' })).countyRecords[0].layerId, 5);
   assert.ok(b.calls.length <= 4, `at most 4 layers in flight, none sent after the hit (sent ${b.calls.length})`);
+});
+
+// ---- 3b. Stevens assessor
+
+const STEVENS = 'https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query';
+const recordedStevens = fixture('stevens-assessor.json').answers;
+const stevensAnswers = id => ({ base, params }) => {
+  if (base !== STEVENS) throw new Error(`unexpected ${base}`);
+  const asked = /PARCELN='(\d+)'/.exec(params.get('where'))?.[1];
+  return asked === id ? recordedStevens[id] : recordedStevens.miss;
+};
+
+test('stevens-assessor parity: recorded hits map to the Worker\'s record (current use, several rows, no values)', async () => {
+  for (const id of ['2342700', '0231200', '2148112', '8974701']) {
+    const w = recorder(stevensAnswers(id));
+    const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: id }, w.fetch);
+    assert.equal(expected.body.available, true, id);
+    const b = recorder(stevensAnswers(id));
+    const { api: fb } = browser(b.fetch);
+    assert.deepEqual(plain(await fb.run('stevens-assessor', { parcelId: id })), expected.body, id);
+    assert.equal(b.calls.length, 1);
+    for (const key of ['where', 'outFields', 'returnGeometry', 'resultRecordCount']) assert.equal(b.calls[0].params.get(key), w.calls[0].params.get(key), `${id} ${key}`);
+    assertSafe(b.calls);
+  }
+});
+
+test('stevens-assessor parity: no record, a typed short number, and a number that cannot be Stevens', async () => {
+  const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: '9999999' }, recorder(stevensAnswers('none')).fetch);
+  const { api: fb } = browser(recorder(stevensAnswers('none')).fetch);
+  assert.deepEqual(plain(await fb.run('stevens-assessor', { parcelId: '9999999' })), expected.body);
+  const b = recorder(stevensAnswers('0231200'));
+  const { api: fb2 } = browser(b.fetch);
+  assert.equal((await fb2.run('stevens-assessor', { parcelId: '231200' })).countyRecords[0].parcelNumber, '0231200');
+  assert.equal(b.calls[0].params.get('where'), "PARCELN='0231200'");
+  const none = recorder(() => { throw new Error('must not be sent'); });
+  const { api: fb3 } = browser(none.fetch);
+  assert.equal((await fb3.run('stevens-assessor', { parcelId: 'RR ROW' })).available, false);
+  assert.equal(none.calls.length, 0);
+});
+
+test('stevens-assessor: a failure in the browser too keeps the Worker answer; owner fields sent anyway are dropped', async () => {
+  const { api: fb } = browser(blocked(503).fetch);
+  await assert.rejects(fb.run('stevens-assessor', { parcelId: '0231200' }), /Stevens County Assessor returned 503/);
+  const all = fixture('stevens-assessor-0231200-all-fields.json');
+  const { api: fb2 } = browser(recorder(() => all).fetch);
+  const body = plain(await fb2.run('stevens-assessor', { parcelId: '0231200' }));
+  assert.equal(body.countyRecords[0].parcelNumber, '0231200');
+  assert.doesNotMatch(JSON.stringify(body), /PLACEHOLDER/);
 });
 
 // ---- 4. FEMA flood
