@@ -19,6 +19,8 @@
 // County paper-map copies (source.digitalFemaMap === false, e.g. Stevens County's digitized FEMA
 // FIRM, src/counties/stevens-flood.js) use the same categories and scores; the detail names the
 // source (source.label) and says FEMA has no digital map there, and the overview says so briefly.
+// A high answer whose A/AE zone covers only part of the parcel adds source.edgeNote (the share
+// and the map's edge accuracy).
 (function (root) {
   const BACKUP_PROVIDER = 'Esri USA Flood Hazard Areas';
   const LIMITED_LABEL = 'Limited flood data';
@@ -121,7 +123,8 @@
     const [main, ...others] = groups;
     if (isPaperMap(flood)) {
       const zones = main.zones.length ? `Flood zone ${main.zones.join(', ')}` : 'Flood zone';
-      return `${zones}${MEANING[cat](main.group)}${others.map(g => `; also zone ${g.zones.join(', ')}${MEANING[g.c](g.group)}`).join('')}. Source: ${paperMapSource(flood)}. ${PAPER_MAP_NOTE}`;
+      const edge = cat === 'high' && flood.source?.edgeNote ? ` ${String(flood.source.edgeNote)}` : '';
+      return `${zones}${MEANING[cat](main.group)}${others.map(g => `; also zone ${g.zones.join(', ')}${MEANING[g.c](g.group)}`).join('')}. Source: ${paperMapSource(flood)}.${edge} ${PAPER_MAP_NOTE}`;
     }
     const head = main.zones.length
       ? `${backup ? 'Flood zone' : 'FEMA zone'} ${main.zones.join(', ')}${backup ? BACKUP_NOTE : ''}${MEANING[cat](main.group)}`

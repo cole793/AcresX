@@ -682,18 +682,40 @@
     if (zone === 'ANI') return { FLD_ZONE: 'AREA NOT INCLUDED', ZONE_SUBTY: null, SFHA_TF: 'F' };
     return { FLD_ZONE: zone || null, ZONE_SUBTY: null, SFHA_TF: sfha === 'IN' ? 'T' : sfha === 'OUT' ? 'F' : null };
   }
+  // A/AE share of the parcel and the partial-coverage note (copy of stevensHighShare and
+  // stevensEdgeNote in src/counties/stevens-flood.js).
+  function stevensHighShare(parcelRings, features) {
+    const high = features.filter(f => ['A', 'AE'].includes(trimmed(f?.attributes?.zone_).toUpperCase()));
+    if (!high.length) return null;
+    const zones = high.map(f => ringsFromGeometry(f?.geometry));
+    const parcel = ringsFromGeometry({ rings: parcelRings });
+    if (!parcel || zones.some(r => !r)) return null;
+    const samples = samplePoints(parcel);
+    return samples.filter(([x, y]) => zones.some(r => pointInRings(x, y, r))).length / samples.length;
+  }
+  function stevensEdgeNote(share) {
+    if (share === null || share === undefined || !(share < 0.95)) return '';
+    const amount = share < 0.005 ? 'under 1%' : `about ${Math.round(share * 100)}%`;
+    return `The county's 1998 map copy was digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers ${amount} of the parcel. A survey or FEMA elevation certificate is needed to confirm.`;
+  }
   async function stevensFlood(rings, signal) {
     const data = await request(`${STEVENS_FLOOD_LAYER}/query`, {
       f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
-      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'zone_,sfha,floodway,firm_panel', returnGeometry: 'false', resultRecordCount: '100'
+      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'zone_,sfha,floodway,firm_panel', resultRecordCount: '100',
+      returnGeometry: 'true', outSR: '4326', maxAllowableOffset: '0.00001', geometryPrecision: '6'
     }, { agency: 'Stevens County GIS', signal });
-    const countyRows = (data?.features || []).map(f => f?.attributes || {});
+    const features = data?.features || [];
+    const countyRows = features.map(f => f?.attributes || {});
     if (!countyRows.length) return null;
+    const share = stevensHighShare(rings, features);
+    const edgeNote = stevensEdgeNote(share);
     const source = {
       provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER, label: STEVENS_FLOOD_LABEL, coverage: 'paper-firm-copy', digitalFemaMap: false, mapDate: '1998',
       countyZones: [...new Set(countyRows.map(a => trimmed(a.zone_)).filter(Boolean))],
       firmPanels: [...new Set(countyRows.map(a => trimmed(a.firm_panel)).filter(Boolean))],
-      note: STEVENS_FLOOD_NOTE
+      note: STEVENS_FLOOD_NOTE,
+      ...(share === null ? {} : { floodZoneShare: Math.round(share * 1000) / 1000 }),
+      ...(edgeNote ? { edgeNote } : {})
     };
     return { ...summarizeFloodRows(countyRows.map(stevensFloodRow)), source };
   }

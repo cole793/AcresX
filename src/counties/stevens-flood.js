@@ -41,7 +41,14 @@
 //   X      -> X, AREA OF MINIMAL FLOOD HAZARD                              minimal   96
 //   ANI    -> AREA NOT INCLUDED                                            not_mapped (never high)
 //   anything else keeps its code (undetermined, or high when sfha is IN): never safe.
+//
+// Partial A/AE coverage: the query returns feature outlines (generalized to ~1 m, as
+// src/shared/arcgis.js spatialParams does) and the share of the parcel inside an A/AE polygon is
+// sampled on the shared grid (src/shared/polygon-coverage.js). Below 95% (the same "nearly all"
+// line as coverageNote) the answer carries source.edgeNote, because the 1:24,000 digitizing can
+// put zone edges tens of metres off. Answers measured 2-27 KB for the validation parcels.
 import { arcgisQuery } from '../shared/upstream.js';
+import { ringsFromGeometry, samplePoints, pointInRings } from '../shared/polygon-coverage.js';
 
 export const STEVENS_FLOOD_LAYER = 'https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19';
 export const STEVENS_FLOOD_PROVIDER = 'Stevens County digitized FEMA FIRM';
@@ -50,6 +57,8 @@ export const STEVENS_FLOOD_NOTE = 'FEMA has no digital flood map (NFHL) for Stev
 export const STEVENS_FLOOD_COVERAGE = 'paper-firm-copy';
 export const STEVENS_FLOOD_OUT_FIELDS = 'zone_,sfha,floodway,firm_panel';
 export const STEVENS_AGENCY = 'Stevens County GIS';
+// Share below which an A/AE answer gets the edge-accuracy note.
+export const STEVENS_PARTIAL_SHARE = 0.95;
 
 // The layer extent above, padded by about 0.02 degrees. It overlaps parts of Spokane, Ferry,
 // Pend Oreille and Lincoln counties; that only costs a query that finds nothing (every feature
@@ -105,17 +114,43 @@ export function stevensFloodRow(attributes) {
 export function stevensFloodParams(geometry) {
   return {
     where: '1=1', geometry: JSON.stringify({ rings: rings(geometry), spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
-    inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: STEVENS_FLOOD_OUT_FIELDS, returnGeometry: 'false', resultRecordCount: '100'
+    inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: STEVENS_FLOOD_OUT_FIELDS, resultRecordCount: '100',
+    returnGeometry: 'true', outSR: '4326', maxAllowableOffset: '0.00001', geometryPrecision: '6'
   };
 }
 
+const isHighZone = attributes => ['A', 'AE'].includes(text(attributes?.zone_).toUpperCase());
+
+// Share (0-1) of the parcel inside any A/AE feature, from the shared sample grid. null when no
+// A/AE feature touches the parcel, or one came back without an outline (the share is unknown).
+export function stevensHighShare(geometry, features) {
+  const high = (features || []).filter(f => isHighZone(f?.attributes));
+  if (!high.length) return null;
+  const zones = high.map(f => ringsFromGeometry(f?.geometry));
+  const parcel = ringsFromGeometry(geometry);
+  if (!parcel || zones.some(r => !r)) return null;
+  const samples = samplePoints(parcel);
+  const inside = samples.filter(([x, y]) => zones.some(r => pointInRings(x, y, r))).length;
+  return inside / samples.length;
+}
+
+// The note for an A/AE zone covering only part of the parcel, else ''.
+export function stevensEdgeNote(share) {
+  if (share === null || share === undefined || !(share < STEVENS_PARTIAL_SHARE)) return '';
+  const amount = share < 0.005 ? 'under 1%' : `about ${Math.round(share * 100)}%`;
+  return `The county's 1998 map copy was digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers ${amount} of the parcel. A survey or FEMA elevation certificate is needed to confirm.`;
+}
+
 // The source block for an answer built from this layer (additive to FEMA's { provider, url }).
-export function stevensFloodSource(countyRows) {
+// share: stevensHighShare(); adds floodZoneShare (A/AE share, 3 decimals) and edgeNote.
+export function stevensFloodSource(countyRows, share = null) {
   const zones = [...new Set(countyRows.map(a => text(a?.zone_)).filter(Boolean))];
   const panels = [...new Set(countyRows.map(a => text(a?.firm_panel)).filter(Boolean))];
   return {
     provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER, label: STEVENS_FLOOD_LABEL, coverage: STEVENS_FLOOD_COVERAGE,
-    digitalFemaMap: false, mapDate: '1998', countyZones: zones, firmPanels: panels, note: STEVENS_FLOOD_NOTE
+    digitalFemaMap: false, mapDate: '1998', countyZones: zones, firmPanels: panels, note: STEVENS_FLOOD_NOTE,
+    ...(share === null ? {} : { floodZoneShare: Math.round(share * 1000) / 1000 }),
+    ...(stevensEdgeNote(share) ? { edgeNote: stevensEdgeNote(share) } : {})
   };
 }
 
@@ -129,7 +164,7 @@ export async function stevensFloodLookup(geometry, { late = false } = {}) {
     retryTimeoutMs: STEVENS_FLOOD_RETRY_TIMEOUT_MS, retries: late ? 0 : 1
   });
   const countyRows = features.map(f => f?.attributes || {});
-  return { rows: countyRows.map(stevensFloodRow), source: stevensFloodSource(countyRows) };
+  return { rows: countyRows.map(stevensFloodRow), source: stevensFloodSource(countyRows, stevensHighShare(geometry, features)) };
 }
 
 // The registry entry src/services/flood.js uses (one per county with its own flood layer).

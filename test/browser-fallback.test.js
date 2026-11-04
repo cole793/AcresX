@@ -424,6 +424,10 @@ test('fema-flood, Stevens: FEMA failing in the browser still lets the county lay
   const body = plain(await fb.run('fema-flood', { geometry: stevens.ae.geometry }));
   assert.equal(body.category, 'high');
   assert.equal(body.source.digitalFemaMap, false);
+  // The partial A/AE note is sampled in the browser too (same grid as the Worker).
+  assert.equal(body.source.floodZoneShare, 0.099);
+  assert.match(body.source.edgeNote, /digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers about 10% of the parcel\. A survey or FEMA elevation certificate is needed to confirm\.$/);
+  assert.equal(b.calls.find(c => c.base === STEVENS).params.get('returnGeometry'), 'true');
 });
 
 test('fema-flood outside Stevens: the browser never asks the county layer', async () => {

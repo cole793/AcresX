@@ -14,7 +14,8 @@ import {
 } from '../src/services/flood.js';
 import {
   STEVENS_FLOOD_LAYER, STEVENS_FLOOD_PROVIDER, STEVENS_FLOOD_LABEL, STEVENS_FLOOD_NOTE, STEVENS_FLOOD_OUT_FIELDS, STEVENS_FLOOD_BBOX,
-  STEVENS_FLOOD_TIMEOUT_MS, STEVENS_FLOOD_RETRY_TIMEOUT_MS, STEVENS_FLOOD_LATE_TIMEOUT_MS, isStevensParcel, stevensFloodRow, stevensFlood
+  STEVENS_FLOOD_TIMEOUT_MS, STEVENS_FLOOD_RETRY_TIMEOUT_MS, STEVENS_FLOOD_LATE_TIMEOUT_MS, isStevensParcel, stevensFloodRow, stevensFlood,
+  stevensHighShare, stevensEdgeNote
 } from '../src/counties/stevens-flood.js';
 
 const recorded = JSON.parse(readFileSync(new URL('fixtures/stevens-flood.json', import.meta.url), 'utf8'));
@@ -84,6 +85,7 @@ const countySource = zones => ({
   provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER, label: STEVENS_FLOOD_LABEL, coverage: 'paper-firm-copy',
   digitalFemaMap: false, mapDate: '1998', countyZones: zones.zones, firmPanels: zones.panels, note: STEVENS_FLOOD_NOTE
 });
+const AE_EDGE_NOTE = "The county's 1998 map copy was digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers about 10% of the parcel. A survey or FEMA elevation certificate is needed to confirm.";
 const femaNotMapped = { available: true, intersects: false, high: false, zones: [], zoneDetails: [], category: 'not_mapped', source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
 
 // --- The recorded fixtures are what the adapter asks for -------------------------------------
@@ -108,7 +110,7 @@ test('stevens flood: NFHL no features + county AE is high (score 20), labelled a
   assert.deepEqual(body, {
     available: true, intersects: true, high: true, zones: ['X', 'AE'],
     zoneDetails: [{ zone: 'X', subtype: 'AREA OF MINIMAL FLOOD HAZARD', sfha: false }, { zone: 'AE', subtype: null, sfha: true }],
-    category: 'high', source: countySource({ zones: ['X', 'AE'], panels: ['5301850125B'] })
+    category: 'high', source: { ...countySource({ zones: ['X', 'AE'], panels: ['5301850125B'] }), floodZoneShare: 0.099, edgeNote: AE_EDGE_NOTE }
   });
   assert.equal(FX.grade(body).score, 20);
   assert.equal(FX.grade(body).label, 'High risk');
@@ -120,7 +122,9 @@ test('stevens flood: NFHL no features + county AE is high (score 20), labelled a
   assert.equal(sent.get('spatialRel'), 'esriSpatialRelIntersects');
   assert.equal(sent.get('inSR'), '4326');
   assert.equal(sent.get('outFields'), STEVENS_FLOOD_OUT_FIELDS);
-  assert.equal(sent.get('returnGeometry'), 'false');
+  assert.equal(sent.get('returnGeometry'), 'true', 'outlines, to sample the A/AE share');
+  assert.equal(sent.get('outSR'), '4326');
+  assert.equal(sent.get('maxAllowableOffset'), '0.00001');
 });
 
 test('stevens flood: an NFHL "AREA NOT INCLUDED" answer also asks the county layer', async () => {
@@ -293,7 +297,7 @@ test('stevens flood: the page names the county copy and says FEMA has no digital
   const { body } = await floodCall(ae.geometry);
   assert.deepEqual(plain(FX.grade(body)), {
     category: 'high', score: 20, label: 'High risk', cls: 'red', overview: 'High-risk flood zone (county copy of FEMA paper map)', overviewCls: 'warn',
-    detail: 'Flood zone AE (1% annual chance, Special Flood Hazard Area); also zone X (minimal flood hazard). Source: Stevens County digitized FEMA FIRM (paper map copy, not a FEMA digital map). FEMA has no digital flood map here. Verify with the county or FEMA.'
+    detail: `Flood zone AE (1% annual chance, Special Flood Hazard Area); also zone X (minimal flood hazard). Source: Stevens County digitized FEMA FIRM (paper map copy, not a FEMA digital map). ${AE_EDGE_NOTE} FEMA has no digital flood map here. Verify with the county or FEMA.`
   });
   const moderate = { ...summarizeFloodRows([stevensFloodRow({ zone_: 'X500' })]), source: body.source };
   assert.equal(FX.grade(moderate).detail, 'Flood zone X (0.2% annual chance). Source: Stevens County digitized FEMA FIRM (paper map copy, not a FEMA digital map). FEMA has no digital flood map here. Verify with the county or FEMA.');
@@ -313,4 +317,52 @@ test('stevens flood: worst-case time stays under the 30 s client limit, and at m
   globalThis.fetch = async input => { calls.push({ url: String(input), params: new URLSearchParams() }); throw new TypeError('fetch failed'); };
   assert.equal((await floodCall(ae.geometry)).response.status, 502);
   assert.deepEqual(kinds(), ['fema', 'fema', 'esri', 'county']);
+});
+
+// --- Partial A/AE coverage note ---------------------------------------------------------------
+
+const square = (x0, y0, x1, y1) => ({ rings: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] });
+const parcelSquare = { type: 'Polygon', coordinates: square(-117.9, 48.5, -117.89, 48.51).rings };
+const feature = (zone_, geometry) => ({ attributes: { zone_, sfha: zone_.startsWith('A') ? 'IN' : 'OUT', floodway: ' ', firm_panel: 'P' }, geometry });
+
+test('stevens flood edge note: the A/AE share is sampled from the outlines; partial coverage gets the note', () => {
+  // The recorded AE parcel: about 10% in AE (a grid sample of 10,467 points gave 10.3%).
+  assert.ok(Math.abs(stevensHighShare(ae.geometry, ae.response.features) - 0.1) < 0.02);
+  // Left half in AE: about 50%, with the exact text.
+  const half = stevensHighShare(parcelSquare, [feature('AE', square(-117.91, 48.49, -117.895, 48.52)), feature('X', square(-117.895, 48.49, -117.88, 48.52))]);
+  assert.ok(Math.abs(half - 0.5) < 0.03, String(half));
+  assert.equal(stevensEdgeNote(0.5), "The county's 1998 map copy was digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers about 50% of the parcel. A survey or FEMA elevation certificate is needed to confirm.");
+  // Two A polygons count together, never twice.
+  assert.ok(Math.abs(stevensHighShare(parcelSquare, [feature('A', square(-117.91, 48.49, -117.895, 48.52)), feature('A', square(-117.9, 48.49, -117.895, 48.52))]) - 0.5) < 0.03);
+  // Whole parcel in A: no note. A sliver: "under 1%".
+  assert.equal(stevensHighShare(parcelSquare, [feature('A', square(-117.91, 48.49, -117.88, 48.52))]), 1);
+  assert.equal(stevensEdgeNote(1), '');
+  assert.equal(stevensEdgeNote(0.96), '');
+  assert.match(stevensEdgeNote(0.94), /covers about 94% of the parcel/);
+  assert.match(stevensEdgeNote(0.001), /covers under 1% of the parcel/);
+  // No A/AE, or an A/AE row without an outline: share unknown, no note.
+  assert.equal(stevensHighShare(parcelSquare, [feature('X', square(-117.91, 48.49, -117.88, 48.52))]), null);
+  assert.equal(stevensHighShare(parcelSquare, [feature('AE', undefined)]), null);
+  assert.equal(stevensEdgeNote(null), '');
+});
+
+test('stevens flood edge note: in the answer only for a partial A/AE zone, and shown on the page', async () => {
+  stubFetch(empty, county(x));
+  const minimal = (await floodCall(x.geometry)).body;
+  assert.equal('edgeNote' in minimal.source, false);
+  assert.equal('floodZoneShare' in minimal.source, false);
+  calls = [];
+  // One AE polygon that holds the whole recorded AE parcel.
+  const full = { features: [feature('AE', square(-118, 48.8, -117.7, 49))] };
+  stubFetch(empty, () => jsonResponse(full));
+  const whole = (await floodCall(ae.geometry)).body;
+  assert.equal(whole.category, 'high');
+  assert.equal(whole.source.floodZoneShare, 1);
+  assert.equal('edgeNote' in whole.source, false, 'no note when the zone covers the whole parcel');
+  assert.doesNotMatch(FX.grade(whole).detail, /1:24,000/);
+  calls = [];
+  stubFetch(empty, county(ae));
+  const partial = (await floodCall(ae.geometry)).body;
+  assert.equal(partial.source.edgeNote, AE_EDGE_NOTE);
+  assert.ok(FX.grade(partial).detail.includes(AE_EDGE_NOTE));
 });
