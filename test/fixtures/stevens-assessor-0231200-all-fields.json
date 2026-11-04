@@ -7,7 +7,7 @@
         "PARCELN": "0231200",
         "prop_id": 13056.0,
         "geo_id": null,
-        "Propertyinformation": null,
+        "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056",
         "file_as_na": "PLACEHOLDER_FILE_AS_NA",
         "tax_area_n": "003-C 36",
         "legal_acre": 0.12,

@@ -40,12 +40,36 @@ export const STEVENS_ASSESSOR_SOURCE = 'Stevens County Assessor (RealPropertyPar
 // Never add file_as_na, last_name, first_name, owner_id or addr_*: the owner's name and mailing address.
 export const STEVENS_ASSESSOR_FIELDS = [
   'PARCELN', 'prop_id', 'year', 'property_u', 'Ag_Sched', 'legal_acre', 'tax_area_n',
-  'market_lan', 'assessed_l', 'improvemen', 'market_1', 'appraised_', 'taxable_va'
+  'market_lan', 'assessed_l', 'improvemen', 'market_1', 'appraised_', 'taxable_va', 'Propertyinformation'
 ].join(',');
 const TIMEOUT_MS = 10000;
 const RETRY_TIMEOUT_MS = 6000;
 // Bump the version whenever STEVENS_ASSESSOR_FIELDS or the record mapping changes.
-export const STEVENS_ASSESSOR_CACHE_PREFIX = 'https://acresx.internal/cache/stevens-assessor/v1/';
+export const STEVENS_ASSESSOR_CACHE_PREFIX = 'https://acresx.internal/cache/stevens-assessor/v2/';
+
+// Propertyinformation holds the parcel's page on the county's property search, which True
+// Automation hosts: http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056
+// on all 43,067 rows (checked 2026-11-04; none on a stevenscountywa.gov host). The county's own
+// layer supplies it, so that host is accepted (coordinator decision, 2026-11-04), but only
+// exactly that host and path, with a numeric prop_id equal to the record's own; it is returned
+// as https. Anything else is dropped (null).
+export const STEVENS_PROPERTY_SEARCH_HOST = 'propertysearch.trueautomation.com';
+export const STEVENS_PROPERTY_SEARCH_PATH = '/PropertyAccess/Property.aspx';
+export const STEVENS_PROPERTY_SEARCH_LABEL = 'View on the Stevens County property search (hosted by True Automation)';
+
+export function stevensPropertySearchUrl(value, propertyId) {
+  let url;
+  try { url = new URL(String(value ?? '').trim()); } catch { return null; }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  if (url.hostname !== STEVENS_PROPERTY_SEARCH_HOST || url.port || url.username || url.password) return null;
+  if (url.pathname !== STEVENS_PROPERTY_SEARCH_PATH) return null;
+  const propId = url.searchParams.getAll('prop_id');
+  if (propId.length !== 1 || !/^\d+$/.test(propId[0])) return null;
+  if (propertyId == null || Number(propId[0]) !== Number(propertyId)) return null;
+  url.protocol = 'https:';
+  url.hash = '';
+  return url.toString();
+}
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const FIPS_PREFIX = '065';
 
@@ -135,8 +159,10 @@ export function mapStevensAssessorRecord(raw = {}) {
   if (!valued) for (const k of Object.keys(values)) values[k] = null;
   if (values.totalValue == null && (values.landValue != null || values.improvementValue != null)) values.totalValue = (values.landValue || 0) + (values.improvementValue || 0);
   const parcelNumber = str(attrs.PARCELN);
+  const propertyId = num(attrs.prop_id);
   return {
-    parcelNumber, propertyId: num(attrs.prop_id),
+    parcelNumber, propertyId,
+    propertySearchUrl: stevensPropertySearchUrl(attrs.Propertyinformation, propertyId),
     ...values,
     // netValue is what the overview shows as "Net taxable" (same key as Kootenai's).
     netValue: values.taxableValue,

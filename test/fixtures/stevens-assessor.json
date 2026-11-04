@@ -16,7 +16,8 @@
         "improvemen": "improvemen",
         "market_1": "market_1",
         "appraised_": "appraised_",
-        "taxable_va": "taxable_va"
+        "taxable_va": "taxable_va",
+        "Propertyinformation": "Propertyinformation"
       },
       "fields": [
         {
@@ -87,6 +88,12 @@
           "name": "taxable_va",
           "type": "esriFieldTypeInteger",
           "alias": "taxable_va"
+        },
+        {
+          "name": "Propertyinformation",
+          "type": "esriFieldTypeString",
+          "alias": "Propertyinformation",
+          "length": 255
         }
       ],
       "features": [
@@ -104,7 +111,8 @@
             "improvemen": 14000,
             "market_1": 350000,
             "appraised_": 26794,
-            "taxable_va": 26794
+            "taxable_va": 26794,
+            "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=43102"
           }
         }
       ]
@@ -124,7 +132,8 @@
         "improvemen": "improvemen",
         "market_1": "market_1",
         "appraised_": "appraised_",
-        "taxable_va": "taxable_va"
+        "taxable_va": "taxable_va",
+        "Propertyinformation": "Propertyinformation"
       },
       "fields": [
         {
@@ -195,6 +204,12 @@
           "name": "taxable_va",
           "type": "esriFieldTypeInteger",
           "alias": "taxable_va"
+        },
+        {
+          "name": "Propertyinformation",
+          "type": "esriFieldTypeString",
+          "alias": "Propertyinformation",
+          "length": 255
         }
       ],
       "features": [
@@ -212,7 +227,8 @@
             "improvemen": 63567,
             "market_1": 90567,
             "appraised_": 90567,
-            "taxable_va": 90567
+            "taxable_va": 90567,
+            "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056"
           }
         }
       ]
@@ -232,7 +248,8 @@
         "improvemen": "improvemen",
         "market_1": "market_1",
         "appraised_": "appraised_",
-        "taxable_va": "taxable_va"
+        "taxable_va": "taxable_va",
+        "Propertyinformation": "Propertyinformation"
       },
       "fields": [
         {
@@ -303,6 +320,12 @@
           "name": "taxable_va",
           "type": "esriFieldTypeInteger",
           "alias": "taxable_va"
+        },
+        {
+          "name": "Propertyinformation",
+          "type": "esriFieldTypeString",
+          "alias": "Propertyinformation",
+          "length": 255
         }
       ],
       "features": [
@@ -320,7 +343,8 @@
             "improvemen": null,
             "market_1": null,
             "appraised_": null,
-            "taxable_va": null
+            "taxable_va": null,
+            "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=39607"
           }
         },
         {
@@ -337,7 +361,8 @@
             "improvemen": null,
             "market_1": null,
             "appraised_": null,
-            "taxable_va": null
+            "taxable_va": null,
+            "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=39627"
           }
         },
         {
@@ -354,7 +379,8 @@
             "improvemen": 0,
             "market_1": 101460,
             "appraised_": 48198,
-            "taxable_va": 48198
+            "taxable_va": 48198,
+            "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=67209"
           }
         }
       ]
@@ -374,7 +400,8 @@
         "improvemen": "improvemen",
         "market_1": "market_1",
         "appraised_": "appraised_",
-        "taxable_va": "taxable_va"
+        "taxable_va": "taxable_va",
+        "Propertyinformation": "Propertyinformation"
       },
       "fields": [
         {
@@ -445,6 +472,12 @@
           "name": "taxable_va",
           "type": "esriFieldTypeInteger",
           "alias": "taxable_va"
+        },
+        {
+          "name": "Propertyinformation",
+          "type": "esriFieldTypeString",
+          "alias": "Propertyinformation",
+          "length": 255
         }
       ],
       "features": [
@@ -462,7 +495,8 @@
             "improvemen": 0,
             "market_1": 0,
             "appraised_": 0,
-            "taxable_va": 0
+            "taxable_va": 0,
+            "Propertyinformation": "http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=72219"
           }
         }
       ]
@@ -482,7 +516,8 @@
         "improvemen": "improvemen",
         "market_1": "market_1",
         "appraised_": "appraised_",
-        "taxable_va": "taxable_va"
+        "taxable_va": "taxable_va",
+        "Propertyinformation": "Propertyinformation"
       },
       "fields": [
         {
@@ -553,6 +588,12 @@
           "name": "taxable_va",
           "type": "esriFieldTypeInteger",
           "alias": "taxable_va"
+        },
+        {
+          "name": "Propertyinformation",
+          "type": "esriFieldTypeString",
+          "alias": "Propertyinformation",
+          "length": 255
         }
       ],
       "features": []

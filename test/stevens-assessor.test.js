@@ -7,7 +7,8 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import {
-  getStevensAssessment, normalizeStevensParcelId, STEVENS_ASSESSOR, STEVENS_ASSESSOR_FIELDS, STEVENS_ASSESSOR_CACHE_PREFIX, WA_LAND_USE_CODES
+  getStevensAssessment, normalizeStevensParcelId, STEVENS_ASSESSOR, STEVENS_ASSESSOR_FIELDS, STEVENS_ASSESSOR_CACHE_PREFIX, WA_LAND_USE_CODES,
+  stevensPropertySearchUrl
 } from '../src/counties/stevens-assessor.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
@@ -59,6 +60,7 @@ test('stevens assessment: a hit maps assessed, taxable and market values, class 
   assert.equal(body.countySourceUrl, STEVENS_ASSESSOR);
   assert.deepEqual(body.countyRecords[0], {
     parcelNumber: '2342700', propertyId: 43102,
+    propertySearchUrl: 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=43102',
     landValue: 12794, improvementValue: 14000, totalValue: 26794, taxableValue: 26794, marketLandValue: 336000, marketValue: 350000,
     netValue: 26794, taxYear: 2026, assessorAcres: 280, taxCodeArea: '021-115',
     propertyClass: '88', propertyClassDescription: 'Designated forest land under chapter 84.33 RCW', propertyClassNote: 'Tax category, not zoning',
@@ -187,6 +189,47 @@ test('stevens assessment: owner and mailing fields never reach the response, eve
   assert.doesNotMatch(text, /PLACEHOLDER|file_as_na|last_name|first_name|owner_id|addr_/);
   // Fields the adapter never asked for do not leak either (situs, legal description, links).
   assert.doesNotMatch(text, /situs|legal_desc|Propertyinformation|hood_/);
+});
+
+// Propertyinformation -> propertySearchUrl: exactly propertysearch.trueautomation.com +
+// /PropertyAccess/Property.aspx, one numeric prop_id equal to the record's, upgraded to https.
+const SEARCH = 'http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056';
+test('stevens property search link: an accepted link is upgraded to https', () => {
+  assert.equal(stevensPropertySearchUrl(SEARCH, 13056), 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056');
+  assert.equal(stevensPropertySearchUrl(SEARCH.replace('http:', 'https:'), 13056), 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056');
+  assert.equal(stevensPropertySearchUrl(SEARCH.replace('propertysearch', 'PropertySearch'), 13056)?.startsWith('https://propertysearch.trueautomation.com/'), true, 'host case does not matter');
+});
+
+test('stevens property search link: a different host is dropped', () => {
+  for (const host of ['evil.example', 'trueautomation.com', 'propertysearch.trueautomation.com.evil.example', 'evilpropertysearch.trueautomation.com', 'propertysearch.trueautomation.com:8443', 'user@propertysearch.trueautomation.com']) {
+    assert.equal(stevensPropertySearchUrl(SEARCH.replace('propertysearch.trueautomation.com', host), 13056), null, host);
+  }
+  assert.equal(stevensPropertySearchUrl('javascript:alert(1)//propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=13056', 13056), null);
+  assert.equal(stevensPropertySearchUrl('ftp://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=13056', 13056), null);
+});
+
+test('stevens property search link: a different path is dropped', () => {
+  for (const path of ['/PropertyAccess/Other.aspx', '/PropertyAccess/Property.aspx/x', '/propertyaccess/property.aspx', '/']) {
+    assert.equal(stevensPropertySearchUrl(SEARCH.replace('/PropertyAccess/Property.aspx', path), 13056), null, path);
+  }
+});
+
+test('stevens property search link: a prop_id that is not the record\'s, not numeric, missing or repeated is dropped', () => {
+  assert.equal(stevensPropertySearchUrl(SEARCH, 13057), null, 'mismatch');
+  assert.equal(stevensPropertySearchUrl(SEARCH, null), null, 'record has no propertyId');
+  assert.equal(stevensPropertySearchUrl(SEARCH.replace('prop_id=13056', 'prop_id=13056x'), 13056), null, 'not numeric');
+  assert.equal(stevensPropertySearchUrl(SEARCH.replace('&prop_id=13056', ''), 13056), null, 'missing');
+  assert.equal(stevensPropertySearchUrl(`${SEARCH}&prop_id=99`, 13056), null, 'repeated');
+  assert.equal(stevensPropertySearchUrl('', 13056), null);
+  assert.equal(stevensPropertySearchUrl(null, 13056), null);
+});
+
+test('stevens assessment: a link the server sends for another property is not returned', async () => {
+  const attrs = { ...recorded['0231200'].features[0].attributes, Propertyinformation: SEARCH.replace('13056', '40770') };
+  stubFetch(() => arcgisJson({ features: [{ attributes: attrs }] }));
+  const r = (await assess('0231200')).body.countyRecords[0];
+  assert.equal(r.propertyId, 13056);
+  assert.equal(r.propertySearchUrl, null);
 });
 
 test('WA land use descriptions follow WAC 458-53-030(5)', () => {

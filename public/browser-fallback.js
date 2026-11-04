@@ -598,7 +598,22 @@
   const STEVENS_ASSESSOR = 'https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0';
   const STEVENS_ASSESSOR_SOURCE = 'Stevens County Assessor (RealPropertyParcels_Public)';
   // Never add file_as_na, last_name, first_name, owner_id or addr_*: the owner's name and mailing address.
-  const STEVENS_ASSESSOR_FIELDS = 'PARCELN,prop_id,year,property_u,Ag_Sched,legal_acre,tax_area_n,market_lan,assessed_l,improvemen,market_1,appraised_,taxable_va';
+  const STEVENS_ASSESSOR_FIELDS = 'PARCELN,prop_id,year,property_u,Ag_Sched,legal_acre,tax_area_n,market_lan,assessed_l,improvemen,market_1,appraised_,taxable_va,Propertyinformation';
+  // The county's property search (hosted by True Automation): exactly this host and path, a
+  // numeric prop_id equal to the record's, returned as https; anything else is dropped.
+  function stevensPropertySearchUrl(value, propertyId) {
+    let url;
+    try { url = new URL(String(value ?? '').trim()); } catch { return null; }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (url.hostname !== 'propertysearch.trueautomation.com' || url.port || url.username || url.password) return null;
+    if (url.pathname !== '/PropertyAccess/Property.aspx') return null;
+    const propId = url.searchParams.getAll('prop_id');
+    if (propId.length !== 1 || !/^\d+$/.test(propId[0])) return null;
+    if (propertyId == null || Number(propId[0]) !== Number(propertyId)) return null;
+    url.protocol = 'https:';
+    url.hash = '';
+    return url.toString();
+  }
   const WA_LAND_USE_CODES = Object.freeze({
     11: 'Household, single family units', 12: 'Household, 2-4 units', 13: 'Household, multiunits (5 or more)',
     14: 'Residential condominiums', 15: 'Mobile home parks or courts', 16: 'Hotels/motels', 17: 'Institutional lodging',
@@ -658,8 +673,10 @@
     const valued = Object.values(values).some(v => v != null && v !== 0);
     if (!valued) for (const k of Object.keys(values)) values[k] = null;
     if (values.totalValue == null && (values.landValue != null || values.improvementValue != null)) values.totalValue = (values.landValue || 0) + (values.improvementValue || 0);
+    const propertyId = numOrNull(attrs.prop_id);
     return {
-      parcelNumber: strOrNull(attrs.PARCELN), propertyId: numOrNull(attrs.prop_id),
+      parcelNumber: strOrNull(attrs.PARCELN), propertyId,
+      propertySearchUrl: stevensPropertySearchUrl(attrs.Propertyinformation, propertyId),
       ...values,
       netValue: values.taxableValue,
       taxYear: numOrNull(attrs.year),

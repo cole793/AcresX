@@ -406,6 +406,25 @@ test('stevens-assessor: a failure in the browser too keeps the Worker answer; ow
   assert.doesNotMatch(JSON.stringify(body), /PLACEHOLDER/);
 });
 
+test('stevens-assessor: the property search link follows the Worker rule in the browser copy too', async () => {
+  const base = recordedStevens['0231200'].features[0].attributes;
+  const url = base.Propertyinformation;
+  const cases = [
+    [url, 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056'], // accepted, upgraded
+    [url.replace('propertysearch.trueautomation.com', 'evil.example'), null], // different host
+    [url.replace('/PropertyAccess/Property.aspx', '/PropertyAccess/Other.aspx'), null], // different path
+    [url.replace('prop_id=13056', 'prop_id=40770'), null] // prop_id mismatch
+  ];
+  for (const [sent, want] of cases) {
+    const answer = () => ({ features: [{ attributes: { ...base, Propertyinformation: sent } }] });
+    const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: '0231200' }, recorder(answer).fetch);
+    const { api: fb } = browser(recorder(answer).fetch);
+    const body = plain(await fb.run('stevens-assessor', { parcelId: '0231200' }));
+    assert.equal(body.countyRecords[0].propertySearchUrl, want, sent);
+    assert.deepEqual(body, expected.body, sent);
+  }
+});
+
 // ---- 4. FEMA flood
 
 const floodGeometry = { type: 'Polygon', coordinates: [[[-116.8, 47.7], [-116.79, 47.7], [-116.79, 47.71], [-116.8, 47.71], [-116.8, 47.7]]] };

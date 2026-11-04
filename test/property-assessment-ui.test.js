@@ -55,7 +55,7 @@ function page() {
     prompt: () => 'Test property',
     open: () => ({ document: { write: html => opened.push(html), close() {} } })
   };
-  const context = vm.createContext({ window, document, console, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
+  const context = vm.createContext({ window, document, console, URL, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
   vm.runInContext(assessmentSource, context);
   vm.runInContext(reportSource, context);
   const fact = id => document.getElementById(id)?.textContent;
@@ -183,6 +183,30 @@ test('overview: a Stevens record with no values shows "Not available" and the no
   const source = document.getElementById('propertyAssessmentSource').innerHTML;
   assert.ok(!source.includes('$0'), source);
   assert.match(source, /Not in a current-use program\. The assessor record for this parcel carries no values\./);
+});
+
+const SEARCH_URL = 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=43102';
+const withLink = url => ({ ...stevens, countyRecords: [{ ...stevens.countyRecords[0], propertySearchUrl: url }] });
+
+test('overview: Stevens shows the property search link after the source line, opening with rel="noopener"', () => {
+  const { A, document } = page();
+  A.renderAssessment(A.normalize(withLink(SEARCH_URL)));
+  const html = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.ok(html.endsWith(' Assessor values are informational and are not the current tax bill. <a href="https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&amp;year=2026&amp;prop_id=43102" target="_blank" rel="noopener">View on the Stevens County property search (hosted by True Automation) ↗</a>'), html);
+});
+
+test('overview: the page checks the link again; another host, path, prop_id or http is not shown', () => {
+  const { A, document } = page();
+  for (const url of [
+    SEARCH_URL.replace('propertysearch.trueautomation.com', 'evil.example'),
+    SEARCH_URL.replace('/PropertyAccess/Property.aspx', '/PropertyAccess/Other.aspx'),
+    SEARCH_URL.replace('prop_id=43102', 'prop_id=13056'),
+    SEARCH_URL.replace('https:', 'http:'),
+    'javascript:alert(1)'
+  ]) {
+    A.renderAssessment(A.normalize(withLink(url)));
+    assert.ok(!document.getElementById('propertyAssessmentSource').innerHTML.includes('<a '), url);
+  }
 });
 
 test('report: Stevens shows the assessor class next to zoning and the assessed value', () => {

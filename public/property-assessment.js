@@ -42,6 +42,7 @@
         currentUse: currentUseText(r.currentUse),
         valuesNote: String(r.valuesNote || ''),
         assessorAcres: amount(r.assessorAcres),
+        propertySearchUrl: propertySearchUrl(r.propertySearchUrl, r.propertyId),
         year: r.taxYear || null,
         propertyClass: classText(r),
         label: 'Assessor value',
@@ -94,6 +95,20 @@
     const code = String(record?.propertyClass || '').trim();
     const descr = String(record?.propertyClassDescription || '').trim();
     return code && descr ? `${code} – ${descr}` : code || descr;
+  }
+
+  // Stevens: the county's property search page (hosted by True Automation), from the county layer's
+  // Propertyinformation field (src/counties/stevens-assessor.js). Checked again here before it is
+  // shown: https, exactly that host and path, one numeric prop_id equal to the record's.
+  const PROPERTY_SEARCH_LABEL = 'View on the Stevens County property search (hosted by True Automation)';
+  function propertySearchUrl(value, propertyId) {
+    let url;
+    try { url = new URL(String(value ?? '')); } catch { return ''; }
+    if (url.protocol !== 'https:' || url.hostname !== 'propertysearch.trueautomation.com' || url.port || url.username || url.password) return '';
+    if (url.pathname !== '/PropertyAccess/Property.aspx') return '';
+    const propId = url.searchParams.getAll('prop_id');
+    if (propId.length !== 1 || !/^\d+$/.test(propId[0]) || propertyId == null || Number(propId[0]) !== Number(propertyId)) return '';
+    return url.toString();
   }
 
   // Stevens currentUse { status, program, note } -> one line, or '' when the record has none.
@@ -205,7 +220,10 @@
     const market = Number.isFinite(result.marketValue) ? ` · Market value ${money(result.marketValue)}` : '';
     const currentUse = result.currentUse ? ` · ${escapeText(result.currentUse)}` : '';
     const valuesNote = result.valuesNote ? ` ${escapeText(result.valuesNote)}` : '';
-    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${exemption}${net}${market}${currentUse}.${valuesNote} Assessor values are informational and are not the current tax bill.`;
+    const link = result.propertySearchUrl
+      ? ` <a href="${escapeText(result.propertySearchUrl)}" target="_blank" rel="noopener">${PROPERTY_SEARCH_LABEL} ↗</a>`
+      : '';
+    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${exemption}${net}${market}${currentUse}.${valuesNote} Assessor values are informational and are not the current tax bill.${link}`;
   }
 
   async function loadAssessment() {
