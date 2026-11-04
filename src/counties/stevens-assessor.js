@@ -51,8 +51,9 @@ export const STEVENS_ASSESSOR_CACHE_PREFIX = 'https://acresx.internal/cache/stev
 // Automation hosts: http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056
 // on all 43,067 rows (checked 2026-11-04; none on a stevenscountywa.gov host). The county's own
 // layer supplies it, so that host is accepted (coordinator decision, 2026-11-04), but only
-// exactly that host and path, with a numeric prop_id equal to the record's own; it is returned
-// as https. Anything else is dropped (null).
+// exactly that host and path, with only the query params cid, year and prop_id (each at most once,
+// all digits; prop_id required and equal to the record's own). It is rebuilt from those params as
+// https. Anything else is dropped (null).
 export const STEVENS_PROPERTY_SEARCH_HOST = 'propertysearch.trueautomation.com';
 export const STEVENS_PROPERTY_SEARCH_PATH = '/PropertyAccess/Property.aspx';
 export const STEVENS_PROPERTY_SEARCH_LABEL = 'View on the Stevens County property search (hosted by True Automation)';
@@ -63,12 +64,18 @@ export function stevensPropertySearchUrl(value, propertyId) {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
   if (url.hostname !== STEVENS_PROPERTY_SEARCH_HOST || url.port || url.username || url.password) return null;
   if (url.pathname !== STEVENS_PROPERTY_SEARCH_PATH) return null;
-  const propId = url.searchParams.getAll('prop_id');
-  if (propId.length !== 1 || !/^\d+$/.test(propId[0])) return null;
-  if (propertyId == null || Number(propId[0]) !== Number(propertyId)) return null;
-  url.protocol = 'https:';
-  url.hash = '';
-  return url.toString();
+  // Only cid, year and prop_id, each at most once and all digits; prop_id is required and must be
+  // the record's. The link is rebuilt from those three, so nothing else (e.g. redirect=) survives.
+  const kept = [];
+  if ([...url.searchParams.keys()].some(k => !['cid', 'year', 'prop_id'].includes(k))) return null;
+  for (const k of ['cid', 'year', 'prop_id']) {
+    const v = url.searchParams.getAll(k);
+    if (v.length > 1 || (v.length === 1 && !/^\d+$/.test(v[0]))) return null;
+    if (v.length) kept.push([k, v[0]]);
+  }
+  const propId = url.searchParams.get('prop_id');
+  if (propId == null || propertyId == null || Number(propId) !== Number(propertyId)) return null;
+  return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
 }
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const FIPS_PREFIX = '065';

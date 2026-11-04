@@ -55,7 +55,7 @@ function page() {
     prompt: () => 'Test property',
     open: () => ({ document: { write: html => opened.push(html), close() {} } })
   };
-  const context = vm.createContext({ window, document, console, URL, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
+  const context = vm.createContext({ window, document, console, URL, URLSearchParams, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
   vm.runInContext(assessmentSource, context);
   vm.runInContext(reportSource, context);
   const fact = id => document.getElementById(id)?.textContent;
@@ -202,11 +202,25 @@ test('overview: the page checks the link again; another host, path, prop_id or h
     SEARCH_URL.replace('/PropertyAccess/Property.aspx', '/PropertyAccess/Other.aspx'),
     SEARCH_URL.replace('prop_id=43102', 'prop_id=13056'),
     SEARCH_URL.replace('https:', 'http:'),
-    'javascript:alert(1)'
+    'javascript:alert(1)',
+    // Lookalike hosts: a loosened host check (endsWith / includes) shows these.
+    SEARCH_URL.replace('propertysearch.trueautomation.com', 'evil-trueautomation.com'),
+    SEARCH_URL.replace('propertysearch.trueautomation.com', 'propertysearch.trueautomation.com.evil.com'),
+    // Only cid, year and prop_id, all numeric.
+    `${SEARCH_URL}&redirect=//evil.com`,
+    SEARCH_URL.replace('cid=0', 'cid=x'),
+    SEARCH_URL.replace('year=2026', 'year=2026a'),
+    `${SEARCH_URL}&cid=1`
   ]) {
     A.renderAssessment(A.normalize(withLink(url)));
     assert.ok(!document.getElementById('propertyAssessmentSource').innerHTML.includes('<a '), url);
   }
+});
+
+test('overview: the shown link is rebuilt from cid, year and prop_id only', () => {
+  const { A, document } = page();
+  A.renderAssessment(A.normalize(withLink('https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=43102&year=2026&cid=0#frag')));
+  assert.match(document.getElementById('propertyAssessmentSource').innerHTML, /<a href="https:\/\/propertysearch\.trueautomation\.com\/PropertyAccess\/Property\.aspx\?cid=0&amp;year=2026&amp;prop_id=43102" target="_blank" rel="noopener">/);
 });
 
 test('report: Stevens shows the assessor class next to zoning and the assessed value', () => {

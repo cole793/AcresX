@@ -607,12 +607,18 @@
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
     if (url.hostname !== 'propertysearch.trueautomation.com' || url.port || url.username || url.password) return null;
     if (url.pathname !== '/PropertyAccess/Property.aspx') return null;
-    const propId = url.searchParams.getAll('prop_id');
-    if (propId.length !== 1 || !/^\d+$/.test(propId[0])) return null;
-    if (propertyId == null || Number(propId[0]) !== Number(propertyId)) return null;
-    url.protocol = 'https:';
-    url.hash = '';
-    return url.toString();
+    // Only cid, year and prop_id, each at most once and all digits; prop_id is required and must be
+    // the record's. The link is rebuilt from those three, so nothing else (e.g. redirect=) survives.
+    const kept = [];
+    if ([...url.searchParams.keys()].some(k => !['cid', 'year', 'prop_id'].includes(k))) return null;
+    for (const k of ['cid', 'year', 'prop_id']) {
+      const v = url.searchParams.getAll(k);
+      if (v.length > 1 || (v.length === 1 && !/^\d+$/.test(v[0]))) return null;
+      if (v.length) kept.push([k, v[0]]);
+    }
+    const propId = url.searchParams.get('prop_id');
+    if (propId == null || propertyId == null || Number(propId) !== Number(propertyId)) return null;
+    return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
   }
   const WA_LAND_USE_CODES = Object.freeze({
     11: 'Household, single family units', 12: 'Household, 2-4 units', 13: 'Household, multiunits (5 or more)',

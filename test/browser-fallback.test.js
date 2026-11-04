@@ -413,7 +413,16 @@ test('stevens-assessor: the property search link follows the Worker rule in the 
     [url, 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056'], // accepted, upgraded
     [url.replace('propertysearch.trueautomation.com', 'evil.example'), null], // different host
     [url.replace('/PropertyAccess/Property.aspx', '/PropertyAccess/Other.aspx'), null], // different path
-    [url.replace('prop_id=13056', 'prop_id=40770'), null] // prop_id mismatch
+    [url.replace('prop_id=13056', 'prop_id=40770'), null], // prop_id mismatch
+    // Lookalike hosts: a loosened host check (endsWith / includes) accepts these.
+    [url.replace('propertysearch.trueautomation.com', 'evil-trueautomation.com'), null],
+    [url.replace('propertysearch.trueautomation.com', 'propertysearch.trueautomation.com.evil.com'), null],
+    // Only cid, year and prop_id, all numeric; the link is rebuilt from them.
+    [`${url}&redirect=//evil.com`, null],
+    [url.replace('cid=0', 'cid=x'), null],
+    [url.replace('year=2026', 'year=2026a'), null],
+    [`${url}&year=2025`, null],
+    [`${url.replace('cid=0&year=2026&prop_id=13056', 'prop_id=13056&year=2026&cid=0')}#frag`, 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056']
   ];
   for (const [sent, want] of cases) {
     const answer = () => ({ features: [{ attributes: { ...base, Propertyinformation: sent } }] });

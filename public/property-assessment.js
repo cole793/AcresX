@@ -106,9 +106,18 @@
     try { url = new URL(String(value ?? '')); } catch { return ''; }
     if (url.protocol !== 'https:' || url.hostname !== 'propertysearch.trueautomation.com' || url.port || url.username || url.password) return '';
     if (url.pathname !== '/PropertyAccess/Property.aspx') return '';
-    const propId = url.searchParams.getAll('prop_id');
-    if (propId.length !== 1 || !/^\d+$/.test(propId[0]) || propertyId == null || Number(propId[0]) !== Number(propertyId)) return '';
-    return url.toString();
+    // Only cid, year and prop_id, each at most once and all digits; prop_id is required and must be
+    // the record's. The link is rebuilt from those three, so nothing else (e.g. redirect=) survives.
+    const kept = [];
+    if ([...url.searchParams.keys()].some(k => !['cid', 'year', 'prop_id'].includes(k))) return '';
+    for (const k of ['cid', 'year', 'prop_id']) {
+      const v = url.searchParams.getAll(k);
+      if (v.length > 1 || (v.length === 1 && !/^\d+$/.test(v[0]))) return '';
+      if (v.length) kept.push([k, v[0]]);
+    }
+    const propId = url.searchParams.get('prop_id');
+    if (propId == null || propertyId == null || Number(propId) !== Number(propertyId)) return '';
+    return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
   }
 
   // Stevens currentUse { status, program, note } -> one line, or '' when the record has none.

@@ -224,6 +224,44 @@ test('stevens property search link: a prop_id that is not the record\'s, not num
   assert.equal(stevensPropertySearchUrl(null, 13056), null);
 });
 
+test('stevens property search link: only cid, year and prop_id, all numeric; the link is rebuilt from them', () => {
+  const ok = 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056';
+  // Rebuilt in a fixed order; a fragment is dropped.
+  assert.equal(stevensPropertySearchUrl('http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=13056&year=2026&cid=0#x', 13056), ok);
+  assert.equal(stevensPropertySearchUrl('http://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=13056', 13056), 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=13056');
+  for (const extra of ['redirect=//evil.com', 'returnUrl=https%3A%2F%2Fevil.com', 'Prop_ID=13056', 'x=']) {
+    assert.equal(stevensPropertySearchUrl(`${SEARCH}&${extra}`, 13056), null, extra);
+  }
+  for (const [k, v] of [['cid', 'x'], ['cid', ''], ['year', '2026a'], ['year', '-1'], ['cid', '0%20']]) {
+    assert.equal(stevensPropertySearchUrl(SEARCH.replace(new RegExp(`${k}=[^&]*`), `${k}=${v}`), 13056), null, `${k}=${v}`);
+  }
+  assert.equal(stevensPropertySearchUrl(`${SEARCH}&cid=1`, 13056), null, 'repeated cid');
+  assert.equal(stevensPropertySearchUrl(`${SEARCH}&year=2025`, 13056), null, 'repeated year');
+});
+
+test('stevens property search link: lookalike hosts are dropped', () => {
+  for (const host of ['evil-trueautomation.com', 'propertysearch.trueautomation.com.evil.com', 'propertysearch-trueautomation.com', 'xpropertysearch.trueautomation.com']) {
+    assert.equal(stevensPropertySearchUrl(SEARCH.replace('propertysearch.trueautomation.com', host), 13056), null, host);
+  }
+});
+
+// The mapper copies named fields only, so stripping personal fields first cannot change its output
+// today; it guards a future field-list change. This checks the strip stays the mapper's first step
+// (removing it fails here), in the Worker and the browser copy.
+test('stevens mapper strips personal fields before reading the record (Worker and browser copy)', () => {
+  const worker = readFileSync(new URL('../src/counties/stevens-assessor.js', import.meta.url), 'utf8');
+  const browserCopy = readFileSync(new URL('../public/browser-fallback.js', import.meta.url), 'utf8');
+  const firstStep = /function mapStevensAssessorRecord\(raw = \{\}\) \{\s*const attrs = withoutPersonalFields\(raw\);/;
+  assert.match(worker, firstStep);
+  assert.match(browserCopy, firstStep);
+  // ... and nothing else in the mapper reads `raw`.
+  for (const source of [worker, browserCopy]) {
+    const start = source.indexOf('function mapStevensAssessorRecord');
+    const body = source.slice(start, source.indexOf('function ', start + 10));
+    assert.equal((body.match(/\braw\b/g) || []).length, 2, 'raw is only the parameter and the strip input');
+  }
+});
+
 test('stevens assessment: a link the server sends for another property is not returned', async () => {
   const attrs = { ...recorded['0231200'].features[0].attributes, Propertyinformation: SEARCH.replace('13056', '40770') };
   stubFetch(() => arcgisJson({ features: [{ attributes: attrs }] }));
