@@ -18,7 +18,7 @@
 //   the Worker's own (degraded) answer is kept.
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
 //   kootenai-assessor.js, src/shared/polygon-coverage.js, src/shared/arcgis.js spatialParams,
-//   src/states/idaho/wells.js, src/services/flood.js). test/browser-fallback.test.js runs both on
+//   src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js). test/browser-fallback.test.js runs both on
 //   the same recorded fixtures and checks the answers match. Change both together.
 //
 // Progressive loading (public/progressive-loading.js): a section's find* fetch passes its
@@ -34,7 +34,7 @@
   'use strict';
   if (root.AcresXFallback) return;
 
-  const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov']);
+  const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov']);
   const TIMEOUT_MS = 12000;
   // How much more time a progressive-loading section gets once its browser fallback starts.
   const EXTEND_MS = 30000;
@@ -660,15 +660,67 @@
     return { available: true, intersects: rows.length > 0, high: rows.some(isSfha), zones, zoneDetails: zoneDetails(rows), category: floodCategory(rows) };
   }
 
+  // Stevens County, WA digitized FEMA FIRM (copy of src/counties/stevens-flood.js). The county
+  // server sends CORS headers. Asked, like the Worker does, when FEMA has no mapped zone for a
+  // parcel in the bbox or FEMA failed in the browser too.
+  const STEVENS_FLOOD_LAYER = 'https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19';
+  const STEVENS_FLOOD_PROVIDER = 'Stevens County digitized FEMA FIRM';
+  const STEVENS_FLOOD_LABEL = 'Stevens County digitized FEMA FIRM (paper map copy, not a FEMA digital map)';
+  const STEVENS_FLOOD_NOTE = 'FEMA has no digital flood map (NFHL) for Stevens County. This is the county\'s copy of FEMA\'s 1998 Q3 flood data, digitized from the paper FIRM. Verify with Stevens County or FEMA.';
+  const STEVENS_FLOOD_BBOX = { xmin: -118.43, ymin: 47.75, xmax: -117.35, ymax: 49.05 };
+  function inStevensBbox(rings) {
+    let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+    for (const ring of rings) for (const [x, y] of ring) { xmin = Math.min(xmin, x); ymin = Math.min(ymin, y); xmax = Math.max(xmax, x); ymax = Math.max(ymax, y); }
+    const b = STEVENS_FLOOD_BBOX;
+    return Number.isFinite(xmin) && xmax >= b.xmin && xmin <= b.xmax && ymax >= b.ymin && ymin <= b.ymax;
+  }
+  function stevensFloodRow(a) {
+    const zone = trimmed(a?.zone_).toUpperCase(), sfha = trimmed(a?.sfha).toUpperCase(), floodway = trimmed(a?.floodway).toUpperCase() === 'FW';
+    if (zone === 'A' || zone === 'AE') return { FLD_ZONE: zone, ZONE_SUBTY: floodway ? 'FLOODWAY' : null, SFHA_TF: 'T' };
+    if (zone === 'X500') return { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' };
+    if (zone === 'X') return { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' };
+    if (zone === 'ANI') return { FLD_ZONE: 'AREA NOT INCLUDED', ZONE_SUBTY: null, SFHA_TF: 'F' };
+    return { FLD_ZONE: zone || null, ZONE_SUBTY: null, SFHA_TF: sfha === 'IN' ? 'T' : sfha === 'OUT' ? 'F' : null };
+  }
+  async function stevensFlood(rings, signal) {
+    const data = await request(`${STEVENS_FLOOD_LAYER}/query`, {
+      f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
+      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'zone_,sfha,floodway,firm_panel', returnGeometry: 'false', resultRecordCount: '100'
+    }, { agency: 'Stevens County GIS', signal });
+    const countyRows = (data?.features || []).map(f => f?.attributes || {});
+    if (!countyRows.length) return null;
+    const source = {
+      provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER, label: STEVENS_FLOOD_LABEL, coverage: 'paper-firm-copy', digitalFemaMap: false, mapDate: '1998',
+      countyZones: [...new Set(countyRows.map(a => trimmed(a.zone_)).filter(Boolean))],
+      firmPanels: [...new Set(countyRows.map(a => trimmed(a.firm_panel)).filter(Boolean))],
+      note: STEVENS_FLOOD_NOTE
+    };
+    return { ...summarizeFloodRows(countyRows.map(stevensFloodRow)), source };
+  }
+
+  // FEMA first. For a parcel in the Stevens bbox, the county layer when FEMA answered not_mapped
+  // or failed; a county failure (or no county rows) keeps FEMA's answer, or FEMA's error.
   async function femaFlood(input, signal) {
     const geometry = geometryOf(input, true);
     const rings = geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat();
-    const data = await request(`${FEMA_NFHL_FLOOD_LAYER}/query`, {
-      f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
-      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'FLD_ZONE,ZONE_SUBTY,SFHA_TF', returnGeometry: 'false', resultRecordCount: '100'
-    }, { agency: FEMA_PROVIDER, signal });
-    const rows = (data?.features || []).map(f => f?.attributes || {});
-    return { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
+    let fema = null, femaError = null;
+    try {
+      const data = await request(`${FEMA_NFHL_FLOOD_LAYER}/query`, {
+        f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
+        inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'FLD_ZONE,ZONE_SUBTY,SFHA_TF', returnGeometry: 'false', resultRecordCount: '100'
+      }, { agency: FEMA_PROVIDER, signal });
+      const rows = (data?.features || []).map(f => f?.attributes || {});
+      fema = { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
+    } catch (error) { femaError = error; }
+    if (!inStevensBbox(rings) || (fema && fema.category !== 'not_mapped')) {
+      if (fema) return fema;
+      throw femaError;
+    }
+    let county = null;
+    try { county = await stevensFlood(rings, signal); } catch (error) { if (!fema) throw femaError; }
+    if (county) return county;
+    if (fema) return fema;
+    throw femaError;
   }
 
   // ---- Kinds, the fetch hook and labels
@@ -678,7 +730,7 @@
     'kootenai-zoning': { api: '/api/zoning-permits', run: kootenaiZoning, agency: body => body?.source?.agency || KC_AGENCY, targets: ['zoningNote'] },
     'idaho-wells': { api: '/api/well-search', run: idahoWells, agency: () => 'Idaho Department of Water Resources', targets: ['wellNote'] },
     'kootenai-assessor': { api: '/api/property-assessment', run: kootenaiAssessor, agency: () => 'Kootenai County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
-    'fema-flood': { api: '/api/hazards', run: femaFlood, agency: () => 'FEMA (National Flood Hazard Layer)', targets: ['overviewFlood'] }
+    'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] }
   };
 
   let loaded = {};
