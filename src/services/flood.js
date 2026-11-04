@@ -282,7 +282,7 @@ async function fromFema(geometry) {
 const unavailableBody = error => ({ available: false, intersects: false, high: false, zones: [], error, source: null });
 
 // County flood layers asked when FEMA has no mapped zone (step 4 above). Each entry:
-// { id, provider, url, matches(geometry, county), lookup(geometry, { late }) -> { rows, source } }.
+// { id, provider, url, agency, matches(geometry, county), lookup(geometry, { late }) -> { rows, source } }.
 // The URL and field mapping live in the county adapter.
 export const COUNTY_FLOOD_SOURCES = Object.freeze([stevensFlood]);
 
@@ -374,7 +374,11 @@ export async function floodScreening(geometry, ctx, options = {}) {
   if (county) {
     const result = await fromCounty(county, geometry, true);
     if (result.body) return await answer(result.body, true);
-    failures.push(`${county.provider} ${result.error ? (result.error?.message || 'failed') : 'no features'}`);
+    // The shared client's message starts with the agency ("Stevens County GIS returned 503");
+    // drop it so the provider is named once, like "FEMA NFHL returned 403".
+    const message = String(result.error?.message || 'failed');
+    const reason = !result.error ? 'no features' : county.agency && message.startsWith(`${county.agency} `) ? message.slice(county.agency.length + 1) : message;
+    failures.push(`${county.provider} ${reason}`);
   }
 
   return { status: 502, body: { ...unavailableBody(`Flood data unavailable: ${failures.join('; ')}`), ...(fallback || {}) } };

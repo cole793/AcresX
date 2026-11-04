@@ -220,7 +220,8 @@ test('stevens flood: FEMA, Esri and the county layer all fail: 502 naming all th
   const { response, body } = await floodCall(ae.geometry);
   assert.equal(response.status, 502);
   assert.deepEqual(kinds(), ['fema', 'esri', 'county'], 'one short county attempt after FEMA and Esri failed');
-  assert.match(body.error, /FEMA NFHL returned 403; Esri USA Flood Hazard Areas returned 503; Stevens County digitized FEMA FIRM Stevens County GIS returned 503/);
+  assert.equal(body.error, 'Flood data unavailable: FEMA NFHL returned 403; Esri USA Flood Hazard Areas returned 503; Stevens County digitized FEMA FIRM returned 503');
+  assert.equal(body.error.match(/Stevens/g).length, 1, 'Stevens is named once');
   assert.equal(body.fallback.kind, 'fema-flood');
 });
 

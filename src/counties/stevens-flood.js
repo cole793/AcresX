@@ -134,6 +134,6 @@ export async function stevensFloodLookup(geometry, { late = false } = {}) {
 
 // The registry entry src/services/flood.js uses (one per county with its own flood layer).
 export const stevensFlood = Object.freeze({
-  id: 'stevens', provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER,
+  id: 'stevens', provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER, agency: STEVENS_AGENCY,
   matches: isStevensParcel, lookup: stevensFloodLookup
 });
