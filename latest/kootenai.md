@@ -1,37 +1,37 @@
 # County validation: Kootenai, ID
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-03T20:09:39.355Z
-- Parcels: 12, with an error or mismatch: 12
-- Layer results: ok 117, unavailable 27, error 24, mismatch 0, skipped 0
+- Run: 2026-11-04T20:27:27.097Z
+- Parcels: 12, with an error or mismatch: 5
+- Layer results: ok 136, unavailable 27, error 5, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 0L8210010030 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 015270010070 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| C72150030040 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 47N02W035500 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48N03W312100 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0K245001002B | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 49N03W324950 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 007740020050 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0K2660010030 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0153400A001A | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 47N02W040800 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| C72150040140 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 0L8210010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 015270010070 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| C72150030040 | ok | ok | unavailable | ok | ok | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 47N02W035500 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 48N03W312100 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 0K245001002B | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 49N03W324950 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 007740020050 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 0K2660010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 0153400A001A | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 47N02W040800 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | unavailable |
+| C72150040140 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 
 ## Parcel details
 
 ### 0L8210010030 (no locality, 4.79 ac)
 
-Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | other/blank locality"; first in locality (blank). Locality is the parcel's situs city field, not proof it is inside city limits.
+Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | other/blank locality"; first in locality (blank). Locality is the parcel's situs city field, not proof it is inside city limits. Hand check: outside city limits (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18/query: blank CITY); county zoning ZONE_NAME RUR (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21/query with the parcel outline from https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=PIN%3D%270L8210010030%27&outFields=PIN&returnGeometry=true&outSR=4326 sent as geometryType=esriGeometryPolygon, spatialRel=esriSpatialRelIntersects, outFields=ZONE_NAME), which AcresX shows as RURAL; assessor class 515 Rural residential sub (https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/5/query?f=json&where=PIN%3D%270L8210010030%27&outFields=PIN,property_class,Property_ClassDescr&returnGeometry=false); FEMA zone X only (https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query, same outline). Checked by hand 2026-11-02.
 
 - **Parcel**: ok. parcel 0L8210010030, 4.79 ac [parcelId=0L8210010030, acres=4.79, lat=47.865654, lon=-116.819488]
 - **Wells**: ok. 137 well record(s), 5 of nearest 5 report depth [wellCount=137, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=360]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 0.3%, max 1% [gradePct=0.3, maxGradePct=1, reliefFt=4, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 0.8% [cellCount=16, avgSlopePct=0.8, maxSlopePct=1.9, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -43,14 +43,14 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | 
 
 ### 015270010070 (WORLEY, 10.01 ac)
 
-Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac | city-named locality"; first in locality WORLEY. Locality is the parcel's situs city field, not proof it is inside city limits.
+Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac | city-named locality"; first in locality WORLEY. Locality is the parcel's situs city field, not proof it is inside city limits. Hand check: outside city limits (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18/query: blank CITY); county zoning ZONE_NAME RUR (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21/query with the parcel outline from https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=PIN%3D%27015270010070%27&outFields=PIN&returnGeometry=true&outSR=4326 sent as geometryType=esriGeometryPolygon, spatialRel=esriSpatialRelIntersects), shown as RURAL; assessor class 537 Imp res rural sub (https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/9/query?f=json&where=PIN%3D%27015270010070%27&outFields=PIN,property_class,Property_ClassDescr&returnGeometry=false); FEMA zone D only (https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query, same outline). Checked by hand 2026-11-02.
 
 - **Parcel**: ok. parcel 015270010070, 10.01 ac [parcelId=015270010070, acres=10.01, address=26402 S FARUP RD, WORLEY, lat=47.430694, lon=-116.844376]
 - **Wells**: ok. 39 well record(s), 5 of nearest 5 report depth [wellCount=39, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=360]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Santa ashy silt loam, 15 to 35 percent slopes) [feasibility=limited, mapUnit=Santa ashy silt loam, 15 to 35 percent slopes, hydrologicGroup=C/D, drainage=Moderately well drained, soilSlopePct=16]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 13.1%, max 28.1% [gradePct=13.1, maxGradePct=28.1, reliefFt=95, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22.9% [cellCount=16, avgSlopePct=22.9, maxSlopePct=37.5, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=4.7]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -62,14 +62,14 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac |
 
 ### C72150030040 (COEUR D ALENE, 0.27 ac)
 
-Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 ac | city-named locality"; first in locality COEUR D ALENE. Locality is the parcel's situs city field, not proof it is inside city limits.
+Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 ac | city-named locality"; first in locality COEUR D ALENE. Locality is the parcel's situs city field, not proof it is inside city limits. Hand check: inside Coeur d'Alene city limits (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18/query with the parcel outline from https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=PIN%3D%27C72150030040%27&outFields=PIN&returnGeometry=true&outSR=4326 sent as geometryType=esriGeometryPolygon, spatialRel=esriSpatialRelIntersects: CITY Coeur d Alene); no county zoning polygon (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21/query, outFields=ZONE_NAME: none); city zoning R-12 (https://gis.cdaid.org/server/rest/services/Share/Planning/MapServer/8/query, same outline: ZONING R-12); assessor class 541 Imp res lot/tract in city (https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/8/query?f=json&where=PIN%3D%27C72150030040%27&outFields=PIN,property_class,Property_ClassDescr&returnGeometry=false); FEMA zone X only (https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query, same outline, outFields=FLD_ZONE,SFHA_TF). Checked by hand 2026-11-02.
 
 - **Parcel**: ok. parcel C72150030040, 0.27 ac [parcelId=C72150030040, acres=0.27, address=5811 N CHRISTOPHER DR, COEUR D ALENE, lat=47.724453, lon=-116.803995]
 - **Wells**: ok. 53 well record(s), 5 of nearest 5 report depth [wellCount=53, nearestDepthsCount=5, nearestMi=0.74, medianDepthFt=330]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McGuire-Marble association, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=McGuire-Marble association, 0 to 7 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 4%, max 7.6% [gradePct=4, maxGradePct=7.6, reliefFt=7, sampleCount=9]
+- **Slope grid**: error. Elevation samples were returned, but not enough adjacent samples were available to calculate slope cells.
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -81,14 +81,14 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 a
 
 ### 47N02W035500 (MEDIMONT, 51.64 ac)
 
-Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | other/blank locality"; first in locality MEDIMONT. Locality is the parcel's situs city field, not proof it is inside city limits.
+Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | other/blank locality"; first in locality MEDIMONT. Locality is the parcel's situs city field, not proof it is inside city limits. Hand check: outside city limits (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18/query: blank CITY); county zoning ZONE_NAME AG (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21/query with the parcel outline from https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=PIN%3D%2747N02W035500%27&outFields=PIN&returnGeometry=true&outSR=4326 sent as geometryType=esriGeometryPolygon, spatialRel=esriSpatialRelIntersects), shown as AGRICULTURE; assessor class 534 Imp res rural tract (https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/10/query?f=json&where=PIN%3D%2747N02W035500%27&outFields=PIN,property_class,Property_ClassDescr&returnGeometry=false); FEMA zones AE and A (SFHA) plus X (https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query, same outline). Checked by hand 2026-11-02.
 
 - **Parcel**: ok. parcel 47N02W035500, 51.64 ac [parcelId=47N02W035500, acres=51.64, address=15047 E CAMERON RD, MEDIMONT, lat=47.453302, lon=-116.577746]
 - **Wells**: ok. 40 well record(s), 5 of nearest 5 report depth [wellCount=40, nearestDepthsCount=5, nearestMi=0.06, medianDepthFt=262]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Cougarbay silt loam) [feasibility=limited, mapUnit=Cougarbay silt loam, hydrologicGroup=D, drainage=Very poorly drained, soilSlopePct=1]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: error. USGS elevation was unavailable for 3 of 9 terrain points.
+- **Slope grid**: ok. 16 cells, avg 6.3% [cellCount=16, avgSlopePct=6.3, maxSlopePct=21.9, partial=false]
 - **Flood**: ok. high-risk zone (A, X, AE) (via FEMA NFHL) [high=true, intersects=true, zones=A; X; AE, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 16 NWI feature(s) [intersects=true, count=16, coveragePct=70.5]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -106,8 +106,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | 
 - **Wells**: ok. 40 well record(s), 5 of nearest 5 report depth [wellCount=40, nearestDepthsCount=5, nearestMi=0.33, medianDepthFt=280]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Aeric Fluvaquents-Typic Fluvaquents-Typic Haplosaprist association, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Aeric Fluvaquents-Typic Fluvaquents-Typic Haplosaprist association, 0 to 1 percent slopes, hydrologicGroup=B/D, drainage=Very poorly drained, soilSlopePct=0]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: error. USGS elevation was unavailable for 5 of 9 terrain points.
+- **Slope grid**: ok. 16 cells, avg 5.6% [cellCount=16, avgSlopePct=5.6, maxSlopePct=28.5, partial=false]
 - **Flood**: ok. high-risk zone (AE, X) (via FEMA NFHL) [high=true, intersects=true, zones=AE; X, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=64.5]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -125,8 +125,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | 
 - **Wells**: ok. 81 well record(s), 5 of nearest 5 report depth [wellCount=81, nearestDepthsCount=5, nearestMi=0.24, medianDepthFt=540]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 2.3%, max 4.1% [gradePct=2.3, maxGradePct=4.1, reliefFt=20, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 3.8% [cellCount=16, avgSlopePct=3.8, maxSlopePct=8.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -144,8 +144,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac |
 - **Wells**: ok. 105 well record(s), 5 of nearest 5 report depth [wellCount=105, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=405]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Blinn loam, 35 to 65 percent slopes, very stony) [feasibility=limited, mapUnit=Blinn loam, 35 to 65 percent slopes, very stony, hydrologicGroup=C, drainage=Well drained, soilSlopePct=50]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 13.9%, max 30.7% [gradePct=13.9, maxGradePct=30.7, reliefFt=246, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 25.5% [cellCount=16, avgSlopePct=25.5, maxSlopePct=34.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.3]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -163,8 +163,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 a
 - **Wells**: ok. 154 well record(s), 5 of nearest 5 report depth [wellCount=154, nearestDepthsCount=5, nearestMi=0.42, medianDepthFt=563]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Taney silt loam, 7 to 25 percent slopes) [feasibility=limited, mapUnit=Taney silt loam, 7 to 25 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=16]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: error. USGS elevation was unavailable for 5 of 9 terrain points.
+- **Slope grid**: ok. 16 cells, avg 7% [cellCount=16, avgSlopePct=7, maxSlopePct=11.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -182,8 +182,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ATHOL. 
 - **Wells**: ok. 86 well record(s), 5 of nearest 5 report depth [wellCount=86, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=460]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 1%, max 3.5% [gradePct=1, maxGradePct=3.5, reliefFt=7, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 1.7% [cellCount=16, avgSlopePct=1.7, maxSlopePct=4.5, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
@@ -201,8 +201,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality POST FA
 - **Wells**: ok. 73 well record(s), 5 of nearest 5 report depth [wellCount=73, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=304]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Avonville fine gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Avonville fine gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 0.7%, max 1% [gradePct=0.7, maxGradePct=1, reliefFt=9, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 1.8% [cellCount=16, avgSlopePct=1.8, maxSlopePct=3.9, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
@@ -220,12 +220,12 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ST MARI
 - **Wells**: ok. 60 well record(s), 5 of nearest 5 report depth [wellCount=60, nearestDepthsCount=5, nearestMi=0.15, medianDepthFt=205]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Lacy-Bobbitt association, 5 to 35 percent slopes, very stony) [feasibility=limited, mapUnit=Lacy-Bobbitt association, 5 to 35 percent slopes, very stony, hydrologicGroup=D, drainage=Well drained, soilSlopePct=20]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 3.6%, max 8% [gradePct=3.6, maxGradePct=8, reliefFt=136, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=17.5, partial=false]
 - **Flood**: ok. high-risk zone (X, AE) (via FEMA NFHL) [high=true, intersects=true, zones=X; AE, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.4]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
-- **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
+- **Power**: error. timeout after 30s
 - **Zoning**: ok. AGRICULTURE (Kootenai County) [code=AGRICULTURE, jurisdiction=Kootenai County, countyStatus=kootenai-data-layers-v3, zoningStatus=gis_match, allowedBuildings=mapped_from_county_code, permitHistoryStatus=unavailable]
 - **Zoning rules**: ok. A: Resource Lands (7 uses) [code=A, family=Resource Lands, useCount=7]
 - **Assessment**: ok. assessed $549,398, class 534 Imp res rural tract, no tax amount [assessedValue=549398, landValue=472598, improvementValue=76800, taxPresent=false, netValue=442326, homeownerExemption=107072, taxYear=2026, propertyClass=534, propertyClassDescription=Imp res rural tract, source=Kootenai County Assessor (Assessor_Layers)]
@@ -239,8 +239,8 @@ Why: Picked by discovery run 40391761739 (2026-10-26): fills remaining sample sl
 - **Wells**: ok. 55 well record(s), 5 of nearest 5 report depth [wellCount=55, nearestDepthsCount=5, nearestMi=0.77, medianDepthFt=300]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McGuire-Marble association, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=McGuire-Marble association, 0 to 7 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 3.4%, max 13.6% [gradePct=3.4, maxGradePct=13.6, reliefFt=11, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 6.6% [cellCount=16, avgSlopePct=6.6, maxSlopePct=22.5, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
