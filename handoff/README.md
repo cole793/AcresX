@@ -31,21 +31,29 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 |---|---|---|---|
 | (none) | | | |
 
-Merged 2026-10-29 to 10-31, each with the owner's approval; every deploy succeeded:
-#24 progressive loading, #23 shared upstream client + `/api/upstream-health`, #26 owner names and
-mailing addresses removed everywhere (approved 2026-10-29), #27 browser fallback (option A) for
-Kootenai parcel/zoning/assessor, IDWR wells and FEMA flood.
+Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
+HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
+#31 verifier on Sonnet, #32 Spokane city zoning from each city's layer, #33 Gallatin/Yellowstone
+zoning fixes + MT validation configs, #36 WA validation tool + Spokane/Stevens/Kootenai expected
+values, #37 county coverage levels from the 2026-11-03 runs.
+
+## County report card (checklist score, 2026-11-03)
+
+Kootenai 87, Yellowstone 80, Spokane 79, Gallatin 75 (all level 2), Stevens 49 (level 1).
+Kootenai's first fully clean run was 2026-11-03T23:25Z; level 3 needs a second consecutive clean
+daily run plus the owner comparing 2 parcels with the county site. All five counties are in the
+daily validation run.
 
 ## Offered next (not approved)
 
-- Stevens County, WA: 33/100 on the checklist. Its zoning code must be extracted from `worker.js`
-  before it can get a browser fallback.
-- Browser fallback for MT DNRC parcels (now possible since #26 removed owner fields).
-- "Kootenai County, Washington" label in `public/parcel-preview.js` (should say Idaho).
-- `/api/upstream-health` re-probes all 21 sources on every GET while any one is down (memo only
-  keeps all-healthy runs); a 10-15 s memo for failed runs would cut that.
-- A test that `outFields=*` is never sent to owner-bearing layers (verifier gap on #26).
-- Draft a note to Kootenai County GIS about Cloudflare blocking (owner said "not yet" 2026-10-28).
+- USDA soil (SDA) timed out on large parcels on 2026-11-03; give soil a fallback/longer window.
+- Stevens: assessor adapter, LAMIRD zone code "0", city parcels labelled unincorporated,
+  extract zoning from `worker.js`; county-digitized FIRM for flood.
+- Spokane: assessor property class not read; statewide WA parcel lookup sometimes 5-25 s.
+- Gallatin: zoning rules table. Yellowstone: thin rules for D16/EB_CW; Broadview town limits.
+- Plain-language rules for city zones (CdA, Post Falls, Spokane cities).
+- Browser fallback for MT DNRC parcels and Stevens.
+- Draft a note to Kootenai County GIS about Cloudflare blocking (owner said "not yet").
 
 ## Waiting on the owner
 
