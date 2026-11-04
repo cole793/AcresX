@@ -8,6 +8,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import worker from '../src/index.js';
 import legacyWorker from '../src/worker.js';
 import { configureUpstream } from '../src/shared/upstream.js';
@@ -392,6 +393,30 @@ test('permitList: unknown jurisdiction keeps the county list; a town without a p
   const town = permitList(profile, stevensCityInfo('Marcus'));
   assert.equal(town[0].agency, 'Town of Marcus planning / zoning');
   assert.match(town[0].reason, /Contact Town of Marcus\.$/);
+});
+
+test('public/zoning-potential.js does not ask for Stevens County rules for a city zone', async () => {
+  const source = readPublic('zoning-potential.js');
+  const run = zoningPermits => {
+    const requests = [];
+    const context = {
+      last: { zoningPermits, parcel: { properties: { _countyDisplay: 'Stevens' } } },
+      renderSummary() {}, activeTab: 'summary',
+      fetch: async (url, init) => { requests.push(JSON.parse(init.body)); return json({ available: false }); },
+      document: { getElementById: () => null, head: { appendChild() {} }, createElement: () => ({}) }
+    };
+    context.window = context;
+    vm.createContext(context);
+    vm.runInContext(source, context);
+    context.renderSummary();
+    return new Promise(resolve => setImmediate(() => resolve(requests)));
+  };
+  assert.deepEqual(await run({ county: 'Stevens', jurisdiction: 'City of Colville', zoning: { status: 'gis_match', code: 'R-1', jurisdictionType: 'city' } }), []);
+  assert.deepEqual(await run({ county: 'Stevens', jurisdiction: 'Town of Marcus', zoning: { status: 'gis_match', code: 'Residential' } }), [], 'city by name only');
+  const county = await run({ county: 'Stevens', jurisdiction: 'Stevens County', zoning: { status: 'gis_match', code: 'RA-10', jurisdictionType: 'county' } });
+  assert.equal(county.length, 1);
+  assert.equal(county[0].zoneCode, 'RA-10');
+  assert.equal((await run({ county: 'Stevens', jurisdiction: 'Stevens County (unincorporated areas)', zoning: { status: 'gis_match', code: '10' } })).length, 1, 'the old county label still counts as the county');
 });
 
 // ---- Routing and /api/zoning-rules
