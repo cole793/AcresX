@@ -10,7 +10,8 @@
 // On failure of every source: HTTP 502 with
 //   { available: false, intersects: false, high: false, zones: [], error, source: null }
 //
-// Request plan (at most 3 upstream requests per call, worst case 22.5 s):
+// Request plan (at most 3 upstream requests per call, worst case 22.5 s; a parcel a county flood
+// layer covers can add one or two more, see step 4):
 //   1. FEMA NFHL layer 28 (Flood Hazard Zones). Any answer it gives, including no features, is
 //      authoritative and cacheable.
 //   2. One FEMA retry if (1) failed with 5xx / network error / timeout. FEMA is intermittently
@@ -18,15 +19,28 @@
 //   3. Esri Living Atlas "USA Flood Hazard Areas" if FEMA gave no answer. That layer only holds
 //      high- and moderate-risk areas, so its answers carry coverage 'high-and-moderate-risk-only',
 //      and an empty Esri answer is flagged emptyResult and never cached.
+//   4. A county flood layer (COUNTY_FLOOD_SOURCES, src/counties/*-flood.js) when FEMA has no mapped
+//      zone for the parcel: FEMA answered not_mapped (no features, or only AREA NOT INCLUDED /
+//      OPEN WATER), the Esri backup answered empty, or both failed. Only for a parcel the county
+//      entry matches (its bbox, or the request's `county`). Today: Stevens County, WA, whose
+//      digitized copy of FEMA's paper map stands in for the missing NFHL panels. When the county
+//      layer has rows, its answer replaces FEMA's (source.provider names the county copy, and
+//      source.digitalFemaMap is false). When it has none, or fails, the earlier answer stands and
+//      gains source.countyLayer { provider, url, status: 'no_features' | 'unavailable', error? };
+//      a failure is never cached. After FEMA answered: 6 s + one 4 s retry (worst case 14.5 +
+//      10.3 = 24.8 s). After FEMA and Esri failed: one 5 s attempt (worst case 27.5 s).
 // Queries go as GET, or as a form-encoded POST when the URL would be too long (large parcels).
 // Cacheable answers go in the Workers Cache API for 7 days, keyed by a hash of the rounded
 // parcel geometry. The cache is skipped where `caches` does not exist (Node tests).
 // Browser fallback (src/shared/fallback.js): when FEMA failed with a network error, a timeout or
 // a 403/429/5xx, the answer (Esri backup or 502) gains `fallback: { mode: 'browser', kind:
 // 'fema-flood', input: { geometry } }` so public/browser-fallback.js can ask FEMA from the
-// user's browser. The hint is never cached.
+// user's browser. The hint is never cached. It is also added when FEMA answered not_mapped and
+// the county layer failed the same way (the browser asks FEMA, then the county layer), and it is
+// dropped when the county layer answered.
 import { fetchWithTimeout, json } from '../shared/http.js';
-import { FALLBACK_KINDS, fallbackHint, hintGeometry } from '../shared/fallback.js';
+import { FALLBACK_KINDS, fallbackHint, hintGeometry, isFallbackEligible } from '../shared/fallback.js';
+import { stevensFlood } from '../counties/stevens-flood.js';
 
 export const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
 
@@ -56,7 +70,9 @@ export const MAX_GET_URL_LENGTH = 3500;
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 // v3: earlier entries may hold answers from the wrong Esri layer.
 // v4: answers gained zoneDetails and category, and 'AREA NOT INCLUDED' is no longer high.
-export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v4/';
+// v5: Stevens County parcels: v4 entries hold FEMA not_mapped answers made before the county
+// layer was asked.
+export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v5/';
 const COORD_DECIMALS = 6;
 
 // browserFallback: a failure a browser might get past (network, timeout, 403/429/5xx).
@@ -265,13 +281,41 @@ async function fromFema(geometry) {
 
 const unavailableBody = error => ({ available: false, intersects: false, high: false, zones: [], error, source: null });
 
+// County flood layers asked when FEMA has no mapped zone (step 4 above). Each entry:
+// { id, provider, url, matches(geometry, county), lookup(geometry, { late }) -> { rows, source } }.
+// The URL and field mapping live in the county adapter.
+export const COUNTY_FLOOD_SOURCES = Object.freeze([stevensFlood]);
+
+// { body } when the county layer has rows, { none: true } when none touch the parcel,
+// { error } when it failed. Never throws.
+async function fromCounty(county, geometry, late) {
+  try {
+    const { rows, source } = await county.lookup(geometry, { late });
+    if (!rows.length) return { none: true };
+    return { body: { ...summarizeFloodRows(rows), source } };
+  } catch (error) {
+    console.warn(`Flood source failed: ${county.provider}`, error?.message);
+    return { error };
+  }
+}
+
+const countyLayerStatus = (county, result) => ({
+  provider: county.provider, url: county.url, status: result.error ? 'unavailable' : 'no_features',
+  ...(result.error ? { error: result.error?.message || 'failed' } : {})
+});
+const withCountyStatus = (body, county, result) => ({ ...body, source: { ...(body.source || {}), countyLayer: countyLayerStatus(county, result) } });
+
 // Returns { status, body } and never throws, so src/index.js never falls through to legacy code.
-// options.esriFallback overrides ESRI_FALLBACK_ENABLED (used by tests).
+// options.esriFallback overrides ESRI_FALLBACK_ENABLED (used by tests). options.county: the
+// request's county name, if it sent one (picks the county layer instead of the bbox).
 export async function floodScreening(geometry, ctx, options = {}) {
   const esriFallback = options.esriFallback ?? ESRI_FALLBACK_ENABLED;
   try { esriPolygon(geometry); } catch (error) {
     return { status: 400, body: unavailableBody(error.message) };
   }
+  const county = (options.countySources ?? COUNTY_FLOOD_SOURCES).find(source => {
+    try { return source.matches(geometry, options.county); } catch { return false; }
+  }) || null;
   const cache = edgeCache();
   let key = null;
   if (cache) { try { key = await cacheKey(geometry); } catch { key = null; } }
@@ -285,13 +329,23 @@ export async function floodScreening(geometry, ctx, options = {}) {
 
   const failures = [];
   let fallback = null;
+  let femaBody = null;
   try {
     const rows = await fromFema(geometry);
-    return await answer({ ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } }, true);
+    femaBody = { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
   } catch (error) {
     failures.push(`${FEMA_PROVIDER} ${error?.message || 'failed'}`);
     console.warn(`Flood source failed: ${FEMA_PROVIDER}`, error?.message);
     if (error?.browserFallback) fallback = { fallback: fallbackHint(FALLBACK_KINDS.femaFlood, { geometry: hintGeometry(geometry) }) };
+  }
+  if (femaBody) {
+    if (!county || femaBody.category !== 'not_mapped') return await answer(femaBody, true);
+    const result = await fromCounty(county, geometry, false);
+    if (result.body) return await answer(result.body, true);
+    if (result.none) return await answer(withCountyStatus(femaBody, county, result), true);
+    // County layer failed: FEMA's not_mapped answer, uncached, and the browser may try both.
+    const hint = isFallbackEligible(result.error) ? { fallback: fallbackHint(FALLBACK_KINDS.femaFlood, { geometry: hintGeometry(geometry) }) } : {};
+    return { status: 200, body: { ...withCountyStatus(femaBody, county, result), ...hint } };
   }
   // The hint is added after the cache write, so a cached answer never carries it.
   const withHint = async promise => { const result = await promise; return fallback ? { ...result, body: { ...result.body, ...fallback } } : result; };
@@ -302,12 +356,25 @@ export async function floodScreening(geometry, ctx, options = {}) {
       const source = { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, coverage: ESRI_COVERAGE };
       // Empty here means "not in a mapped high- or moderate-risk area", not "no flood zone":
       // keep the no-intersection shape for the frontend, flag it and never cache it.
-      if (!rows.length) return await withHint(answer({ ...summarizeFloodRows(rows, { backup: true }), category: 'limited', source: { ...source, emptyResult: true } }, false));
+      if (!rows.length) {
+        const limited = { ...summarizeFloodRows(rows, { backup: true }), category: 'limited', source: { ...source, emptyResult: true } };
+        if (!county) return await withHint(answer(limited, false));
+        // The Esri layer is a copy of FEMA's, so empty here is "no FEMA zone": ask the county.
+        const result = await fromCounty(county, geometry, true);
+        if (result.body) return await answer(result.body, true);
+        return await withHint(answer(withCountyStatus(limited, county, result), false));
+      }
       return await withHint(answer({ ...summarizeFloodRows(rows, { backup: true }), source }, true));
     } catch (error) {
       failures.push(`${ESRI_PROVIDER} ${error?.message || 'failed'}`);
       console.warn(`Flood source failed: ${ESRI_PROVIDER}`, error?.message);
     }
+  }
+
+  if (county) {
+    const result = await fromCounty(county, geometry, true);
+    if (result.body) return await answer(result.body, true);
+    failures.push(`${county.provider} ${result.error ? (result.error?.message || 'failed') : 'no features'}`);
   }
 
   return { status: 502, body: { ...unavailableBody(`Flood data unavailable: ${failures.join('; ')}`), ...(fallback || {}) } };
@@ -316,8 +383,9 @@ export async function floodScreening(geometry, ctx, options = {}) {
 export async function handleFlood(request, env, ctx) {
   let body = {};
   try { body = await request.json(); } catch { body = {}; }
-  const { status, body: result } = await floodScreening(body?.geometry, ctx);
-  // emptyResult answers are partial-coverage: don't let the browser or edge hold on to them.
-  if (status === 200 && result.source?.emptyResult) return json(result, 200, 'no-store');
+  const { status, body: result } = await floodScreening(body?.geometry, ctx, { county: typeof body?.county === 'string' ? body.county : undefined });
+  // emptyResult answers are partial-coverage, and an answer whose county layer failed is degraded:
+  // don't let the browser or edge hold on to them.
+  if (status === 200 && (result.source?.emptyResult || result.source?.countyLayer?.status === 'unavailable')) return json(result, 200, 'no-store');
   return status === 200 ? json(result) : json(result, status, 'no-store');
 }

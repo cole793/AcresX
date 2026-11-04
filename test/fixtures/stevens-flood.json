@@ -1,0 +1,282 @@
+{
+ "recorded": "2026-11-04T21:15:53.795Z",
+ "layer": "https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19",
+ "cases": {
+  "ae": {
+   "parcelId": "2371220",
+   "note": "Northport situs, 4.44 ac (validation/counties/stevens.json): county AE + X",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -117.807663,
+       48.912743
+      ],
+      [
+       -117.808266,
+       48.912737
+      ],
+      [
+       -117.807262,
+       48.913423
+      ],
+      [
+       -117.806773,
+       48.913427
+      ],
+      [
+       -117.804051,
+       48.913452
+      ],
+      [
+       -117.804053,
+       48.913428
+      ],
+      [
+       -117.804032,
+       48.913365
+      ],
+      [
+       -117.804079,
+       48.913302
+      ],
+      [
+       -117.804721,
+       48.912974
+      ],
+      [
+       -117.805088,
+       48.912845
+      ],
+      [
+       -117.805149,
+       48.912818
+      ],
+      [
+       -117.805265,
+       48.912765
+      ],
+      [
+       -117.807388,
+       48.912746
+      ],
+      [
+       -117.807671,
+       48.912736
+      ],
+      [
+       -117.807663,
+       48.912743
+      ]
+     ]
+    ]
+   },
+   "response": {
+    "displayFieldName": "fema_",
+    "fieldAliases": {
+     "zone_": "ZONE_",
+     "sfha": "SFHA",
+     "floodway": "FLOODWAY",
+     "firm_panel": "FIRM_PANEL"
+    },
+    "fields": [
+     {
+      "name": "zone_",
+      "type": "esriFieldTypeString",
+      "alias": "ZONE_",
+      "length": 5
+     },
+     {
+      "name": "sfha",
+      "type": "esriFieldTypeString",
+      "alias": "SFHA",
+      "length": 3
+     },
+     {
+      "name": "floodway",
+      "type": "esriFieldTypeString",
+      "alias": "FLOODWAY",
+      "length": 5
+     },
+     {
+      "name": "firm_panel",
+      "type": "esriFieldTypeString",
+      "alias": "FIRM_PANEL",
+      "length": 11
+     }
+    ],
+    "features": [
+     {
+      "attributes": {
+       "zone_": "X",
+       "sfha": "OUT",
+       "floodway": " ",
+       "firm_panel": "5301850125B"
+      }
+     },
+     {
+      "attributes": {
+       "zone_": "AE",
+       "sfha": "IN",
+       "floodway": " ",
+       "firm_panel": "5301850125B"
+      }
+     }
+    ]
+   }
+  },
+  "x": {
+   "parcelId": "0000500",
+   "note": "City of Colville, 0.16 ac (validation/counties/stevens.json): county X only",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -117.906053,
+       48.54683
+      ],
+      [
+       -117.90605,
+       48.546666
+      ],
+      [
+       -117.906546,
+       48.546663
+      ],
+      [
+       -117.906548,
+       48.546826
+      ],
+      [
+       -117.906053,
+       48.54683
+      ]
+     ]
+    ]
+   },
+   "response": {
+    "displayFieldName": "fema_",
+    "fieldAliases": {
+     "zone_": "ZONE_",
+     "sfha": "SFHA",
+     "floodway": "FLOODWAY",
+     "firm_panel": "FIRM_PANEL"
+    },
+    "fields": [
+     {
+      "name": "zone_",
+      "type": "esriFieldTypeString",
+      "alias": "ZONE_",
+      "length": 5
+     },
+     {
+      "name": "sfha",
+      "type": "esriFieldTypeString",
+      "alias": "SFHA",
+      "length": 3
+     },
+     {
+      "name": "floodway",
+      "type": "esriFieldTypeString",
+      "alias": "FLOODWAY",
+      "length": 5
+     },
+     {
+      "name": "firm_panel",
+      "type": "esriFieldTypeString",
+      "alias": "FIRM_PANEL",
+      "length": 11
+     }
+    ],
+    "features": [
+     {
+      "attributes": {
+       "zone_": "X",
+       "sfha": "OUT",
+       "floodway": " ",
+       "firm_panel": "5301870001B"
+      }
+     }
+    ]
+   }
+  },
+  "ani": {
+   "parcelId": null,
+   "note": "Small square inside county ANI polygon objectid 787 (firm_panel 5301850000A, bbox -118.1261,47.7921,-118.0011,47.8749)",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -118.065,
+       47.835
+      ],
+      [
+       -118.06,
+       47.835
+      ],
+      [
+       -118.06,
+       47.84
+      ],
+      [
+       -118.065,
+       47.84
+      ],
+      [
+       -118.065,
+       47.835
+      ]
+     ]
+    ]
+   },
+   "response": {
+    "displayFieldName": "fema_",
+    "fieldAliases": {
+     "zone_": "ZONE_",
+     "sfha": "SFHA",
+     "floodway": "FLOODWAY",
+     "firm_panel": "FIRM_PANEL"
+    },
+    "fields": [
+     {
+      "name": "zone_",
+      "type": "esriFieldTypeString",
+      "alias": "ZONE_",
+      "length": 5
+     },
+     {
+      "name": "sfha",
+      "type": "esriFieldTypeString",
+      "alias": "SFHA",
+      "length": 3
+     },
+     {
+      "name": "floodway",
+      "type": "esriFieldTypeString",
+      "alias": "FLOODWAY",
+      "length": 5
+     },
+     {
+      "name": "firm_panel",
+      "type": "esriFieldTypeString",
+      "alias": "FIRM_PANEL",
+      "length": 11
+     }
+    ],
+    "features": [
+     {
+      "attributes": {
+       "zone_": "ANI",
+       "sfha": "OUT",
+       "floodway": " ",
+       "firm_panel": "5301850000A"
+      }
+     }
+    ]
+   }
+  }
+ }
+}

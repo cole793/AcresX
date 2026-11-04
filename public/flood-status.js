@@ -16,6 +16,9 @@
 //                 Not "no flood zone", so it is limited data                       score 50, amber
 //   unavailable   available:false                                                 score 50, amber
 // If a response has no `category` (older cached answers), it is derived from zoneDetails or zones.
+// County paper-map copies (source.digitalFemaMap === false, e.g. Stevens County's digitized FEMA
+// FIRM, src/counties/stevens-flood.js) use the same categories and scores; the detail names the
+// source (source.label) and says FEMA has no digital map there, and the overview says so briefly.
 (function (root) {
   const BACKUP_PROVIDER = 'Esri USA Flood Hazard Areas';
   const LIMITED_LABEL = 'Limited flood data';
@@ -34,10 +37,14 @@
   };
   const NOT_MAPPED_TEXT = 'No digital FEMA flood map (NFHL) covers this parcel. Verify with the county or FEMA.';
   const BACKUP_NOTE = ' (backup source: Esri copy of FEMA data)';
+  const PAPER_MAP_NOTE = 'FEMA has no digital flood map here. Verify with the county or FEMA.';
+  const PAPER_MAP_SUFFIX = ' (county copy of FEMA paper map)';
 
   const isLimited = flood => flood?.available === true && flood?.source?.emptyResult === true;
   const isBackup = flood => flood?.source?.provider === BACKUP_PROVIDER;
   const backupSuffix = flood => (isBackup(flood) ? ' (backup source)' : '');
+  const isPaperMap = flood => flood?.source?.digitalFemaMap === false;
+  const paperMapSource = flood => String(flood?.source?.label || flood?.source?.provider || 'county copy of the FEMA paper map');
 
   const upper = v => String(v ?? '').trim().toUpperCase();
   const isPointTwo = subtype => /0\.2\s*(%|PCT|PERCENT)/i.test(String(subtype || ''));
@@ -112,6 +119,10 @@
       if (c === cat || zones.length) groups.push({ c, group, zones });
     }
     const [main, ...others] = groups;
+    if (isPaperMap(flood)) {
+      const zones = main.zones.length ? `Flood zone ${main.zones.join(', ')}` : 'Flood zone';
+      return `${zones}${MEANING[cat](main.group)}${others.map(g => `; also zone ${g.zones.join(', ')}${MEANING[g.c](g.group)}`).join('')}. Source: ${paperMapSource(flood)}. ${PAPER_MAP_NOTE}`;
+    }
     const head = main.zones.length
       ? `${backup ? 'Flood zone' : 'FEMA zone'} ${main.zones.join(', ')}${backup ? BACKUP_NOTE : ''}${MEANING[cat](main.group)}`
       : `${backup ? 'Flood zone' : 'FEMA flood zone'}${backup ? BACKUP_NOTE : ''}${MEANING[cat](main.group)}`;
@@ -123,7 +134,8 @@
   function grade(flood) {
     const cat = category(flood);
     const g = GRADES[cat];
-    const suffix = cat === 'limited' || cat === 'unavailable' ? '' : backupSuffix(flood);
+    const quiet = cat === 'limited' || cat === 'unavailable';
+    const suffix = quiet ? '' : (isPaperMap(flood) && cat !== 'not_mapped' ? PAPER_MAP_SUFFIX : backupSuffix(flood));
     return { category: cat, score: g.score, label: g.label, cls: g.cls, overview: `${g.overview}${suffix}`, overviewCls: g.overviewCls, detail: detail(flood, cat) };
   }
 
@@ -132,7 +144,7 @@
   const score = flood => grade(flood).score;
 
   root.AcresXFlood = {
-    BACKUP_PROVIDER, BACKUP_NOTE, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, CATEGORIES, GRADES,
-    isLimited, isBackup, backupSuffix, rowCategory, category, detail, grade, score
+    BACKUP_PROVIDER, BACKUP_NOTE, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, PAPER_MAP_NOTE, PAPER_MAP_SUFFIX, CATEGORIES, GRADES,
+    isLimited, isBackup, isPaperMap, backupSuffix, rowCategory, category, detail, grade, score
   };
 })(typeof window !== 'undefined' ? window : globalThis);
