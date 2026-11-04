@@ -2,8 +2,8 @@
   "county": "Yellowstone",
   "state": "MT",
   "baseUrl": "https://acresx.cole-groshens.workers.dev",
-  "startedAt": "2026-11-03T20:18:44.124Z",
-  "finishedAt": "2026-11-03T20:28:15.564Z",
+  "startedAt": "2026-11-04T20:45:32.867Z",
+  "finishedAt": "2026-11-04T20:54:13.788Z",
   "results": [
     {
       "parcelId": "03113520290010000",
@@ -13,21 +13,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 798,
+          "ms": 849,
           "status": "ok",
-          "detail": "parcel 03113520290010000",
+          "detail": "parcel 03113520290010000, 12.48 ac (mapped)",
           "values": {
             "parcelId": "03113520290010000",
-            "acres": null,
+            "acres": 12.48,
             "address": null,
             "lat": 45.911619,
-            "lon": -108.271699
+            "lon": -108.271699,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 634,
+          "ms": 516,
           "status": "ok",
           "detail": "382 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -40,7 +41,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 386,
+          "ms": 412,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -53,7 +54,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 312,
+          "ms": 2873,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -71,7 +72,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 823,
+          "ms": 746,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -83,7 +84,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 455,
+          "ms": 379,
           "status": "ok",
           "detail": "UNZONED (Yellowstone County)",
           "values": {
@@ -98,7 +99,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14312,
+          "ms": 12982,
           "status": "ok",
           "detail": "limited (Vananda silty clay, 0 to 1 percent slopes)",
           "values": {
@@ -112,15 +113,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14312,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
+          "ms": 12982,
+          "status": "ok",
+          "detail": "avg grade 0.2%, max 0.5%",
+          "values": {
+            "gradePct": 0.2,
+            "maxGradePct": 0.5,
+            "reliefFt": 7,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 78,
+          "ms": 53,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -130,12 +136,12 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 868,
+          "ms": 816,
           "status": "ok",
-          "detail": "assessed $11,848, no tax amount",
+          "detail": "assessed $753, no tax amount",
           "values": {
-            "assessedValue": 11848,
-            "landValue": 11848,
+            "assessedValue": 753,
+            "landValue": 753,
             "improvementValue": 0,
             "taxPresent": false,
             "netValue": null,
@@ -149,7 +155,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1287,
+          "ms": 950,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -161,7 +167,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1115,
+          "ms": 2660,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP",
           "values": {
@@ -174,7 +180,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 16,
+          "ms": 54,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -184,10 +190,15 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 14297,
-          "status": "error",
-          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
-          "values": {}
+          "ms": 12210,
+          "status": "ok",
+          "detail": "16 cells, avg 0.5%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 0.5,
+            "maxSlopePct": 1.1,
+            "partial": false
+          }
         }
       },
       "mismatches": []
@@ -200,21 +211,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 395,
+          "ms": 428,
           "status": "ok",
-          "detail": "parcel 03072530104010000",
+          "detail": "parcel 03072530104010000, 120.3 ac (mapped)",
           "values": {
             "parcelId": "03072530104010000",
-            "acres": null,
+            "acres": 120.3,
             "address": null,
             "lat": 45.549337,
-            "lon": -108.678552
+            "lon": -108.678552,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 925,
+          "ms": 596,
           "status": "ok",
           "detail": "32 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -227,7 +239,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 400,
+          "ms": 302,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -240,7 +252,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1416,
+          "ms": 265,
           "status": "ok",
           "detail": "zones D (via FEMA NFHL)",
           "values": {
@@ -258,7 +270,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1402,
+          "ms": 1288,
           "status": "ok",
           "detail": "5 NWI feature(s)",
           "values": {
@@ -270,7 +282,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 272,
+          "ms": 329,
           "status": "ok",
           "detail": "UNZONED (Yellowstone County)",
           "values": {
@@ -285,7 +297,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14298,
+          "ms": 8806,
           "status": "ok",
           "detail": "moderate (Grail soils, 2 to 15 percent slopes)",
           "values": {
@@ -299,15 +311,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14298,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
+          "ms": 8806,
+          "status": "ok",
+          "detail": "avg grade 6.8%, max 18.2%",
+          "values": {
+            "gradePct": 6.8,
+            "maxGradePct": 18.2,
+            "reliefFt": 324,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 46,
+          "ms": 85,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -317,7 +334,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 1945,
+          "ms": 923,
           "status": "ok",
           "detail": "assessed $7,592, no tax amount",
           "values": {
@@ -336,7 +353,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1214,
+          "ms": 884,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -348,7 +365,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18698,
+          "ms": 2661,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP",
           "values": {
@@ -361,7 +378,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 61,
+          "ms": 56,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -371,10 +388,15 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 14276,
-          "status": "error",
-          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
-          "values": {}
+          "ms": 7874,
+          "status": "ok",
+          "detail": "16 cells, avg 14.4%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 14.4,
+            "maxSlopePct": 27.8,
+            "partial": false
+          }
         }
       },
       "mismatches": []
@@ -387,21 +409,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 428,
+          "ms": 190,
           "status": "ok",
-          "detail": "parcel 03103333215010000",
+          "detail": "parcel 03103333215010000, 2.91 ac (mapped)",
           "values": {
             "parcelId": "03103333215010000",
-            "acres": null,
+            "acres": 2.91,
             "address": "1105 N 21ST ST",
             "lat": 45.79691,
-            "lon": -108.50538
+            "lon": -108.50538,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 785,
+          "ms": 402,
           "status": "ok",
           "detail": "1485 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -414,7 +437,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 418,
+          "ms": 397,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -428,7 +451,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1313,
+          "ms": 225,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -446,7 +469,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 828,
+          "ms": 659,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -458,7 +481,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 332,
+          "ms": 240,
           "status": "ok",
           "detail": "P1 (City of Billings)",
           "values": {
@@ -473,7 +496,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14302,
+          "ms": 12925,
           "status": "ok",
           "detail": "favorable (McRae loam, 4 to 7 percent slopes)",
           "values": {
@@ -487,15 +510,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14302,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
+          "ms": 12925,
+          "status": "ok",
+          "detail": "avg grade 6.9%, max 22.5%",
+          "values": {
+            "gradePct": 6.9,
+            "maxGradePct": 22.5,
+            "reliefFt": 63,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 41,
+          "ms": 25,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -505,7 +533,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 3658,
+          "ms": 621,
           "status": "ok",
           "detail": "assessed $324,700, no tax amount",
           "values": {
@@ -524,7 +552,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1117,
+          "ms": 871,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -536,7 +564,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18711,
+          "ms": 501,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT)",
           "values": {
@@ -549,7 +577,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 15,
+          "ms": 24,
           "status": "ok",
           "detail": "P1: Public / Institutional (6 uses)",
           "values": {
@@ -561,10 +589,15 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 14311,
-          "status": "error",
-          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
-          "values": {}
+          "ms": 9500,
+          "status": "ok",
+          "detail": "16 cells, avg 15.1%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 15.1,
+            "maxSlopePct": 38.1,
+            "partial": false
+          }
         }
       },
       "mismatches": []
@@ -577,21 +610,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 196,
+          "ms": 389,
           "status": "ok",
-          "detail": "parcel 03103233201230000",
+          "detail": "parcel 03103233201230000, 0.41 ac (mapped)",
           "values": {
             "parcelId": "03103233201230000",
-            "acres": null,
+            "acres": 0.41,
             "address": "4541 EDGEWATER CIR",
             "lat": 45.79188,
-            "lon": -108.630517
+            "lon": -108.630517,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 427,
+          "ms": 564,
           "status": "ok",
           "detail": "686 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -604,7 +638,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 494,
+          "ms": 370,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -618,7 +652,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 707,
+          "ms": 254,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -636,7 +670,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 768,
+          "ms": 745,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -648,7 +682,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 1110,
+          "ms": 348,
           "status": "ok",
           "detail": "N3 (City of Billings)",
           "values": {
@@ -663,7 +697,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14291,
+          "ms": 7929,
           "status": "ok",
           "detail": "favorable (McRae loam, 1 to 4 percent slopes)",
           "values": {
@@ -677,15 +711,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14291,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
+          "ms": 7929,
+          "status": "ok",
+          "detail": "avg grade 2.5%, max 5.1%",
+          "values": {
+            "gradePct": 2.5,
+            "maxGradePct": 5.1,
+            "reliefFt": 10,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 44,
+          "ms": 48,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -695,7 +734,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 2580,
+          "ms": 672,
           "status": "ok",
           "detail": "assessed $857,700, no tax amount",
           "values": {
@@ -714,7 +753,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1109,
+          "ms": 860,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -726,7 +765,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18702,
+          "ms": 6053,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT)",
           "values": {
@@ -739,7 +778,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 36,
+          "ms": 23,
           "status": "ok",
           "detail": "N3: Neighborhood Residential (6 uses)",
           "values": {
@@ -751,7 +790,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 8683,
+          "ms": 10483,
           "status": "ok",
           "detail": "16 cells, avg 4.4%",
           "values": {
@@ -772,21 +811,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 388,
+          "ms": 233,
           "status": "ok",
-          "detail": "parcel 03113517000000000",
+          "detail": "parcel 03113517000000000, 20.99 ac (mapped)",
           "values": {
             "parcelId": "03113517000000000",
-            "acres": null,
+            "acres": 20.99,
             "address": null,
             "lat": 45.9168,
-            "lon": -108.264805
+            "lon": -108.264805,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 470,
+          "ms": 255,
           "status": "ok",
           "detail": "293 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -799,7 +839,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 447,
+          "ms": 304,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -812,7 +852,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 595,
+          "ms": 324,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -830,7 +870,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 853,
+          "ms": 652,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -842,7 +882,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 302,
+          "ms": 232,
           "status": "ok",
           "detail": "UNZONED (Yellowstone County)",
           "values": {
@@ -857,7 +897,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 8511,
+          "ms": 10524,
           "status": "ok",
           "detail": "limited (Vananda silty clay, 0 to 1 percent slopes)",
           "values": {
@@ -871,7 +911,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 8511,
+          "ms": 10524,
           "status": "ok",
           "detail": "avg grade 0.2%, max 0.7%",
           "values": {
@@ -884,7 +924,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 17,
+          "ms": 25,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -894,7 +934,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 3640,
+          "ms": 2569,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -913,7 +953,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1125,
+          "ms": 935,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -925,7 +965,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1054,
+          "ms": 911,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP",
           "values": {
@@ -938,7 +978,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 16,
+          "ms": 34,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -948,15 +988,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 1971,
-          "status": "ok",
-          "detail": "16 cells, avg 0.5%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 0.5,
-            "maxSlopePct": 1.2,
-            "partial": false
-          }
+          "ms": 17072,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -969,21 +1004,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 187,
+          "ms": 398,
           "status": "ok",
-          "detail": "parcel 03072527101010000",
+          "detail": "parcel 03072527101010000, 281.28 ac (mapped)",
           "values": {
             "parcelId": "03072527101010000",
-            "acres": null,
+            "acres": 281.28,
             "address": null,
             "lat": 45.545434,
-            "lon": -108.624805
+            "lon": -108.624805,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 347,
+          "ms": 740,
           "status": "ok",
           "detail": "29 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -996,7 +1032,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 721,
+          "ms": 422,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -1009,7 +1045,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 3551,
+          "ms": 392,
           "status": "ok",
           "detail": "zones D (via FEMA NFHL)",
           "values": {
@@ -1027,7 +1063,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1218,
+          "ms": 2807,
           "status": "ok",
           "detail": "6 NWI feature(s)",
           "values": {
@@ -1039,7 +1075,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 250,
+          "ms": 240,
           "status": "ok",
           "detail": "D16 (Yellowstone County)",
           "values": {
@@ -1054,7 +1090,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 9071,
+          "ms": 11304,
           "status": "ok",
           "detail": "limited (Maginnis channery clay loam, 15 to 35 percent slopes)",
           "values": {
@@ -1068,7 +1104,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 9071,
+          "ms": 11304,
           "status": "ok",
           "detail": "avg grade 1.9%, max 4.4%",
           "values": {
@@ -1081,7 +1117,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 16,
+          "ms": 43,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1091,13 +1127,410 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 393,
+          "ms": 755,
           "status": "ok",
           "detail": "assessed $16,479, no tax amount",
           "values": {
             "assessedValue": 16479,
             "landValue": 16479,
             "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 950,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": null,
+          "ms": 30002,
+          "status": "error",
+          "detail": "timeout after 30s",
+          "values": {}
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 32,
+          "status": "ok",
+          "detail": "D16: Special / Other (1 uses)",
+          "values": {
+            "code": "D16",
+            "family": "Special / Other",
+            "useCount": 1
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 9503,
+          "status": "ok",
+          "detail": "16 cells, avg 8.2%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 8.2,
+            "maxSlopePct": 15.8,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "03103333303010000",
+      "label": "BILLINGS, 1 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Downtown Billings exempt property (CBD zoning).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 212,
+          "status": "ok",
+          "detail": "parcel 03103333303010000, 1 ac (mapped)",
+          "values": {
+            "parcelId": "03103333303010000",
+            "acres": 1,
+            "address": "220 N 25TH ST",
+            "lat": 45.784964,
+            "lon": -108.503716,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 417,
+          "status": "ok",
+          "detail": "1572 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 1572,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.03,
+            "medianDepthFt": 25
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 284,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)",
+              "YELLOWSTONE VALLEY ELEC CO-OP",
+              "WAPA-- WESTERN AREA POWER ADMINISTRATION"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 123,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 617,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 255,
+          "status": "ok",
+          "detail": "CBD (City of Billings)",
+          "values": {
+            "code": "CBD",
+            "jurisdiction": "City of Billings",
+            "countyStatus": "yellowstone-v2",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 4189,
+          "status": "ok",
+          "detail": "favorable (Lohmiller silty clay, 0 to 1 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Lohmiller silty clay, 0 to 1 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 1
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 4189,
+          "status": "ok",
+          "detail": "avg grade 0.7%, max 2.5%",
+          "values": {
+            "gradePct": 0.7,
+            "maxGradePct": 2.5,
+            "reliefFt": 6,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 25,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 1197,
+          "status": "ok",
+          "detail": "assessed $6,981,390, no tax amount",
+          "values": {
+            "assessedValue": 6981390,
+            "landValue": 1719500,
+            "improvementValue": 5261890,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 885,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 9240,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 22,
+          "status": "ok",
+          "detail": "CBD: Commercial (4 uses)",
+          "values": {
+            "code": "CBD",
+            "family": "Commercial",
+            "useCount": 4
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 7768,
+          "status": "ok",
+          "detail": "16 cells, avg 1.4%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 1.4,
+            "maxSlopePct": 5.2,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "03103233202530000",
+      "label": "BILLINGS, 0.34 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end, N3).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 228,
+          "status": "ok",
+          "detail": "parcel 03103233202530000, 0.34 ac (mapped)",
+          "values": {
+            "parcelId": "03103233202530000",
+            "acres": 0.34,
+            "address": "2280 RIDGEWOOD LN S",
+            "lat": 45.793066,
+            "lon": -108.628665,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 335,
+          "status": "ok",
+          "detail": "686 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 686,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.03,
+            "medianDepthFt": 79
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 311,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)",
+              "YELLOWSTONE VALLEY ELEC CO-OP",
+              "WAPA-- WESTERN AREA POWER ADMINISTRATION"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 243,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 649,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 225,
+          "status": "ok",
+          "detail": "N3 (City of Billings)",
+          "values": {
+            "code": "N3",
+            "jurisdiction": "City of Billings",
+            "countyStatus": "yellowstone-v2",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 7429,
+          "status": "ok",
+          "detail": "favorable (Glenberg fine sandy loam, 1 to 4 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Glenberg fine sandy loam, 1 to 4 percent slopes",
+            "hydrologicGroup": "A",
+            "drainage": "Well drained",
+            "soilSlopePct": 3
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 7429,
+          "status": "ok",
+          "detail": "avg grade 2.5%, max 3.7%",
+          "values": {
+            "gradePct": 2.5,
+            "maxGradePct": 3.7,
+            "reliefFt": 8,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 27,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 649,
+          "status": "ok",
+          "detail": "assessed $701,200, no tax amount",
+          "values": {
+            "assessedValue": 701200,
+            "landValue": 135215,
+            "improvementValue": 565985,
             "taxPresent": false,
             "netValue": null,
             "homeownerExemption": null,
@@ -1121,404 +1554,16 @@
         },
         "power": {
           "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 18678,
-          "status": "ok",
-          "detail": "YELLOWSTONE VALLEY ELEC CO-OP",
-          "values": {
-            "provider": "YELLOWSTONE VALLEY ELEC CO-OP",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
+          "httpStatus": null,
+          "ms": 30001,
+          "status": "error",
+          "detail": "timeout after 30s",
+          "values": {}
         },
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 21,
-          "status": "ok",
-          "detail": "D16: Special / Other (1 uses)",
-          "values": {
-            "code": "D16",
-            "family": "Special / Other",
-            "useCount": 1
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 14274,
-          "status": "error",
-          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
-          "values": {}
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "03103333303010000",
-      "label": "BILLINGS, 1 ac",
-      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Downtown Billings exempt property (CBD zoning).",
-      "layers": {
-        "parcel": {
-          "route": "/api/parcel-search",
-          "httpStatus": 200,
-          "ms": 231,
-          "status": "ok",
-          "detail": "parcel 03103333303010000",
-          "values": {
-            "parcelId": "03103333303010000",
-            "acres": null,
-            "address": "220 N 25TH ST",
-            "lat": 45.784964,
-            "lon": -108.503716
-          }
-        },
-        "wells": {
-          "route": "/api/well-search",
-          "httpStatus": 200,
-          "ms": 600,
-          "status": "ok",
-          "detail": "1572 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 1572,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.03,
-            "medianDepthFt": 25
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 529,
-          "status": "ok",
-          "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
-          "values": {
-            "providers": [
-              "NORTHWESTERN ENERGY LLC - (MT)",
-              "YELLOWSTONE VALLEY ELEC CO-OP",
-              "WAPA-- WESTERN AREA POWER ADMINISTRATION"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 197,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 678,
-          "status": "ok",
-          "detail": "no NWI wetlands",
-          "values": {
-            "intersects": false,
-            "count": 0,
-            "coveragePct": 0
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 477,
-          "status": "ok",
-          "detail": "CBD (City of Billings)",
-          "values": {
-            "code": "CBD",
-            "jurisdiction": "City of Billings",
-            "countyStatus": "yellowstone-v2",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "unavailable"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 2452,
-          "status": "ok",
-          "detail": "favorable (Lohmiller silty clay, 0 to 1 percent slopes)",
-          "values": {
-            "feasibility": "favorable",
-            "mapUnit": "Lohmiller silty clay, 0 to 1 percent slopes",
-            "hydrologicGroup": "C",
-            "drainage": "Well drained",
-            "soilSlopePct": 1
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 2452,
-          "status": "ok",
-          "detail": "avg grade 0.7%, max 2.5%",
-          "values": {
-            "gradePct": 0.7,
-            "maxGradePct": 2.5,
-            "reliefFt": 6,
-            "sampleCount": 9
-          }
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 25,
-          "status": "unavailable",
-          "detail": "Existing-well matching is not configured for this county yet.",
-          "values": {
-            "status": "not_supported"
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 929,
-          "status": "ok",
-          "detail": "assessed $6,981,390, no tax amount",
-          "values": {
-            "assessedValue": 6981390,
-            "landValue": 1719500,
-            "improvementValue": 5261890,
-            "taxPresent": false,
-            "netValue": null,
-            "homeownerExemption": null,
-            "taxYear": null,
-            "propertyClass": null,
-            "propertyClassDescription": null,
-            "source": "Montana Cadastral / ORION integration"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 1261,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 967,
-          "status": "ok",
-          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
-          "values": {
-            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 19,
-          "status": "ok",
-          "detail": "CBD: Commercial (4 uses)",
-          "values": {
-            "code": "CBD",
-            "family": "Commercial",
-            "useCount": 4
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 14290,
-          "status": "error",
-          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
-          "values": {}
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "03103233202530000",
-      "label": "BILLINGS, 0.34 ac",
-      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end, N3).",
-      "layers": {
-        "parcel": {
-          "route": "/api/parcel-search",
-          "httpStatus": 200,
-          "ms": 416,
-          "status": "ok",
-          "detail": "parcel 03103233202530000",
-          "values": {
-            "parcelId": "03103233202530000",
-            "acres": null,
-            "address": "2280 RIDGEWOOD LN S",
-            "lat": 45.793066,
-            "lon": -108.628665
-          }
-        },
-        "wells": {
-          "route": "/api/well-search",
-          "httpStatus": 200,
-          "ms": 718,
-          "status": "ok",
-          "detail": "686 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 686,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.03,
-            "medianDepthFt": 79
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 549,
-          "status": "ok",
-          "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
-          "values": {
-            "providers": [
-              "NORTHWESTERN ENERGY LLC - (MT)",
-              "YELLOWSTONE VALLEY ELEC CO-OP",
-              "WAPA-- WESTERN AREA POWER ADMINISTRATION"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 4310,
-          "status": "ok",
-          "detail": "no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)",
-          "values": {
-            "high": false,
-            "intersects": false,
-            "zones": [],
-            "category": "limited",
-            "provider": "Esri USA Flood Hazard Areas",
-            "coverage": "high-and-moderate-risk-only",
-            "emptyResult": true
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 881,
-          "status": "ok",
-          "detail": "no NWI wetlands",
-          "values": {
-            "intersects": false,
-            "count": 0,
-            "coveragePct": 0
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 481,
-          "status": "ok",
-          "detail": "N3 (City of Billings)",
-          "values": {
-            "code": "N3",
-            "jurisdiction": "City of Billings",
-            "countyStatus": "yellowstone-v2",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "unavailable"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 14302,
-          "status": "ok",
-          "detail": "favorable (Glenberg fine sandy loam, 1 to 4 percent slopes)",
-          "values": {
-            "feasibility": "favorable",
-            "mapUnit": "Glenberg fine sandy loam, 1 to 4 percent slopes",
-            "hydrologicGroup": "A",
-            "drainage": "Well drained",
-            "soilSlopePct": 3
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 14302,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 58,
-          "status": "unavailable",
-          "detail": "Existing-well matching is not configured for this county yet.",
-          "values": {
-            "status": "not_supported"
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 3696,
-          "status": "ok",
-          "detail": "assessed $684,300, no tax amount",
-          "values": {
-            "assessedValue": 684300,
-            "landValue": 135215,
-            "improvementValue": 549085,
-            "taxPresent": false,
-            "netValue": null,
-            "homeownerExemption": null,
-            "taxYear": null,
-            "propertyClass": null,
-            "propertyClassDescription": null,
-            "source": "Montana Cadastral / ORION integration"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 1166,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 938,
-          "status": "ok",
-          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
-          "values": {
-            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 31,
+          "ms": 49,
           "status": "ok",
           "detail": "N3: Neighborhood Residential (6 uses)",
           "values": {
@@ -1530,7 +1575,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 4898,
+          "ms": 11117,
           "status": "ok",
           "detail": "16 cells, avg 4.2%",
           "values": {
@@ -1551,21 +1596,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 192,
+          "ms": 213,
           "status": "ok",
-          "detail": "parcel 03113519316050000",
+          "detail": "parcel 03113519316050000, 5.19 ac (mapped)",
           "values": {
             "parcelId": "03113519316050000",
-            "acres": null,
+            "acres": 5.19,
             "address": null,
             "lat": 45.906252,
-            "lon": -108.291924
+            "lon": -108.291924,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 564,
+          "ms": 266,
           "status": "ok",
           "detail": "336 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1578,7 +1624,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 366,
+          "ms": 452,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -1591,7 +1637,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 155,
+          "ms": 118,
           "status": "ok",
           "detail": "high-risk zone (AE) (via FEMA NFHL)",
           "values": {
@@ -1609,7 +1655,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 882,
+          "ms": 909,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -1621,7 +1667,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 242,
+          "ms": 301,
           "status": "ok",
           "detail": "UNZONED (Yellowstone County)",
           "values": {
@@ -1636,7 +1682,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14305,
+          "ms": 6847,
           "status": "ok",
           "detail": "favorable (Haverson loam, 0 to 1 percent slopes)",
           "values": {
@@ -1650,15 +1696,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14305,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 9 of 9 terrain points.",
-          "values": {}
+          "ms": 6847,
+          "status": "ok",
+          "detail": "avg grade 0.5%, max 1.2%",
+          "values": {
+            "gradePct": 0.5,
+            "maxGradePct": 1.2,
+            "reliefFt": 8,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 23,
+          "ms": 24,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1668,7 +1719,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 1139,
+          "ms": 628,
           "status": "ok",
           "detail": "assessed $7,658, no tax amount",
           "values": {
@@ -1687,7 +1738,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1084,
+          "ms": 941,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1699,7 +1750,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18671,
+          "ms": 1759,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP",
           "values": {
@@ -1712,7 +1763,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 17,
+          "ms": 26,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -1722,15 +1773,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 1211,
-          "status": "ok",
-          "detail": "16 cells, avg 1.3%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 1.3,
-            "maxSlopePct": 3.1,
-            "partial": false
-          }
+          "ms": 17040,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -1743,21 +1789,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 399,
+          "ms": 357,
           "status": "ok",
-          "detail": "parcel 03072528309010000",
+          "detail": "parcel 03072528309010000, 224.47 ac (mapped)",
           "values": {
             "parcelId": "03072528309010000",
-            "acres": null,
+            "acres": 224.47,
             "address": null,
             "lat": 45.544265,
-            "lon": -108.643746
+            "lon": -108.643746,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 747,
+          "ms": 664,
           "status": "ok",
           "detail": "28 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1770,7 +1817,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 548,
+          "ms": 326,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -1783,7 +1830,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 132,
+          "ms": 936,
           "status": "ok",
           "detail": "zones D (via FEMA NFHL)",
           "values": {
@@ -1801,7 +1848,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1365,
+          "ms": 1208,
           "status": "ok",
           "detail": "3 NWI feature(s)",
           "values": {
@@ -1813,7 +1860,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 289,
+          "ms": 240,
           "status": "ok",
           "detail": "D16 (Yellowstone County)",
           "values": {
@@ -1828,7 +1875,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5737,
+          "ms": 17037,
           "status": "ok",
           "detail": "limited (Absarokee clay loam, 4 to 7 percent slopes)",
           "values": {
@@ -1842,20 +1889,15 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5737,
-          "status": "ok",
-          "detail": "avg grade 3.4%, max 5.2%",
-          "values": {
-            "gradePct": 3.4,
-            "maxGradePct": 5.2,
-            "reliefFt": 224,
-            "sampleCount": 9
-          }
+          "ms": 17037,
+          "status": "error",
+          "detail": "USGS elevation was unavailable for 7 of 9 terrain points.",
+          "values": {}
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 17,
+          "ms": 22,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1865,7 +1907,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 8194,
+          "ms": 6167,
           "status": "ok",
           "detail": "assessed $44,238, no tax amount",
           "values": {
@@ -1884,7 +1926,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1093,
+          "ms": 904,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1896,7 +1938,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18680,
+          "ms": 1353,
           "status": "ok",
           "detail": "YELLOWSTONE VALLEY ELEC CO-OP",
           "values": {
@@ -1909,7 +1951,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 14,
+          "ms": 24,
           "status": "ok",
           "detail": "D16: Special / Other (1 uses)",
           "values": {
@@ -1921,7 +1963,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 14287,
+          "ms": 17048,
           "status": "error",
           "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
           "values": {}
@@ -1937,21 +1979,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 377,
+          "ms": 207,
           "status": "ok",
-          "detail": "parcel 03103333414250000",
+          "detail": "parcel 03103333414250000, 1.32 ac (mapped)",
           "values": {
             "parcelId": "03103333414250000",
-            "acres": null,
+            "acres": 1.32,
             "address": "111 N 17TH ST",
             "lat": 45.78924,
-            "lon": -108.491937
+            "lon": -108.491937,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 694,
+          "ms": 446,
           "status": "ok",
           "detail": "1520 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1964,7 +2007,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 467,
+          "ms": 380,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -1978,7 +2021,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 241,
+          "ms": 128,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1996,7 +2039,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 804,
+          "ms": 665,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -2008,7 +2051,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 286,
+          "ms": 243,
           "status": "ok",
           "detail": "EB_CW (City of Billings)",
           "values": {
@@ -2023,7 +2066,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2506,
+          "ms": 9508,
           "status": "ok",
           "detail": "favorable (Lohmiller silty clay, 0 to 1 percent slopes)",
           "values": {
@@ -2037,7 +2080,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2506,
+          "ms": 9508,
           "status": "ok",
           "detail": "avg grade 0.3%, max 0.8%",
           "values": {
@@ -2050,7 +2093,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 75,
+          "ms": 26,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2060,13 +2103,13 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 4007,
+          "ms": 989,
           "status": "ok",
-          "detail": "assessed n/a, no tax amount",
+          "detail": "assessed $711,050, no tax amount",
           "values": {
-            "assessedValue": null,
-            "landValue": null,
-            "improvementValue": null,
+            "assessedValue": 711050,
+            "landValue": 590730,
+            "improvementValue": 120320,
             "taxPresent": false,
             "netValue": null,
             "homeownerExemption": null,
@@ -2079,7 +2122,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1170,
+          "ms": 878,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2091,7 +2134,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1268,
+          "ms": 2860,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT)",
           "values": {
@@ -2104,7 +2147,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 23,
+          "ms": 26,
           "status": "ok",
           "detail": "EB_CW: Special / Other (1 uses)",
           "values": {
@@ -2116,10 +2159,15 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 14284,
-          "status": "error",
-          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
-          "values": {}
+          "ms": 11418,
+          "status": "ok",
+          "detail": "16 cells, avg 0.7%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 0.7,
+            "maxSlopePct": 1.9,
+            "partial": false
+          }
         }
       },
       "mismatches": []
@@ -2132,21 +2180,22 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 258,
+          "ms": 332,
           "status": "ok",
-          "detail": "parcel 03103233202670000",
+          "detail": "parcel 03103233202670000, 0.37 ac (mapped)",
           "values": {
             "parcelId": "03103233202670000",
-            "acres": null,
+            "acres": 0.37,
             "address": "2285 PARK RIDGE LN S",
             "lat": 45.793052,
-            "lon": -108.629537
+            "lon": -108.629537,
+            "acresSource": "mapped outline"
           }
         },
         "wells": {
           "route": "/api/well-search",
           "httpStatus": 200,
-          "ms": 538,
+          "ms": 637,
           "status": "ok",
           "detail": "681 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2159,7 +2208,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 344,
+          "ms": 346,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION",
           "values": {
@@ -2173,7 +2222,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 233,
+          "ms": 353,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2191,7 +2240,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 865,
+          "ms": 747,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -2203,7 +2252,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 245,
+          "ms": 266,
           "status": "ok",
           "detail": "N3 (City of Billings)",
           "values": {
@@ -2218,7 +2267,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14301,
+          "ms": 11858,
           "status": "ok",
           "detail": "favorable (McRae loam, 1 to 4 percent slopes)",
           "values": {
@@ -2232,15 +2281,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 14301,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 3 of 9 terrain points.",
-          "values": {}
+          "ms": 11858,
+          "status": "ok",
+          "detail": "avg grade 1.9%, max 4.6%",
+          "values": {
+            "gradePct": 1.9,
+            "maxGradePct": 4.6,
+            "reliefFt": 5,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 30,
+          "ms": 32,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2250,7 +2304,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 1291,
+          "ms": 3164,
           "status": "ok",
           "detail": "assessed $737,500, no tax amount",
           "values": {
@@ -2269,7 +2323,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1083,
+          "ms": 872,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2281,7 +2335,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18701,
+          "ms": 2713,
           "status": "ok",
           "detail": "NORTHWESTERN ENERGY LLC - (MT)",
           "values": {
@@ -2294,7 +2348,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 52,
+          "ms": 22,
           "status": "ok",
           "detail": "N3: Neighborhood Residential (6 uses)",
           "values": {
@@ -2306,15 +2360,10 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 2360,
-          "status": "ok",
-          "detail": "16 cells, avg 3.6%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 3.6,
-            "maxSlopePct": 6,
-            "partial": false
-          }
+          "ms": 17045,
+          "status": "error",
+          "detail": "Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.",
+          "values": {}
         }
       },
       "mismatches": []
@@ -2322,11 +2371,11 @@
   ],
   "summary": {
     "parcels": 12,
-    "failed": 11,
+    "failed": 6,
     "layerCounts": {
-      "ok": 126,
+      "ok": 133,
       "unavailable": 28,
-      "error": 14,
+      "error": 7,
       "mismatch": 0,
       "skipped": 0
     }
