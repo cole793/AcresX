@@ -340,10 +340,10 @@ export const interpret = {
     });
   },
   assessment(data) {
-    // Kootenai (Idaho) answers carry their values in countyRecords (src/counties/kootenai-assessor.js).
-    // Montana's Yellowstone countyRecords hold only ids and address (no values), so Montana reads
-    // only its statewide record, as before.
-    const countyRecord = data.state === 'ID' && Array.isArray(data.countyRecords) ? data.countyRecords[0] : null;
+    // Kootenai (Idaho) and Stevens (WA) answers carry their values in countyRecords
+    // (src/counties/kootenai-assessor.js, stevens-assessor.js). Montana's Yellowstone countyRecords
+    // hold only ids and address (no values), so Montana reads only its statewide record, as before.
+    const countyRecord = (data.state === 'ID' || data.state === 'WA') && Array.isArray(data.countyRecords) ? data.countyRecords[0] : null;
     const record = (Array.isArray(data.statewideRecords) && data.statewideRecords[0]) || (Array.isArray(data.records) && data.records[0])
       || countyRecord || null;
     if (!data.available || !record) return unavailable('no assessment record found');
@@ -352,8 +352,8 @@ export const interpret = {
     const land = pick(['VAL_LAND', 'TotalLandValue', 'land_value', 'landValue']);
     const propertyClass = text(record.propertyClass) || null;
     const propertyClassDescription = text(record.propertyClassDescription) || null;
-    // "Tax present" = the record carries a tax amount (not just a tax year).
-    const taxPresent = Object.entries(record).some(([k, v]) => /tax/i.test(k) && !/year|_yr|id$|code|area|dist/i.test(k) && finite(v) > 0);
+    // "Tax present" = the record carries a tax amount (not just a tax year or a taxable value).
+    const taxPresent = Object.entries(record).some(([k, v]) => /tax/i.test(k) && !/year|_yr|id$|code|area|dist|taxable/i.test(k) && finite(v) > 0);
     const classText = propertyClass ? `, class ${propertyClass}${propertyClassDescription ? ` ${propertyClassDescription}` : ''}` : '';
     return ok(`assessed ${total != null ? `$${total.toLocaleString('en-US')}` : 'n/a'}${classText}${taxPresent ? ', tax amount present' : ', no tax amount'}`, {
       assessedValue: total, landValue: land, improvementValue: pick(['VAL_IMPVTS', 'TotalBuildingValue', 'improvementValue']), taxPresent,
