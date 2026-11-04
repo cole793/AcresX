@@ -2050,7 +2050,7 @@
           "county": "Stevens",
           "parcelId": "",
           "address": "",
-          "jurisdiction": "Stevens County (unincorporated areas)",
+          "jurisdiction": "Stevens County",
           "countyStatus": "configured",
           "zoning": {
             "status": "gis_match",
@@ -2065,7 +2065,7 @@
           "agencies": {
             "county": "Stevens",
             "status": "configured",
-            "jurisdiction": "Stevens County (unincorporated areas)",
+            "jurisdiction": "Stevens County",
             "catalogQueries": [
               "Stevens County GIS zoning Washington",
               "Stevens County Washington zoning districts"

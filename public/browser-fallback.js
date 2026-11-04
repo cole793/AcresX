@@ -674,8 +674,8 @@
 
   // ---- 5. Stevens County zoning (copy of src/counties/stevens.js, stevens-cities.js and the
   // value aliases of src/zoning/stevens-rules.js). Unlike the other kinds, it starts from the
-  // Worker's own (degraded) answer, `base`, and replaces only the zoning parts, so the permit list
-  // and agency profile are not copied here. A failure of the city limits, county zoning or city
+  // Worker's own (degraded) answer, `base`, and replaces the zoning parts and the permit list,
+  // reading the county agency profile from that answer. A failure of the city limits, county zoning or city
   // zoning layer fails the fallback (the Worker's answer stays); LAMIRD/UGA failures degrade.
 
   const ST_SERVICE = 'https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer';
@@ -869,6 +869,36 @@
       ...(others.length ? { otherZones: others.map(s => { const o = districtOf(s); return { code: o.code, name: o.name, share: s.share }; }) } : {})
     };
   }
+  // Copy of src/counties/stevens.js permitList(profile, city).
+  function stPermitList(profile, city = null) {
+    const local = !city
+      ? {
+          planning: profile.planningAgency, building: profile.planningAgency, road: profile.roadAgency, roads: 'a county or state road',
+          zoningUrl: profile.zoningMapUrl, permitUrl: profile.permitUrl, planningUrl: profile.planningUrl,
+          sitePlanning: 'Stevens County Land Services — Planning', siteUrl: 'https://www.stevenscountywa.gov/21344',
+          siteBuilding: 'Stevens County Land Services — Building', placementUrl: 'https://www.stevenscountywa.gov/20898/Building-Permit', contact: ''
+        }
+      : {
+          planning: `${city.name} planning / zoning`, building: `${city.name} building department`, road: `${city.name} public works / streets`, roads: 'a city or state road',
+          zoningUrl: city.planningUrl || '', permitUrl: city.planningUrl || '', planningUrl: city.planningUrl || '',
+          sitePlanning: `${city.name} planning / zoning`, siteUrl: city.planningUrl || '',
+          siteBuilding: `${city.name} building department`, placementUrl: city.planningUrl || '',
+          contact: city.planningUrl ? '' : ` Contact ${city.name}.`
+        };
+    const c = local.contact;
+    return [
+      { name: 'Land-use / zoning verification', agency: local.planning, status: 'Verify', reason: `Confirm allowed use, setbacks, minimum lot size and overlays before design.${c}`, url: local.zoningUrl },
+      { name: 'Building permit', agency: local.building, status: 'Likely', reason: `Normally required for a new residence, shop or other permitted structure.${c}`, url: local.permitUrl },
+      { name: 'On-site septic approval', agency: profile.healthAgency, status: 'Likely', reason: 'Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.', url: profile.septicUrl },
+      { name: 'Well notice / water review', agency: 'Washington Department of Ecology and local health authority', status: 'Possible', reason: 'Well construction, water availability and drinking-water requirements vary by project and location.', url: 'https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells' },
+      { name: 'Driveway / road approach permit', agency: local.road, status: 'Possible', reason: `Often required for a new or modified connection to ${local.roads}.${c}`, url: local.planningUrl },
+      { name: 'Critical-areas review', agency: local.planning, status: 'Possible', reason: `Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.${c}`, url: local.planningUrl },
+      { name: 'Existing septic as-built / permit record search', agency: 'Northeast Tri County Health District', status: 'Not verified', reason: 'Search the public NETCHD portal by parcel or address. A missing online result does not prove no system exists; request a staff search when necessary.', url: 'https://www.netchd.org/227/Sewage-Permit-Record-Search' },
+      { name: 'Septic soil / site evaluation', agency: 'Northeast Tri County Health District', status: 'Possible', reason: 'For new on-site sewage systems, obtain site evaluation and design/permit approval. Existing records do not confirm system condition or capacity.', url: 'https://www.netchd.org/226/Applications-Forms-Resources' },
+      { name: 'Residential site analysis', agency: local.sitePlanning, status: 'Verify', reason: `Determine whether a site analysis and critical-area/shoreline review is needed before building or placing a manufactured home.${c}`, url: local.siteUrl },
+      { name: 'Manufactured/mobile home placement permit', agency: local.siteBuilding, status: 'If applicable', reason: `Manufactured and mobile homes use a placement permit, not the standard residential building permit for IRC modular homes.${c}`, url: local.placementUrl }
+    ];
+  }
   const stSettle = promise => promise.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
 
   async function stevensZoning(input, signal, base) {
@@ -894,13 +924,17 @@
     }
     const layers = { cities: { status: 'fulfilled', value: cityShares }, countyZoning: { status: 'fulfilled', value: countyZoning }, lamird, uga, cityZoning: cityZoningR };
     const lamirdInfo = stLamirdArea(lamird), ugaInfo = stUrbanGrowthArea(uga);
-    const zoning = city ? stCityZoning(city, cityZoningR, samples, decision) : stCountyZoning(layers, samples, decision, matchMethod, base.agencies?.zoningMapUrl, lamirdInfo, ugaInfo);
+    // The county profile, as the Worker has it (its agencies name the city for city parcels).
+    const profile = { ...(base.agencies || {}), jurisdiction: 'Stevens County' };
+    const zoning = city ? stCityZoning(city, cityZoningR, samples, decision) : stCountyZoning(layers, samples, decision, matchMethod, profile.zoningMapUrl, lamirdInfo, ugaInfo);
     const jurisdiction = city ? city.name : 'Stevens County';
     const { fallback: _hint, ...rest } = base;
     return {
       ...rest,
       jurisdiction, zoning, urbanGrowthArea: ugaInfo, lamird: lamirdInfo,
       permitJurisdiction: { name: jurisdiction, sourceUrl: ST_CITIES },
+      agencies: city ? { ...profile, jurisdiction } : profile,
+      permits: stPermitList(profile, city),
       zoningMatch: {
         method: matchMethod, jurisdictionShare: decision.share, otherJurisdictions: decision.others,
         unavailableLayers: Object.entries(layers).filter(([, r]) => r && r.status !== 'fulfilled').map(([name]) => name)

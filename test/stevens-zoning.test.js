@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import legacyWorker from '../src/worker.js';
 import { configureUpstream } from '../src/shared/upstream.js';
-import { getStevensCountyIntelligence, countyDistrict, STEVENS_COUNTY_ZONING } from '../src/counties/stevens.js';
+import { getStevensCountyIntelligence, countyDistrict, permitList, STEVENS_COUNTY_ZONING } from '../src/counties/stevens.js';
 import { decideJurisdiction, stevensCityInfo } from '../src/counties/stevens-cities.js';
 import { getStevensZoneRules, stevensRulesKey } from '../src/zoning/stevens-rules.js';
 import { getZoningProfile } from '../src/zoning-counties.js';
@@ -70,10 +70,12 @@ afterEach(() => {
 // The permit list the legacy route produced for Stevens (recorded in the upstream-callers snapshot).
 const LEGACY_PERMITS = JSON.parse(readFileSync(new URL('./fixtures/upstream-callers-snapshot.json', import.meta.url), 'utf8'))['legacy worker: Stevens zoning through the configured service'].output.ok.body.permits;
 
-function assertExtras(result) {
+// Inside a city the permits name the city (checked in the city-permit tests below).
+function assertExtras(result, { city = false } = {}) {
   assert.equal(result.available, true);
   assert.equal(result.county, 'Stevens');
-  assert.deepEqual(result.permits, LEGACY_PERMITS, 'same permit list as the legacy route (NETCHD septic etc.)');
+  if (!city) assert.deepEqual(result.permits, LEGACY_PERMITS, 'same permit list as the legacy route (NETCHD septic etc.)');
+  else assert.deepEqual(result.permits.filter(p => /Tri County|Ecology/.test(p.agency)), LEGACY_PERMITS.filter(p => /Tri County|Ecology/.test(p.agency)), 'health-district and state items unchanged');
   assert.equal(result.permitHistoryStatus, 'not_configured');
   assert.equal(result.agencies.healthAgency, 'Northeast Tri County Health District');
 }
@@ -144,7 +146,7 @@ test('Chewelah 0231200: city zoning from the city layer, never county zoning, la
   const fx = fixture('0231200');
   stub(fx);
   const result = await getStevensCountyIntelligence(bodyOf(fx), profile);
-  assertExtras(result);
+  assertExtras(result, { city: true });
   assert.equal(result.jurisdiction, 'City of Chewelah');
   assert.equal(result.permitJurisdiction.name, 'City of Chewelah');
   const z = result.zoning;
@@ -164,7 +166,7 @@ test('Colville 0000500: ZONING / NAME from the Colville layer; no planning link 
   const fx = fixture('0000500');
   stub(fx);
   const result = await getStevensCountyIntelligence(bodyOf(fx), profile);
-  assertExtras(result);
+  assertExtras(result, { city: true });
   assert.equal(result.jurisdiction, 'City of Colville');
   const z = result.zoning;
   assert.equal(z.code, 'C-2');
@@ -277,7 +279,7 @@ test('Chewelah layer failing: only zoning degrades, still naming the city; brows
   const fx = fixture('0231200');
   stub(fx, [[layer(2), down]]);
   const result = await getStevensCountyIntelligence(bodyOf(fx), profile);
-  assertExtras(result);
+  assertExtras(result, { city: true });
   assert.equal(result.jurisdiction, 'City of Chewelah');
   assert.equal(result.zoning.status, 'unavailable');
   assert.equal(result.zoning.code, null);
@@ -337,6 +339,59 @@ test('a fully answered lookup is cached and rebuilt without new requests', async
   assert.equal(calls.length, before);
   assert.deepEqual(second, first);
   assert.doesNotMatch([...store.values()].join(''), /"rings"/, 'no outlines in the cache');
+});
+
+// ---- Permits and agency labels by jurisdiction
+
+test('Chewelah permits name the city and link its verified site; NETCHD and state items unchanged', async () => {
+  const fx = fixture('0231200');
+  stub(fx);
+  const result = await getStevensCountyIntelligence(bodyOf(fx), profile);
+  const byName = Object.fromEntries(result.permits.map(p => [p.name, p]));
+  assert.deepEqual(result.permits.map(p => p.name), LEGACY_PERMITS.map(p => p.name), 'same items, same order');
+  assert.equal(byName['Land-use / zoning verification'].agency, 'City of Chewelah planning / zoning');
+  assert.equal(byName['Land-use / zoning verification'].url, 'https://www.cityofchewelah.org/');
+  assert.equal(byName['Building permit'].agency, 'City of Chewelah building department');
+  assert.equal(byName['Driveway / road approach permit'].agency, 'City of Chewelah public works / streets');
+  assert.match(byName['Driveway / road approach permit'].reason, /a city or state road/);
+  assert.equal(byName['Manufactured/mobile home placement permit'].agency, 'City of Chewelah building department');
+  // The city-local items; the NETCHD and state items keep the county list's text and links.
+  const local = result.permits.filter(p => /^City of Chewelah/.test(p.agency));
+  assert.equal(local.length, 6);
+  assert.doesNotMatch(JSON.stringify(local), /Stevens County|stevenscountywa\.gov|Contact City/);
+  assert.deepEqual(byName['On-site septic approval'], LEGACY_PERMITS.find(p => p.name === 'On-site septic approval'));
+  assert.equal(result.agencies.jurisdiction, 'City of Chewelah');
+});
+
+test('Colville permits (no verified city page): no link, and the reason says to contact the city', async () => {
+  const fx = fixture('0000500');
+  stub(fx);
+  const result = await getStevensCountyIntelligence(bodyOf(fx), profile);
+  const local = result.permits.filter(p => /^City of Colville/.test(p.agency));
+  assert.equal(local.length, 6);
+  for (const p of local) {
+    assert.equal(p.url, '', p.name);
+    assert.match(p.reason, /Contact City of Colville\.$/, p.name);
+  }
+  assert.doesNotMatch(JSON.stringify(result.permits), /Stevens County Land Services/);
+});
+
+test('agency label: county parcels say "Stevens County"; city parcels never say unincorporated', async () => {
+  assert.equal(profile.jurisdiction, 'Stevens County');
+  for (const [id, expected] of [['8974701', 'Stevens County'], ['0763202', 'Stevens County'], ['0231200', 'City of Chewelah'], ['0000500', 'City of Colville']]) {
+    const fx = fixture(id);
+    stub(fx);
+    const result = await getStevensCountyIntelligence(bodyOf(fx), profile);
+    assert.equal(result.agencies.jurisdiction, expected, id);
+    assert.doesNotMatch(JSON.stringify(result), /unincorporated areas/, id);
+  }
+});
+
+test('permitList: unknown jurisdiction keeps the county list; a town without a page says to contact it', () => {
+  assert.deepEqual(permitList(profile, null), LEGACY_PERMITS);
+  const town = permitList(profile, stevensCityInfo('Marcus'));
+  assert.equal(town[0].agency, 'Town of Marcus planning / zoning');
+  assert.match(town[0].reason, /Contact Town of Marcus\.$/);
 });
 
 // ---- Routing and /api/zoning-rules

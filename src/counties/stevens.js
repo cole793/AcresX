@@ -70,19 +70,39 @@ export function countyDistrict(a = {}) {
 const countyKey = a => text(a.zoning_nam) || text(a.zoningtext) || [text(a.name), text(a.type)].filter(Boolean).join(' ') || null;
 const areaKey = (nameField, typeField) => a => [text(a[nameField]), text(a[typeField])].filter(Boolean).join(' ') || null;
 
-// Permits: same list the legacy route produced for Stevens (src/worker.js permitList).
-function permitList(profile) {
+// Likely approvals. Unincorporated land (and an unknown jurisdiction) keeps exactly the list the
+// legacy route produced for Stevens (src/worker.js permitList). Inside a city or town its own
+// departments handle zoning, building, road-approach, critical-areas, site-analysis and
+// manufactured-home review, linked only where a city page was verified (stevens-cities.js;
+// Chewelah only); otherwise the reason ends "Contact <city>.". The health-district (NETCHD) and
+// state items are the same everywhere. Copied in public/browser-fallback.js (stPermitList).
+export function permitList(profile, city = null) {
+  const local = !city
+    ? {
+        planning: profile.planningAgency, building: profile.planningAgency, road: profile.roadAgency, roads: 'a county or state road',
+        zoningUrl: profile.zoningMapUrl, permitUrl: profile.permitUrl, planningUrl: profile.planningUrl,
+        sitePlanning: 'Stevens County Land Services — Planning', siteUrl: 'https://www.stevenscountywa.gov/21344',
+        siteBuilding: 'Stevens County Land Services — Building', placementUrl: 'https://www.stevenscountywa.gov/20898/Building-Permit', contact: ''
+      }
+    : {
+        planning: `${city.name} planning / zoning`, building: `${city.name} building department`, road: `${city.name} public works / streets`, roads: 'a city or state road',
+        zoningUrl: city.planningUrl || '', permitUrl: city.planningUrl || '', planningUrl: city.planningUrl || '',
+        sitePlanning: `${city.name} planning / zoning`, siteUrl: city.planningUrl || '',
+        siteBuilding: `${city.name} building department`, placementUrl: city.planningUrl || '',
+        contact: city.planningUrl ? '' : ` Contact ${city.name}.`
+      };
+  const c = local.contact;
   return [
-    { name: 'Land-use / zoning verification', agency: profile.planningAgency, status: 'Verify', reason: 'Confirm allowed use, setbacks, minimum lot size and overlays before design.', url: profile.zoningMapUrl },
-    { name: 'Building permit', agency: profile.planningAgency, status: 'Likely', reason: 'Normally required for a new residence, shop or other permitted structure.', url: profile.permitUrl },
+    { name: 'Land-use / zoning verification', agency: local.planning, status: 'Verify', reason: `Confirm allowed use, setbacks, minimum lot size and overlays before design.${c}`, url: local.zoningUrl },
+    { name: 'Building permit', agency: local.building, status: 'Likely', reason: `Normally required for a new residence, shop or other permitted structure.${c}`, url: local.permitUrl },
     { name: 'On-site septic approval', agency: profile.healthAgency, status: 'Likely', reason: 'Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.', url: profile.septicUrl },
     { name: 'Well notice / water review', agency: 'Washington Department of Ecology and local health authority', status: 'Possible', reason: 'Well construction, water availability and drinking-water requirements vary by project and location.', url: 'https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells' },
-    { name: 'Driveway / road approach permit', agency: profile.roadAgency, status: 'Possible', reason: 'Often required for a new or modified connection to a county or state road.', url: profile.planningUrl },
-    { name: 'Critical-areas review', agency: profile.planningAgency, status: 'Possible', reason: 'Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.', url: profile.planningUrl },
+    { name: 'Driveway / road approach permit', agency: local.road, status: 'Possible', reason: `Often required for a new or modified connection to ${local.roads}.${c}`, url: local.planningUrl },
+    { name: 'Critical-areas review', agency: local.planning, status: 'Possible', reason: `Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.${c}`, url: local.planningUrl },
     { name: 'Existing septic as-built / permit record search', agency: 'Northeast Tri County Health District', status: 'Not verified', reason: 'Search the public NETCHD portal by parcel or address. A missing online result does not prove no system exists; request a staff search when necessary.', url: 'https://www.netchd.org/227/Sewage-Permit-Record-Search' },
     { name: 'Septic soil / site evaluation', agency: 'Northeast Tri County Health District', status: 'Possible', reason: 'For new on-site sewage systems, obtain site evaluation and design/permit approval. Existing records do not confirm system condition or capacity.', url: 'https://www.netchd.org/226/Applications-Forms-Resources' },
-    { name: 'Residential site analysis', agency: 'Stevens County Land Services — Planning', status: 'Verify', reason: 'Determine whether a site analysis and critical-area/shoreline review is needed before building or placing a manufactured home.', url: 'https://www.stevenscountywa.gov/21344' },
-    { name: 'Manufactured/mobile home placement permit', agency: 'Stevens County Land Services — Building', status: 'If applicable', reason: 'Manufactured and mobile homes use a placement permit, not the standard residential building permit for IRC modular homes.', url: 'https://www.stevenscountywa.gov/20898/Building-Permit' }
+    { name: 'Residential site analysis', agency: local.sitePlanning, status: 'Verify', reason: `Determine whether a site analysis and critical-area/shoreline review is needed before building or placing a manufactured home.${c}`, url: local.siteUrl },
+    { name: 'Manufactured/mobile home placement permit', agency: local.siteBuilding, status: 'If applicable', reason: `Manufactured and mobile homes use a placement permit, not the standard residential building permit for IRC modular homes.${c}`, url: local.placementUrl }
   ];
 }
 
@@ -211,6 +231,10 @@ export function stevensZoningAnswer(layers, { samples, matchMethod, profile }) {
     urbanGrowthArea: uga,
     lamird,
     permitJurisdiction: { name: jurisdiction, sourceUrl: STEVENS_CITIES },
+    // The county agency profile (src/zoning-counties.js); inside a city it names the city as the
+    // jurisdiction, never the county.
+    agencies: city ? { ...profile, jurisdiction } : profile,
+    permits: permitList(profile, city),
     zoningMatch: {
       method: matchMethod,
       ...(decision ? { jurisdictionShare: decision.share, otherJurisdictions: decision.others } : { jurisdictionError: layers.cities.reason?.message || 'unavailable' }),
@@ -246,8 +270,8 @@ export async function getStevensCountyIntelligence(body, profile) {
     lamird: part.lamird,
     permitJurisdiction: part.permitJurisdiction,
     zoningMatch: part.zoningMatch,
-    agencies: profile,
-    permits: permitList(profile),
+    agencies: part.agencies,
+    permits: part.permits,
     permitHistory: [],
     permitHistoryStatus: 'not_configured',
     ...(fallback ? { fallback } : {})
