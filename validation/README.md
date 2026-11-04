@@ -172,9 +172,24 @@ Create `validation/counties/<name>.json` (lowercase file name):
 ```
 
 `zoningField` is optional: leave it out when the parcel layer has no zoning attribute (Kootenai's
-doesn't). `county` and `state` are sent to the API exactly as the browser's dropdowns send them. The
-harness follows the Idaho/Montana request path (`/api/parcel-search`); Washington counties use
-the legacy `/api/arcgis` parcel path in the browser and aren't supported by the harness yet.
+doesn't). `county` and `state` are sent to the API exactly as the browser's dropdowns send them.
+
+Idaho and Montana follow the browser's `/api/parcel-search` and `/api/well-search` path.
+Washington (`"state": "WA"`) follows `public/index.html` instead: the parcel comes from the
+statewide `Current_Parcels` layer through `/api/arcgis` (`service: parcel`, the same exact query and
+LIKE fallback as `findParcel`, filtered by the county's `FIPS_NR`), and wells come from WA Ecology
+through `/api/arcgis` (`service: wells`, a box widened from 2 to 64 miles until 5 wells with a
+depth are found, like `findWells`). The other layers use the same routes as every state (utility
+through `/api/utility-territory`). The script only sends `/api/arcgis` the `parcel` and `wells`
+services with an explicit field list, and refuses owner, taxpayer and mailing fields there and in
+discovery. The statewide layer has no acreage field, so a WA parcel's acres are computed from its
+outline (the `turf.area` formula, shown as "(mapped)"). Where `/api/property-assessment` has no
+source for a county (HTTP 400 "currently supports ...", for example Stevens), the assessment
+layer is `unavailable`, as the browser shows it, not `error`.
+
+For WA discovery use the statewide layer with the county's FIPS code in `where`, and
+`"acresField": "Shape__Area", "acresUnit": "sqft"` (state plane square feet), so acre bands and
+labels are mapped acreage (see `spokane.json`). `acresUnit` is `acres` (default), `sqft` or `sqm`.
 
 ## Add parcels and expected values
 

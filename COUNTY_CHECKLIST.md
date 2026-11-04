@@ -121,8 +121,9 @@ For **every** source below, record in `handoff/findings.md`:
 
 ## 8. Known gaps in the references (Oct 2026)
 
-- The validation tool doesn't support Washington's parcel path yet, so **Spokane has never been
-  run through it**. Add that before calling a Washington county level 3.
+- Closed (Nov 2026): the validation tool now follows Washington's browser path (the statewide
+  parcel layer and Ecology wells through `/api/arcgis`), and `validation/counties/spokane.json`
+  and `stevens.json` have saved parcels, so both run in the daily check.
 - Kootenai doesn't have comprehensive plan or permit history yet (Spokane does).
 - Coeur d'Alene and Post Falls zoning rules aren't mapped to plain language; the city's own
   document is linked instead.

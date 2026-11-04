@@ -1,0 +1,119 @@
+{
+  "county": "Stevens",
+  "state": "WA",
+  "parcels": [
+    {
+      "parcelId": "8974701",
+      "label": "unincorporated, 0.75 ac, RA-5",
+      "why": "Small unincorporated lot with a blank situs city (picked by discovery 2026-11-02, seed 42). Stevens County zoning layer: zoning=5, zoningtext RA-5 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-118.105897,48.629028&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). The zoning-permits code is the layer's numeric renderer value (5); /api/zoning-rules maps it to RA-5. No Stevens panels in FEMA NFHL (no DFIRM 53065C features), so no high-risk zone. Checked 2026-11-02.",
+      "expected": {
+        "zoning.code": "5",
+        "zoningRules.code": "RA-5",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "0763202",
+      "label": "Nine Mile Falls, 0.92 ac, Lake Spokane LAMIRD",
+      "why": "Small unincorporated lot in the Lake Spokane LAMIRD (picked by discovery 2026-11-02, seed 42). County layer: zoning=0, type R-1 Residential, zoning_nam Lake Spokane R-1 Residential at -117.644634,47.839242. AcresX returns code 0 and zoning rules zone_not_mapped (finding, not recorded as expected).",
+      "expected": {}
+    },
+    {
+      "parcelId": "0231200",
+      "label": "City of Chewelah, 0.12 ac",
+      "why": "Small lot inside Chewelah city limits (picked by discovery 2026-11-02, seed 42). Stevens Cities layer at -117.72695,48.276834 returns Chewelah (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query?f=json&geometry=-117.72695,48.276834&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false); the county zoning layer has no polygon there.",
+      "expected": {}
+    },
+    {
+      "parcelId": "0000500",
+      "label": "City of Colville, 0.16 ac",
+      "why": "Small lot inside Colville city limits (315 N Main St). Stevens Cities layer at -117.9063,48.54675 returns Colville (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query?f=json&geometry=-117.9063,48.54675&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false). Checked 2026-11-02.",
+      "expected": {}
+    },
+    {
+      "parcelId": "2371220",
+      "label": "Northport situs, 4.44 ac, RA-10, wetlands",
+      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=10, zoningtext RA-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.805819,48.913054&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). No Stevens panels in FEMA NFHL. Checked 2026-11-02.",
+      "expected": {
+        "zoning.code": "10",
+        "zoningRules.code": "RA-10",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "2378200",
+      "label": "Kettle Falls situs, 2.28 ac, RA-20/RA-10 boundary, wetlands",
+      "why": "Unincorporated 1-5 ac parcel with a city-named situs (picked by discovery 2026-11-02, seed 42). Its centroid sits on an RA-20/RA-10 district boundary: the county zoning layer answers RA-10 at -117.903489,48.873808 and RA-20 at -117.9034,48.8738 (MapServer/1, checked 2026-11-02); AcresX reported 20 (RA-20). No expected value because the answer depends on the exact point.",
+      "expected": {}
+    },
+    {
+      "parcelId": "2214900",
+      "label": "Addy, 1.01 ac, RA-5, wetlands",
+      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42).",
+      "expected": {}
+    },
+    {
+      "parcelId": "2611300",
+      "label": "Chewelah situs, 5.94 ac, RA-5, wetlands",
+      "why": "Unincorporated 5-40 ac parcel with a city-named situs (picked by discovery 2026-11-02, seed 42).",
+      "expected": {}
+    },
+    {
+      "parcelId": "8673053",
+      "label": "unincorporated, 17 ac, RA-5, wetlands",
+      "why": "Unincorporated 5-40 ac parcel with a blank situs city (picked by discovery 2026-11-02, seed 42).",
+      "expected": {}
+    },
+    {
+      "parcelId": "2342700",
+      "label": "Colville situs, 290 ac, AR-10, wetlands",
+      "why": "Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=103, zoningtext AR-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.907408,48.662211&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). Checked 2026-11-02.",
+      "expected": {
+        "zoning.code": "103",
+        "zoningRules.code": "AR-10",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "5320900",
+      "label": "Loon Lake, 190 ac, RA-10, wetlands",
+      "why": "Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). County zoning layer: zoning=10, zoningtext RA-10 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-117.570428,48.174436&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). No Stevens panels in FEMA NFHL. Checked 2026-11-02.",
+      "expected": {
+        "zoning.code": "10",
+        "zoningRules.code": "RA-10",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "5317201",
+      "label": "Valley, 54.9 ac, RA-5, wetlands",
+      "why": "Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42).",
+      "expected": {}
+    }
+  ],
+  "discover": {
+    "layerUrl": "https://services.arcgis.com/jsIt88o09Q0r1j8h/arcgis/rest/services/Current_Parcels/FeatureServer/0",
+    "idField": "ORIG_PARCEL_ID",
+    "acresField": "Shape__Area",
+    "acresUnit": "sqft",
+    "cityField": "SITUS_CITY_NM",
+    "addressField": "SITUS_ADDRESS",
+    "where": "FIPS_NR='065' AND ORIG_PARCEL_ID IS NOT NULL",
+    "cities": [
+      "Chewelah",
+      "Colville",
+      "Kettle Falls",
+      "Marcus",
+      "Northport",
+      "Springdale"
+    ],
+    "acreBands": [
+      { "label": "under 1 ac", "max": 1 },
+      { "label": "1-5 ac", "min": 1, "max": 5 },
+      { "label": "5-40 ac", "min": 5, "max": 40 },
+      { "label": "40+ ac", "min": 40 }
+    ],
+    "perQuery": 50,
+    "delayMs": 300
+  }
+}

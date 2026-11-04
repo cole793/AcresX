@@ -14,7 +14,10 @@
 //   - GET /api/property-tax-test is never called (it is a fixed self-test, not a parcel lookup).
 //   - /api/listing-evidence is not called: it spends paid web-search quota (SERPER/Google) on
 //     every request, and the scheduled run would burn it daily.
-// assertReadOnly() enforces this for every request the script sends.
+//   - /api/arcgis (the Washington parcel and well proxy) is called only for the `parcel` and
+//     `wells` services, with an explicit outFields list that never names an owner field.
+// assertReadOnly() enforces this for every request the script sends. Discovery queries county
+// parcel layers directly and refuses owner fields too (assertNoOwnerFields).
 
 import { readFile, writeFile, mkdir, appendFile } from 'node:fs/promises';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -44,7 +47,7 @@ export const LAYERS = [
 
 // Every route this script may POST to. All are read-only lookups.
 export const READ_ONLY_ROUTES = new Set([
-  '/api/parcel-search', '/api/well-search', '/api/existing-well', '/api/land-analysis',
+  '/api/arcgis', '/api/parcel-search', '/api/well-search', '/api/existing-well', '/api/land-analysis',
   '/api/slope-grid', '/api/hazards', '/api/utility-territory', '/api/power-intelligence',
   '/api/zoning-permits', '/api/zoning-rules', '/api/property-assessment', '/api/reso-listings'
 ]);
@@ -56,8 +59,28 @@ export const RESO_LOOKUP_KEYS = new Set(['parcelId', 'address', 'lat', 'lon']);
 // The browser only asks for zoning rules in these counties (public/zoning-potential.js:51).
 const ZONING_RULES_COUNTIES = /^(spokane|stevens|yellowstone|kootenai)$/i;
 
+// Owner, taxpayer and mailing fields are never requested (the Worker strips them from answers,
+// but the harness doesn't ask for them in the first place).
+export const OWNER_FIELD_PATTERN = /owner|taxpayer|tax_?payer|mail|grantee|grantor|buyer|seller/i;
+
+export function assertNoOwnerFields(fields, where = 'request') {
+  const list = (Array.isArray(fields) ? fields : String(fields ?? '').split(',')).map(text).filter(Boolean);
+  if (list.includes('*')) throw new Error(`Refusing ${where} with outFields *: list the fields so no owner field is requested.`);
+  const owner = list.filter(f => OWNER_FIELD_PATTERN.test(f));
+  if (owner.length) throw new Error(`Refusing ${where} with owner/mailing fields: ${owner.join(', ')}.`);
+}
+
+// /api/arcgis services the harness may use (the browser's Washington parcel and well lookups,
+// public/index.html:108). The utility service is not used: utility goes through /api/utility-territory.
+export const ARCGIS_PROXY_SERVICES = new Set(['parcel', 'wells']);
+
 export function assertReadOnly(route, body = {}) {
   if (!READ_ONLY_ROUTES.has(route)) throw new Error(`Refusing to call ${route}: not on the read-only allowlist.`);
+  if (route === '/api/arcgis') {
+    if (!ARCGIS_PROXY_SERVICES.has(body?.service)) throw new Error(`Refusing to call /api/arcgis for service ${body?.service}: only ${[...ARCGIS_PROXY_SERVICES].join(', ')} are allowed.`);
+    if (!body.params?.outFields) throw new Error('Refusing to call /api/arcgis without an explicit outFields list.');
+    assertNoOwnerFields(body.params.outFields, '/api/arcgis');
+  }
   if (route === '/api/reso-listings') {
     const extra = Object.keys(body || {}).filter(k => !RESO_LOOKUP_KEYS.has(k));
     if (extra.length) throw new Error(`Refusing to call /api/reso-listings with ${extra.join(', ')}: only ${[...RESO_LOOKUP_KEYS].join(', ')} are allowed (sync options write to the live MLS database).`);
@@ -125,6 +148,33 @@ export function centroid(geometry) {
   return n ? { lon: sx / n, lat: sy / n } : null;
 }
 
+// Geodesic area in square metres, the same formula as turf.area (Turf 7, R = 6378137), so mapped
+// acres match what public/acreage.js shows. Holes are subtracted.
+const TURF_AREA_FACTOR = (6378137 * 6378137) / 2;
+function ringArea(coords) {
+  const n = Array.isArray(coords) ? coords.length : 0;
+  if (n <= 2) return 0;
+  const rad = d => (Number(d) * Math.PI) / 180;
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const lower = coords[i], middle = coords[i + 1 === n ? 0 : i + 1], upper = coords[i + 2 >= n ? (i + 2) % n : i + 2];
+    total += (rad(upper[0]) - rad(lower[0])) * Math.sin(rad(middle[1]));
+  }
+  return total * TURF_AREA_FACTOR;
+}
+export function geodesicAreaSqM(geometry) {
+  const polygons = geometry?.type === 'Polygon' ? [geometry.coordinates] : geometry?.type === 'MultiPolygon' ? geometry.coordinates : [];
+  let total = 0;
+  for (const rings of polygons || []) {
+    if (!Array.isArray(rings) || !rings.length) continue;
+    total += Math.abs(ringArea(rings[0]));
+    for (const hole of rings.slice(1)) total -= Math.abs(ringArea(hole));
+  }
+  return total;
+}
+export const SQ_M_PER_ACRE = 4046.8564224;
+export const mappedAcres = geometry => { const a = geodesicAreaSqM(geometry); return a > 0 ? a / SQ_M_PER_ACRE : null; };
+
 function polygonsOf(geometry) {
   return geometry?.type === 'Polygon' ? [geometry.coordinates] : geometry?.type === 'MultiPolygon' ? geometry.coordinates : [];
 }
@@ -177,13 +227,17 @@ export const interpret = {
     const p = f.properties || {};
     const c = centroid(f.geometry);
     if (!c) return fail('parcel geometry has no usable coordinates');
+    // The Washington statewide layer has no acreage field: use the mapped outline instead.
+    const assessorAcres = finite(p.ACRES);
+    const acres = assessorAcres != null ? round(assessorAcres, 2) : round(mappedAcres(f.geometry), 2);
     const values = {
       parcelId: text(p.ORIG_PARCEL_ID || p.PARCEL_ID_NR) || null,
-      acres: round(p.ACRES, 2),
+      acres,
       address: [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', ') || null,
       lat: round(c.lat, 6), lon: round(c.lon, 6)
     };
-    return ok(`parcel ${values.parcelId || '?'}${values.acres != null ? `, ${values.acres} ac` : ''}`, values);
+    if (assessorAcres == null && acres != null) values.acresSource = 'mapped outline';
+    return ok(`parcel ${values.parcelId || '?'}${acres != null ? `, ${acres} ac${values.acresSource ? ' (mapped)' : ''}` : ''}`, values);
   },
   wells(data, ctx = {}) {
     if (data.available === false) return unavailable(text(data.label || data.status) || 'well search not available');
@@ -339,7 +393,87 @@ export const DEFAULT_PARCEL_RETRY_DELAY_MS = 15000;
 const notRequested = detail => ({ status: 'unavailable', detail: `not requested: ${detail}`, values: {}, route: null, httpStatus: null, ms: null });
 const skipped = detail => ({ status: 'skipped', detail, values: {}, route: null, httpStatus: null, ms: null });
 
-// Reproduces the browser's request sequence for one parcel (Idaho/Montana path; see README).
+// --- Washington path (public/index.html) -----------------------------------------------------
+// Washington parcels and wells are looked up in the browser through the /api/arcgis proxy, not
+// /api/parcel-search and /api/well-search. These mirror findParcel and findWells.
+
+// countyCodes in public/index.html:97.
+export const WA_COUNTY_FIPS = { Adams: '001', Asotin: '003', Benton: '005', Chelan: '007', Clallam: '009', Clark: '011', Columbia: '013', Cowlitz: '015', Douglas: '017', Ferry: '019', Franklin: '021', Garfield: '023', Grant: '025', 'Grays Harbor': '027', Island: '029', Jefferson: '031', King: '033', Kitsap: '035', Kittitas: '037', Klickitat: '039', Lewis: '041', Lincoln: '043', Mason: '045', Okanogan: '047', Pacific: '049', 'Pend Oreille': '051', Pierce: '053', 'San Juan': '055', Skagit: '057', Skamania: '059', Snohomish: '061', Spokane: '063', Stevens: '065', Thurston: '067', Wahkiakum: '069', 'Walla Walla': '071', Whatcom: '073', Whitman: '075', Yakima: '077' };
+export const WA_PARCEL_FIELDS = 'FIPS_NR,COUNTY_NM,ORIG_PARCEL_ID,PARCEL_ID_NR,SITUS_ADDRESS,SITUS_CITY_NM,SITUS_ZIP_NR,DATA_LINK';
+export const WA_WELL_FIELDS = 'ID,WellTagNr,ProjectName,FileName,CompletedDepth,WorkCompletionDate,WellProjectType,WellSubType,StaticWaterLvl,FlowRateGPM';
+const isWashington = state => text(state).toUpperCase() === 'WA';
+const waNorm = s => text(s).toUpperCase().replace(/[^A-Z0-9]/g, '');
+const waSql = s => String(s).replaceAll("'", "''");
+
+// The exact and LIKE where clauses findParcel builds (public/index.html:112).
+export function waParcelWhere(county, input) {
+  const fips = WA_COUNTY_FIPS[county];
+  if (!fips) throw new Error(`No Washington FIPS code for county ${county}.`);
+  const raw = text(input), upper = waSql(raw.toUpperCase()), n = waNorm(raw), shortFips = String(Number(fips));
+  const countyWhere = `(FIPS_NR='${fips}' OR FIPS_NR='${shortFips}' OR COUNTY_NM='${county}' OR COUNTY_NM='${shortFips}' OR COUNTY_NM='${fips}')`;
+  return {
+    fips, n,
+    exactWhere: `${countyWhere} AND (UPPER(ORIG_PARCEL_ID)='${upper}' OR UPPER(PARCEL_ID_NR)='${upper}' OR UPPER(PARCEL_ID_NR)='${fips}${upper}')`,
+    likeWhere: `${countyWhere} AND (UPPER(ORIG_PARCEL_ID) LIKE '%${waSql(n)}%' OR UPPER(PARCEL_ID_NR) LIKE '%${waSql(n)}%')`
+  };
+}
+
+// Returns a postJson-shaped result whose data is { parcel } on a single match, or { error } with
+// the browser's own message when there is no match or more than one.
+export async function lookupWaParcel(call, county, parcelId) {
+  const { fips, n, exactWhere, likeWhere } = waParcelWhere(county, parcelId);
+  const params = where => ({ f: 'geojson', where, outFields: WA_PARCEL_FIELDS, returnGeometry: 'true', outSR: '4326' });
+  let res = await call('/api/arcgis', { service: 'parcel', params: { ...params(exactWhere), resultRecordCount: '20' } });
+  if (classifyResponse(res)) return res;
+  let features = Array.isArray(res.data.features) ? res.data.features : [];
+  let how = 'exact match';
+  if (!features.length) {
+    res = await call('/api/arcgis', { service: 'parcel', params: { ...params(likeWhere), resultRecordCount: '100' } });
+    if (classifyResponse(res)) return res;
+    features = (Array.isArray(res.data.features) ? res.data.features : []).filter(f => {
+      const o = waNorm(f?.properties?.ORIG_PARCEL_ID), s = waNorm(f?.properties?.PARCEL_ID_NR);
+      return o === n || s === n || s === waNorm(fips + n) || s.endsWith(n);
+    });
+    how = 'LIKE match';
+  }
+  if (features.length !== 1) {
+    return { ...res, data: { error: features.length ? `Multiple parcel matches found (${features.length}). Try the exact assessor parcel format.` : 'Parcel not found. Confirm the county and assessor parcel number.' } };
+  }
+  const parcel = features[0];
+  parcel.properties = { ...(parcel.properties || {}), _countyDisplay: county };
+  return { ...res, data: { parcel, lookup: how } };
+}
+
+// findWells (public/index.html:113): widen a box around the centroid from 2 to 64 miles until at
+// least 5 mapped wells with a reported depth are found; decommissioned wells are left out.
+export async function lookupWaWells(call, center) {
+  const { lon, lat } = center;
+  let miles = 2, features = [], res = null, requests = 0;
+  while (miles <= 64 && features.length < 5) {
+    const latPad = miles / 69, lonPad = miles / (69 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+    const env = { xmin: lon - lonPad, ymin: lat - latPad, xmax: lon + lonPad, ymax: lat + latPad, spatialReference: { wkid: 4326 } };
+    res = await call('/api/arcgis', { service: 'wells', params: {
+      f: 'geojson', where: "WellProjectType <> 'Decommission'", geometry: JSON.stringify(env), geometryType: 'esriGeometryEnvelope',
+      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outSR: '4326', returnGeometry: 'true', outFields: WA_WELL_FIELDS, resultRecordCount: '2000'
+    } });
+    requests++;
+    if (classifyResponse(res)) return res;
+    features = (res.data.features || []).filter(f => f?.geometry?.type === 'Point' && Number.isFinite(Number(f.geometry.coordinates?.[0]))
+      && Number.isFinite(Number(f.geometry.coordinates?.[1])) && Number.isFinite(Number(f.properties?.CompletedDepth)) && Number(f.properties.CompletedDepth) > 0);
+    miles *= 2;
+  }
+  return { ...res, data: { available: true, wells: features, searchMiles: miles / 2, requests } };
+}
+
+// /api/property-assessment answers HTTP 400 "currently supports ..." for counties it has no source
+// for (src/services/property-tax-test.js:102). The browser shows "Not available"; that is a clean
+// "not available" answer, not a broken layer.
+export function isUnsupportedAssessment(res) {
+  return res?.httpStatus === 400 && /currently supports/i.test(text(res?.data?.error));
+}
+
+// Reproduces the browser's request sequence for one parcel. Idaho/Montana use /api/parcel-search
+// and /api/well-search; Washington uses the /api/arcgis proxy for both, like public/index.html.
 // The parcel lookup (only) is retried once, after parcelRetryDelayMs, when it is rate limited.
 export async function validateParcel(entry, { state, county, baseUrl, fetchImpl, timeoutMs, requestDelayMs = 250, parcelRetryDelayMs = DEFAULT_PARCEL_RETRY_DELAY_MS } = {}) {
   const opts = { fetchImpl, timeoutMs };
@@ -347,12 +481,14 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
   const layers = {};
   const parcelId = text(entry.parcelId);
 
-  // 1. Parcel (public/state-selector.js:83).
-  let parcelRes = await call('/api/parcel-search', { state, county, parcelId });
+  // 1. Parcel (public/state-selector.js:83; Washington: findParcel in public/index.html:112).
+  const wa = isWashington(state);
+  const lookupParcel = () => (wa ? lookupWaParcel(call, county, parcelId) : call('/api/parcel-search', { state, county, parcelId }));
+  let parcelRes = await lookupParcel();
   let parcelRetried = false;
   if (isRateLimited(parcelRes)) {
     await sleep(parcelRetryDelayMs);
-    parcelRes = await call('/api/parcel-search', { state, county, parcelId });
+    parcelRes = await lookupParcel();
     parcelRetried = true;
   }
   layers.parcel = interpretLayer('parcel', parcelRes);
@@ -377,7 +513,7 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
 
   // 2. The browser runs these in parallel after the parcel loads (public/index.html:201).
   //    We run them one at a time to be gentle on county servers.
-  layers.wells = interpretLayer('wells', await call('/api/well-search', { state, county, lat, lon }), ctx);
+  layers.wells = interpretLayer('wells', wa ? await lookupWaWells(call, center) : await call('/api/well-search', { state, county, lat, lon }), ctx);
   const utilityRes = await call('/api/utility-territory', { state, county, lat, lon });
   layers.utility = interpretLayer('utility', utilityRes);
   const floodRes = await call('/api/hazards', { kind: 'flood', geometry });
@@ -397,7 +533,10 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
     ? notRequested(`parcel has no ${!wellParcelId ? 'parcel number' : 'geometry'} (the browser skips this call too)`)
     : interpretLayer('existingWell', await call('/api/existing-well', { state, county: parcelCounty || county, parcelId: wellParcelId, address, geometry }));
   // property-assessment.js sends the parcel number exactly as the user typed it.
-  layers.assessment = interpretLayer('assessment', await call('/api/property-assessment', { state, county, parcelId }));
+  const assessmentRes = await call('/api/property-assessment', { state, county, parcelId });
+  layers.assessment = isUnsupportedAssessment(assessmentRes)
+    ? { route: assessmentRes.route, httpStatus: assessmentRes.httpStatus, ms: assessmentRes.ms, status: 'unavailable', detail: `no assessment source for this county (${text(assessmentRes.data.error)})`, values: {} }
+    : interpretLayer('assessment', assessmentRes);
 
   // Listing context: lookup only. Never add `sync` here (see the header comment).
   layers.listing = interpretLayer('listing', await call('/api/reso-listings', { parcelId: resolvedId || parcelId || undefined, address: address || undefined }));
@@ -561,6 +700,16 @@ function cityVariants(cities) {
   return [...out].filter(Boolean);
 }
 
+// acresUnit: the unit of acresField. "acres" (default) for an assessor acreage field; "sqft" or
+// "sqm" for a layer that only has its shape area (the Washington statewide layer's Shape__Area is
+// state plane square feet), so bands and labels are mapped acreage, not the assessor's.
+export const AREA_UNITS_PER_ACRE = { acres: 1, sqft: 43560, sqm: SQ_M_PER_ACRE };
+export function unitsPerAcre(d) {
+  const unit = d?.acresUnit || 'acres';
+  if (!(unit in AREA_UNITS_PER_ACRE)) throw new Error(`Unknown acresUnit ${unit}: use ${Object.keys(AREA_UNITS_PER_ACRE).join(', ')}.`);
+  return AREA_UNITS_PER_ACRE[unit];
+}
+
 // One stratum per acreage band x (named city / other locality). Without an acres field there is
 // one "any acreage" band; without a city field, one "any locality" place.
 export function buildDiscoveryStrata(d) {
@@ -569,9 +718,10 @@ export function buildDiscoveryStrata(d) {
     ? [['city-named locality', `UPPER(${d.cityField}) IN (${cityList})`], ['other/blank locality', `(${d.cityField} IS NULL OR UPPER(${d.cityField}) NOT IN (${cityList}))`]]
     : [['any locality', null]];
   const bands = d.acresField ? d.acreBands || [] : [{ label: 'any acreage' }];
+  const scale = d.acresField ? unitsPerAcre(d) : 1;
   const strata = [];
   for (const band of bands) {
-    const acres = [band.min != null ? `${d.acresField} >= ${Number(band.min)}` : null, band.max != null ? `${d.acresField} < ${Number(band.max)}` : null].filter(Boolean).join(' AND ');
+    const acres = [band.min != null ? `${d.acresField} >= ${Number(band.min) * scale}` : null, band.max != null ? `${d.acresField} < ${Number(band.max) * scale}` : null].filter(Boolean).join(' AND ');
     for (const [placeLabel, placeWhere] of places) {
       strata.push({ id: `${band.label} | ${placeLabel}`, band: band.label, place: placeLabel, where: [d.where, acres, placeWhere].filter(Boolean).map(w => `(${w})`).join(' AND ') });
     }
@@ -639,7 +789,7 @@ export const MAX_DISTINCT_ZONES = 200;
 function toCandidate(d, attrs, stratum) {
   return {
     parcelId: text(attrs[d.idField]),
-    acres: d.acresField ? finite(attrs[d.acresField]) : null,
+    acres: d.acresField && finite(attrs[d.acresField]) != null ? finite(attrs[d.acresField]) / unitsPerAcre(d) : null,
     zoning: d.zoningField ? text(attrs[d.zoningField]) || null : null,
     city: d.cityField ? text(attrs[d.cityField]) || null : null,
     address: d.addressField ? text(attrs[d.addressField]) || null : null,
@@ -739,6 +889,8 @@ export function resolveDiscoverFields(d, fieldNames) {
 export async function discoverParcels(config, { count = 12, seed = 1, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS, log = () => {} } = {}) {
   const configured = config.discover;
   if (!configured?.layerUrl || !configured.idField) throw new Error(`No discover config (layerUrl, idField) for ${config.county}.`);
+  assertNoOwnerFields(DISCOVER_FIELD_KEYS.map(k => configured[k]).filter(Boolean), 'discovery');
+  unitsPerAcre(configured);
   const opts = { fetchImpl, timeoutMs };
   const rand = mulberry32(seed ^ 0x9e3779b9);
   const perQuery = Math.min(MAX_PER_QUERY, Math.max(1, Math.floor(Number(configured.perQuery) || 50)));

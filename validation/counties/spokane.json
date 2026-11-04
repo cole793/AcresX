@@ -1,0 +1,135 @@
+{
+  "county": "Spokane",
+  "state": "WA",
+  "parcels": [
+    {
+      "parcelId": "35204.2729",
+      "label": "City of Spokane, 0.14 ac",
+      "why": "Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum \"under 1 ac | city-named locality\"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02; this is the layer src/counties/spokane-cities.js reads, code from ZoneLabel). The jurisdiction comes from the City of Spokane zoning added in PR #32.",
+      "expected": {
+        "zoning.code": "R1",
+        "zoning.jurisdiction": "City of Spokane"
+      }
+    },
+    {
+      "parcelId": "35234.0602",
+      "label": "City of Spokane Valley, 0.42 ac",
+      "why": "Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zoning polygon at the centroid (-117.331914,47.642933); the city's layer used by src/counties/spokane-cities.js says R-3, Single-Family Residential (R-3) (https://arcgis.spokanevalley.org/arcgis/rest/services/ViewerV3/LandUse/MapServer/1/query?f=json&geometry=-117.331914,47.642933&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Zoning,Zoning_Desg&returnGeometry=false, checked 2026-11-02).",
+      "expected": {
+        "zoning.code": "R-3",
+        "zoning.jurisdiction": "City of Spokane Valley"
+      }
+    },
+    {
+      "parcelId": "13013.2211",
+      "label": "City of Cheney, 0.16 ac",
+      "why": "Small lot inside the City of Cheney (3175 Pheasant St). No county zoning polygon at the centroid (-117.575987,47.510249), so city zoning applies. The City of Cheney layer used by src/counties/spokane-cities.js says R-1, Single Family Residential (https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3/query?f=json&geometry=-117.575987,47.510249&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneCODE,ZONE&returnGeometry=false, checked 2026-11-02).",
+      "expected": {
+        "zoning.code": "R-1",
+        "zoning.jurisdiction": "City of Cheney"
+      }
+    },
+    {
+      "parcelId": "57344.0125",
+      "label": "Newman Lake, 0.45 ac, flood AE, wetlands",
+      "why": "Small unincorporated lot with a FEMA high-risk zone and mapped NWI wetlands (picked by discovery 2026-11-02, seed 42). Zoning RCV Rural Conservation from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.095636,47.787979&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). Flood AE (SFHA) and X on the parcel outline from FEMA NFHL (https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query, geometryType=esriGeometryPolygon with the statewide parcel outline, outFields=FLD_ZONE,SFHA_TF; DFIRM 53063C). Checked 2026-11-02.",
+      "expected": {
+        "zoning.code": "RCV",
+        "zoning.jurisdiction": "Spokane County",
+        "flood.high": true,
+        "flood.zones": "AE"
+      }
+    },
+    {
+      "parcelId": "43341.0110",
+      "label": "unincorporated, 1.5 ac, LTA, wetlands",
+      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning LTA Large Tract Agricultural from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.217847,47.448652&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: when NFHL doesn't answer, the Esri fallback holds high/moderate-risk zones only and returns no X.",
+      "expected": {
+        "zoning.code": "LTA",
+        "zoning.jurisdiction": "Spokane County",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "47071.9003",
+      "label": "Chattaroy, 2.32 ac, RT",
+      "why": "Unincorporated 1-5 ac parcel (picked by discovery 2026-11-02, seed 42; its lookup timed out in that run). County zoning RT Rural Traditional at the centroid (-117.293144,47.859658).",
+      "expected": {}
+    },
+    {
+      "parcelId": "46301.9025",
+      "label": "no situs city, 4.62 ac, RCV",
+      "why": "Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2026-11-02, seed 42).",
+      "expected": {}
+    },
+    {
+      "parcelId": "57302.9016",
+      "label": "Mead, 9.78 ac, RCV, wetlands",
+      "why": "Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning RCV from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.173978,47.813929&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: on 2026-11-02 NFHL didn't answer for this parcel and the Esri fallback (high/moderate-risk zones only) returned no zones.",
+      "expected": {
+        "zoning.code": "RCV",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "37094.9101",
+      "label": "Spokane situs, 5 ac, RCV",
+      "why": "5-40 ac parcel with a SPOKANE situs city that is outside city limits (county zoning RCV), picked by discovery 2026-11-02, seed 42. Shows the situs city is not the jurisdiction.",
+      "expected": {}
+    },
+    {
+      "parcelId": "48121.9001",
+      "label": "Elk, 154 ac, FZ, wetlands",
+      "why": "Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning FZ Forest Land from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.177199,47.944269&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02.",
+      "expected": {
+        "zoning.code": "FZ",
+        "zoning.jurisdiction": "Spokane County",
+        "flood.high": false
+      }
+    },
+    {
+      "parcelId": "48136.9052",
+      "label": "Colbert, 51.9 ac, RCV, wetlands",
+      "why": "Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42).",
+      "expected": {}
+    },
+    {
+      "parcelId": "32322.9002",
+      "label": "Spangle, 157.8 ac, LTA",
+      "why": "Unincorporated 40+ ac farm parcel (picked by discovery 2026-11-02, seed 42; its lookup timed out in that run). County zoning LTA at the centroid (-117.408960,47.357265).",
+      "expected": {}
+    }
+  ],
+  "discover": {
+    "layerUrl": "https://services.arcgis.com/jsIt88o09Q0r1j8h/arcgis/rest/services/Current_Parcels/FeatureServer/0",
+    "idField": "ORIG_PARCEL_ID",
+    "acresField": "Shape__Area",
+    "acresUnit": "sqft",
+    "cityField": "SITUS_CITY_NM",
+    "addressField": "SITUS_ADDRESS",
+    "where": "FIPS_NR='063' AND ORIG_PARCEL_ID IS NOT NULL",
+    "cities": [
+      "Airway Heights",
+      "Cheney",
+      "Deer Park",
+      "Fairfield",
+      "Latah",
+      "Liberty Lake",
+      "Medical Lake",
+      "Millwood",
+      "Rockford",
+      "Spangle",
+      "Spokane",
+      "Spokane Valley",
+      "Waverly"
+    ],
+    "acreBands": [
+      { "label": "under 1 ac", "max": 1 },
+      { "label": "1-5 ac", "min": 1, "max": 5 },
+      { "label": "5-40 ac", "min": 5, "max": 40 },
+      { "label": "40+ ac", "min": 40 }
+    ],
+    "perQuery": 50,
+    "delayMs": 300
+  }
+}
