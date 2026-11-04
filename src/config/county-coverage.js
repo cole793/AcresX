@@ -23,34 +23,61 @@ const statewideBase = {
   zoningRules: COVERAGE_STATUS.NOT_CONFIGURED
 };
 
+// Levels follow COUNTY_CHECKLIST.md "Readiness levels"; checklistScore is that checklist's audit
+// score (out of 100) on checklistScoreDate.
+//
+// Every capability below comes from the live validation runs of 2026-11-03 (started 23:25Z, after
+// PR #30's terrain fix deployed; Spokane and Stevens ran on the WA validation tool from PR #36),
+// 12 parcels per county, never from older hand-set values:
+//   validated      ok on at least 10 of 12 parcels and no mismatch
+//   partial        answered for some parcels, had a mismatch, or answered without usable data
+//   not_configured unavailable on every parcel because nothing is set up for it
+// utilities = the utility-territory and power layers; terrain = the terrain and slope-grid layers.
+// tax: no run returned a tax amount for any parcel, so no county claims tax coverage.
 const overrides = {
   'WA:Spokane': {
-    level: 3,
+    level: 2,
     priority: 1,
-    lastValidated: '2026-08-23',
-    notes: 'Reference implementation for Washington and canonical Development Potential UI.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'validated'}
+    lastValidated: '2026-11-03',
+    checklistScore: 79,
+    checklistScoreDate: '2026-11-03',
+    notes: 'Validated with the WA validation tool (PR #36) on 2026-11-03. That run had 2 soil errors (USDA soil service timeouts); zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1).',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Yellowstone': {
-    level: 3,
+    level: 2,
     priority: 1,
-    lastValidated: '2026-08-23',
-    notes: 'Reference implementation for Montana.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'available_unvalidated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'validated'}
+    lastValidated: '2026-11-03',
+    checklistScore: 80,
+    checklistScoreDate: '2026-11-03',
+    notes: 'Validation run 2026-11-03T23:25Z had 1 terrain error and 1 power timeout; zoning rules are missing for 4 of 12 parcels (all unzoned county land).',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'ID:Kootenai': {
-    level: 3,
+    level: 2,
     priority: 1,
-    lastValidated: '2026-08-23',
-    notes: 'Reference implementation for Idaho; county PIN, KCEarth zoning and local-code Development Potential validated.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'available_unvalidated',assessment:'partial',tax:'not_configured',zoning:'validated',zoningRules:'validated'}
+    lastValidated: '2026-11-03',
+    checklistScore: 87,
+    checklistScoreDate: '2026-11-03',
+    notes: 'First clean validation run 2026-11-03T23:25Z (after the terrain fix); level 3 needs a second consecutive clean run plus owner sign-off. Zoning rules are missing for 3 of 12 parcels (Coeur d\'Alene R-12 twice, county Restricted Residential).',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Gallatin': {
     level: 2,
     priority: 2,
-    lastValidated: '2026-08-23',
-    notes: 'Parcel and assessment tested; zoning behavior requires broader validation and local-code mapping.',
-    capabilities: {parcel:'validated',wells:'available_unvalidated',soil:'available_unvalidated',terrain:'available_unvalidated',flood:'available_unvalidated',wetlands:'available_unvalidated',utilities:'available_unvalidated',assessment:'validated',tax:'partial',zoning:'partial',zoningRules:'not_configured'}
+    lastValidated: '2026-11-03',
+    checklistScore: 75,
+    checklistScoreDate: '2026-11-03',
+    notes: 'Validation run 2026-11-03T23:25Z had 1 terrain error; zoning answered for 10 of 12 parcels. No zoning rules table for Gallatin.',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'not_configured'}
+  },
+  'WA:Stevens': {
+    level: 1,
+    lastValidated: '2026-11-03',
+    checklistScore: 49,
+    checklistScoreDate: '2026-11-03',
+    notes: 'Validated with the WA validation tool (PR #36) on 2026-11-03. That run had 2 soil errors (USDA soil service timeouts) and a zoning mismatch on parcel 2371220 (expected 10, got no zone). No assessor adapter. FEMA has no digital flood map here: all 12 parcels answered "no mapped FEMA zone".',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'partial',wetlands:'validated',utilities:'validated',assessment:'not_configured',tax:'not_configured',zoning:'partial',zoningRules:'partial'}
   }
 };
 
@@ -70,6 +97,8 @@ function makeCounty(state, county) {
     level: override.level || 1,
     priority: override.priority || (priority2.has(key) ? 2 : 3),
     lastValidated: override.lastValidated || null,
+    checklistScore: override.checklistScore ?? null,
+    checklistScoreDate: override.checklistScoreDate || null,
     notes: override.notes || '',
     capabilities: {...statewideBase, ...(override.capabilities || {})}
   };
@@ -97,7 +126,7 @@ export function getCountyCoverageRegistry() {
       3: 'Validated county experience with parcel screening, assessor/zoning intelligence and standardized Development Potential.'
     },
     statusDefinitions: {
-      validated: 'Tested successfully against a real parcel.',
+      validated: 'Returned usable data on at least 10 of 12 parcels in a live validation run, with no mismatch against hand-checked values.',
       available_unvalidated: 'Source/adapter exists but county-specific validation is still required.',
       partial: 'Some data is returned but coverage or completeness is limited.',
       not_configured: 'No dedicated source/adapter is currently configured.'
