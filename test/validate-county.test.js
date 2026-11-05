@@ -255,6 +255,16 @@ test('assessment values: Kootenai county record carries values and the assessor 
   assert.deepEqual([mtCountyOnly.status, mtCountyOnly.detail], ['unavailable', 'no assessment record found']);
 });
 
+test('assessment values: Stevens (WA) county record; a taxable value is not a tax amount', () => {
+  const st = interpretLayer('assessment', { ok: true, httpStatus: 200, data: {
+    available: true, state: 'WA', county: 'Stevens', countySource: 'Stevens County Assessor (RealPropertyParcels_Public)',
+    countyRecords: [{ parcelNumber: '2342700', landValue: 12794, improvementValue: 14000, totalValue: 26794, taxableValue: 26794, netValue: 26794, marketValue: 350000, taxYear: 2026, taxCodeArea: '021-115', propertyClass: '88', propertyClassDescription: 'Designated forest land under chapter 84.33 RCW' }]
+  } });
+  assert.equal(st.status, 'ok');
+  assert.equal(st.detail, 'assessed $26,794, class 88 Designated forest land under chapter 84.33 RCW, no tax amount');
+  assert.deepEqual([st.values.assessedValue, st.values.propertyClass, st.values.taxPresent, st.values.source], [26794, '88', false, 'Stevens County Assessor (RealPropertyParcels_Public)']);
+});
+
 test('markdown flood detail shows the provider and limited coverage', async () => {
   for (const [source, pattern] of [
     [{ provider: 'FEMA NFHL', url: 'https://x' }, /- \*\*Flood\*\*: ok\. no mapped FEMA zone \(via FEMA NFHL\) \[.*provider=FEMA NFHL/],
