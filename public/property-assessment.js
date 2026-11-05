@@ -3,6 +3,10 @@
   // The assessor's property class is a tax category, not zoning (Zillow labels it "Zoning").
   const CLASS_NOTE = 'Tax category, not zoning';
 
+  function escapeText(value) {
+    return String(value).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
   function money(value) {
     const n = Number(value);
     return Number.isFinite(n) ? `$${Math.round(n).toLocaleString()}` : '—';
@@ -23,6 +27,28 @@
 
   function normalize(data) {
     if (!data?.available) return null;
+
+    // County assessor records already mapped by the Worker: Kootenai (src/counties/kootenai-assessor.js)
+    // and Stevens WA (src/counties/stevens-assessor.js).
+    if ((data.state === 'ID' || data.state === 'WA') && Array.isArray(data.countyRecords) && data.countyRecords.length) {
+      const r = data.countyRecords[0] || {};
+      return {
+        totalValue: amount(r.totalValue),
+        landValue: amount(r.landValue),
+        improvementValue: amount(r.improvementValue),
+        homeownerExemption: amount(r.homeownerExemption),
+        netValue: amount(r.netValue),
+        marketValue: amount(r.marketValue),
+        currentUse: currentUseText(r.currentUse),
+        valuesNote: String(r.valuesNote || ''),
+        assessorAcres: amount(r.assessorAcres),
+        propertySearchUrl: propertySearchUrl(r.propertySearchUrl, r.propertyId),
+        year: r.taxYear || null,
+        propertyClass: classText(r),
+        label: 'Assessor value',
+        source: `${data.county || 'Kootenai'} County Assessor`
+      };
+    }
 
     if (data.state === 'WA') {
       const r = data.records?.[0] || {};
@@ -48,22 +74,6 @@
       };
     }
 
-    // Kootenai: county assessor record, already mapped by src/counties/kootenai-assessor.js.
-    if (data.state === 'ID' && Array.isArray(data.countyRecords) && data.countyRecords.length) {
-      const r = data.countyRecords[0] || {};
-      return {
-        totalValue: amount(r.totalValue),
-        landValue: amount(r.landValue),
-        improvementValue: amount(r.improvementValue),
-        homeownerExemption: amount(r.homeownerExemption),
-        netValue: amount(r.netValue),
-        year: r.taxYear || null,
-        propertyClass: classText(r),
-        label: 'Assessor value',
-        source: `${data.county || 'Kootenai'} County Assessor`
-      };
-    }
-
     if (data.state === 'ID') {
       const r = data.statewideRecords?.[0] || {};
       const updated = r.UPDATED ? new Date(Number(r.UPDATED)) : null;
@@ -85,6 +95,50 @@
     const code = String(record?.propertyClass || '').trim();
     const descr = String(record?.propertyClassDescription || '').trim();
     return code && descr ? `${code} – ${descr}` : code || descr;
+  }
+
+  // Stevens: the county's property search page (hosted by True Automation), from the county layer's
+  // Propertyinformation field (src/counties/stevens-assessor.js). Checked again here before it is
+  // shown: https, exactly that host and path, one numeric prop_id equal to the record's.
+  const PROPERTY_SEARCH_LABEL = 'View on the Stevens County property search (hosted by True Automation)';
+  function propertySearchUrl(value, propertyId) {
+    let url;
+    try { url = new URL(String(value ?? '')); } catch { return ''; }
+    if (url.protocol !== 'https:' || url.hostname !== 'propertysearch.trueautomation.com' || url.port || url.username || url.password) return '';
+    if (url.pathname !== '/PropertyAccess/Property.aspx') return '';
+    // Only cid, year and prop_id, each at most once and all digits; prop_id is required and must be
+    // the record's. The link is rebuilt from those three, so nothing else (e.g. redirect=) survives.
+    const kept = [];
+    if ([...url.searchParams.keys()].some(k => !['cid', 'year', 'prop_id'].includes(k))) return '';
+    for (const k of ['cid', 'year', 'prop_id']) {
+      const v = url.searchParams.getAll(k);
+      if (v.length > 1 || (v.length === 1 && !/^\d+$/.test(v[0]))) return '';
+      if (v.length) kept.push([k, v[0]]);
+    }
+    const propId = url.searchParams.get('prop_id');
+    if (propId == null || propertyId == null || Number(propId) !== Number(propertyId)) return '';
+    return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
+  }
+
+  // Stevens currentUse { status, program, note } -> one line, or '' when the record has none.
+  function currentUseText(currentUse) {
+    if (!currentUse || typeof currentUse !== 'object') return '';
+    if (currentUse.status === 'classified' && currentUse.program) return String(currentUse.program);
+    if (currentUse.status === 'reduced_land_value') return 'Land assessed below market (possible current-use or forest program; verify with the assessor)';
+    if (currentUse.status === 'not_classified') return 'Not in a current-use program';
+    return '';
+  }
+
+  // Assessor acres from the assessment, for the "show both" acreage display (public/acreage.js),
+  // when the parcel search record had none (the WA statewide layer has no assessor acreage).
+  // Kootenai parcels already carry ACRES, so they are unchanged.
+  function shareAssessorAcres(result) {
+    const acres = result?.assessorAcres;
+    const props = typeof last !== 'undefined' ? last?.parcel?.properties : null;
+    if (!props || !Number.isFinite(acres) || acres <= 0) return;
+    if (window.AcresXAcreage?.assessorAcres?.(props) != null) return;
+    props.ACRES = acres;
+    window.AcresXOverview?.refreshAcreage?.();
   }
 
   function ensureStyles() {
@@ -172,7 +226,13 @@
       ? ` · Homeowner exemption ${money(result.homeownerExemption)}`
       : '';
     const net = Number.isFinite(result.netValue) ? ` · Net taxable ${money(result.netValue)}` : '';
-    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${exemption}${net}. Assessor values are informational and are not the current tax bill.`;
+    const market = Number.isFinite(result.marketValue) ? ` · Market value ${money(result.marketValue)}` : '';
+    const currentUse = result.currentUse ? ` · ${escapeText(result.currentUse)}` : '';
+    const valuesNote = result.valuesNote ? ` ${escapeText(result.valuesNote)}` : '';
+    const link = result.propertySearchUrl
+      ? ` <a href="${escapeText(result.propertySearchUrl)}" target="_blank" rel="noopener">${PROPERTY_SEARCH_LABEL} ↗</a>`
+      : '';
+    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${exemption}${net}${market}${currentUse}.${valuesNote} Assessor values are informational and are not the current tax bill.${link}`;
   }
 
   async function loadAssessment() {
@@ -200,7 +260,9 @@
       if (!response.ok) throw new Error(data?.error || `Assessment lookup returned ${response.status}`);
       if (requestId !== assessmentRequestId || stale()) return;
       if (typeof last !== 'undefined') last.propertyAssessment = data;
-      renderAssessment(normalize(data));
+      const result = normalize(data);
+      renderAssessment(result);
+      shareAssessorAcres(result);
       sections?.settle('assessment');
     } catch (error) {
       if (requestId !== assessmentRequestId || stale()) return;
@@ -220,7 +282,7 @@
     else if (state === 'WA') location.textContent = `${county} County, Washington`;
   }
 
-  window.AcresXAssessment = { normalize, classText, CLASS_NOTE, renderAssessment };
+  window.AcresXAssessment = { normalize, classText, CLASS_NOTE, renderAssessment, shareAssessorAcres };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;

@@ -256,6 +256,23 @@ export function renderOverview({ parcel, mappedSqm, dir }) {
   return { acres: h.el('overviewAcres').textContent, detail: h.el('overviewSqFt').textContent, note: note.hidden ? '' : note.textContent };
 }
 
+// The overview, then an assessment answer carrying assessorAcres arriving afterwards
+// (public/property-assessment.js shareAssessorAcres -> parcel-preview.js AcresXOverview.refreshAcreage).
+export function renderOverviewWithAssessment({ parcel, mappedSqm, assessorAcres, dir }) {
+  const h = makeLazyContext({ mappedSqm, last: { parcel, wells: [], utility: [] } });
+  h.run('function renderSummary(){}');
+  h.run(readPublic('acreage.js', dir));
+  h.run(readPublic('parcel-preview.js', dir));
+  h.run('renderSummary()');
+  h.run(readPublic('property-assessment.js', dir));
+  h.context.AcresXAssessment.shareAssessorAcres({ assessorAcres });
+  const note = h.el('overviewAcreageNote');
+  return {
+    overview: { acres: h.el('overviewAcres').textContent, detail: h.el('overviewSqFt').textContent, note: note.hidden ? '' : note.textContent },
+    properties: parcel.properties
+  };
+}
+
 // Printable report HTML for `data` (what window.__acresxLast holds).
 export function renderReport({ data, mappedSqm, dir }) {
   const h = makeLazyContext({ mappedSqm, last: data });

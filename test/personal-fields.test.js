@@ -20,13 +20,17 @@ const PLANTED = {
   OWNER1: 'PLACEHOLDER OWNER', OWNER2: 'PLACEHOLDER OWNER TWO', PUBLIC_STD: 'PLACEHOLDER OWNER', MAIL_ADD1: '1 PLACEHOLDER MAIL ST', MAIL_CITY: 'PLACEHOLDER CITY', MAIL_ZIP: '00000', // Idaho statewide
   Owner: 'PLACEHOLDER OWNER', // IDWR wells
   owner_name: 'PLACEHOLDER OWNER', taxpayer_name: 'PLACEHOLDER TAXPAYER', // Spokane assessor
-  Owner_Primary: 'PLACEHOLDER OWNER', Recipient_Primary: 'PLACEHOLDER OWNER', DeliveryAddr_Primary: '1 PLACEHOLDER MAIL ST', LastLine_Primary: 'PLACEHOLDER CITY' // Kootenai assessor
+  Owner_Primary: 'PLACEHOLDER OWNER', Recipient_Primary: 'PLACEHOLDER OWNER', DeliveryAddr_Primary: '1 PLACEHOLDER MAIL ST', LastLine_Primary: 'PLACEHOLDER CITY', // Kootenai assessor
+  file_as_na: 'PLACEHOLDER OWNER', last_name: 'PLACEHOLDER LAST', first_name: 'PLACEHOLDER FIRST', owner_id: 'PLACEHOLDER OWNER ID', addr_line1: '1 PLACEHOLDER MAIL ST', // Stevens assessor
+  addr_line2: 'PLACEHOLDER UNIT', addr_line3: '', addr_city: 'PLACEHOLDER CITY', addr_state: 'WA', addr_zip: '00000'
 };
 const PLANTED_VALUE = /PLACEHOLDER/;
 // Derived well-match evidence (booleans and a 0-100 score, no names) that keeps its key.
 const ALLOWED_KEYS = new Set(['ownerMatch', 'ownerSimilarity']);
 
 const PARCEL = 'P1234567';
+// Stevens parcel numbers are 7 digits (src/counties/stevens-assessor.js).
+const STEVENS_PARCEL = '0231200';
 const LON = -117.4, LAT = 47.6;
 const ring = [[LON, LAT], [LON + 0.002, LAT], [LON + 0.002, LAT + 0.002], [LON, LAT + 0.002], [LON, LAT]];
 const polygon = { type: 'Polygon', coordinates: [ring] };
@@ -35,7 +39,7 @@ const polygon = { type: 'Polygon', coordinates: [ring] };
 // the planted owner and mailing fields.
 const attributes = {
   OBJECTID: 1, PARCELID: PARCEL, Geocode: PARCEL, GEOCODE: PARCEL, GEO_CODE: PARCEL, TAX_ID: PARCEL, PARCEL_ID: PARCEL, PIN: PARCEL, PID: PARCEL, PID_NUM: PARCEL,
-  ParcelNumber: PARCEL, County: 'Ada', COUNTY: 'Kootenai', SITE_ADD: '100 SITE RD', AddressLine1: '100 SITE RD', site_address: '100 SITE RD',
+  PARCELN: STEVENS_PARCEL, ParcelNumber: PARCEL, County: 'Ada', COUNTY: 'Kootenai', SITE_ADD: '100 SITE RD', AddressLine1: '100 SITE RD', site_address: '100 SITE RD',
   ZONECLASS: 'RR-5', ZONEDESC: 'Rural Residential 5', ZONING: 'AS', ZONE: 'A-1', ZONE_NAME: 'Agricultural', JURISDICTION: 'Test County', NAME: 'TEST UTILITY',
   PERMITNUM: 'B-1', PERMITTYPE: 'Residential', WellTagNr: 'BAA123', WellID: 5, TotalDepth: 200, CompletedDepth: 200, WellUse: 'Domestic',
   gwicid: 1000, total_depth_ft_bgs: 150, VAL_TOTAL: 1000, TotalValue: 1000, FLD_ZONE: 'X', WETLAND_TYPE: 'Freshwater Emergent Wetland',
@@ -54,9 +58,12 @@ function params(url, init) {
 }
 // Personal fields named in an upstream request's outFields, as `host/path: field`.
 const requestedPersonal = [];
+// Every upstream request's host and outFields.
+const requestedFields = [];
 // A layer answers with the fields asked for (all of them for outFields '*'), like ArcGIS does.
 function askedFor(p, url) {
   const asked = p.get('outFields');
+  requestedFields.push({ host: url.hostname, outFields: asked });
   // GWIC site names are the well owner's name; only that layer has the field.
   const layer = url.hostname === 'mbmgmap.mtech.edu' ? { ...attributes, site_name: 'PLACEHOLDER OWNER * TOWN MT' } : attributes;
   if (!asked || asked === '*') return layer;
@@ -99,6 +106,7 @@ const CASES = [
   ['property-assessment MT Yellowstone', post('/api/property-assessment', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL }), b => { assert.equal(b.statewideRecords.length, 1); assert.equal(b.statewideRecords[0].TotalValue, 1000); }],
   ['property-assessment MT Gallatin', post('/api/property-assessment', { state: 'MT', county: 'Gallatin', parcelId: PARCEL }), b => assert.equal(b.statewideRecords.length, 1)],
   ['property-assessment ID Kootenai', post('/api/property-assessment', { state: 'ID', county: 'Kootenai', parcelId: PARCEL })],
+  ['property-assessment WA Stevens', post('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: STEVENS_PARCEL }), b => { assert.equal(b.available, true); assert.equal(b.countyRecords[0].parcelNumber, STEVENS_PARCEL); }],
   ['property-assessment ID Ada', post('/api/property-assessment', { state: 'ID', county: 'Ada', parcelId: PARCEL }), b => assert.equal(b.statewideRecords.length, 1)],
   ['parcel-search MT Gallatin', post('/api/parcel-search', { state: 'MT', county: 'Gallatin', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.PARCELID, PARCEL)],
   ['parcel-search MT Yellowstone', post('/api/parcel-search', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.GEOCODE, PARCEL)],
@@ -205,6 +213,32 @@ test('no upstream request names an owner or mailing field, except the Spokane we
   assert.ok(requestedPersonal.length > 0, 'the comparison still asks for the owner names');
 });
 
+// Stevens County's assessor layer holds the owner's name and mailing address next to the values
+// (RealPropertyParcels_Public/MapServer/0: file_as_na, last_name, first_name, owner_id, addr_*).
+test('Stevens assessor: its field list names no owner or mailing field, and those fields match PERSONAL_FIELD', async () => {
+  const { STEVENS_ASSESSOR_FIELDS, mapStevensAssessorRecord } = await import('../src/counties/stevens-assessor.js');
+  const fields = STEVENS_ASSESSOR_FIELDS.split(',');
+  assert.ok(!fields.includes('*'));
+  assert.deepEqual(fields.filter(f => PERSONAL_FIELD.test(f)), []);
+  const stevensOwnerFields = ['file_as_na', 'last_name', 'first_name', 'owner_id', 'addr_line1', 'addr_line2', 'addr_line3', 'addr_city', 'addr_state', 'addr_zip'];
+  assert.deepEqual(stevensOwnerFields.filter(f => !PERSONAL_FIELD.test(f)), []);
+  assert.deepEqual(stevensOwnerFields.filter(f => fields.includes(f)), []);
+  // Field names on the same layer that are not personal stay (situs address, values, codes).
+  assert.deepEqual(['PARCELN', 'situs_disp', 'situs_city', 'tax_area_n', 'legal_acre', 'Ag_Sched', 'market_lan', 'hood_name'].filter(f => PERSONAL_FIELD.test(f)), []);
+  // Every field the layer publishes, owner fields filled with placeholders: the record holds none.
+  const all = JSON.parse(readFileSync(new URL('./fixtures/stevens-assessor-0231200-all-fields.json', import.meta.url), 'utf8')).features[0].attributes;
+  assertNoPersonalData(mapStevensAssessorRecord(all), 'Stevens record from every layer field');
+});
+
+test('Stevens assessor requests name their fields and never an owner field', () => {
+  const stevens = requestedFields.filter(r => r.host === 'gis.stevenscountywa.gov');
+  assert.ok(stevens.length > 0, 'the Stevens case reached the county layer');
+  for (const { outFields } of stevens) {
+    assert.ok(outFields && outFields !== '*', 'outFields named');
+    assert.deepEqual(outFields.split(',').filter(f => PERSONAL_FIELD.test(f.trim()) || Object.hasOwn(PLANTED, f.trim())), []);
+  }
+});
+
 test('withoutPersonalFields also drops Montana CareOfTaxpayer', () => {
   assert.deepEqual(withoutPersonalFields({ CareOfTaxpayer: 'x', TotalValue: 1 }), { TotalValue: 1 });
 });
@@ -236,9 +270,10 @@ const HINTED = [
   ['zoning-permits Kootenai (county GIS blocked)', post('/api/zoning-permits', { county: 'Kootenai', ...hintParcel }), 'kootenai-zoning', 502],
   ['well-search ID (IDWR blocked)', post('/api/well-search', { state: 'ID', ...hintPoint }), 'idaho-wells', 502],
   ['property-assessment ID Kootenai (assessor blocked)', post('/api/property-assessment', { state: 'ID', county: 'Kootenai', parcelId: HINT_PARCEL }), 'kootenai-assessor', 200],
+  ['property-assessment WA Stevens (assessor blocked)', post('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: '7654321' }), 'stevens-assessor', 200],
   ['hazards flood (FEMA blocked)', post('/api/hazards', { kind: 'flood', ...hintParcel }), 'fema-flood', 200]
 ];
-const BLOCKED_HOSTS = new Set(['map.kcgov.us', 'gis.idwr.idaho.gov', 'hazards.fema.gov']);
+const BLOCKED_HOSTS = new Set(['map.kcgov.us', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov']);
 
 test('hinted answers (browser fallback) carry no owner or mailing field', async () => {
   const blocked = (input, init) => {
