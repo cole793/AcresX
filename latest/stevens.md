@@ -1,23 +1,23 @@
 # County validation: Stevens, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-04T20:38:02.311Z
-- Parcels: 12, with an error or mismatch: 6
-- Layer results: ok 117, unavailable 42, error 7, mismatch 2, skipped 0
+- Run: 2026-11-05T20:54:03.316Z
+- Parcels: 12, with an error or mismatch: 7
+- Layer results: ok 117, unavailable 42, error 9, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | mismatch | mismatch | unavailable | unavailable |
+| 8974701 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 0763202 | ok | ok | unavailable | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable | unavailable | unavailable |
-| 0231200 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | unavailable | unavailable | unavailable | unavailable |
+| 0231200 | ok | ok | unavailable | ok | ok | error | ok | ok | ok | ok | unavailable | unavailable | unavailable | unavailable |
 | 0000500 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | unavailable | unavailable | unavailable |
 | 2371220 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
-| 2378200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 2378200 | ok | ok | unavailable | ok | error | error | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 2214900 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 2611300 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 8673053 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
-| 2342700 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
-| 5320900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 2342700 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 5320900 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 5317201 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 
 ## Parcel details
@@ -27,19 +27,17 @@
 Why: Small unincorporated lot with a blank situs city (picked by discovery 2026-11-02, seed 42). Stevens County zoning layer: zoning=5, zoningtext RA-5 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-118.105897,48.629028&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). The zoning-permits code is the layer's numeric renderer value (5); /api/zoning-rules maps it to RA-5. No Stevens panels in FEMA NFHL (no DFIRM 53065C features), so no high-risk zone. Checked 2026-11-02.
 
 - **Parcel**: ok. parcel 8974701, 0.75 ac (mapped) [parcelId=8974701, acres=0.75, lat=48.629028, lon=-118.105897, acresSource=mapped outline]
-- **Wells**: ok. 241 well record(s), 5 of nearest 5 report depth [wellCount=241, nearestDepthsCount=5, nearestMi=0.53, medianDepthFt=18.5]
+- **Wells**: ok. 241 well record(s), 5 of nearest 5 report depth [wellCount=241, nearestDepthsCount=5, nearestMi=0.53, medianDepthFt=45]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Dart loamy coarse sand, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Dart loamy coarse sand, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: ok. avg grade 1.1%, max 3.1% [gradePct=1.1, maxGradePct=3.1, reliefFt=5, sampleCount=9]
+- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
 - **Slope grid**: ok. 16 cells, avg 3.1% [cellCount=16, avgSlopePct=3.1, maxSlopePct=7.4, partial=false]
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP [provider=AVISTA CORP, confidence=low, distributionStatus=not_publicly_mapped]
-- **Zoning**: mismatch. No mapped result [jurisdiction=Stevens County (unincorporated areas), countyStatus=configured, zoningStatus=no_match, permitHistoryStatus=not_configured]
-  - mismatch `zoning.code`: expected 5, got null
-- **Zoning rules**: mismatch. not requested: no zoning code returned (the browser skips this call too)
-  - mismatch `zoningRules.code`: expected RA-5, got null
+- **Zoning**: ok. 5 (Stevens County (unincorporated areas)) [code=5, jurisdiction=Stevens County (unincorporated areas), countyStatus=configured, zoningStatus=gis_match, permitHistoryStatus=not_configured]
+- **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
 - **Assessment**: unavailable. no assessment source for this county (Property assessment endpoint currently supports Spokane County WA, Montana, and Idaho.)
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
@@ -67,10 +65,10 @@ Why: Small unincorporated lot in the Lake Spokane LAMIRD (picked by discovery 20
 Why: Small lot inside Chewelah city limits (picked by discovery 2026-11-02, seed 42). Stevens Cities layer at -117.72695,48.276834 returns Chewelah (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query?f=json&geometry=-117.72695,48.276834&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false); the county zoning layer has no polygon there.
 
 - **Parcel**: ok. parcel 0231200, 0.12 ac (mapped) [parcelId=0231200, acres=0.12, address=107 N BERNARD ST, CHEWELAH, 99109, lat=48.276834, lon=-117.72695, acresSource=mapped outline]
-- **Wells**: ok. 178 well record(s), 5 of nearest 5 report depth [wellCount=178, nearestDepthsCount=5, nearestMi=0.43, medianDepthFt=10]
+- **Wells**: ok. 178 well record(s), 5 of nearest 5 report depth [wellCount=178, nearestDepthsCount=5, nearestMi=0.43, medianDepthFt=39]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Chewelah fine sandy loam) [feasibility=limited, mapUnit=Chewelah fine sandy loam, hydrologicGroup=C, drainage=Somewhat poorly drained, soilSlopePct=2]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
+- **Terrain**: ok. avg grade 0.9%, max 2.8% [gradePct=0.9, maxGradePct=2.8, reliefFt=1, sampleCount=9]
 - **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -89,7 +87,7 @@ Why: Small lot inside Colville city limits (315 N Main St). Stevens Cities layer
 - **Wells**: ok. 393 well record(s), 5 of nearest 5 report depth [wellCount=393, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=16]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Hodgson silt loam, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Hodgson silt loam, 3 to 15 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=9]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
+- **Terrain**: error. USGS elevation was unavailable for 5 of 9 terrain points.
 - **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -127,8 +125,8 @@ Why: Unincorporated 1-5 ac parcel with a city-named situs (picked by discovery 2
 - **Wells**: ok. 75 well record(s), 5 of nearest 5 report depth [wellCount=75, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=280]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Stevens channery silt loam, 8 to 25 percent slopes) [feasibility=limited, mapUnit=Stevens channery silt loam, 8 to 25 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=17]
-- **Terrain**: ok. avg grade 8.1%, max 18.5% [gradePct=8.1, maxGradePct=18.5, reliefFt=91, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=34, partial=false]
+- **Terrain**: error. USGS elevation was unavailable for 8 of 9 terrain points.
+- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=1]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
@@ -146,7 +144,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 94 well record(s), 5 of nearest 5 report depth [wellCount=94, nearestDepthsCount=5, nearestMi=0.15, medianDepthFt=200]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Aits loam, 0 to 15 percent slopes) [feasibility=favorable, mapUnit=Aits loam, 0 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=8]
-- **Terrain**: error. USGS elevation was unavailable for 8 of 9 terrain points.
+- **Terrain**: error. USGS elevation was unavailable for 7 of 9 terrain points.
 - **Slope grid**: ok. 16 cells, avg 8.9% [cellCount=16, avgSlopePct=8.9, maxSlopePct=21.4, partial=false]
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=9]
@@ -184,7 +182,7 @@ Why: Unincorporated 5-40 ac parcel with a blank situs city (picked by discovery 
 - **Wells**: ok. 84 well record(s), 5 of nearest 5 report depth [wellCount=84, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=178]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Hodgson silt loam, 15 to 25 percent slopes) [feasibility=limited, mapUnit=Hodgson silt loam, 15 to 25 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=20]
-- **Terrain**: error. USGS elevation was unavailable for 3 of 9 terrain points.
+- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
 - **Slope grid**: ok. 16 cells, avg 8.5% [cellCount=16, avgSlopePct=8.5, maxSlopePct=26.7, partial=false]
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. 11 NWI feature(s) [intersects=true, count=11, coveragePct=33.5]
@@ -203,7 +201,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Wells**: ok. 61 well record(s), 5 of nearest 5 report depth [wellCount=61, nearestDepthsCount=5, nearestMi=1.14, medianDepthFt=200]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Aits loam, 15 to 25 percent slopes) [feasibility=limited, mapUnit=Aits loam, 15 to 25 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=20]
-- **Terrain**: error. USGS elevation was unavailable for 4 of 9 terrain points.
+- **Terrain**: ok. avg grade 5.6%, max 12.8% [gradePct=5.6, maxGradePct=12.8, reliefFt=243, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 13.4% [cellCount=16, avgSlopePct=13.4, maxSlopePct=30.4, partial=false]
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1.1]
@@ -222,7 +220,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Wells**: ok. 42 well record(s), 5 of nearest 5 report depth [wellCount=42, nearestDepthsCount=5, nearestMi=0.36, medianDepthFt=460]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Bridgeson silt loam, drained) [feasibility=limited, mapUnit=Bridgeson silt loam, drained, hydrologicGroup=C, drainage=Somewhat poorly drained, soilSlopePct=2]
-- **Terrain**: ok. avg grade 7%, max 20.7% [gradePct=7, maxGradePct=20.7, reliefFt=496, sampleCount=9]
+- **Terrain**: error. USGS elevation was unavailable for 5 of 9 terrain points.
 - **Slope grid**: ok. 16 cells, avg 14.8% [cellCount=16, avgSlopePct=14.8, maxSlopePct=35.6, partial=false]
 - **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. 15 NWI feature(s) [intersects=true, count=15, coveragePct=24]

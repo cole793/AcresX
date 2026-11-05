@@ -1,24 +1,36 @@
 # Changes since the previous run: Stevens, WA
 
-- Run: 2026-11-04T20:38:02.311Z
+- Run: 2026-11-05T20:54:03.316Z
 
 ## Cells
 
-No comparison: no previous run. Every broken layer is listed as newly broken.
-
-Parcel x layer cells: newly broken 9, still broken 0, recovered 0, newly unavailable 0.
+Parcel x layer cells: newly broken 4, still broken 5, recovered 4, newly unavailable 0.
 
 ### Newly broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 8974701 | Zoning | n/a | mismatch | zoning.code: expected "5", got null |
-| 8974701 | Zoning rules | n/a | mismatch | zoningRules.code: expected "RA-5", got null |
-| 0231200 | Terrain | n/a | error | USGS elevation was unavailable for 9 of 9 terrain points. |
-| 0231200 | Slope grid | n/a | error | Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly. |
-| 0000500 | Terrain | n/a | error | USGS elevation was unavailable for 9 of 9 terrain points. |
-| 0000500 | Slope grid | n/a | error | Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly. |
-| 2214900 | Terrain | n/a | error | USGS elevation was unavailable for 8 of 9 terrain points. |
-| 8673053 | Terrain | n/a | error | USGS elevation was unavailable for 3 of 9 terrain points. |
-| 2342700 | Terrain | n/a | error | USGS elevation was unavailable for 4 of 9 terrain points. |
+| 8974701 | Terrain | ok | error | USGS elevation was unavailable for 9 of 9 terrain points. |
+| 2378200 | Terrain | ok | error | USGS elevation was unavailable for 8 of 9 terrain points. |
+| 2378200 | Slope grid | ok | error | Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly. |
+| 5320900 | Terrain | ok | error | USGS elevation was unavailable for 5 of 9 terrain points. |
+
+### Still broken
+
+| Parcel | Layer | Was | Now | Detail |
+|---|---|---|---|---|
+| 0231200 | Slope grid | error | error | Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly. |
+| 0000500 | Terrain | error | error | USGS elevation was unavailable for 5 of 9 terrain points. |
+| 0000500 | Slope grid | error | error | Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly. |
+| 2214900 | Terrain | error | error | USGS elevation was unavailable for 7 of 9 terrain points. |
+| 8673053 | Terrain | error | error | USGS elevation was unavailable for 9 of 9 terrain points. |
+
+### Recovered
+
+| Parcel | Layer | Was | Now | Detail |
+|---|---|---|---|---|
+| 8974701 | Zoning | mismatch | ok | zoning.code: expected "5", got null |
+| 8974701 | Zoning rules | mismatch | ok | zoningRules.code: expected "RA-5", got null |
+| 0231200 | Terrain | error | ok | USGS elevation was unavailable for 9 of 9 terrain points. |
+| 2342700 | Terrain | error | ok | USGS elevation was unavailable for 4 of 9 terrain points. |
 
