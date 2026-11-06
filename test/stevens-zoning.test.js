@@ -318,6 +318,24 @@ test('city limits failing: the county zone still shows, with a note that city li
   assert.equal(result.fallback.kind, 'stevens-zoning');
 });
 
+test('city limits failing on a LAMIRD or UGA district: shown, but marked jurisdiction unconfirmed', async () => {
+  for (const id of ['0648500', '0763202']) {
+    const fx = fixture(id);
+    stub(fx, [[layer(0), down]]);
+    const z = (await getStevensCountyIntelligence(bodyOf(fx), profile)).zoning;
+    assert.equal(z.status, 'jurisdiction_unconfirmed', id);
+    assert.equal(z.jurisdictionType, 'unconfirmed', id);
+    assert.equal(z.jurisdictionConfirmed, false, id);
+    assert.match(z.label, /jurisdiction unconfirmed/, id);
+    assert.match(z.note, /city-limits layer did not answer/, id);
+    assert.ok(z.code, id);
+  }
+  // A rural district away from any LAMIRD/UGA stays a plain match (see the test above).
+  const fx = fixture('8974701');
+  stub(fx, [[layer(0), down]]);
+  assert.equal((await getStevensCountyIntelligence(bodyOf(fx), profile)).zoning.status, 'gis_match');
+});
+
 test('UGA and LAMIRD layers failing degrade only themselves, without a browser hint', async () => {
   const fx = fixture('0763202');
   stub(fx, [[layer(8), down], [layer(9), down]]);

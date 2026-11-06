@@ -179,8 +179,15 @@ function countyZoning(layers, samples, decision, matchMethod, profile, lamird, u
         : '';
   const fromLayer = source.layer === 'county' ? 'the Stevens County zoning map' : source.layer === 'lamird' ? 'the Stevens County LAMIRD districts map' : 'the Stevens County urban growth areas map';
   const rulesNote = d.rulesMapped ? '' : ` Zoning rules for ${d.code} are not mapped in AcresX yet; see Stevens County Code Title 3.`;
+  // LAMIRD and UGA districts sit next to (UGAs around) the cities. With the city-limits layer down
+  // AcresX cannot rule out that the parcel is inside a city, so such a match is not reported as a
+  // plain gis_match: the district is shown, labelled unconfirmed, and gets no county rules.
+  const unconfirmed = !decision && Boolean(d.districtType || area || source.layer !== 'county');
   return {
-    status: 'gis_match', code: d.code, name: d.name, label: 'Official mapped zoning', jurisdictionType: 'county',
+    status: unconfirmed ? 'jurisdiction_unconfirmed' : 'gis_match', code: d.code, name: d.name,
+    label: unconfirmed ? 'Mapped county district – jurisdiction unconfirmed' : 'Official mapped zoning',
+    jurisdictionType: unconfirmed ? 'unconfirmed' : 'county',
+    ...(unconfirmed ? { jurisdictionConfirmed: false } : {}),
     note: `Mapped from ${fromLayer} (Title 3 districts). ${verify}${areaNote}${rulesNote}${shareNote}${jNote}`,
     url: profile.zoningMapUrl, sourceUrl: source.url,
     sourceField: source.layer === 'county' ? (d.districtType ? 'type' : 'zoningtext') : source.layer === 'lamird' ? 'type' : 'Type',
