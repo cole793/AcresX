@@ -2,8 +2,8 @@
 // 2026-10-29, "option A"). The Worker always asks first. When an eligible layer fails there with a
 // network error, a timeout or a 403/429/5xx, its /api answer keeps its shape and adds
 //   fallback: { mode: 'browser', kind, input }          (src/shared/fallback.js)
-// This script wraps window.fetch for five /api routes (parcel search, zoning (Kootenai and
-// Stevens), wells, assessment, flood). When such an answer arrives it runs the
+// This script wraps window.fetch for five /api routes (parcel search, zoning, wells, assessment,
+// flood), with Kootenai and Stevens kinds for zoning and assessment. When such an answer arrives it runs the
 // known query for that kind from the user's browser and hands the page an answer in the Worker's
 // shape, so the existing render path shows it. It then labels the section
 // "Loaded directly from <agency>".
@@ -17,10 +17,11 @@
 // - One attempt per request, 12 s each, no cookies, no redirects (a redirect fails the request). If any request this kind depends on fails,
 //   the Worker's own (degraded) answer is kept.
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
-//   kootenai-assessor.js, stevens.js, stevens-cities.js, src/zoning/stevens-rules.js aliases,
-//   src/shared/polygon-coverage.js, src/shared/arcgis.js spatialParams, src/states/idaho/wells.js,
-//   src/services/flood.js). test/browser-fallback.test.js and test/stevens-zoning.test.js run both
-//   on the same recorded fixtures and check the answers match. Change both together.
+//   kootenai-assessor.js, stevens-assessor.js, stevens.js, stevens-cities.js,
+//   src/zoning/stevens-rules.js aliases, src/shared/polygon-coverage.js, src/shared/arcgis.js
+//   spatialParams, src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js).
+//   test/browser-fallback.test.js and test/stevens-zoning.test.js run both on the same recorded
+//   fixtures and check the answers match. Change both together.
 //
 // Progressive loading (public/progressive-loading.js): a section's find* fetch passes its
 // AbortSignal; the wrapped fetch holds the answer while the browser query runs, so the section
@@ -497,7 +498,7 @@
   }
 
   // Copy of src/shared/personal-fields.js PERSONAL_FIELD: owner, taxpayer and mailing field names.
-  const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|legalpartytype)/i;
+  const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|(first|last|middle)_name|file_as|addr_|legalpartytype)/i;
   const withoutPersonalFields = props => Object.fromEntries(Object.entries(props || {}).filter(([key]) => !PERSONAL_FIELD.test(key)));
 
   // ---- 2. IDWR wells (copy of src/states/idaho/wells.js)
@@ -593,6 +594,126 @@
     return { available: false, ...base, countyRecords: [], note: 'No Kootenai County Assessor record matched this parcel number.' };
   }
 
+  // ---- 3b. Stevens assessor (copy of src/counties/stevens-assessor.js and the Stevens branch of
+  // src/services/property-tax-test.js). One layer, one request.
+
+  const STEVENS_ASSESSOR = 'https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0';
+  const STEVENS_ASSESSOR_SOURCE = 'Stevens County Assessor (RealPropertyParcels_Public)';
+  // Never add file_as_na, last_name, first_name, owner_id or addr_*: the owner's name and mailing address.
+  const STEVENS_ASSESSOR_FIELDS = 'PARCELN,prop_id,year,property_u,Ag_Sched,legal_acre,tax_area_n,market_lan,assessed_l,improvemen,market_1,appraised_,taxable_va,Propertyinformation';
+  // The county's property search (hosted by True Automation): exactly this host and path, a
+  // numeric prop_id equal to the record's, returned as https; anything else is dropped.
+  function stevensPropertySearchUrl(value, propertyId) {
+    let url;
+    try { url = new URL(String(value ?? '').trim()); } catch { return null; }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (url.hostname !== 'propertysearch.trueautomation.com' || url.port || url.username || url.password) return null;
+    if (url.pathname !== '/PropertyAccess/Property.aspx') return null;
+    // Only cid, year and prop_id, each at most once and all digits; prop_id is required and must be
+    // the record's. The link is rebuilt from those three, so nothing else (e.g. redirect=) survives.
+    const kept = [];
+    if ([...url.searchParams.keys()].some(k => !['cid', 'year', 'prop_id'].includes(k))) return null;
+    for (const k of ['cid', 'year', 'prop_id']) {
+      const v = url.searchParams.getAll(k);
+      if (v.length > 1 || (v.length === 1 && !/^\d+$/.test(v[0]))) return null;
+      if (v.length) kept.push([k, v[0]]);
+    }
+    const propId = url.searchParams.get('prop_id');
+    if (propId == null || propertyId == null || Number(propId) !== Number(propertyId)) return null;
+    return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
+  }
+  const WA_LAND_USE_CODES = Object.freeze({
+    11: 'Household, single family units', 12: 'Household, 2-4 units', 13: 'Household, multiunits (5 or more)',
+    14: 'Residential condominiums', 15: 'Mobile home parks or courts', 16: 'Hotels/motels', 17: 'Institutional lodging',
+    18: 'All other residential not elsewhere coded', 19: 'Vacation and cabin',
+    21: 'Food and kindred products', 22: 'Textile mill products', 23: 'Apparel and other finished products made from fabrics, leather, and similar materials',
+    24: 'Lumber and wood products (except furniture)', 25: 'Furniture and fixtures', 26: 'Paper and allied products', 27: 'Printing and publishing',
+    28: 'Chemicals', 29: 'Petroleum refining and related industries', 30: 'Rubber and miscellaneous plastic products', 31: 'Leather and leather products',
+    32: 'Stone, clay and glass products', 33: 'Primary metal industries', 34: 'Fabricated metal products',
+    35: 'Professional, scientific, and controlling instruments; photographic and optical goods; watches and clocks-manufacturing',
+    39: 'Miscellaneous manufacturing',
+    41: 'Railroad/transit transportation', 42: 'Motor vehicle transportation', 43: 'Aircraft transportation', 44: 'Marine craft transportation',
+    45: 'Highway and street right of way', 46: 'Automobile parking', 47: 'Communication', 48: 'Utilities',
+    49: 'Other transportation, communication, and utilities not classified elsewhere',
+    50: 'Condominiums - Other than residential condominiums', 51: 'Wholesale trade', 52: 'Retail trade - Building materials, hardware, and farm equipment',
+    53: 'Retail trade - General merchandise', 54: 'Retail trade - Food', 55: 'Retail trade - Automotive, marine craft, aircraft, and accessories',
+    56: 'Retail trade - Apparel and accessories', 57: 'Retail trade - Furniture, home furnishings and equipment', 58: 'Retail trade - Eating and drinking',
+    59: 'Other retail trade services',
+    61: 'Finance, insurance, and real estate services', 62: 'Personal services', 63: 'Business services', 64: 'Repair services',
+    65: 'Professional services', 66: 'Contract construction services', 67: 'Governmental services', 68: 'Educational services', 69: 'Miscellaneous services',
+    71: 'Cultural activities and nature exhibitions', 72: 'Public assembly', 73: 'Amusements', 74: 'Recreational activities',
+    75: 'Resorts and group camps', 76: 'Parks', 79: 'Other cultural, entertainment, and recreational',
+    81: 'Agriculture (not classified under current use law)', 82: 'Agriculture related activities',
+    83: 'Agriculture classified under current use chapter 84.34 RCW', 84: 'Fishing activities and related services',
+    85: 'Mining activities and related services', 86: 'Cannabis grow operations', 88: 'Designated forest land under chapter 84.33 RCW',
+    89: 'Other resource production',
+    91: 'Undeveloped land', 92: 'Noncommercial forest', 93: 'Water areas', 94: 'Open space land classified under chapter 84.34 RCW',
+    95: 'Timberland classified under chapter 84.34 RCW', 99: 'Other undeveloped land'
+  });
+  const CURRENT_USE_PROGRAMS = Object.freeze({
+    83: 'Current use: agriculture (RCW 84.34)',
+    88: 'Designated forest land (RCW 84.33)',
+    94: 'Current use: open space (RCW 84.34)',
+    95: 'Current use: timberland (RCW 84.34)'
+  });
+  function normalizeStevensParcelId(parcelId) {
+    let id = String(parcelId ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (/^\d{10}$/.test(id) && id.startsWith('065')) id = id.slice(3);
+    if (/^\d{1,6}$/.test(id)) id = id.padStart(7, '0');
+    return /^\d{7}$/.test(id) ? id : null;
+  }
+  function stevensCurrentUse(code, landValue, marketLandValue) {
+    const program = code != null ? CURRENT_USE_PROGRAMS[Number(code)] || null : null;
+    if (program) return { status: 'classified', program };
+    if (landValue != null && marketLandValue != null && landValue < marketLandValue) {
+      return { status: 'reduced_land_value', program: null, note: 'Land is assessed below market value, which usually means part of it is in a current-use or forest program. Verify with the assessor.' };
+    }
+    if (code == null && landValue == null) return { status: null, program: null };
+    return { status: 'not_classified', program: null };
+  }
+  function mapStevensAssessorRecord(raw = {}) {
+    const attrs = withoutPersonalFields(raw);
+    const code = strOrNull(attrs.property_u);
+    const values = {
+      landValue: numOrNull(attrs.assessed_l), improvementValue: numOrNull(attrs.improvemen), totalValue: numOrNull(attrs.appraised_),
+      taxableValue: numOrNull(attrs.taxable_va), marketLandValue: numOrNull(attrs.market_lan), marketValue: numOrNull(attrs.market_1)
+    };
+    const valued = Object.values(values).some(v => v != null && v !== 0);
+    if (!valued) for (const k of Object.keys(values)) values[k] = null;
+    if (values.totalValue == null && (values.landValue != null || values.improvementValue != null)) values.totalValue = (values.landValue || 0) + (values.improvementValue || 0);
+    const propertyId = numOrNull(attrs.prop_id);
+    return {
+      parcelNumber: strOrNull(attrs.PARCELN), propertyId,
+      propertySearchUrl: stevensPropertySearchUrl(attrs.Propertyinformation, propertyId),
+      ...values,
+      netValue: values.taxableValue,
+      taxYear: numOrNull(attrs.year),
+      assessorAcres: numOrNull(attrs.legal_acre),
+      taxCodeArea: strOrNull(attrs.tax_area_n),
+      propertyClass: code, propertyClassDescription: code ? WA_LAND_USE_CODES[Number(code)] || null : null,
+      propertyClassNote: 'Tax category, not zoning',
+      landSchedule: strOrNull(attrs.Ag_Sched),
+      currentUse: stevensCurrentUse(code, values.landValue, values.marketLandValue),
+      ...(valued ? {} : { valuesNote: 'The assessor record for this parcel carries no values. Check with the Stevens County Assessor.' })
+    };
+  }
+  function stevensBestRow(features) {
+    const rows = features.map(f => f?.attributes || {});
+    return rows.find(r => r.year != null && r.appraised_ != null) || rows.find(r => r.appraised_ != null || r.market_1 != null) || rows[0];
+  }
+
+  async function stevensAssessor(input, signal) {
+    const parcelId = parcelIdOf(input);
+    if (!parcelId) throw new Error('AcresX fallback: parcel number required');
+    const base = { state: 'WA', county: 'Stevens', parcelId, countySource: STEVENS_ASSESSOR_SOURCE, countySourceUrl: STEVENS_ASSESSOR };
+    const miss = { available: false, ...base, countyRecords: [], note: 'No Stevens County Assessor record matched this parcel number.' };
+    const id = normalizeStevensParcelId(parcelId);
+    if (!id) return miss;
+    const features = await arcgisFeatures(STEVENS_ASSESSOR, { where: `PARCELN='${id}'`, outFields: STEVENS_ASSESSOR_FIELDS, returnGeometry: 'false', resultRecordCount: '10' }, { agency: 'Stevens County Assessor', signal });
+    if (!features.length) return miss;
+    return { available: true, ...base, countyRecords: [mapStevensAssessorRecord(stevensBestRow(features))] };
+  }
+
   // ---- 4. FEMA NFHL flood (copy of src/services/flood.js, FEMA path only)
 
   const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
@@ -661,15 +782,89 @@
     return { available: true, intersects: rows.length > 0, high: rows.some(isSfha), zones, zoneDetails: zoneDetails(rows), category: floodCategory(rows) };
   }
 
+  // Stevens County, WA digitized FEMA FIRM (copy of src/counties/stevens-flood.js). The county
+  // server sends CORS headers. Asked, like the Worker does, when FEMA has no mapped zone for a
+  // parcel in the bbox or FEMA failed in the browser too.
+  const STEVENS_FLOOD_LAYER = 'https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19';
+  const STEVENS_FLOOD_PROVIDER = 'Stevens County digitized FEMA FIRM';
+  const STEVENS_FLOOD_LABEL = 'Stevens County digitized FEMA FIRM (paper map copy, not a FEMA digital map)';
+  const STEVENS_FLOOD_NOTE = 'FEMA has no digital flood map (NFHL) for Stevens County. This is the county\'s copy of FEMA\'s 1998 Q3 flood data, digitized from the paper FIRM. Verify with Stevens County or FEMA.';
+  const STEVENS_FLOOD_BBOX = { xmin: -118.43, ymin: 47.75, xmax: -117.35, ymax: 49.05 };
+  function inStevensBbox(rings) {
+    let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity;
+    for (const ring of rings) for (const [x, y] of ring) { xmin = Math.min(xmin, x); ymin = Math.min(ymin, y); xmax = Math.max(xmax, x); ymax = Math.max(ymax, y); }
+    const b = STEVENS_FLOOD_BBOX;
+    return Number.isFinite(xmin) && xmax >= b.xmin && xmin <= b.xmax && ymax >= b.ymin && ymin <= b.ymax;
+  }
+  function stevensFloodRow(a) {
+    const zone = trimmed(a?.zone_).toUpperCase(), sfha = trimmed(a?.sfha).toUpperCase(), floodway = trimmed(a?.floodway).toUpperCase() === 'FW';
+    if (zone === 'A' || zone === 'AE') return { FLD_ZONE: zone, ZONE_SUBTY: floodway ? 'FLOODWAY' : null, SFHA_TF: 'T' };
+    if (zone === 'X500') return { FLD_ZONE: 'X', ZONE_SUBTY: '0.2 PCT ANNUAL CHANCE FLOOD HAZARD', SFHA_TF: 'F' };
+    if (zone === 'X') return { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' };
+    if (zone === 'ANI') return { FLD_ZONE: 'AREA NOT INCLUDED', ZONE_SUBTY: null, SFHA_TF: 'F' };
+    return { FLD_ZONE: zone || null, ZONE_SUBTY: null, SFHA_TF: sfha === 'IN' ? 'T' : sfha === 'OUT' ? 'F' : null };
+  }
+  // A/AE share of the parcel and the partial-coverage note (copy of stevensHighShare and
+  // stevensEdgeNote in src/counties/stevens-flood.js).
+  function stevensHighShare(parcelRings, features) {
+    const high = features.filter(f => ['A', 'AE'].includes(trimmed(f?.attributes?.zone_).toUpperCase()));
+    if (!high.length) return null;
+    const zones = high.map(f => ringsFromGeometry(f?.geometry));
+    const parcel = ringsFromGeometry({ rings: parcelRings });
+    if (!parcel || zones.some(r => !r)) return null;
+    const samples = samplePoints(parcel);
+    return samples.filter(([x, y]) => zones.some(r => pointInRings(x, y, r))).length / samples.length;
+  }
+  function stevensEdgeNote(share) {
+    if (share === null || share === undefined || !(share < 0.95)) return '';
+    const amount = share < 0.005 ? 'under 1%' : `about ${Math.round(share * 100)}%`;
+    return `The county's 1998 map copy was digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers ${amount} of the parcel. A survey or FEMA elevation certificate is needed to confirm.`;
+  }
+  async function stevensFlood(rings, signal) {
+    const data = await request(`${STEVENS_FLOOD_LAYER}/query`, {
+      f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
+      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'zone_,sfha,floodway,firm_panel', resultRecordCount: '100',
+      returnGeometry: 'true', outSR: '4326', maxAllowableOffset: '0.00001', geometryPrecision: '6'
+    }, { agency: 'Stevens County GIS', signal });
+    const features = data?.features || [];
+    const countyRows = features.map(f => f?.attributes || {});
+    if (!countyRows.length) return null;
+    const share = stevensHighShare(rings, features);
+    const edgeNote = stevensEdgeNote(share);
+    const source = {
+      provider: STEVENS_FLOOD_PROVIDER, url: STEVENS_FLOOD_LAYER, label: STEVENS_FLOOD_LABEL, coverage: 'paper-firm-copy', digitalFemaMap: false, mapDate: '1998',
+      countyZones: [...new Set(countyRows.map(a => trimmed(a.zone_)).filter(Boolean))],
+      firmPanels: [...new Set(countyRows.map(a => trimmed(a.firm_panel)).filter(Boolean))],
+      note: STEVENS_FLOOD_NOTE,
+      ...(share === null ? {} : { floodZoneShare: Math.round(share * 1000) / 1000 }),
+      ...(edgeNote ? { edgeNote } : {})
+    };
+    return { ...summarizeFloodRows(countyRows.map(stevensFloodRow)), source };
+  }
+
+  // FEMA first. For a parcel in the Stevens bbox, the county layer when FEMA answered not_mapped
+  // or failed; a county failure (or no county rows) keeps FEMA's answer, or FEMA's error.
   async function femaFlood(input, signal) {
     const geometry = geometryOf(input, true);
     const rings = geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat();
-    const data = await request(`${FEMA_NFHL_FLOOD_LAYER}/query`, {
-      f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
-      inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'FLD_ZONE,ZONE_SUBTY,SFHA_TF', returnGeometry: 'false', resultRecordCount: '100'
-    }, { agency: FEMA_PROVIDER, signal });
-    const rows = (data?.features || []).map(f => f?.attributes || {});
-    return { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
+    let fema = null, femaError = null;
+    try {
+      const data = await request(`${FEMA_NFHL_FLOOD_LAYER}/query`, {
+        f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
+        inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'FLD_ZONE,ZONE_SUBTY,SFHA_TF', returnGeometry: 'false', resultRecordCount: '100'
+      }, { agency: FEMA_PROVIDER, signal });
+      const rows = (data?.features || []).map(f => f?.attributes || {});
+      fema = { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
+    } catch (error) { femaError = error; }
+    if (!inStevensBbox(rings) || (fema && fema.category !== 'not_mapped')) {
+      if (fema) return fema;
+      throw femaError;
+    }
+    let county = null;
+    try { county = await stevensFlood(rings, signal); } catch (error) { if (!fema) throw femaError; }
+    if (county) return county;
+    if (fema) return fema;
+    throw femaError;
   }
 
   // ---- 5. Stevens County zoning (copy of src/counties/stevens.js, stevens-cities.js and the
@@ -949,7 +1144,8 @@
     'kootenai-zoning': { api: '/api/zoning-permits', run: kootenaiZoning, agency: body => body?.source?.agency || KC_AGENCY, targets: ['zoningNote'] },
     'idaho-wells': { api: '/api/well-search', run: idahoWells, agency: () => 'Idaho Department of Water Resources', targets: ['wellNote'] },
     'kootenai-assessor': { api: '/api/property-assessment', run: kootenaiAssessor, agency: () => 'Kootenai County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
-    'fema-flood': { api: '/api/hazards', run: femaFlood, agency: () => 'FEMA (National Flood Hazard Layer)', targets: ['overviewFlood'] },
+    'stevens-assessor': { api: '/api/property-assessment', run: stevensAssessor, agency: () => 'Stevens County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
+    'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] },
     'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] }
   };
 

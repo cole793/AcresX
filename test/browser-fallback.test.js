@@ -26,8 +26,9 @@ const ESRI = 'https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis/rest/services
 const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov'];
 
 // Owner names and mailing addresses in the layers this module reads (Kootenai parcel `Name`,
-// assessor *_Primary / Recipient / mailing fields, IDWR `Owner`, Idaho statewide OWNER*/MAIL_*).
-const PERSONAL = /^(owner\w*|name|\w*name_primary|recipient_\w*|attentionline_\w*|deliveryaddr_\w*|lastline_\w*|(city|state|postalcd|country)_primary|mail\w*|public_std)$/i;
+// assessor *_Primary / Recipient / mailing fields, IDWR `Owner`, Idaho statewide OWNER*/MAIL_*,
+// Stevens assessor file_as_na / last_name / first_name / owner_id / addr_*).
+const PERSONAL = /^(owner\w*|name|\w*name_primary|recipient_\w*|attentionline_\w*|deliveryaddr_\w*|lastline_\w*|(city|state|postalcd|country)_primary|mail\w*|public_std|file_as\w*|(first|last)_name|addr_\w*)$/i;
 
 // A recording fetch. handler({ base, params, n }) returns a body, a Response, or throws.
 function recorder(handler) {
@@ -112,7 +113,7 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'fema-flood', 'stevens-zoning']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'fema-flood', 'stevens-zoning']);
   assert.equal(typeof fb.run, 'function');
   assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
 });
@@ -359,6 +360,82 @@ test('kootenai-assessor: a failing layer with no hit keeps the Worker answer; a 
   assert.ok(b.calls.length <= 4, `at most 4 layers in flight, none sent after the hit (sent ${b.calls.length})`);
 });
 
+// ---- 3b. Stevens assessor
+
+const STEVENS = 'https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query';
+const recordedStevens = fixture('stevens-assessor.json').answers;
+const stevensAnswers = id => ({ base, params }) => {
+  if (base !== STEVENS) throw new Error(`unexpected ${base}`);
+  const asked = /PARCELN='(\d+)'/.exec(params.get('where'))?.[1];
+  return asked === id ? recordedStevens[id] : recordedStevens.miss;
+};
+
+test('stevens-assessor parity: recorded hits map to the Worker\'s record (current use, several rows, no values)', async () => {
+  for (const id of ['2342700', '0231200', '2148112', '8974701']) {
+    const w = recorder(stevensAnswers(id));
+    const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: id }, w.fetch);
+    assert.equal(expected.body.available, true, id);
+    const b = recorder(stevensAnswers(id));
+    const { api: fb } = browser(b.fetch);
+    assert.deepEqual(plain(await fb.run('stevens-assessor', { parcelId: id })), expected.body, id);
+    assert.equal(b.calls.length, 1);
+    for (const key of ['where', 'outFields', 'returnGeometry', 'resultRecordCount']) assert.equal(b.calls[0].params.get(key), w.calls[0].params.get(key), `${id} ${key}`);
+    assertSafe(b.calls);
+  }
+});
+
+test('stevens-assessor parity: no record, a typed short number, and a number that cannot be Stevens', async () => {
+  const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: '9999999' }, recorder(stevensAnswers('none')).fetch);
+  const { api: fb } = browser(recorder(stevensAnswers('none')).fetch);
+  assert.deepEqual(plain(await fb.run('stevens-assessor', { parcelId: '9999999' })), expected.body);
+  const b = recorder(stevensAnswers('0231200'));
+  const { api: fb2 } = browser(b.fetch);
+  assert.equal((await fb2.run('stevens-assessor', { parcelId: '231200' })).countyRecords[0].parcelNumber, '0231200');
+  assert.equal(b.calls[0].params.get('where'), "PARCELN='0231200'");
+  const none = recorder(() => { throw new Error('must not be sent'); });
+  const { api: fb3 } = browser(none.fetch);
+  assert.equal((await fb3.run('stevens-assessor', { parcelId: 'RR ROW' })).available, false);
+  assert.equal(none.calls.length, 0);
+});
+
+test('stevens-assessor: a failure in the browser too keeps the Worker answer; owner fields sent anyway are dropped', async () => {
+  const { api: fb } = browser(blocked(503).fetch);
+  await assert.rejects(fb.run('stevens-assessor', { parcelId: '0231200' }), /Stevens County Assessor returned 503/);
+  const all = fixture('stevens-assessor-0231200-all-fields.json');
+  const { api: fb2 } = browser(recorder(() => all).fetch);
+  const body = plain(await fb2.run('stevens-assessor', { parcelId: '0231200' }));
+  assert.equal(body.countyRecords[0].parcelNumber, '0231200');
+  assert.doesNotMatch(JSON.stringify(body), /PLACEHOLDER/);
+});
+
+test('stevens-assessor: the property search link follows the Worker rule in the browser copy too', async () => {
+  const base = recordedStevens['0231200'].features[0].attributes;
+  const url = base.Propertyinformation;
+  const cases = [
+    [url, 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056'], // accepted, upgraded
+    [url.replace('propertysearch.trueautomation.com', 'evil.example'), null], // different host
+    [url.replace('/PropertyAccess/Property.aspx', '/PropertyAccess/Other.aspx'), null], // different path
+    [url.replace('prop_id=13056', 'prop_id=40770'), null], // prop_id mismatch
+    // Lookalike hosts: a loosened host check (endsWith / includes) accepts these.
+    [url.replace('propertysearch.trueautomation.com', 'evil-trueautomation.com'), null],
+    [url.replace('propertysearch.trueautomation.com', 'propertysearch.trueautomation.com.evil.com'), null],
+    // Only cid, year and prop_id, all numeric; the link is rebuilt from them.
+    [`${url}&redirect=//evil.com`, null],
+    [url.replace('cid=0', 'cid=x'), null],
+    [url.replace('year=2026', 'year=2026a'), null],
+    [`${url}&year=2025`, null],
+    [`${url.replace('cid=0&year=2026&prop_id=13056', 'prop_id=13056&year=2026&cid=0')}#frag`, 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=13056']
+  ];
+  for (const [sent, want] of cases) {
+    const answer = () => ({ features: [{ attributes: { ...base, Propertyinformation: sent } }] });
+    const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: '0231200' }, recorder(answer).fetch);
+    const { api: fb } = browser(recorder(answer).fetch);
+    const body = plain(await fb.run('stevens-assessor', { parcelId: '0231200' }));
+    assert.equal(body.countyRecords[0].propertySearchUrl, want, sent);
+    assert.deepEqual(body, expected.body, sent);
+  }
+});
+
 // ---- 4. FEMA flood
 
 const floodGeometry = { type: 'Polygon', coordinates: [[[-116.8, 47.7], [-116.79, 47.7], [-116.79, 47.71], [-116.8, 47.71], [-116.8, 47.7]]] };
@@ -386,6 +463,77 @@ for (const [i, rows] of floodRows.entries()) {
     });
   }
 }
+
+// Stevens County, WA: FEMA has no panels, so both sides ask the county's digitized FIRM
+// (src/counties/stevens-flood.js; recorded answers in fixtures/stevens-flood.json).
+const STEVENS_FLOOD = 'https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19/query';
+const stevens = fixture('stevens-flood.json').cases;
+
+for (const [name, c] of Object.entries(stevens)) {
+  test(`fema-flood parity, Stevens ${name}: FEMA empty, the browser asks the county layer and matches the Worker`, async () => {
+    const answer = ({ base }) => (base === STEVENS_FLOOD ? c.response : { features: [] });
+    const w = recorder(answer);
+    const expected = await apiJson('/api/hazards', { kind: 'flood', geometry: c.geometry }, w.fetch);
+    assert.equal(expected.body.source.provider, 'Stevens County digitized FEMA FIRM');
+    const b = recorder(answer);
+    const { api: fb } = browser(b.fetch);
+    assert.deepEqual(plain(await fb.run('fema-flood', { geometry: c.geometry })), expected.body);
+    assert.deepEqual(b.calls.map(call => call.base), [FEMA, STEVENS_FLOOD]);
+    for (const p of ['outFields', 'geometry', 'geometryType', 'where', 'spatialRel', 'inSR', 'returnGeometry', 'resultRecordCount']) assert.equal(b.calls[1].params.get(p), w.calls[1].params.get(p), p);
+    assertSafe(b.calls);
+    assert.deepEqual(plain(fb.loaded()), { 'fema-flood': 'Stevens County GIS' });
+  });
+}
+
+test('fema-flood, Stevens: a county failure in the browser keeps FEMA\'s answer; FEMA failing too keeps the Worker answer', async () => {
+  const b = recorder(({ base }) => (base === STEVENS_FLOOD ? new Response('down', { status: 503 }) : { features: [] }));
+  const { api: fb } = browser(b.fetch);
+  const body = plain(await fb.run('fema-flood', { geometry: stevens.ae.geometry }));
+  assert.equal(body.category, 'not_mapped');
+  assert.equal(body.source.provider, 'FEMA NFHL');
+  const down = recorder(() => new Response('down', { status: 503 }));
+  const { api: fb2 } = browser(down.fetch);
+  await assert.rejects(fb2.run('fema-flood', { geometry: stevens.ae.geometry }), /FEMA NFHL returned 503/);
+  assert.deepEqual(down.calls.map(call => call.base), [FEMA, STEVENS_FLOOD]);
+});
+
+test('fema-flood, Stevens: FEMA failing in the browser still lets the county layer answer', async () => {
+  const b = recorder(({ base }) => (base === STEVENS_FLOOD ? stevens.ae.response : new Response('Forbidden', { status: 403 })));
+  const { api: fb } = browser(b.fetch);
+  const body = plain(await fb.run('fema-flood', { geometry: stevens.ae.geometry }));
+  assert.equal(body.category, 'high');
+  assert.equal(body.source.digitalFemaMap, false);
+  // The partial A/AE note is sampled in the browser too (same grid as the Worker).
+  assert.equal(body.source.floodZoneShare, 0.099);
+  assert.match(body.source.edgeNote, /digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers about 10% of the parcel\. A survey or FEMA elevation certificate is needed to confirm\.$/);
+  assert.equal(b.calls.find(c => c.base === STEVENS_FLOOD).params.get('returnGeometry'), 'true');
+});
+
+test('fema-flood outside Stevens: the browser never asks the county layer', async () => {
+  for (const rows of [{ features: [] }, { features: [{ attributes: { FLD_ZONE: 'AREA NOT INCLUDED' } }] }]) {
+    const b = recorder(() => rows);
+    const { api: fb } = browser(b.fetch);
+    assert.equal((await fb.run('fema-flood', { geometry: floodGeometry })).category, 'not_mapped');
+    assert.deepEqual(b.calls.map(call => call.base), [FEMA]);
+  }
+  const down = recorder(() => new Response('down', { status: 503 }));
+  const { api: fb } = browser(down.fetch);
+  await assert.rejects(fb.run('fema-flood', { geometry: floodGeometry }), /FEMA NFHL returned 503/);
+  assert.deepEqual(down.calls.map(call => call.base), [FEMA]);
+});
+
+test('end to end, Stevens: Worker FEMA 403 + Esri empty + county 503 -> hint -> the browser gives the healthy Worker answer', async () => {
+  const c = stevens.ae;
+  const healthy = plain((await apiJson('/api/hazards', { kind: 'flood', geometry: c.geometry }, recorder(({ base }) => (base === STEVENS_FLOOD ? c.response : { features: [] })).fetch)).body);
+  const failed = await api('/api/hazards', { kind: 'flood', geometry: c.geometry }, recorder(({ base }) => (base === ESRI ? { features: [] } : new Response('down', { status: base === FEMA ? 403 : 503 }))).fetch);
+  assert.equal((await failed.clone().json()).fallback?.kind, 'fema-flood');
+  const b = recorder(({ base }) => (base === STEVENS_FLOOD ? c.response : { features: [] }));
+  const { api: fb } = browser(b.fetch);
+  const recovered = await fb.recover('/api/hazards', failed);
+  assert.deepEqual(await recovered.json(), healthy);
+  assert.equal(healthy.category, 'high');
+  assertSafe(b.calls);
+});
 
 // ---- The whole loop: Worker blocked -> hint -> browser -> the Worker's normal answer
 

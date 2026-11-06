@@ -20,6 +20,7 @@ export const FALLBACK_KINDS = Object.freeze({
   kootenaiZoning: 'kootenai-zoning',
   idahoWells: 'idaho-wells',
   kootenaiAssessor: 'kootenai-assessor',
+  stevensAssessor: 'stevens-assessor',
   femaFlood: 'fema-flood',
   stevensZoning: 'stevens-zoning'
 });

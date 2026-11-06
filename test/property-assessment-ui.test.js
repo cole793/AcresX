@@ -55,7 +55,7 @@ function page() {
     prompt: () => 'Test property',
     open: () => ({ document: { write: html => opened.push(html), close() {} } })
   };
-  const context = vm.createContext({ window, document, console, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
+  const context = vm.createContext({ window, document, console, URL, URLSearchParams, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
   vm.runInContext(assessmentSource, context);
   vm.runInContext(reportSource, context);
   const fact = id => document.getElementById(id)?.textContent;
@@ -146,4 +146,86 @@ test('report: other counties keep the four-column identity row with no assessor 
   assert.match(html, /<div class="identity">/);
   assert.ok(!html.includes('Assessor Class'));
   assert.match(html, /<span>Assessed Value<\/span><strong>\$120,000<\/strong>/);
+});
+
+// ---- Stevens County WA (src/counties/stevens-assessor.js): same countyRecords shape as Kootenai.
+
+// The API's answer for 2342700 (test/fixtures/stevens-assessor.json, see test/stevens-assessor.test.js).
+const stevens = {
+  available: true, state: 'WA', county: 'Stevens', parcelId: '2342700', countySource: 'Stevens County Assessor (RealPropertyParcels_Public)',
+  countyRecords: [{
+    parcelNumber: '2342700', propertyId: 43102, landValue: 12794, improvementValue: 14000, totalValue: 26794, taxableValue: 26794,
+    marketLandValue: 336000, marketValue: 350000, netValue: 26794, taxYear: 2026, assessorAcres: 280, taxCodeArea: '021-115',
+    propertyClass: '88', propertyClassDescription: 'Designated forest land under chapter 84.33 RCW', propertyClassNote: 'Tax category, not zoning',
+    landSchedule: '88-DFL', currentUse: { status: 'classified', program: 'Designated forest land (RCW 84.33)' }
+  }]
+};
+
+test('overview: Stevens fills assessed, land and year, the land use code as a tax category, market value and current use', () => {
+  const { A, fact, document } = page();
+  A.renderAssessment(A.normalize(stevens));
+  assert.equal(fact('overviewAssessorValue'), '$26,794');
+  assert.equal(fact('overviewLandValue'), '$12,794');
+  assert.equal(fact('overviewAssessmentYear'), '2026');
+  assert.equal(fact('overviewAssessorClass'), '88 – Designated forest land under chapter 84.33 RCW');
+  assert.equal(document.getElementById('overviewAssessorClassWrap').querySelector('small.assessor-class-note').textContent, 'Tax category, not zoning');
+  assert.equal(document.getElementById('propertyAssessmentSource').innerHTML,
+    '<strong>Assessment source:</strong> Stevens County Assessor · Improvements $14,000 · Net taxable $26,794 · Market value $350,000 · Designated forest land (RCW 84.33). Assessor values are informational and are not the current tax bill.');
+});
+
+test('overview: a Stevens record with no values shows "Not available" and the note, never $0', () => {
+  const { A, fact, document } = page();
+  const empty = { ...stevens, countyRecords: [{ ...stevens.countyRecords[0], landValue: null, improvementValue: null, totalValue: null, taxableValue: null, marketLandValue: null, marketValue: null, netValue: null, propertyClass: '99', propertyClassDescription: 'Other undeveloped land', currentUse: { status: 'not_classified', program: null }, valuesNote: 'The assessor record for this parcel carries no values. Check with the Stevens County Assessor.' }] };
+  A.renderAssessment(A.normalize(empty));
+  assert.equal(fact('overviewAssessorValue'), 'Not available');
+  assert.equal(fact('overviewLandValue'), 'Not available');
+  assert.equal(fact('overviewAssessorClass'), '99 – Other undeveloped land');
+  const source = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.ok(!source.includes('$0'), source);
+  assert.match(source, /Not in a current-use program\. The assessor record for this parcel carries no values\./);
+});
+
+const SEARCH_URL = 'https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&year=2026&prop_id=43102';
+const withLink = url => ({ ...stevens, countyRecords: [{ ...stevens.countyRecords[0], propertySearchUrl: url }] });
+
+test('overview: Stevens shows the property search link after the source line, opening with rel="noopener"', () => {
+  const { A, document } = page();
+  A.renderAssessment(A.normalize(withLink(SEARCH_URL)));
+  const html = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.ok(html.endsWith(' Assessor values are informational and are not the current tax bill. <a href="https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?cid=0&amp;year=2026&amp;prop_id=43102" target="_blank" rel="noopener">View on the Stevens County property search (hosted by True Automation) ↗</a>'), html);
+});
+
+test('overview: the page checks the link again; another host, path, prop_id or http is not shown', () => {
+  const { A, document } = page();
+  for (const url of [
+    SEARCH_URL.replace('propertysearch.trueautomation.com', 'evil.example'),
+    SEARCH_URL.replace('/PropertyAccess/Property.aspx', '/PropertyAccess/Other.aspx'),
+    SEARCH_URL.replace('prop_id=43102', 'prop_id=13056'),
+    SEARCH_URL.replace('https:', 'http:'),
+    'javascript:alert(1)',
+    // Lookalike hosts: a loosened host check (endsWith / includes) shows these.
+    SEARCH_URL.replace('propertysearch.trueautomation.com', 'evil-trueautomation.com'),
+    SEARCH_URL.replace('propertysearch.trueautomation.com', 'propertysearch.trueautomation.com.evil.com'),
+    // Only cid, year and prop_id, all numeric.
+    `${SEARCH_URL}&redirect=//evil.com`,
+    SEARCH_URL.replace('cid=0', 'cid=x'),
+    SEARCH_URL.replace('year=2026', 'year=2026a'),
+    `${SEARCH_URL}&cid=1`
+  ]) {
+    A.renderAssessment(A.normalize(withLink(url)));
+    assert.ok(!document.getElementById('propertyAssessmentSource').innerHTML.includes('<a '), url);
+  }
+});
+
+test('overview: the shown link is rebuilt from cid, year and prop_id only', () => {
+  const { A, document } = page();
+  A.renderAssessment(A.normalize(withLink('https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?prop_id=43102&year=2026&cid=0#frag')));
+  assert.match(document.getElementById('propertyAssessmentSource').innerHTML, /<a href="https:\/\/propertysearch\.trueautomation\.com\/PropertyAccess\/Property\.aspx\?cid=0&amp;year=2026&amp;prop_id=43102" target="_blank" rel="noopener">/);
+});
+
+test('report: Stevens shows the assessor class next to zoning and the assessed value', () => {
+  const { report } = page();
+  const html = report({ parcel: { type: 'Feature', properties: { ORIG_PARCEL_ID: '2342700' }, geometry: null }, propertyAssessment: stevens, zoningPermits: { zoning: { code: 'AR-10' } } });
+  assert.match(html, /<span>Zoning<\/span><strong>AR-10<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>88 – Designated forest land under chapter 84.33 RCW<\/strong><small>Tax category, not zoning<\/small>/);
+  assert.match(html, /<span>Assessed Value<\/span><strong>\$26,794<\/strong><\/div><div><span>Land Value<\/span><strong>\$12,794<\/strong>/);
 });
