@@ -462,6 +462,77 @@ for (const [i, rows] of floodRows.entries()) {
   }
 }
 
+// Stevens County, WA: FEMA has no panels, so both sides ask the county's digitized FIRM
+// (src/counties/stevens-flood.js; recorded answers in fixtures/stevens-flood.json).
+const STEVENS_FLOOD = 'https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19/query';
+const stevens = fixture('stevens-flood.json').cases;
+
+for (const [name, c] of Object.entries(stevens)) {
+  test(`fema-flood parity, Stevens ${name}: FEMA empty, the browser asks the county layer and matches the Worker`, async () => {
+    const answer = ({ base }) => (base === STEVENS_FLOOD ? c.response : { features: [] });
+    const w = recorder(answer);
+    const expected = await apiJson('/api/hazards', { kind: 'flood', geometry: c.geometry }, w.fetch);
+    assert.equal(expected.body.source.provider, 'Stevens County digitized FEMA FIRM');
+    const b = recorder(answer);
+    const { api: fb } = browser(b.fetch);
+    assert.deepEqual(plain(await fb.run('fema-flood', { geometry: c.geometry })), expected.body);
+    assert.deepEqual(b.calls.map(call => call.base), [FEMA, STEVENS_FLOOD]);
+    for (const p of ['outFields', 'geometry', 'geometryType', 'where', 'spatialRel', 'inSR', 'returnGeometry', 'resultRecordCount']) assert.equal(b.calls[1].params.get(p), w.calls[1].params.get(p), p);
+    assertSafe(b.calls);
+    assert.deepEqual(plain(fb.loaded()), { 'fema-flood': 'Stevens County GIS' });
+  });
+}
+
+test('fema-flood, Stevens: a county failure in the browser keeps FEMA\'s answer; FEMA failing too keeps the Worker answer', async () => {
+  const b = recorder(({ base }) => (base === STEVENS_FLOOD ? new Response('down', { status: 503 }) : { features: [] }));
+  const { api: fb } = browser(b.fetch);
+  const body = plain(await fb.run('fema-flood', { geometry: stevens.ae.geometry }));
+  assert.equal(body.category, 'not_mapped');
+  assert.equal(body.source.provider, 'FEMA NFHL');
+  const down = recorder(() => new Response('down', { status: 503 }));
+  const { api: fb2 } = browser(down.fetch);
+  await assert.rejects(fb2.run('fema-flood', { geometry: stevens.ae.geometry }), /FEMA NFHL returned 503/);
+  assert.deepEqual(down.calls.map(call => call.base), [FEMA, STEVENS_FLOOD]);
+});
+
+test('fema-flood, Stevens: FEMA failing in the browser still lets the county layer answer', async () => {
+  const b = recorder(({ base }) => (base === STEVENS_FLOOD ? stevens.ae.response : new Response('Forbidden', { status: 403 })));
+  const { api: fb } = browser(b.fetch);
+  const body = plain(await fb.run('fema-flood', { geometry: stevens.ae.geometry }));
+  assert.equal(body.category, 'high');
+  assert.equal(body.source.digitalFemaMap, false);
+  // The partial A/AE note is sampled in the browser too (same grid as the Worker).
+  assert.equal(body.source.floodZoneShare, 0.099);
+  assert.match(body.source.edgeNote, /digitized at 1:24,000, so zone edges can be off by tens of metres; the flood zone covers about 10% of the parcel\. A survey or FEMA elevation certificate is needed to confirm\.$/);
+  assert.equal(b.calls.find(c => c.base === STEVENS_FLOOD).params.get('returnGeometry'), 'true');
+});
+
+test('fema-flood outside Stevens: the browser never asks the county layer', async () => {
+  for (const rows of [{ features: [] }, { features: [{ attributes: { FLD_ZONE: 'AREA NOT INCLUDED' } }] }]) {
+    const b = recorder(() => rows);
+    const { api: fb } = browser(b.fetch);
+    assert.equal((await fb.run('fema-flood', { geometry: floodGeometry })).category, 'not_mapped');
+    assert.deepEqual(b.calls.map(call => call.base), [FEMA]);
+  }
+  const down = recorder(() => new Response('down', { status: 503 }));
+  const { api: fb } = browser(down.fetch);
+  await assert.rejects(fb.run('fema-flood', { geometry: floodGeometry }), /FEMA NFHL returned 503/);
+  assert.deepEqual(down.calls.map(call => call.base), [FEMA]);
+});
+
+test('end to end, Stevens: Worker FEMA 403 + Esri empty + county 503 -> hint -> the browser gives the healthy Worker answer', async () => {
+  const c = stevens.ae;
+  const healthy = plain((await apiJson('/api/hazards', { kind: 'flood', geometry: c.geometry }, recorder(({ base }) => (base === STEVENS_FLOOD ? c.response : { features: [] })).fetch)).body);
+  const failed = await api('/api/hazards', { kind: 'flood', geometry: c.geometry }, recorder(({ base }) => (base === ESRI ? { features: [] } : new Response('down', { status: base === FEMA ? 403 : 503 }))).fetch);
+  assert.equal((await failed.clone().json()).fallback?.kind, 'fema-flood');
+  const b = recorder(({ base }) => (base === STEVENS_FLOOD ? c.response : { features: [] }));
+  const { api: fb } = browser(b.fetch);
+  const recovered = await fb.recover('/api/hazards', failed);
+  assert.deepEqual(await recovered.json(), healthy);
+  assert.equal(healthy.category, 'high');
+  assertSafe(b.calls);
+});
+
 // ---- The whole loop: Worker blocked -> hint -> browser -> the Worker's normal answer
 
 test('end to end: each kind recovers from a blocked Worker with the answer the Worker gives when it can reach the source', async () => {
