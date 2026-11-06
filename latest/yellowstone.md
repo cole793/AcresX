@@ -1,14 +1,14 @@
 # County validation: Yellowstone, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-05T21:03:19.972Z
-- Parcels: 12, with an error or mismatch: 2
-- Layer results: ok 127, unavailable 26, error 2, mismatch 0, skipped 13
+- Run: 2026-11-06T20:16:58.530Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 140, unavailable 28, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 03113520290010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 03072530104010000 | ok | ok | unavailable | ok | ok | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 03072530104010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 03103333215010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 03103233201230000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 03113517000000000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
@@ -18,7 +18,7 @@
 | 03113519316050000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 03072528309010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 03103333414250000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233202670000 | error | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
+| 03103233202670000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 
 ## Parcel details
 
@@ -50,7 +50,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Grail soils, 2 to 15 percent slopes) [feasibility=moderate, mapUnit=Grail soils, 2 to 15 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=9]
 - **Terrain**: ok. avg grade 6.8%, max 18.2% [gradePct=6.8, maxGradePct=18.2, reliefFt=324, sampleCount=9]
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Slope grid**: ok. 16 cells, avg 14.4% [cellCount=16, avgSlopePct=14.4, maxSlopePct=27.8, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 5 NWI feature(s) [intersects=true, count=5, coveragePct=2.3]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -235,19 +235,19 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings East Bi
 
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end, N3).
 
-- **Parcel**: error. HTTP 502: Montana parcel service timed out after 8s
-- **Wells**: skipped. parcel lookup failed
-- **Existing well**: skipped. parcel lookup failed
-- **Soil**: skipped. parcel lookup failed
-- **Terrain**: skipped. parcel lookup failed
-- **Slope grid**: skipped. parcel lookup failed
-- **Flood**: skipped. parcel lookup failed
-- **Wetlands**: skipped. parcel lookup failed
-- **Utility**: skipped. parcel lookup failed
-- **Power**: skipped. parcel lookup failed
-- **Zoning**: skipped. parcel lookup failed
-- **Zoning rules**: skipped. parcel lookup failed
-- **Assessment**: skipped. parcel lookup failed
-- **Listing**: skipped. parcel lookup failed
+- **Parcel**: ok. parcel 03103233202670000, 0.37 ac (mapped) [parcelId=03103233202670000, acres=0.37, address=2285 PARK RIDGE LN S, lat=45.793052, lon=-108.629537, acresSource=mapped outline]
+- **Wells**: ok. 681 well record(s), 5 of nearest 5 report depth [wellCount=681, nearestDepthsCount=5, nearestMi=0.01, medianDepthFt=79]
+- **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
+- **Soil**: ok. favorable (McRae loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 1 to 4 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3]
+- **Terrain**: ok. avg grade 1.9%, max 4.6% [gradePct=1.9, maxGradePct=4.6, reliefFt=5, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 3.6% [cellCount=16, avgSlopePct=3.6, maxSlopePct=6, partial=false]
+- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
+- **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
+- **Zoning**: ok. N3 (City of Billings) [code=N3, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable]
+- **Zoning rules**: ok. N3: Neighborhood Residential (6 uses) [code=N3, family=Neighborhood Residential, useCount=6]
+- **Assessment**: ok. assessed $737,500, no tax amount [assessedValue=737500, landValue=140610, improvementValue=596890, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.
