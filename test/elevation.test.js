@@ -1,7 +1,8 @@
 // Offline tests for batched elevation / tree-canopy sampling (src/services/elevation.js) behind
 // /api/land-analysis and /api/slope-grid. fetch is stubbed with responses recorded live on
 // 2026-10-27; no live USGS, USFS or USDA calls. Elevation source fallback (getSamples, 3DEP
-// identify, EPQS) is covered at the end of this file.
+// identify, EPQS) is covered at the end of this file. The AWS Terrain Tiles source is down in every
+// test here (a failing stub, so these cover the USGS paths); test/terrain-tiles.test.js covers it.
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,6 +13,7 @@ import {
 } from '../src/services/elevation.js';
 import { TCC_SERVICE, CANOPY_FALLBACK_MAX_POINTS, TERRAIN_CACHE_PREFIX, CANOPY_CACHE_PREFIX } from '../src/services/land-analysis.js';
 import { SLOPE_CACHE_PREFIX } from '../src/services/slope-grid.js';
+import { TERRAIN_TILES_URL } from '../src/services/terrain-tiles.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8'));
 const recorded = fixture('elevation-getsamples.json');
@@ -38,6 +40,7 @@ const kind = url => {
   if (url.startsWith(EPQS_URL)) return 'epqs';
   if (url.startsWith(`${ELEVATION_IMAGE_SERVICE}/identify`)) return 'identify';
   if (url.startsWith(SOIL_URL)) return 'soil';
+  if (url.startsWith(TERRAIN_TILES_URL)) return 'tiles';
   if (url.startsWith(ELEVATION_IMAGE_SERVICE)) return '3depOther';
   return 'other';
 };
@@ -81,10 +84,13 @@ function stubFetch(handlers = {}) {
     if (k === 'epqs') return epqsAnswer(url);
     if (k === 'identify') return elevIdentifyAnswer(url);
     if (k === 'tccIdentify') return identifyAnswer();
+    if (k === 'tiles') throw new Error('terrain tiles down (default in this file)');
     throw new Error(`unexpected upstream call: ${url}`);
   };
 }
 const count = k => calls.filter(c => c.kind === k).length;
+// Requests other than the (failing) terrain tile, which may or may not be sent before USGS answers.
+const usgsAndOthers = () => calls.filter(c => c.kind !== 'tiles');
 const fail = () => { throw new Error('network down'); };
 
 function fakeCache({ throws = false } = {}) {
@@ -143,7 +149,8 @@ test('land-analysis: terrain and canopy come from one getSamples request each', 
   assert.equal(body.soil.available, true);
   assert.equal(count('3dep'), 1);
   assert.equal(count('tcc'), 1);
-  assert.equal(calls.length, 3, 'soil + terrain + canopy');
+  assert.equal(usgsAndOthers().length, 3, 'soil + terrain + canopy');
+  assert.ok(count('tiles') <= 1, 'at most one terrain tile for this parcel');
 
   for (const call of calls.filter(c => c.kind === '3dep' || c.kind === 'tcc')) {
     assert.equal(call.method, 'POST');
@@ -165,8 +172,8 @@ test('slope grid: 25 points in one getSamples request', async () => {
   assert.equal(response.headers.get('Cache-Control'), legacy.slopeGrid.cacheControl);
   assert.deepEqual(body, slopeSnap);
   assert.equal(body.cells.length, 16);
-  assert.equal(calls.length, 1);
-  assert.equal(pointsOf(calls[0].body).length, 25);
+  assert.equal(usgsAndOthers().length, 1);
+  assert.equal(pointsOf(usgsAndOthers()[0].body).length, 25);
 });
 
 test('shape snapshot: batched answers match the legacy per-point answers for the same parcel', async () => {
@@ -233,7 +240,7 @@ test('getSamples and identify fail: slope grid falls back to a 3 x 3 EPQS grid (
   assert.equal(count('3dep'), 2);
   assert.equal(count('identify'), POINT_FALLBACK_MAX_POINTS);
   assert.equal(count('epqs'), POINT_FALLBACK_MAX_POINTS);
-  assert.equal(calls.length, 2 + 9 + 9);
+  assert.equal(usgsAndOthers().length, 2 + 9 + 9);
   assert.equal(response.status, 200);
   assert.equal(body.available, true);
   assert.equal(body.resolution, '2 x 2 parcel grid');
@@ -310,12 +317,13 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   stubFetch();
   await landAnalysis();
   assert.ok(count('3dep') <= 3 && count('tcc') <= 3);
-  assert.equal(calls.length, 3);
+  assert.equal(usgsAndOthers().length, 3);
+  assert.ok(count('tiles') <= 1);
 
   calls = [];
   stubFetch();
   await slopeGrid();
-  assert.ok(calls.length <= 3);
+  assert.ok(calls.length <= 4);
 
   // Everything down: every layer degrades, the route still answers.
   calls = [];
@@ -327,14 +335,15 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   assert.equal(body.landCover.available, false);
   assert.equal(body.soil.available, false);
   // Soil: one attempt plus the shared client's one retry on a network error.
-  assert.equal(calls.length, 2 + (2 + 9 + 9) + (2 + CANOPY_FALLBACK_MAX_POINTS));
+  // Terrain: 2 getSamples + 9 identify + 9 EPQS + 1 terrain tile (one tile covers this parcel).
+  assert.equal(calls.length, 2 + (2 + 9 + 9 + 1) + (2 + CANOPY_FALLBACK_MAX_POINTS));
   assert.ok(calls.length < 40, `land-analysis worst case made ${calls.length} requests`);
 
   calls = [];
   stubFetch({ '3dep': fail, identify: fail, epqs: fail });
   const slope = await slopeGrid();
   assert.equal(slope.body.available, false);
-  assert.equal(calls.length, 2 + 9 + 9);
+  assert.equal(usgsAndOthers().length, 2 + 9 + 9);
 });
 
 // --- cache -----------------------------------------------------------------------------------
@@ -494,7 +503,7 @@ test('both down: terrain and slope are unavailable with the honest messages, in 
   assert.match(slope.body.error, /Not enough elevation samples were returned to build a reliable slope heat map/);
   assert.deepEqual(slope.body.elevationSources, []);
   assert.equal(slope.body.sampleCount, 0);
-  assert.equal(calls.length, 2 + 9 + 9);
+  assert.equal(usgsAndOthers().length, 2 + 9 + 9);
 
   const restore = configureElevation(FAST);
   try {
@@ -561,7 +570,7 @@ test('elevationSamplesFt: a getSamples value replaces a hedge value; NoData is n
     const partial = await elevationSamplesFt(points);
     assert.deepEqual(partial.from, ['getSamples', null]);
     assert.equal(partial.values[1], null);
-    assert.equal(calls.length, 1, 'point 1 was a NoData answer, not a failure');
+    assert.equal(usgsAndOthers().length, 1, 'point 1 was a NoData answer, not a failure');
   } finally { restore(); }
 });
 

@@ -3,7 +3,7 @@ import { upstreamJson } from '../shared/upstream.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { soilAt } from './soils.js';
 import {
-  elevationSamplesFt, getSamplesWithRetry, spreadPick, POINT_FALLBACK_TIMEOUT_MS
+  elevationSamplesFt, getSamplesWithRetry, spreadPick, POINT_FALLBACK_TIMEOUT_MS, TERRAIN_TILES_SOURCE
 } from './elevation.js';
 
 // v2 (2026-11-02): every terrain answer carries elevationSources; v1 entries are left to expire.
@@ -11,6 +11,10 @@ export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v2/';
 export const CANOPY_CACHE_PREFIX = 'https://acresx.internal/cache/canopy/v1/';
 export const CANOPY_FALLBACK_MAX_POINTS = 12;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+// A terrain-tile answer is kept one day only, so a later lookup can get the live USGS answer.
+export const TILE_ANSWER_TTL_SECONDS = 24 * 60 * 60;
+export const USGS_ELEVATION_LABEL = 'USGS 3DEP / EPQS elevation';
+export const TILE_ELEVATION_LABEL = 'USGS 3DEP elevation (AWS Terrain Tiles copy)';
 
 function geometryBounds(geometry) {
   if (!geometry?.coordinates) throw new Error('Parcel geometry is invalid.');
@@ -167,12 +171,16 @@ async function terrainAnalysis(geometry) {
     { lon: bounds.maxLon, lat: center.lat }
   ];
 
-  // getSamples, then 3DEP identify, then EPQS, against one deadline (see elevation.js).
-  const { values: elevations, sources, errors } = await elevationSamplesFt(points);
+  // getSamples, then 3DEP identify, then EPQS, against one deadline, with the terrain tiles beside
+  // them (see elevation.js).
+  const { values: elevations, sources, errors, tiles } = await elevationSamplesFt(points);
   if (Object.keys(errors).length) console.warn('Terrain elevation source errors', JSON.stringify(errors));
   // As before, terrain needs every point (the old code failed on any missing elevation).
   const missing = elevations.filter(value => value === null).length;
-  if (missing) throw new Error(`USGS elevation was unavailable for ${missing} of ${points.length} terrain points.`);
+  if (missing) {
+    const backup = errors[TERRAIN_TILES_SOURCE] ? ' The AWS Terrain Tiles backup was unavailable too.' : '';
+    throw new Error(`USGS elevation was unavailable for ${missing} of ${points.length} terrain points.${backup}`);
+  }
   const samples = points.map((point, i) => ({ ...point, elevation: elevations[i] }));
 
   const minFt = Math.min(...elevations);
@@ -183,8 +191,10 @@ async function terrainAnalysis(geometry) {
     Math.abs(sample.elevation - centerSample.elevation) / Math.max(distanceFeet(centerSample, sample), 1) * 100
   );
 
-  // Only getSamples answers are cached, so a fallback answer is replaced on the next lookup.
-  return { cacheable: sources.length === 1 && sources[0] === 'getSamples', result: {
+  // Complete getSamples answers are cached for 30 days, terrain-tile answers for one day; other
+  // fallback answers are not cached, so they are replaced on the next lookup.
+  const ttlSeconds = tiles ? TILE_ANSWER_TTL_SECONDS : (sources.length === 1 && sources[0] === 'getSamples' ? CACHE_TTL_SECONDS : 0);
+  return { cacheable: ttlSeconds > 0, ttlSeconds, result: {
     available: true,
     gradePct: grades.reduce((sum, grade) => sum + grade, 0) / grades.length,
     maxGradePct: Math.max(...grades),
@@ -193,8 +203,9 @@ async function terrainAnalysis(geometry) {
     centerFt: centerSample.elevation,
     reliefFt,
     sampleCount: samples.length,
-    source: 'USGS 3DEP / EPQS elevation',
-    // Additive: which elevation services supplied the values ('getSamples', 'identify', 'epqs').
+    source: tiles ? TILE_ELEVATION_LABEL : USGS_ELEVATION_LABEL,
+    // Additive: which elevation services supplied the values ('getSamples', 'identify', 'epqs',
+    // or 'terrain-tiles', never mixed with the others).
     elevationSources: sources
   } };
 }
@@ -204,8 +215,8 @@ async function cachedLayer(prefix, geometry, ctx, compute) {
   const slot = await openGeometryCache(prefix, geometry);
   const hit = await readCachedJson(slot);
   if (hit?.available === true) return hit;
-  const { result, cacheable } = await compute(geometry);
-  if (cacheable && result?.available === true) await writeCachedJson(slot, result, CACHE_TTL_SECONDS, ctx);
+  const { result, cacheable, ttlSeconds = CACHE_TTL_SECONDS } = await compute(geometry);
+  if (cacheable && result?.available === true) await writeCachedJson(slot, result, ttlSeconds, ctx);
   return result;
 }
 
