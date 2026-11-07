@@ -1,6 +1,7 @@
 import { json } from '../shared/http.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
-import { elevationSamplesFt } from './elevation.js';
+import { elevationSamplesFt, TERRAIN_TILES_SOURCE } from './elevation.js';
+import { TILE_ANSWER_TTL_SECONDS, USGS_ELEVATION_LABEL, TILE_ELEVATION_LABEL } from './land-analysis.js';
 
 // v2 (2026-11-02): every answer carries elevationSources; v1 entries are left to expire.
 export const SLOPE_CACHE_PREFIX = 'https://acresx.internal/cache/slope-grid/v2/';
@@ -60,16 +61,17 @@ const withElevations = (grid, values) => grid.map((point, i) => (
 // Normal path: one getSamples request (plus one retry) for the 5 x 5 grid. The per-point sources
 // (3DEP identify, then EPQS; see elevation.js) only ask for the 9 points of the coarser 3 x 3 grid
 // (every other row and column of the 5 x 5 grid). If getSamples gives no answer, the slope grid is
-// built from those 9 points.
+// built from those 9 points. A terrain-tile answer covers all 25 points (one source, see
+// elevation.js), so it builds the full 5 x 5 grid.
 async function sampleGrid(b) {
   const grid = buildGrid(b, GRID_SIZE);
   const step = (GRID_SIZE - 1) / (FALLBACK_GRID_SIZE - 1);
   const coarseIndices = grid.flatMap((p, i) => (p.row % step === 0 && p.col % step === 0 ? [i] : []));
-  const { values, sources, batch, errors } = await elevationSamplesFt(grid, { fallbackIndices: coarseIndices });
+  const { values, sources, batch, tiles, errors } = await elevationSamplesFt(grid, { fallbackIndices: coarseIndices });
   if (Object.keys(errors).length) console.warn('Slope grid elevation source errors', JSON.stringify(errors));
-  if (batch) return { size: GRID_SIZE, grid, sampled: withElevations(grid, values), fallback: false, sources };
+  if (batch || tiles) return { size: GRID_SIZE, grid, sampled: withElevations(grid, values), fallback: false, sources, tiles };
   const coarse = coarseIndices.map(i => ({ ...grid[i], row: grid[i].row / step, col: grid[i].col / step }));
-  return { size: FALLBACK_GRID_SIZE, grid: coarse, sampled: withElevations(coarse, coarseIndices.map(i => values[i])), fallback: true, sources };
+  return { size: FALLBACK_GRID_SIZE, grid: coarse, sampled: withElevations(coarse, coarseIndices.map(i => values[i])), fallback: true, sources, tiles };
 }
 
 export async function handleSlopeGrid(request, env, ctx) {
@@ -81,14 +83,15 @@ export async function handleSlopeGrid(request, env, ctx) {
   const hit = await readCachedJson(slot);
   if (hit?.available === true && hit.partial === false) return json(hit, 200, 'public, max-age=3600, s-maxage=2592000');
 
-  const { size, grid, sampled, fallback, sources } = await sampleGrid(b);
+  const { size, grid, sampled, fallback, sources, tiles } = await sampleGrid(b);
+  const label = tiles ? TILE_ELEVATION_LABEL : USGS_ELEVATION_LABEL;
   const validSamples = sampled.filter(p => Number.isFinite(p.elevationFt));
   // 9 of 25 on the normal grid (unchanged); the coarse fallback grid needs one full cell.
   if (validSamples.length < (fallback ? 4 : 9)) {
     return json({
       available: false,
       error: 'Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.',
-      source: 'USGS 3DEP / EPQS elevation',
+      source: label,
       elevationSources: sources,
       sampleCount: validSamples.length,
       requestedSamples: grid.length
@@ -138,15 +141,16 @@ export async function handleSlopeGrid(request, env, ctx) {
     return json({
       available: false,
       error: 'Elevation samples were returned, but not enough adjacent samples were available to calculate slope cells.',
-      source: 'USGS 3DEP / EPQS elevation',
+      source: label,
       elevationSources: sources
     }, 200, 'no-store');
   }
 
   const body = {
     available: true,
-    source: 'USGS 3DEP / EPQS elevation',
-    // Additive: which elevation services supplied the values ('getSamples', 'identify', 'epqs').
+    source: label,
+    // Additive: which elevation services supplied the values ('getSamples', 'identify', 'epqs',
+    // or 'terrain-tiles', never mixed with the others).
     elevationSources: sources,
     resolution: `${size - 1} x ${size - 1} parcel grid`,
     sampleCount: validSamples.length,
@@ -155,7 +159,8 @@ export async function handleSlopeGrid(request, env, ctx) {
     partial: fallback || validSamples.length < grid.length,
     cells
   };
-  // Only complete getSamples answers are cached.
-  if (!body.partial && sources.every(source => source === 'getSamples')) await writeCachedJson(slot, body, CACHE_TTL_SECONDS, ctx);
+  // Complete getSamples answers are cached for 30 days, complete terrain-tile answers for one day.
+  if (!body.partial && sources.every(s => s === 'getSamples')) await writeCachedJson(slot, body, CACHE_TTL_SECONDS, ctx);
+  else if (!body.partial && tiles && sources.every(s => s === TERRAIN_TILES_SOURCE)) await writeCachedJson(slot, body, TILE_ANSWER_TTL_SECONDS, ctx);
   return json(body, 200, 'public, max-age=3600, s-maxage=2592000');
 }
