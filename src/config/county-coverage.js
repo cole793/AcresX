@@ -26,9 +26,9 @@ const statewideBase = {
 // Levels follow COUNTY_CHECKLIST.md "Readiness levels"; checklistScore is that checklist's audit
 // score (out of 100) on checklistScoreDate.
 //
-// Every capability below comes from the live validation runs of 2026-11-03 (started 23:25Z, after
-// PR #30's terrain fix deployed; Spokane and Stevens ran on the WA validation tool from PR #36),
-// 12 parcels per county, never from older hand-set values:
+// Every capability below comes from live validation runs, 12 parcels per county, never from older
+// hand-set values: 2026-11-03 (started 23:25Z, after PR #30's terrain fix deployed; Spokane ran on
+// the WA validation tool from PR #36) for every county except Stevens, which was re-run 2026-11-07.
 //   validated      ok on at least 10 of 12 parcels and no mismatch
 //   partial        answered for some parcels, had a mismatch, or answered without usable data
 //   not_configured unavailable on every parcel because nothing is set up for it
@@ -71,13 +71,15 @@ const overrides = {
     notes: 'Validation run 2026-11-03T23:25Z had 1 terrain error; zoning answered for 10 of 12 parcels. No zoning rules table for Gallatin.',
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'not_configured'}
   },
+  // Stevens was re-run on 2026-11-07T07:42Z after #41 (assessor), #42 (county FIRM flood) and
+  // #43 (zoning adapter): 0 mismatches; terrain errored on 3 parcels and power timed out on 1.
   'WA:Stevens': {
-    level: 1,
-    lastValidated: '2026-11-03',
-    checklistScore: 49,
-    checklistScoreDate: '2026-11-03',
-    notes: 'Validated with the WA validation tool (PR #36) on 2026-11-03. That run had 2 soil errors (USDA soil service timeouts) and a zoning mismatch on parcel 2371220 (expected 10, got no zone). No assessor adapter. FEMA has no digital flood map here: all 12 parcels answered "no mapped FEMA zone".',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'partial',wetlands:'validated',utilities:'validated',assessment:'not_configured',tax:'not_configured',zoning:'partial',zoningRules:'partial'}
+    level: 2,
+    lastValidated: '2026-11-07',
+    checklistScore: 78,
+    checklistScoreDate: '2026-11-07',
+    notes: 'Validation run 2026-11-07T07:42Z: 0 mismatches. Assessor from the county\'s RealPropertyParcels_Public layer, with no tax amount. Flood from the county\'s 1998 digitized FEMA FIRM, because FEMA has no digital map here. Zoning from the county adapter, with city layers and LAMIRD/UGA. Terrain was intermittent in this run (USGS elevation errored on 3 of 12 parcels); power timed out on 1.',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'partial',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'validated'}
   }
 };
 
