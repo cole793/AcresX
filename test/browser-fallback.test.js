@@ -113,7 +113,7 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'fema-flood']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'fema-flood', 'stevens-zoning']);
   assert.equal(typeof fb.run, 'function');
   assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
 });
@@ -132,7 +132,9 @@ test('browser fallback: requests outside the allowlist are refused before fetch'
 test('browser fallback: unknown kinds and bad input never reach the network', async () => {
   const rec = recorder(() => ({ features: [] }));
   const { api: fb } = browser(rec.fetch);
-  await assert.rejects(fb.run('stevens-zoning', {}), /unknown kind/);
+  await assert.rejects(fb.run('spokane-zoning', {}), /unknown kind/);
+  await assert.rejects(fb.run('stevens-zoning', { lat: 48.2, lon: -117.9 }), /no Stevens answer/);
+  await assert.rejects(fb.run('stevens-zoning', { lat: 95, lon: -117.9 }, { base: { county: 'Stevens' } }), /bad point/);
   await assert.rejects(fb.run('__proto__', {}), /unknown kind/);
   await assert.rejects(fb.run('kootenai-zoning', { parcelId: "1' OR 1=1 --" }), /bad parcel number/);
   await assert.rejects(fb.run('kootenai-assessor', { parcelId: '' }), /parcel number required/);

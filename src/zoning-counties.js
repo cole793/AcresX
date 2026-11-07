@@ -56,7 +56,9 @@ ZONING_COUNTIES.Spokane = {
 ZONING_COUNTIES.Stevens = {
   ...ZONING_COUNTIES.Stevens,
   status: 'configured',
-  jurisdiction: 'Stevens County (unincorporated areas)',
+  // The legacy route answered every parcel with this label, inside cities too, so it no longer
+  // claims '(unincorporated areas)'. src/counties/stevens.js names the city for city parcels.
+  jurisdiction: 'Stevens County',
   serviceCandidates: [
     { url: 'https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer', title: 'Stevens County GIS — official zoning districts' }
   ],

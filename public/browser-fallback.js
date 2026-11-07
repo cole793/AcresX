@@ -2,8 +2,8 @@
 // 2026-10-29, "option A"). The Worker always asks first. When an eligible layer fails there with a
 // network error, a timeout or a 403/429/5xx, its /api answer keeps its shape and adds
 //   fallback: { mode: 'browser', kind, input }          (src/shared/fallback.js)
-// This script wraps window.fetch for five /api routes (parcel search, zoning, wells, assessment
-// for Kootenai and Stevens, flood). When such an answer arrives it runs the
+// This script wraps window.fetch for five /api routes (parcel search, zoning, wells, assessment,
+// flood), with Kootenai and Stevens kinds for zoning and assessment. When such an answer arrives it runs the
 // known query for that kind from the user's browser and hands the page an answer in the Worker's
 // shape, so the existing render path shows it. It then labels the section
 // "Loaded directly from <agency>".
@@ -17,9 +17,11 @@
 // - One attempt per request, 12 s each, no cookies, no redirects (a redirect fails the request). If any request this kind depends on fails,
 //   the Worker's own (degraded) answer is kept.
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
-//   kootenai-assessor.js, stevens-assessor.js, src/shared/polygon-coverage.js, src/shared/arcgis.js spatialParams,
-//   src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js). test/browser-fallback.test.js runs both on
-//   the same recorded fixtures and checks the answers match. Change both together.
+//   kootenai-assessor.js, stevens-assessor.js, stevens.js, stevens-cities.js,
+//   src/zoning/stevens-rules.js aliases, src/shared/polygon-coverage.js, src/shared/arcgis.js
+//   spatialParams, src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js).
+//   test/browser-fallback.test.js and test/stevens-zoning.test.js run both on the same recorded
+//   fixtures and check the answers match. Change both together.
 //
 // Progressive loading (public/progressive-loading.js): a section's find* fetch passes its
 // AbortSignal; the wrapped fetch holds the answer while the browser query runs, so the section
@@ -865,6 +867,276 @@
     throw femaError;
   }
 
+  // ---- 5. Stevens County zoning (copy of src/counties/stevens.js, stevens-cities.js and the
+  // value aliases of src/zoning/stevens-rules.js). Unlike the other kinds, it starts from the
+  // Worker's own (degraded) answer, `base`, and replaces the zoning parts and the permit list,
+  // reading the county agency profile from that answer. A failure of the city limits, county zoning or city
+  // zoning layer fails the fallback (the Worker's answer stays); LAMIRD/UGA failures degrade.
+
+  const ST_SERVICE = 'https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer';
+  const ST_CITIES = `${ST_SERVICE}/0`;
+  const ST_COUNTY_ZONING = `${ST_SERVICE}/1`;
+  const ST_LAMIRD = `${ST_SERVICE}/8`;
+  const ST_UGA = `${ST_SERVICE}/9`;
+  const ST_AGENCY = 'Stevens County GIS';
+  const stText = value => (value == null ? '' : String(value).replace(/\s+/g, ' ').trim());
+  const stLayer = id => `${ST_SERVICE}/${id}`;
+  // src/zoning/stevens-rules.js ALIASES and the rules-table names (STANDARDS keys).
+  const ST_ALIASES = {
+    '5': 'RA-5', '10': 'RA-10', '20': 'RA-20', '100': 'F', '101': 'A', '103': 'AR-10',
+    'NR-FOREST': 'F', 'NR FOREST': 'F', 'NR-AG': 'A', 'NR AG': 'A',
+    'R-1 RESIDENTIAL': 'R-1', 'R-2 RESIDENTIAL': 'R-2',
+    BUSINESS: 'B', INDUSTRIAL: 'I', 'OPEN SPACE': 'UO'
+  };
+  const ST_RULE_NAMES = {
+    'RA-5': 'Rural Area — 5', 'RA-10': 'Rural Area — 10', 'RA-20': 'Rural Area — 20', 'AR-10': 'Rural Agriculture',
+    F: 'Forest', A: 'Agriculture', 'R-1': 'Residential 1', 'R-2': 'Residential 2', UO: 'Urban Open Space', B: 'Business', I: 'Industrial'
+  };
+  const stRulesKey = zoneCode => { const raw = String(zoneCode ?? '').trim().toUpperCase(); return ST_ALIASES[raw] || raw; };
+  const stHasRules = zoneCode => Object.prototype.hasOwnProperty.call(ST_RULE_NAMES, stRulesKey(zoneCode));
+
+  function chewelahParts(value) {
+    const v = stText(value);
+    const i = v.indexOf(' - ');
+    return i > 0 ? { code: v.slice(0, i).trim(), name: v.slice(i + 3).trim() } : { code: v, name: '' };
+  }
+  const ST_NOT_A_ZONE = { NORTHPORT: new Set(['EXEMPT']), MARCUS: new Set(['MARCUS']) };
+  const ST_CITY_LIST = {
+    CHEWELAH: {
+      name: 'City of Chewelah', planningUrl: 'https://www.cityofchewelah.org/', planningLabel: 'Open City of Chewelah website ↗',
+      codeUrl: 'https://chewelah.municipalcodeonline.com/book?type=ordinances',
+      zoning: { layerId: 2, outFields: 'name', sourceField: 'name', code: a => chewelahParts(a.name).code, name: a => chewelahParts(a.name).name }
+    },
+    COLVILLE: { name: 'City of Colville', zoning: { layerId: 3, outFields: 'ZONING,NAME', sourceField: 'ZONING', code: a => stText(a.ZONING), name: a => stText(a.NAME) } },
+    'KETTLE FALLS': { name: 'City of Kettle Falls', zoning: { layerId: 4, outFields: 'zonecode,name', sourceField: 'zonecode', code: a => stText(a.zonecode), name: a => stText(a.name) } },
+    SPRINGDALE: { name: 'Town of Springdale', zoning: { layerId: 5, outFields: 'parceln,hyperlink', sourceField: 'parceln', code: a => stText(a.parceln), name: a => stText(a.hyperlink) } },
+    NORTHPORT: { name: 'Town of Northport', zoning: { layerId: 6, outFields: 'landuse', sourceField: 'landuse', code: a => stText(a.landuse), name: () => '' } },
+    MARCUS: { name: 'Town of Marcus', zoning: { layerId: 7, outFields: 'name', sourceField: 'name', code: a => stText(a.name), name: () => '' } }
+  };
+  const stCityKey = value => stText(value).toUpperCase();
+  function stCityInfo(nameValue) {
+    const key = stCityKey(nameValue);
+    if (!key) return null;
+    return { key, ...(ST_CITY_LIST[key] || { name: `City of ${stText(nameValue)}` }) };
+  }
+  async function stLayerShares(url, where, samples, { outFields, keyOf }, signal) {
+    const features = await arcgisFeatures(url, { ...spatialParams(where), outFields }, { agency: ST_AGENCY, maxGet: ARCGIS_MAX_GET_URL, signal });
+    return coverageShares(samples, features.map(f => ({ ...f, attributes: withoutPersonalFields(f?.attributes) })), keyOf).map(s => ({
+      key: s.key, share: round3(s.share),
+      attributes: s.attributes ? Object.fromEntries(Object.entries(s.attributes).filter(([k]) => !/^shape/i.test(k))) : null
+    }));
+  }
+  function stDecideJurisdiction(shares) {
+    const merged = new Map();
+    for (const s of shares || []) { const key = s.key || ''; merged.set(key, (merged.get(key) || 0) + s.share); }
+    const ranked = [...merged.entries()].map(([key, share]) => ({ key, share })).sort((a, b) => b.share - a.share);
+    const top = ranked[0] || { key: '', share: 1 };
+    const label = e => (e.key ? stCityInfo(e.key).name : 'unincorporated Stevens County');
+    return {
+      city: top.key ? stCityInfo(top.key) : null,
+      share: round3(Math.min(1, top.share)),
+      others: ranked.slice(1).filter(e => e.share >= 0.05).map(e => ({ name: label(e), share: round3(e.share) }))
+    };
+  }
+  function stJurisdictionNote(decision) {
+    if (!decision.others.length) return '';
+    const where = decision.city ? `inside ${decision.city.name} limits` : 'in unincorporated Stevens County';
+    return ` About ${pct(decision.share)} of the parcel is ${where}; the rest is in ${decision.others.map(o => `${o.name} (about ${pct(o.share)})`).join(', ')}.`;
+  }
+  const stLinks = city => ({
+    ...(city.planningUrl ? { url: city.planningUrl, urlLabel: city.planningLabel || `Open ${city.name} planning ↗` } : {}),
+    ...(city.codeUrl ? { codeUrl: city.codeUrl } : {})
+  });
+  function stCityZoning(city, zoningR, samples, decision) {
+    const note = stJurisdictionNote(decision);
+    const applies = `This parcel is inside ${city.name} limits, so ${city.name} zoning applies, not Stevens County zoning.`;
+    const contact = city.planningUrl ? `See ${city.name} and verify with the city.` : `Contact ${city.name} for its zoning map and code, and verify with the city.`;
+    const z = city.zoning;
+    const sourceUrl = z ? stLayer(z.layerId) : ST_CITIES;
+    const seeCity = extra => ({
+      status: 'city_jurisdiction', code: null, name: '', jurisdictionType: 'city',
+      label: `${city.name} zoning applies – see city`,
+      note: `${applies} ${extra} ${contact}${note}`,
+      sourceUrl, sourceLabel: z ? 'Open city zoning layer ↗' : 'Open city limits layer ↗', ...stLinks(city)
+    });
+    if (!z) return seeCity(`AcresX has no zoning map layer for ${city.name}.`);
+    const covered = (zoningR.value || []).filter(s => s.key);
+    const top = covered[0];
+    if (!top) return seeCity(`The ${city.name} zoning map returned no zone on this parcel (it may be right-of-way or newly annexed).`);
+    const others = covered.slice(1).filter(s => s.share >= 0.05);
+    const uncovered = 1 - covered.reduce((t, s) => t + s.share, 0);
+    const shareNote = samples.length > 1 ? coverageNote(top, others, uncovered, 'city zone') : '';
+    return {
+      status: 'gis_match', code: top.key, name: z.name(top.attributes || {}), jurisdictionType: 'city',
+      label: `${city.name} zoning`,
+      note: `Mapped from the ${city.name} zoning map published by Stevens County GIS. City zoning applies inside city limits, not Stevens County zoning. Verify allowed uses, density, setbacks and overlays with ${city.name}.${shareNote}${note}`,
+      sourceUrl, sourceField: z.sourceField, ...stLinks(city),
+      ...(others.length ? { otherZones: others.map(s => ({ code: s.key, share: s.share })) } : {}),
+      rules: 'not_mapped', rulesNote: "City zoning rules aren't mapped in AcresX yet; see the city's zoning code."
+    };
+  }
+  function stCountyDistrict(a = {}) {
+    const value = Number(a.zoning);
+    const label = stText(a.zoningtext);
+    if (Number.isFinite(value) && value !== 0 && label) {
+      const mapped = stHasRules(label);
+      return { code: label, name: mapped ? ST_RULE_NAMES[stRulesKey(label)] : '', numericCode: String(value), rulesMapped: mapped };
+    }
+    const type = stText(a.type), community = stText(a.name);
+    if (!type) return null;
+    const mapped = stHasRules(type);
+    return {
+      code: mapped ? stRulesKey(type) : type,
+      name: stText(a.zoning_nam) || [community, type].filter(Boolean).join(' '),
+      numericCode: Number.isFinite(value) && a.zoning != null ? String(value) : null,
+      rulesMapped: mapped, community, districtType: type
+    };
+  }
+  const stCountyKey = a => stText(a.zoning_nam) || stText(a.zoningtext) || [stText(a.name), stText(a.type)].filter(Boolean).join(' ') || null;
+  const stAreaKey = (nameField, typeField) => a => [stText(a[nameField]), stText(a[typeField])].filter(Boolean).join(' ') || null;
+  function stAreaInfo(r, nameField, typeField) {
+    if (r?.status !== 'fulfilled') return null;
+    const top = (r.value || []).find(s => s.key);
+    if (!top) return null;
+    return { name: stText(top.attributes?.[nameField]), type: stText(top.attributes?.[typeField]), share: top.share };
+  }
+  const ST_UGA_LAYER_QUOTE = '"This dataset shows the Urban Growth Areas (UGA) designated by the Stevens County Comprehensive Plan. The dataset also shows the zoning areas designated by the Stevens County Development Regulations Title 3."';
+  function stUrbanGrowthArea(ugaR) {
+    const base = { sourceUrl: ST_UGA };
+    if (ugaR?.status !== 'fulfilled') return { intersects: false, status: 'unavailable', error: ugaR?.reason?.message || 'unavailable', ...base };
+    const uga = stAreaInfo(ugaR, 'Name', 'Type');
+    if (!uga) return { intersects: false, ...base };
+    return {
+      intersects: true, name: uga.name, type: uga.type, share: uga.share, ...base,
+      note: `Inside the ${uga.name} urban growth area (UGA) designated by the Stevens County Comprehensive Plan. The county's UGA layer says: ${ST_UGA_LAYER_QUOTE} Outside city limits, the Stevens County Title 3 district mapped here applies; confirm with Stevens County Land Services, and with the city where the UGA belongs to one, before relying on it.`
+    };
+  }
+  function stLamirdArea(lamirdR) {
+    const base = { sourceUrl: ST_LAMIRD };
+    if (lamirdR?.status !== 'fulfilled') return { intersects: false, status: 'unavailable', error: lamirdR?.reason?.message || 'unavailable', ...base };
+    const lamird = stAreaInfo(lamirdR, 'name', 'type');
+    if (!lamird) return { intersects: false, ...base };
+    return { intersects: true, name: lamird.name, type: lamird.type, share: lamird.share, ...base };
+  }
+  function stCountyZoning(layers, samples, decision, matchMethod, zoningMapUrl, lamird, uga) {
+    const { countyZoning: zoningR, lamird: lamirdR, uga: ugaR } = layers;
+    const jNote = stJurisdictionNote(decision);
+    const verify = 'Verify allowed uses, density, setbacks and overlays with Stevens County Land Services.';
+    let source = { url: ST_COUNTY_ZONING, layer: 'county', shares: zoningR.value || [] };
+    if (!source.shares.some(s => s.key)) {
+      if (lamirdR?.status === 'fulfilled' && lamirdR.value.some(s => s.key)) source = { url: ST_LAMIRD, layer: 'lamird', shares: lamirdR.value };
+      else if (ugaR?.status === 'fulfilled' && ugaR.value.some(s => s.key)) source = { url: ST_UGA, layer: 'uga', shares: ugaR.value };
+    }
+    const districtOf = s => (source.layer === 'county' ? stCountyDistrict(s.attributes || {}) : source.layer === 'lamird'
+      ? stCountyDistrict({ name: s.attributes?.name, type: s.attributes?.type })
+      : stCountyDistrict({ name: s.attributes?.Name, type: s.attributes?.Type }));
+    const covered = source.shares.filter(s => s.key && districtOf(s));
+    const top = covered[0];
+    if (!top) {
+      return {
+        status: 'no_match', code: null, name: '', label: 'No mapped zoning result',
+        note: `The Stevens County zoning map returned no district ${matchMethod === 'parcel location' ? 'at this parcel location' : 'on this parcel'}. Check with Stevens County Land Services.${jNote}`,
+        url: zoningMapUrl, sourceUrl: ST_COUNTY_ZONING
+      };
+    }
+    const d = districtOf(top);
+    const others = covered.slice(1).filter(s => s.share >= 0.05);
+    const uncovered = 1 - covered.reduce((t, s) => t + s.share, 0);
+    const shareNote = samples.length > 1
+      ? coverageNote({ key: d.code, share: top.share }, others.map(s => ({ key: districtOf(s).code, share: s.share })), uncovered, 'county zone')
+      : '';
+    const area = lamird?.intersects ? { kind: 'lamird', ...lamird } : uga?.intersects ? { kind: 'uga', ...uga } : null;
+    const areaNote = !d.districtType ? ''
+      : area?.kind === 'lamird' ? ` This district is in the ${area.name} LAMIRD (limited area of more intensive rural development).`
+        : area?.kind === 'uga' ? ` This district is in the ${area.name} urban growth area (UGA).`
+          : '';
+    const fromLayer = source.layer === 'county' ? 'the Stevens County zoning map' : source.layer === 'lamird' ? 'the Stevens County LAMIRD districts map' : 'the Stevens County urban growth areas map';
+    const rulesNote = d.rulesMapped ? '' : ` Zoning rules for ${d.code} are not mapped in AcresX yet; see Stevens County Code Title 3.`;
+    return {
+      status: 'gis_match', code: d.code, name: d.name, label: 'Official mapped zoning', jurisdictionType: 'county',
+      note: `Mapped from ${fromLayer} (Title 3 districts). ${verify}${areaNote}${rulesNote}${shareNote}${jNote}`,
+      url: zoningMapUrl, sourceUrl: source.url,
+      sourceField: source.layer === 'county' ? (d.districtType ? 'type' : 'zoningtext') : source.layer === 'lamird' ? 'type' : 'Type',
+      ...(d.numericCode != null ? { numericCode: d.numericCode } : {}),
+      ...(d.districtType ? { district: { community: d.community, type: d.districtType, ...(area ? { area: area.kind } : {}) } } : {}),
+      rules: d.rulesMapped ? 'mapped' : 'not_mapped',
+      ...(d.rulesMapped ? {} : { rulesNote: `Rules not mapped for ${d.code}; see Stevens County Code Title 3.` }),
+      ...(others.length ? { otherZones: others.map(s => { const o = districtOf(s); return { code: o.code, name: o.name, share: s.share }; }) } : {})
+    };
+  }
+  // Copy of src/counties/stevens.js permitList(profile, city).
+  function stPermitList(profile, city = null) {
+    const local = !city
+      ? {
+          planning: profile.planningAgency, building: profile.planningAgency, road: profile.roadAgency, roads: 'a county or state road',
+          zoningUrl: profile.zoningMapUrl, permitUrl: profile.permitUrl, planningUrl: profile.planningUrl,
+          sitePlanning: 'Stevens County Land Services — Planning', siteUrl: 'https://www.stevenscountywa.gov/21344',
+          siteBuilding: 'Stevens County Land Services — Building', placementUrl: 'https://www.stevenscountywa.gov/20898/Building-Permit', contact: ''
+        }
+      : {
+          planning: `${city.name} planning / zoning`, building: `${city.name} building department`, road: `${city.name} public works / streets`, roads: 'a city or state road',
+          zoningUrl: city.planningUrl || '', permitUrl: city.planningUrl || '', planningUrl: city.planningUrl || '',
+          sitePlanning: `${city.name} planning / zoning`, siteUrl: city.planningUrl || '',
+          siteBuilding: `${city.name} building department`, placementUrl: city.planningUrl || '',
+          contact: city.planningUrl ? '' : ` Contact ${city.name}.`
+        };
+    const c = local.contact;
+    return [
+      { name: 'Land-use / zoning verification', agency: local.planning, status: 'Verify', reason: `Confirm allowed use, setbacks, minimum lot size and overlays before design.${c}`, url: local.zoningUrl },
+      { name: 'Building permit', agency: local.building, status: 'Likely', reason: `Normally required for a new residence, shop or other permitted structure.${c}`, url: local.permitUrl },
+      { name: 'On-site septic approval', agency: profile.healthAgency, status: 'Likely', reason: 'Needed when the parcel is not served by public sewer. Site and soil evaluation may be required.', url: profile.septicUrl },
+      { name: 'Well notice / water review', agency: 'Washington Department of Ecology and local health authority', status: 'Possible', reason: 'Well construction, water availability and drinking-water requirements vary by project and location.', url: 'https://ecology.wa.gov/Water-Shorelines/Water-supply/Wells' },
+      { name: 'Driveway / road approach permit', agency: local.road, status: 'Possible', reason: `Often required for a new or modified connection to ${local.roads}.${c}`, url: local.planningUrl },
+      { name: 'Critical-areas review', agency: local.planning, status: 'Possible', reason: `Floodplain, wetlands, shorelines, steep slopes or habitat areas can trigger additional review.${c}`, url: local.planningUrl },
+      { name: 'Existing septic as-built / permit record search', agency: 'Northeast Tri County Health District', status: 'Not verified', reason: 'Search the public NETCHD portal by parcel or address. A missing online result does not prove no system exists; request a staff search when necessary.', url: 'https://www.netchd.org/227/Sewage-Permit-Record-Search' },
+      { name: 'Septic soil / site evaluation', agency: 'Northeast Tri County Health District', status: 'Possible', reason: 'For new on-site sewage systems, obtain site evaluation and design/permit approval. Existing records do not confirm system condition or capacity.', url: 'https://www.netchd.org/226/Applications-Forms-Resources' },
+      { name: 'Residential site analysis', agency: local.sitePlanning, status: 'Verify', reason: `Determine whether a site analysis and critical-area/shoreline review is needed before building or placing a manufactured home.${c}`, url: local.siteUrl },
+      { name: 'Manufactured/mobile home placement permit', agency: local.siteBuilding, status: 'If applicable', reason: `Manufactured and mobile homes use a placement permit, not the standard residential building permit for IRC modular homes.${c}`, url: local.placementUrl }
+    ];
+  }
+  const stSettle = promise => promise.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+
+  async function stevensZoning(input, signal, base) {
+    if (!base || typeof base !== 'object' || base.county !== 'Stevens') throw new Error('AcresX fallback: no Stevens answer to complete');
+    const point = pointOf(input, true), geometry = geometryOf(input, false);
+    const rings = ringsFromGeometry(geometry);
+    const where = { rings, lon: point.lon, lat: point.lat };
+    const samples = rings ? samplePoints(rings) : [[point.lon, point.lat]];
+    const matchMethod = rings ? 'parcel area (sampled)' : 'parcel location';
+    // Same order and fields as the Worker (queryStevensLayers). The decisive layers must answer.
+    const [cityShares, countyZoning, lamird, uga] = await Promise.all([
+      stLayerShares(ST_CITIES, where, samples, { outFields: 'name', keyOf: a => stCityKey(a.name) }, signal),
+      stLayerShares(ST_COUNTY_ZONING, where, samples, { outFields: 'zoning,zoningtext,name,type,zoning_nam', keyOf: stCountyKey }, signal),
+      stSettle(stLayerShares(ST_LAMIRD, where, samples, { outFields: 'name,type', keyOf: stAreaKey('name', 'type') }, signal)),
+      stSettle(stLayerShares(ST_UGA, where, samples, { outFields: 'Name,Type', keyOf: stAreaKey('Name', 'Type') }, signal))
+    ]);
+    const decision = stDecideJurisdiction(cityShares);
+    const city = decision.city;
+    let cityZoningR = null;
+    if (city?.zoning) {
+      const z = city.zoning, skip = ST_NOT_A_ZONE[city.key] || new Set();
+      cityZoningR = { status: 'fulfilled', value: await stLayerShares(stLayer(z.layerId), where, samples, { outFields: z.outFields, keyOf: a => { const code = z.code(a); return code && !skip.has(code.toUpperCase()) ? code : null; } }, signal) };
+    }
+    const layers = { cities: { status: 'fulfilled', value: cityShares }, countyZoning: { status: 'fulfilled', value: countyZoning }, lamird, uga, cityZoning: cityZoningR };
+    const lamirdInfo = stLamirdArea(lamird), ugaInfo = stUrbanGrowthArea(uga);
+    // The county profile, as the Worker has it (its agencies name the city for city parcels).
+    const profile = { ...(base.agencies || {}), jurisdiction: 'Stevens County' };
+    const zoning = city ? stCityZoning(city, cityZoningR, samples, decision) : stCountyZoning(layers, samples, decision, matchMethod, profile.zoningMapUrl, lamirdInfo, ugaInfo);
+    const jurisdiction = city ? city.name : 'Stevens County';
+    const { fallback: _hint, ...rest } = base;
+    return {
+      ...rest,
+      jurisdiction, zoning, urbanGrowthArea: ugaInfo, lamird: lamirdInfo,
+      permitJurisdiction: { name: jurisdiction, sourceUrl: ST_CITIES },
+      agencies: city ? { ...profile, jurisdiction } : profile,
+      permits: stPermitList(profile, city),
+      zoningMatch: {
+        method: matchMethod, jurisdictionShare: decision.share, otherJurisdictions: decision.others,
+        unavailableLayers: Object.entries(layers).filter(([, r]) => r && r.status !== 'fulfilled').map(([name]) => name)
+      }
+    };
+  }
+
   // ---- Kinds, the fetch hook and labels
 
   const KINDS = {
@@ -873,7 +1145,8 @@
     'idaho-wells': { api: '/api/well-search', run: idahoWells, agency: () => 'Idaho Department of Water Resources', targets: ['wellNote'] },
     'kootenai-assessor': { api: '/api/property-assessment', run: kootenaiAssessor, agency: () => 'Kootenai County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'stevens-assessor': { api: '/api/property-assessment', run: stevensAssessor, agency: () => 'Stevens County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
-    'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] }
+    'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] },
+    'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] }
   };
 
   let loaded = {};
@@ -927,11 +1200,12 @@
   // Runs the browser query for `kind`. Resolves the Worker-shaped answer; rejects for an unknown
   // kind, bad input, or a failed request.
   // options.signal (e.g. a progressive-loading section's) cancels the browser requests.
-  async function run(kind, input, { signal } = {}) {
+  // options.base is the Worker's own answer; kinds that complete it (stevens-zoning) need it.
+  async function run(kind, input, { signal, base } = {}) {
     if (!Object.prototype.hasOwnProperty.call(KINDS, kind)) throw new Error(`AcresX fallback: unknown kind ${kind}`);
     if (signal?.aborted) throw new Error('AcresX fallback: cancelled');
     const search = currentSearch();
-    const body = await KINDS[kind].run(input || {}, signal);
+    const body = await KINDS[kind].run(input || {}, signal, base);
     if (signal?.aborted) throw new Error('AcresX fallback: cancelled');
     if (search === currentSearch()) {
       loaded[kind] = KINDS[kind].agency(body);
@@ -952,14 +1226,15 @@
       const here = root.location?.href || 'https://acresx.invalid/';
       const url = new URL(raw, here);
       if (url.origin !== new URL(here).origin) return response;
-      const kind = Object.keys(KINDS).find(k => KINDS[k].api === url.pathname);
-      if (!kind || !/json/i.test(response?.headers?.get?.('Content-Type') || '')) return response;
+      if (!Object.values(KINDS).some(k => k.api === url.pathname) || !/json/i.test(response?.headers?.get?.('Content-Type') || '')) return response;
       const data = await response.clone().json();
       const hint = data?.fallback;
-      if (!hint || hint.mode !== 'browser' || hint.kind !== kind) return response;
+      // Two kinds share /api/zoning-permits (Kootenai, Stevens): the hint names which one.
+      const kind = hint && Object.prototype.hasOwnProperty.call(KINDS, hint.kind) && KINDS[hint.kind].api === url.pathname ? hint.kind : null;
+      if (!kind || hint.mode !== 'browser') return response;
       const signal = init?.signal || (typeof Request !== 'undefined' && input instanceof Request ? input.signal : undefined);
       try { root.AcresXSections?.extend?.(signal, EXTEND_MS); } catch { /* optional */ }
-      const body = await run(kind, hint.input, { signal });
+      const body = await run(kind, hint.input, { signal, base: data });
       return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
     } catch (error) {
       try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ }

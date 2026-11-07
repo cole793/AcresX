@@ -21,7 +21,8 @@ export const FALLBACK_KINDS = Object.freeze({
   idahoWells: 'idaho-wells',
   kootenaiAssessor: 'kootenai-assessor',
   stevensAssessor: 'stevens-assessor',
-  femaFlood: 'fema-flood'
+  femaFlood: 'fema-flood',
+  stevensZoning: 'stevens-zoning'
 });
 
 const eligibleStatus = status => status === 403 || status === 429 || (status >= 500 && status <= 599);

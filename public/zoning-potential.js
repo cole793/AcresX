@@ -54,6 +54,9 @@
     // Spokane County rules are for unincorporated land only: a city zone code (City of Spokane,
     // Spokane Valley, Cheney, ...) never gets them, even if it shares letters with a county zone.
     if (/^spokane$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^spokane county$/i.test(identity.jurisdiction)))) return null;
+    // Same for Stevens County rules: a city or town zone (Chewelah 'R1', Colville 'R-1', Kettle
+    // Falls 'I') never gets them. The county answer's jurisdiction is 'Stevens County'.
+    if (/^stevens$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^stevens county\b/i.test(identity.jurisdiction)))) return null;
 
     const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
     if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;
