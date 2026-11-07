@@ -37,9 +37,14 @@ HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/id
 zoning fixes + MT validation configs, #36 WA validation tool + Spokane/Stevens/Kootenai expected
 values, #37 county coverage levels from the 2026-11-03 runs.
 
-## County report card (checklist score, 2026-11-03)
+Merged 2026-11-05 to 11-07 (owner-approved, all deploys succeeded): #41 Stevens assessor
+(RealPropertyParcels_Public), #42 Stevens flood from the county's digitized FIRM, #43 Stevens
+zoning adapter (city layers, LAMIRD/UGA).
 
-Kootenai 87, Yellowstone 80, Spokane 79, Gallatin 75 (all level 2), Stevens 49 (level 1).
+## County report card (checklist score)
+
+Kootenai 87, Yellowstone 80, Spokane 79, Gallatin 75 (all level 2, 2026-11-03); Stevens 78
+(level 2, 2026-11-07).
 Kootenai's first fully clean run was 2026-11-03T23:25Z; level 3 needs a second consecutive clean
 daily run plus the owner comparing 2 parcels with the county site. All five counties are in the
 daily validation run.
@@ -47,8 +52,10 @@ daily validation run.
 ## Offered next (not approved)
 
 - USDA soil (SDA) timed out on large parcels on 2026-11-03; give soil a fallback/longer window.
-- Stevens: assessor adapter, LAMIRD zone code "0", city parcels labelled unincorporated,
-  extract zoning from `worker.js`; county-digitized FIRM for flood.
+- Stevens: cite the UGA code section (the county site blocks automated fetches); zoning rules
+  for Crossroads and Resort; owner sign-off.
+- terrain: USGS still exceeds the 17 s budget at times (3/12 Stevens parcels on 2026-11-07); fix
+  in progress.
 - Spokane: assessor property class not read; statewide WA parcel lookup sometimes 5-25 s.
 - Gallatin: zoning rules table. Yellowstone: thin rules for D16/EB_CW; Broadview town limits.
 - Plain-language rules for city zones (CdA, Post Falls, Spokane cities).
