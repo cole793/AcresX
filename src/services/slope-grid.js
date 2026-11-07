@@ -8,6 +8,10 @@ export const SLOPE_CACHE_PREFIX = 'https://acresx.internal/cache/slope-grid/v2/'
 export const GRID_SIZE = 5;
 export const FALLBACK_GRID_SIZE = 3;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+export const SLOPE_CACHE_CONTROL = 'public, max-age=3600, s-maxage=2592000';
+// Answers from the terrain tiles (kept one day in the edge cache) also get a one-day s-maxage.
+export const SLOPE_TILE_CACHE_CONTROL = `public, max-age=3600, s-maxage=${TILE_ANSWER_TTL_SECONDS}`;
+const cacheControlFor = body => (body.elevationSources || []).includes(TERRAIN_TILES_SOURCE) ? SLOPE_TILE_CACHE_CONTROL : SLOPE_CACHE_CONTROL;
 
 function geometryBounds(geometry) {
   const coords = [];
@@ -81,7 +85,7 @@ export async function handleSlopeGrid(request, env, ctx) {
   const b = geometryBounds(geometry);
   const slot = await openGeometryCache(SLOPE_CACHE_PREFIX, geometry);
   const hit = await readCachedJson(slot);
-  if (hit?.available === true && hit.partial === false) return json(hit, 200, 'public, max-age=3600, s-maxage=2592000');
+  if (hit?.available === true && hit.partial === false) return json(hit, 200, cacheControlFor(hit));
 
   const { size, grid, sampled, fallback, sources, tiles } = await sampleGrid(b);
   const label = tiles ? TILE_ELEVATION_LABEL : USGS_ELEVATION_LABEL;
@@ -162,5 +166,5 @@ export async function handleSlopeGrid(request, env, ctx) {
   // Complete getSamples answers are cached for 30 days, complete terrain-tile answers for one day.
   if (!body.partial && sources.every(s => s === 'getSamples')) await writeCachedJson(slot, body, CACHE_TTL_SECONDS, ctx);
   else if (!body.partial && tiles && sources.every(s => s === TERRAIN_TILES_SOURCE)) await writeCachedJson(slot, body, TILE_ANSWER_TTL_SECONDS, ctx);
-  return json(body, 200, 'public, max-age=3600, s-maxage=2592000');
+  return json(body, 200, cacheControlFor(body));
 }

@@ -8,17 +8,17 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { deflateSync } from 'node:zlib';
+import { deflateSync, createDeflate } from 'node:zlib';
 import worker from '../src/index.js';
-import { decodePng, unfilterScanlines } from '../src/shared/png.js';
+import { decodePng, unfilterScanlines, crc32 as pngCrc32, MAX_PNG_INPUT_BYTES, MAX_PNG_DIMENSION } from '../src/shared/png.js';
 import {
-  TERRAIN_TILES_URL, TERRAIN_TILE_MAX_TILES, terrainTileSamplesFt, terrariumMeters, tileZoomFor, pixelAt, clearTerrainTileMemo
+  TERRAIN_TILES_URL, TERRAIN_TILE_MAX_TILES, TERRAIN_TILE_MIN_ZOOM, TERRAIN_TILE_MAX_BYTES, terrainTileSamplesFt, terrariumMeters, tileZoomFor, pixelAt, clearTerrainTileMemo
 } from '../src/services/terrain-tiles.js';
 import { ELEVATION_IMAGE_SERVICE, EPQS_URL, configureElevation, elevationSamplesFt, ELEVATION_TIMING } from '../src/services/elevation.js';
 import {
   TCC_SERVICE, TERRAIN_CACHE_PREFIX, TILE_ANSWER_TTL_SECONDS, TILE_ELEVATION_LABEL, USGS_ELEVATION_LABEL
 } from '../src/services/land-analysis.js';
-import { SLOPE_CACHE_PREFIX } from '../src/services/slope-grid.js';
+import { SLOPE_CACHE_PREFIX, SLOPE_CACHE_CONTROL, SLOPE_TILE_CACHE_CONTROL } from '../src/services/slope-grid.js';
 
 const fixtureUrl = name => new URL(`fixtures/${name}`, import.meta.url);
 const TILE_PNG = readFileSync(fixtureUrl('terrarium-14-2878-5726.png'));
@@ -122,6 +122,25 @@ function chunk(type, data) {
   out.writeUInt32BE(crc32(out.subarray(4, 8 + data.length)), 8 + data.length);
   return out;
 }
+// A PNG from raw IHDR fields and an already-compressed zlib stream, with correct CRCs.
+function rawPng({ width, height, bitDepth = 8, colorType = 2 }, zlibData) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = bitDepth; ihdr[9] = colorType;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlibData), chunk('IEND', Buffer.alloc(0))]);
+}
+// A zlib stream of `megabytes` MB of zeros, built 1 MB at a time (low memory). ~1 KB per MB.
+async function zeroBomb(megabytes) {
+  const deflate = createDeflate({ level: 9 });
+  const parts = [];
+  deflate.on('data', d => parts.push(d));
+  const done = new Promise(resolve => deflate.on('end', resolve));
+  const zeros = Buffer.alloc(1024 * 1024);
+  for (let i = 0; i < megabytes; i++) { if (!deflate.write(zeros)) await new Promise(r => deflate.once('drain', r)); }
+  deflate.end();
+  await done;
+  return Buffer.concat(parts);
+}
 function encodePng(width, height, channels, pixels, filters) {
   const stride = width * channels;
   const raw = Buffer.alloc(height * (stride + 1));
@@ -185,8 +204,9 @@ test('png: filter types 0-4 decode exactly, RGB and RGBA, across split IDAT chun
 test('png: unsupported or broken files are refused with a clear error', async () => {
   await assert.rejects(decodePng(Buffer.from('<Error>NoSuchKey</Error>')), /Not a PNG/);
   const good = encodePng(4, 4, 3, noise(48), [0]);
-  const palette = Buffer.from(good); palette[8 + 8 + 9] = 3; // IHDR colour type -> palette
-  await assert.rejects(decodePng(palette), /colour type 3/);
+  const zlib = deflateSync(Buffer.alloc(4 * 13));
+  await assert.rejects(decodePng(rawPng({ width: 4, height: 4, colorType: 3 }, zlib)), /colour type 3/);
+  await assert.rejects(decodePng(rawPng({ width: 4, height: 4, bitDepth: 16 }, zlib)), /bit depth 16/);
   await assert.rejects(decodePng(good.subarray(0, 40)), /truncated|no image data|IHDR/);
   assert.throws(() => unfilterScanlines(Uint8Array.from([5, 1, 2, 3]), 1, 1, 3), /filter type 5/);
 });
@@ -390,4 +410,118 @@ test('defaults: tiles on, accepted once USGS is as late as the identify hedge', 
   assert.equal(ELEVATION_TIMING.tiles, true);
   assert.equal(ELEVATION_TIMING.tilesAfterMs, ELEVATION_TIMING.identifyAfterMs);
   assert.ok(ELEVATION_TIMING.budgetMs <= 17000, 'still inside the browser 20 s land-analysis limit');
+});
+
+// --- hardening (verifier findings on PR #46) --------------------------------------------------
+
+test('png: CRC-32 matches the standard check value and an independent implementation', () => {
+  assert.equal(pngCrc32(Buffer.from('123456789')), 0xcbf43926);
+  const bytes = noise(4096, 3);
+  assert.equal(pngCrc32(bytes), crc32(bytes));
+});
+
+test('png: a bad IHDR or IDAT CRC is refused before inflating', async () => {
+  const good = encodePng(4, 4, 3, noise(48), [0]);
+  const badIhdr = Buffer.from(good); badIhdr[8 + 8 + 12 + 1] ^= 0xff; // IHDR CRC byte
+  await assert.rejects(decodePng(badIhdr), /IHDR chunk has a bad CRC/);
+  const badIdat = Buffer.from(good); badIdat[8 + 25 + 8] ^= 0x01;      // first IDAT data byte
+  await assert.rejects(decodePng(badIdat), /IDAT chunk has a bad CRC/);
+  // The real tile with one image-data byte flipped.
+  const tile = Buffer.from(TILE_PNG); tile[8 + 25 + 8 + 100] ^= 0x01;
+  await assert.rejects(decodePng(tile), /IDAT chunk has a bad CRC/);
+});
+
+test('png: a decompression bomb (400 KB inflating to 400 MB) fails fast with low memory', async () => {
+  const zlib = await zeroBomb(400);
+  assert.ok(zlib.length > 300 * 1024 && zlib.length < MAX_PNG_INPUT_BYTES, `bomb is ${zlib.length} bytes`);
+  const bomb = rawPng({ width: 256, height: 256 }, zlib);
+  globalThis.gc?.();
+  const before = process.memoryUsage();
+  const started = Date.now();
+  await assert.rejects(decodePng(bomb, { width: 256, height: 256 }), /inflates past the size its header declares/);
+  const ms = Date.now() - started;
+  const after = process.memoryUsage();
+  const grewMb = (after.rss - before.rss) / 1048576;
+  assert.ok(ms < 1000, `took ${ms} ms`);
+  assert.ok(grewMb < 64, `rss grew ${grewMb.toFixed(1)} MB`);
+});
+
+test('png: sizes are checked before inflating: expected dimensions, absolute cap, input cap', async () => {
+  const zlib = await zeroBomb(1);
+  // Declares 4096 x 4096: refused by the caller's expected size and by the absolute cap.
+  const huge = rawPng({ width: 4096, height: 4096 }, zlib);
+  await assert.rejects(decodePng(huge, { width: 256, height: 256 }), /expected 256 x 256/);
+  await assert.rejects(decodePng(huge), /outside the supported limit/);
+  assert.ok(MAX_PNG_DIMENSION <= 1024);
+  // A valid 512 x 512 PNG is refused when the caller expects 256 x 256.
+  const big = encodePng(512, 2, 3, noise(512 * 2 * 3), [0]);
+  await assert.rejects(decodePng(big, { width: 256, height: 2 }), /expected 256 x 2/);
+  // Input over the cap is refused without parsing.
+  await assert.rejects(decodePng(Buffer.alloc(MAX_PNG_INPUT_BYTES + 1)), /larger than 524288 bytes/);
+  // Truncated image data (inflates to less than the header declares) is still an error.
+  await assert.rejects(decodePng(rawPng({ width: 8, height: 8 }, deflateSync(Buffer.alloc(10)))), /truncated/);
+  // Corrupt zlib data is a clear error.
+  await assert.rejects(decodePng(rawPng({ width: 8, height: 8 }, Buffer.from([0x78, 0x9c, 0xff, 0xff, 0xff]))), /could not be inflated/);
+});
+
+test('tiles: an oversized, wrong-size or bomb tile is refused and USGS still answers', async () => {
+  const zlib = await zeroBomb(400);
+  const cases = [
+    // Over the byte cap: cut off while reading, with or without a Content-Length.
+    () => new Response(new Uint8Array(TERRAIN_TILE_MAX_BYTES + 10), { status: 200 }),
+    () => new Response(new ReadableStream({ pull(c) { c.enqueue(new Uint8Array(64 * 1024)); } }), { status: 200 }),
+    () => new Response(encodePng(512, 512, 3, new Uint8Array(512 * 512 * 3), [0]), { status: 200 }),
+    () => new Response(rawPng({ width: 256, height: 256 }, zlib), { status: 200 })
+  ];
+  for (const tiles of cases) {
+    calls = [];
+    clearTerrainTileMemo();
+    stubFetch({ tiles });
+    const points = [{ lon: -116.759, lat: 47.545 }];
+    await assert.rejects(terrainTileSamplesFt(points), /AWS Terrain Tiles/);
+    const { body } = await landAnalysis();
+    assert.deepEqual(body.terrain.elevationSources, ['getSamples']);
+  }
+});
+
+test('tileZoomFor: never more than the tile cap; null (no tile answer) when the parcel is too large', async () => {
+  let seed = 11;
+  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < 2000; i++) {
+    const lon = -118 + rand() * 10, lat = 44 + rand() * 5, w = rand() ** 3 * 0.6, h = rand() ** 3 * 0.6;
+    const points = [{ lon, lat }, { lon: lon + w, lat }, { lon, lat: lat + h }, { lon: lon + w, lat: lat + h }, { lon: lon + w / 2, lat: lat + h / 2 }];
+    const z = tileZoomFor(points);
+    if (z === null) continue;
+    assert.ok(z >= TERRAIN_TILE_MIN_ZOOM && z <= 14);
+    const keys = new Set(points.map(p => { const q = pixelAt(p.lon, p.lat, z); return `${Math.floor(q.x / 256)}/${Math.floor(q.y / 256)}`; }));
+    assert.ok(keys.size <= TERRAIN_TILE_MAX_TILES, `${keys.size} tiles at z${z}`);
+  }
+  // Tiles are counted per sampled point. A 3 x 3 point grid over a 1° box falls in 9 different
+  // zoom-11 tiles (~0.18° wide): no tile answer, and no request.
+  const huge = [0, 0.5, 1].flatMap(dx => [0, 0.5, 1].map(dy => ({ lon: -117.5 + dx, lat: 47.5 + dy })));
+  assert.equal(tileZoomFor(huge), null);
+  calls = [];
+  stubFetch();
+  await assert.rejects(terrainTileSamplesFt(huge), /more than 4 tiles/);
+  assert.equal(count('tiles'), 0);
+});
+
+test('slope grid: answers from the tiles get a one-day s-maxage, USGS answers 30 days', async () => {
+  assert.equal(SLOPE_TILE_CACHE_CONTROL, 'public, max-age=3600, s-maxage=86400');
+  assert.equal(SLOPE_CACHE_CONTROL, 'public, max-age=3600, s-maxage=2592000');
+  fakeCache();
+  await withTiming(FAST, async () => {
+    stubFetch({ '3dep': hang, identify: hang, epqs: hang });
+    const fresh = await slopeGrid();
+    assert.deepEqual(fresh.body.elevationSources, ['terrain-tiles']);
+    assert.equal(fresh.response.headers.get('Cache-Control'), SLOPE_TILE_CACHE_CONTROL);
+    const hit = await slopeGrid();
+    assert.deepEqual(hit.body.elevationSources, ['terrain-tiles']);
+    assert.equal(hit.response.headers.get('Cache-Control'), SLOPE_TILE_CACHE_CONTROL, 'a cached tile answer too');
+  });
+  fakeCache();
+  stubFetch();
+  const usgs = await slopeGrid();
+  assert.deepEqual(usgs.body.elevationSources, ['getSamples']);
+  assert.equal(usgs.response.headers.get('Cache-Control'), SLOPE_CACHE_CONTROL);
 });

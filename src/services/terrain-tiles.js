@@ -22,9 +22,12 @@
 //
 // Zoom 14 pixels are ~6.5 m at 47° N, finer than the 10 m source raster. One zoom-14 tile
 // (~1.7 km wide here) usually covers a whole parcel; larger parcels drop to a lower zoom so the
-// lookup never needs more than TERRAIN_TILE_MAX_TILES tiles (subrequests).
+// lookup never needs more than TERRAIN_TILE_MAX_TILES tiles (subrequests). A parcel too large for
+// that even at TERRAIN_TILE_MIN_ZOOM (~13 km tiles) gets no tile answer; USGS still answers it.
+// A tile answer larger than TERRAIN_TILE_MAX_BYTES, or not a 256 x 256 PNG, is refused (see
+// src/shared/png.js for the decoder's own limits).
 import { fetchWithTimeout } from '../shared/http.js';
-import { decodePng } from '../shared/png.js';
+import { decodePng, MAX_PNG_INPUT_BYTES } from '../shared/png.js';
 
 export const TERRAIN_TILES_URL = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium';
 export const TERRAIN_TILE_ZOOM = 14;
@@ -32,6 +35,7 @@ export const TERRAIN_TILE_MIN_ZOOM = 11;
 export const TERRAIN_TILE_MAX_TILES = 4;
 export const TERRAIN_TILE_SIZE = 256;
 export const TERRAIN_TILE_TIMEOUT_MS = 8000;
+export const TERRAIN_TILE_MAX_BYTES = MAX_PNG_INPUT_BYTES;
 // Decoded tiles kept per isolate (each ~192 KB): terrain and slope grid for one parcel share them.
 const MEMO_TILES = 16;
 const memo = new Map();
@@ -64,12 +68,13 @@ function tilesFor(points, z) {
   return [...keys.values()];
 }
 
-// The highest zoom (<= TERRAIN_TILE_ZOOM) whose tiles covering `points` number at most maxTiles.
+// The highest zoom from TERRAIN_TILE_ZOOM down to TERRAIN_TILE_MIN_ZOOM whose tiles covering
+// `points` number at most maxTiles, or null when even the lowest zoom needs more.
 export function tileZoomFor(points, maxTiles = TERRAIN_TILE_MAX_TILES) {
-  for (let z = TERRAIN_TILE_ZOOM; z > TERRAIN_TILE_MIN_ZOOM; z--) {
+  for (let z = TERRAIN_TILE_ZOOM; z >= TERRAIN_TILE_MIN_ZOOM; z--) {
     if (tilesFor(points, z).length <= maxTiles) return z;
   }
-  return TERRAIN_TILE_MIN_ZOOM;
+  return null;
 }
 
 export const terrariumMeters = (r, g, b) => (r * 256 + g + b / 256) - 32768;
@@ -83,14 +88,15 @@ async function loadTile(tile, { signal, timeoutMs }) {
     return hit;
   }
   const response = await fetchWithTimeout(`${TERRAIN_TILES_URL}/${key}.png`, {
-    signal, label: 'terrain-tiles', agency: 'AWS Terrain Tiles'
+    signal, label: 'terrain-tiles', agency: 'AWS Terrain Tiles', maxBytes: TERRAIN_TILE_MAX_BYTES
   }, timeoutMs);
   if (!response.ok) throw new Error(`AWS Terrain Tiles returned ${response.status}`);
   let image;
-  try { image = await decodePng(await response.arrayBuffer()); } catch (error) {
+  try {
+    image = await decodePng(await response.arrayBuffer(), { width: TERRAIN_TILE_SIZE, height: TERRAIN_TILE_SIZE, maxInputBytes: TERRAIN_TILE_MAX_BYTES });
+  } catch (error) {
     throw new Error(`AWS Terrain Tiles returned an unreadable tile (${error?.message || 'decode failed'})`);
   }
-  if (image.width !== TERRAIN_TILE_SIZE || image.height !== TERRAIN_TILE_SIZE) throw new Error('AWS Terrain Tiles returned an unexpected tile size');
   memo.set(key, image);
   while (memo.size > MEMO_TILES) memo.delete(memo.keys().next().value);
   return image;
@@ -102,7 +108,9 @@ async function loadTile(tile, { signal, timeoutMs }) {
 export async function terrainTileSamplesFt(points, { signal, timeoutMs = TERRAIN_TILE_TIMEOUT_MS } = {}) {
   if (!points.length) return { values: [], zoom: TERRAIN_TILE_ZOOM, tiles: 0 };
   const z = tileZoomFor(points);
+  if (z === null) throw new Error(`AWS Terrain Tiles: the parcel needs more than ${TERRAIN_TILE_MAX_TILES} tiles even at zoom ${TERRAIN_TILE_MIN_ZOOM}`);
   const tiles = tilesFor(points, z);
+  if (tiles.length > TERRAIN_TILE_MAX_TILES) throw new Error('AWS Terrain Tiles: too many tiles');
   const images = new Map();
   await Promise.all(tiles.map(async tile => {
     images.set(tileKey(tile.z, tile.x, tile.y), await loadTile(tile, { signal, timeoutMs }));
