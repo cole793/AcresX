@@ -1,9 +1,9 @@
 # County validation: Kootenai, ID
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-07T18:04:37.644Z
-- Parcels: 12, with an error or mismatch: 1
-- Layer results: ok 140, unavailable 27, error 1, mismatch 0, skipped 0
+- Run: 2026-11-08T18:23:56.774Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 141, unavailable 27, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -17,7 +17,7 @@
 | 007740020050 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 0K2660010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 0153400A001A | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 47N02W040800 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 47N02W040800 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | C72150040140 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 
 ## Parcel details
@@ -220,7 +220,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ST MARI
 - **Wells**: ok. 60 well record(s), 5 of nearest 5 report depth [wellCount=60, nearestDepthsCount=5, nearestMi=0.15, medianDepthFt=205]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Lacy-Bobbitt association, 5 to 35 percent slopes, very stony) [feasibility=limited, mapUnit=Lacy-Bobbitt association, 5 to 35 percent slopes, very stony, hydrologicGroup=D, drainage=Well drained, soilSlopePct=20]
-- **Terrain**: error. USGS elevation was unavailable for 5 of 9 terrain points.
+- **Terrain**: ok. avg grade 3.6%, max 8% [gradePct=3.6, maxGradePct=8, reliefFt=136, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=17.5, partial=false]
 - **Flood**: ok. high-risk zone (X, AE) (via FEMA NFHL) [high=true, intersects=true, zones=X; AE, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.4]
