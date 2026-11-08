@@ -1,16 +1,16 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-07T18:08:37.571Z
-- Parcels: 12, with an error or mismatch: 4
-- Layer results: ok 138, unavailable 13, error 4, mismatch 1, skipped 12
+- Run: 2026-11-08T18:27:34.983Z
+- Parcels: 12, with an error or mismatch: 2
+- Layer results: ok 151, unavailable 15, error 2, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 35204.2729 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 35234.0602 | error | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | mismatch | skipped | skipped | skipped |
+| 35234.0602 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 13013.2211 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 57344.0125 | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 57344.0125 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 43341.0110 | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 47071.9003 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 46301.9025 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
@@ -45,22 +45,20 @@ Why: Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 
 
 Why: Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zoning polygon at the centroid (-117.331914,47.642933); the city's layer used by src/counties/spokane-cities.js says R-3, Single-Family Residential (R-3) (https://arcgis.spokanevalley.org/arcgis/rest/services/ViewerV3/LandUse/MapServer/1/query?f=json&geometry=-117.331914,47.642933&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Zoning,Zoning_Desg&returnGeometry=false, checked 2026-11-02).
 
-- **Parcel**: error. HTTP 502: services.arcgis.com timed out after 25s
-- **Wells**: skipped. parcel lookup failed
-- **Existing well**: skipped. parcel lookup failed
-- **Soil**: skipped. parcel lookup failed
-- **Terrain**: skipped. parcel lookup failed
-- **Slope grid**: skipped. parcel lookup failed
-- **Flood**: skipped. parcel lookup failed
-- **Wetlands**: skipped. parcel lookup failed
-- **Utility**: skipped. parcel lookup failed
-- **Power**: skipped. parcel lookup failed
-- **Zoning**: mismatch. parcel lookup failed
-  - mismatch `zoning.code`: expected R-3, got null
-  - mismatch `zoning.jurisdiction`: expected City of Spokane Valley, got null
-- **Zoning rules**: skipped. parcel lookup failed
-- **Assessment**: skipped. parcel lookup failed
-- **Listing**: skipped. parcel lookup failed
+- **Parcel**: ok. parcel 35234.0602, 0.42 ac (mapped) [parcelId=35234.0602, acres=0.42, address=5407 E 16TH AVE, SPOKANE VALLEY, 99212, lat=47.642933, lon=-117.331914, acresSource=mapped outline]
+- **Wells**: ok. 1892 well record(s), 5 of nearest 5 report depth [wellCount=1892, nearestDepthsCount=5, nearestMi=0.2, medianDepthFt=25]
+- **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
+- **Soil**: ok. moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Urban land-Lenz, disturbed complex, 3 to 15 percent slopes, soilSlopePct=5]
+- **Terrain**: ok. avg grade 4.9%, max 8.7% [gradePct=4.9, maxGradePct=8.7, reliefFt=9, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 7.3% [cellCount=16, avgSlopePct=7.3, maxSlopePct=14.3, partial=false]
+- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Utility**: ok. BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY [providers=BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY]
+- **Power**: ok. BONNEVILLE POWER ADMINISTRATION [provider=BONNEVILLE POWER ADMINISTRATION, confidence=low, distributionStatus=no_verified_distance]
+- **Zoning**: ok. R-3 (City of Spokane Valley) [code=R-3, jurisdiction=City of Spokane Valley, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none]
+- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
+- **Assessment**: ok. assessed n/a, no tax amount [landValue=110000, taxPresent=false, source=Spokane County Assessor SCOUTSimple]
+- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 13013.2211 (City of Cheney, 0.16 ac)
 
@@ -89,7 +87,7 @@ Why: Small unincorporated lot with a FEMA high-risk zone and mapped NWI wetlands
 - **Wells**: ok. 193 well record(s), 5 of nearest 5 report depth [wellCount=193, nearestDepthsCount=5, nearestMi=0.14, medianDepthFt=360]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
 - **Soil**: ok. favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes) [feasibility=favorable, mapUnit=Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=8]
-- **Terrain**: error. USGS elevation was unavailable for 8 of 9 terrain points.
+- **Terrain**: ok. avg grade 14.3%, max 28.2% [gradePct=14.3, maxGradePct=28.2, reliefFt=57, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 24% [cellCount=16, avgSlopePct=24, maxSlopePct=58, partial=false]
 - **Flood**: ok. high-risk zone (AE, X) (via FEMA NFHL) [high=true, intersects=true, zones=AE; X, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=14]
@@ -108,7 +106,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 39 well record(s), 5 of nearest 5 report depth [wellCount=39, nearestDepthsCount=5, nearestMi=0.06, medianDepthFt=160]
 - **Existing well**: ok. Possible well association [status=possible_match, confidence=Low, score=45]
 - **Soil**: ok. moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Glenrose ashy silt loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
-- **Terrain**: error. USGS elevation was unavailable for 4 of 9 terrain points.
+- **Terrain**: error. USGS elevation was unavailable for 6 of 9 terrain points.
 - **Slope grid**: ok. 16 cells, avg 5.6% [cellCount=16, avgSlopePct=5.6, maxSlopePct=11.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=7]
@@ -147,7 +145,7 @@ Why: Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [feasibility=favorable, mapUnit=Scrabblers ashy fine sandy loam, 3 to 8 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=5]
 - **Terrain**: ok. avg grade 3.9%, max 11.3% [gradePct=3.9, maxGradePct=11.3, reliefFt=55, sampleCount=9]
-- **Slope grid**: ok. 4 cells, avg 6.1% [cellCount=4, avgSlopePct=6.1, maxSlopePct=13.2, partial=true]
+- **Slope grid**: ok. 16 cells, avg 6.9% [cellCount=16, avgSlopePct=6.9, maxSlopePct=17.7, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY [providers=BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY]
@@ -222,7 +220,7 @@ Why: Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 68 well record(s), 5 of nearest 5 report depth [wellCount=68, nearestDepthsCount=5, nearestMi=0.25, medianDepthFt=300]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Blackprince-Ardtoo complex, 15 to 30 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=22]
-- **Terrain**: error. USGS elevation was unavailable for 9 of 9 terrain points.
+- **Terrain**: error. USGS elevation was unavailable for 8 of 9 terrain points.
 - **Slope grid**: ok. 16 cells, avg 12.3% [cellCount=16, avgSlopePct=12.3, maxSlopePct=22.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.7]
