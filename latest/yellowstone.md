@@ -1,7 +1,7 @@
 # County validation: Yellowstone, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-08T18:34:45.106Z
+- Run: 2026-11-09T23:15:21.767Z
 - Parcels: 12, with an error or mismatch: 0
 - Layer results: ok 140, unavailable 28, error 0, mismatch 0, skipped 0
 
@@ -30,7 +30,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Wells**: ok. 382 well record(s), 5 of nearest 5 report depth [wellCount=382, nearestDepthsCount=5, nearestMi=0.19, medianDepthFt=21]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Vananda silty clay, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Vananda silty clay, 0 to 1 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=1]
-- **Terrain**: ok. avg grade 0.2%, max 0.5% [gradePct=0.2, maxGradePct=0.5, reliefFt=7, sampleCount=9]
+- **Terrain**: ok. avg grade 0.2%, max 0.4% [gradePct=0.2, maxGradePct=0.4, reliefFt=5, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.5% [cellCount=16, avgSlopePct=0.5, maxSlopePct=1.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -49,8 +49,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Wells**: ok. 32 well record(s), 5 of nearest 5 report depth [wellCount=32, nearestDepthsCount=5, nearestMi=0.79, medianDepthFt=37]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Grail soils, 2 to 15 percent slopes) [feasibility=moderate, mapUnit=Grail soils, 2 to 15 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=9]
-- **Terrain**: ok. avg grade 6.8%, max 18.2% [gradePct=6.8, maxGradePct=18.2, reliefFt=324, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.4% [cellCount=16, avgSlopePct=14.4, maxSlopePct=27.8, partial=false]
+- **Terrain**: ok. avg grade 6.6%, max 18.1% [gradePct=6.6, maxGradePct=18.1, reliefFt=319, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 14.8% [cellCount=16, avgSlopePct=14.8, maxSlopePct=27.3, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 5 NWI feature(s) [intersects=true, count=5, coveragePct=2.3]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -69,7 +69,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McRae loam, 4 to 7 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 4 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=6]
 - **Terrain**: ok. avg grade 6.9%, max 22.5% [gradePct=6.9, maxGradePct=22.5, reliefFt=63, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15.1% [cellCount=16, avgSlopePct=15.1, maxSlopePct=38.1, partial=false]
+- **Slope grid**: ok. 16 cells, avg 15.5% [cellCount=16, avgSlopePct=15.5, maxSlopePct=23.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -88,7 +88,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McRae loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 1 to 4 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3]
 - **Terrain**: ok. avg grade 2.5%, max 5.1% [gradePct=2.5, maxGradePct=5.1, reliefFt=10, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 3.6% [cellCount=16, avgSlopePct=3.6, maxSlopePct=7, partial=false]
+- **Slope grid**: ok. 16 cells, avg 2.2% [cellCount=16, avgSlopePct=2.2, maxSlopePct=2.5, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -126,7 +126,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural parc
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Maginnis channery clay loam, 15 to 35 percent slopes) [feasibility=limited, mapUnit=Maginnis channery clay loam, 15 to 35 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=25]
 - **Terrain**: ok. avg grade 1.9%, max 4.4% [gradePct=1.9, maxGradePct=4.4, reliefFt=162, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 8.2% [cellCount=16, avgSlopePct=8.2, maxSlopePct=15.8, partial=false]
+- **Slope grid**: ok. 16 cells, avg 8.3% [cellCount=16, avgSlopePct=8.3, maxSlopePct=15.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 6 NWI feature(s) [intersects=true, count=6, coveragePct=2.3]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -144,7 +144,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Downtown Billing
 - **Wells**: ok. 1572 well record(s), 5 of nearest 5 report depth [wellCount=1572, nearestDepthsCount=5, nearestMi=0.03, medianDepthFt=25]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Lohmiller silty clay, 0 to 1 percent slopes) [feasibility=favorable, mapUnit=Lohmiller silty clay, 0 to 1 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=1]
-- **Terrain**: ok. avg grade 0.7%, max 2.5% [gradePct=0.7, maxGradePct=2.5, reliefFt=6, sampleCount=9]
+- **Terrain**: ok. avg grade 0.2%, max 0.3% [gradePct=0.2, maxGradePct=0.3, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.4% [cellCount=16, avgSlopePct=1.4, maxSlopePct=5.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -163,7 +163,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 - **Wells**: ok. 686 well record(s), 5 of nearest 5 report depth [wellCount=686, nearestDepthsCount=5, nearestMi=0.03, medianDepthFt=79]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Glenberg fine sandy loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=Glenberg fine sandy loam, 1 to 4 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=3]
-- **Terrain**: ok. avg grade 2.5%, max 3.7% [gradePct=2.5, maxGradePct=3.7, reliefFt=8, sampleCount=9]
+- **Terrain**: ok. avg grade 2.4%, max 4.1% [gradePct=2.4, maxGradePct=4.1, reliefFt=7, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 4.2% [cellCount=16, avgSlopePct=4.2, maxSlopePct=9.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -182,8 +182,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant pa
 - **Wells**: ok. 336 well record(s), 5 of nearest 5 report depth [wellCount=336, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=26]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Haverson loam, 0 to 1 percent slopes) [feasibility=favorable, mapUnit=Haverson loam, 0 to 1 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=1]
-- **Terrain**: ok. avg grade 0.5%, max 1.2% [gradePct=0.5, maxGradePct=1.2, reliefFt=8, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.3% [cellCount=16, avgSlopePct=1.3, maxSlopePct=3.1, partial=false]
+- **Terrain**: ok. avg grade 0%, max 0.3% [gradePct=0, maxGradePct=0.3, reliefFt=1, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 0.1% [cellCount=16, avgSlopePct=0.1, maxSlopePct=0.6, partial=false]
 - **Flood**: ok. high-risk zone (AE) (via FEMA NFHL) [high=true, intersects=true, zones=AE, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=5.5]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -202,7 +202,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved r
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Absarokee clay loam, 4 to 7 percent slopes) [feasibility=limited, mapUnit=Absarokee clay loam, 4 to 7 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=6]
 - **Terrain**: ok. avg grade 3.4%, max 5.2% [gradePct=3.4, maxGradePct=5.2, reliefFt=224, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.9% [cellCount=16, avgSlopePct=5.9, maxSlopePct=13.2, partial=false]
+- **Slope grid**: ok. 16 cells, avg 6% [cellCount=16, avgSlopePct=6, maxSlopePct=12.4, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=1.1]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
