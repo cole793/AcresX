@@ -1,24 +1,24 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-08T18:23:55.895Z
-- Parcels: 12, with an error or mismatch: 4
-- Layer results: ok 126, unavailable 38, error 4, mismatch 0, skipped 0
+- Run: 2026-11-09T23:01:38.401Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 130, unavailable 38, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 06079621201790000 | ok | ok | unavailable | ok | ok | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 06079621201790000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06079611101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06069818101020000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06079801358210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06069905302080000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06069624301010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06033804413010000 | ok | error | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 06033804413010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06033908402700000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 06110827101470000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
-| 06101033302010000 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
+| 06101033302010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
 | 06042734301530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06079812230210000 | ok | ok | unavailable | ok | ok | error | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 06079812230210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 
 ## Parcel details
 
@@ -30,8 +30,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Wells**: ok. 109 well record(s), 5 of nearest 5 report depth [wellCount=109, nearestDepthsCount=5, nearestMi=0.04, medianDepthFt=540]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Amsterdam-Quagle silt loams, 4 to 8 percent slopes) [feasibility=favorable, mapUnit=Amsterdam-Quagle silt loams, 4 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=6]
-- **Terrain**: ok. avg grade 2.1%, max 4.7% [gradePct=2.1, maxGradePct=4.7, reliefFt=39, sampleCount=9]
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 2.5%, max 4.8% [gradePct=2.5, maxGradePct=4.8, reliefFt=45, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 5.2% [cellCount=16, avgSlopePct=5.2, maxSlopePct=7.8, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -50,7 +50,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes) [feasibility=limited, mapUnit=Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=30]
 - **Terrain**: ok. avg grade 3%, max 6.2% [gradePct=3, maxGradePct=6.2, reliefFt=199, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.7% [cellCount=16, avgSlopePct=5.7, maxSlopePct=13.2, partial=false]
+- **Slope grid**: ok. 16 cells, avg 5.3% [cellCount=16, avgSlopePct=5.3, maxSlopePct=11.4, partial=false]
 - **Flood**: ok. zones X, D (via FEMA NFHL) [high=false, intersects=true, zones=X; D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -87,7 +87,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Wells**: ok. 1506 well record(s), 5 of nearest 5 report depth [wellCount=1506, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=42]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Blossberg loam, 0 to 2 percent slopes) [feasibility=limited, mapUnit=Blossberg loam, 0 to 2 percent slopes, hydrologicGroup=B/D, drainage=Poorly drained, soilSlopePct=1]
-- **Terrain**: ok. avg grade 1.3%, max 3.1% [gradePct=1.3, maxGradePct=3.1, reliefFt=3, sampleCount=9]
+- **Terrain**: ok. avg grade 0.9%, max 1.5% [gradePct=0.9, maxGradePct=1.5, reliefFt=2, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=10, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -106,8 +106,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county pa
 - **Wells**: ok. 555 well record(s), 5 of nearest 5 report depth [wellCount=555, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=228]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Bavdark loam, 8 to 25 percent slopes) [feasibility=limited, mapUnit=Bavdark loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17]
-- **Terrain**: ok. avg grade 10.6%, max 20% [gradePct=10.6, maxGradePct=20, reliefFt=171, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15.1% [cellCount=16, avgSlopePct=15.1, maxSlopePct=23.1, partial=false]
+- **Terrain**: ok. avg grade 10.8%, max 18.8% [gradePct=10.8, maxGradePct=18.8, reliefFt=174, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 15% [cellCount=16, avgSlopePct=15, maxSlopePct=21.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC [providers=NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC]
@@ -125,8 +125,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Wells**: ok. 11 well record(s), 5 of nearest 5 report depth [wellCount=11, nearestDepthsCount=5, nearestMi=1.59, medianDepthFt=524]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Bangtail-Adel loams, 4 to 25 percent slopes) [feasibility=moderate, mapUnit=Bangtail-Adel loams, 4 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
-- **Terrain**: ok. avg grade 13.2%, max 22.3% [gradePct=13.2, maxGradePct=22.3, reliefFt=654, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22.4% [cellCount=16, avgSlopePct=22.4, maxSlopePct=30.6, partial=false]
+- **Terrain**: ok. avg grade 13.4%, max 22.2% [gradePct=13.4, maxGradePct=22.2, reliefFt=663, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=30.9, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=0.8]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -141,7 +141,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (Big Sky zoning district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RC-SF-10, DISTRICT_N BIG SKY: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.360143%2C45.246635&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RC-SF-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).
 
 - **Parcel**: ok. parcel 06033804413010000, 3.33 ac (mapped) [parcelId=06033804413010000, acres=3.33, address=WILDERNESS RIDGE TRL, BIG SKY, MT 59716, lat=45.246655, lon=-111.36022, acresSource=mapped outline]
-- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
+- **Wells**: ok. 246 well record(s), 5 of nearest 5 report depth [wellCount=246, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=1058]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Yellowmule-Ouselfal complex, 8 to 25 percent slopes) [feasibility=limited, mapUnit=Yellowmule-Ouselfal complex, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17]
 - **Terrain**: ok. avg grade 9.8%, max 19% [gradePct=9.8, maxGradePct=19, reliefFt=113, sampleCount=9]
@@ -163,8 +163,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improv
 - **Wells**: ok. 313 well record(s), 5 of nearest 5 report depth [wellCount=313, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=202]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Bridger loam, 2 to 8 percent slopes) [feasibility=favorable, mapUnit=Bridger loam, 2 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=5]
-- **Terrain**: ok. avg grade 1.6%, max 2.9% [gradePct=1.6, maxGradePct=2.9, reliefFt=5, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 3.2% [cellCount=16, avgSlopePct=3.2, maxSlopePct=7.7, partial=false]
+- **Terrain**: ok. avg grade 1.3%, max 2.6% [gradePct=1.3, maxGradePct=2.6, reliefFt=4, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 2.3% [cellCount=16, avgSlopePct=2.3, maxSlopePct=3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -183,7 +183,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Amesha loam, 8 to 15 percent slopes) [feasibility=moderate, mapUnit=Amesha loam, 8 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=12]
 - **Terrain**: ok. avg grade 6.2%, max 15% [gradePct=6.2, maxGradePct=15, reliefFt=118, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=35.3, partial=false]
+- **Slope grid**: ok. 16 cells, avg 14.1% [cellCount=16, avgSlopePct=14.1, maxSlopePct=35.6, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -201,7 +201,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 - **Wells**: ok. 1580 well record(s), 5 of nearest 5 report depth [wellCount=1580, nearestDepthsCount=5, nearestMi=0.17, medianDepthFt=73]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Beaverell loam, 0 to 2 percent slopes) [feasibility=favorable, mapUnit=Beaverell loam, 0 to 2 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=1]
-- **Terrain**: error. USGS elevation was unavailable for 2 of 9 terrain points.
+- **Terrain**: ok. avg grade 0.5%, max 0.7% [gradePct=0.5, maxGradePct=0.7, reliefFt=20, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -220,8 +220,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Wells**: ok. 315 well record(s), 5 of nearest 5 report depth [wellCount=315, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=140]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Lonniebee-Cowood complex, 35 to 60 percent slopes) [feasibility=limited, mapUnit=Lonniebee-Cowood complex, 35 to 60 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=48]
-- **Terrain**: ok. avg grade 9.6%, max 19.5% [gradePct=9.6, maxGradePct=19.5, reliefFt=127, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=34.7, partial=false]
+- **Terrain**: ok. avg grade 11.3%, max 20.8% [gradePct=11.3, maxGradePct=20.8, reliefFt=150, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22% [cellCount=16, avgSlopePct=22, maxSlopePct=33, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.3]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -239,8 +239,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Wells**: ok. 1476 well record(s), 5 of nearest 5 report depth [wellCount=1476, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=42]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Urban land) [feasibility=moderate, mapUnit=Urban land, soilSlopePct=0]
-- **Terrain**: ok. avg grade 2.5%, max 3.8% [gradePct=2.5, maxGradePct=3.8, reliefFt=3, sampleCount=9]
-- **Slope grid**: error. Not enough elevation samples were returned to build a reliable slope heat map. Try again shortly.
+- **Terrain**: ok. avg grade 0.8%, max 1.7% [gradePct=0.8, maxGradePct=1.7, reliefFt=1, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=6.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]

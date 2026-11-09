@@ -1,0 +1,2362 @@
+{
+  "county": "Gallatin",
+  "state": "MT",
+  "baseUrl": "https://acresx.cole-groshens.workers.dev",
+  "startedAt": "2026-11-09T23:01:38.401Z",
+  "finishedAt": "2026-11-09T23:08:49.581Z",
+  "results": [
+    {
+      "parcelId": "06079621201790000",
+      "label": "no locality, 19.33 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant land in the county unzoned area.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 756,
+          "status": "ok",
+          "detail": "parcel 06079621201790000, 19.34 ac (mapped)",
+          "values": {
+            "parcelId": "06079621201790000",
+            "acres": 19.34,
+            "address": null,
+            "lat": 45.649725,
+            "lon": -111.360764,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 594,
+          "status": "ok",
+          "detail": "109 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 109,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.04,
+            "medianDepthFt": 540
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 333,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 3045,
+          "status": "ok",
+          "detail": "zones D (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "D"
+            ],
+            "category": "undetermined",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 3709,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 868,
+          "status": "ok",
+          "detail": "UNZONED (Gallatin County)",
+          "values": {
+            "code": "UNZONED",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "unzoned",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6086,
+          "status": "ok",
+          "detail": "favorable (Amsterdam-Quagle silt loams, 4 to 8 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Amsterdam-Quagle silt loams, 4 to 8 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 6
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6086,
+          "status": "ok",
+          "detail": "avg grade 2.5%, max 4.8%",
+          "values": {
+            "gradePct": 2.5,
+            "maxGradePct": 4.8,
+            "reliefFt": 45,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 59,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 689,
+          "status": "ok",
+          "detail": "assessed $1,221, no tax amount",
+          "values": {
+            "assessedValue": 1221,
+            "landValue": 1221,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 834,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 924,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6139,
+          "status": "ok",
+          "detail": "16 cells, avg 5.2%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 5.2,
+            "maxSlopePct": 7.8,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06079611101010000",
+      "label": "MANHATTAN, 316.8 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved parcel near Manhattan, outside town limits, in the county unzoned area.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 360,
+          "status": "ok",
+          "detail": "parcel 06079611101010000, 316.97 ac (mapped)",
+          "values": {
+            "parcelId": "06079611101010000",
+            "acres": 316.97,
+            "address": "11070 LITTLE HOLLAND RD, MANHATTAN, MT 59741",
+            "lat": 45.679787,
+            "lon": -111.315607,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 416,
+          "status": "ok",
+          "detail": "113 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 113,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.37,
+            "medianDepthFt": 163
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 295,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 1533,
+          "status": "ok",
+          "detail": "zones X, D (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X",
+              "D"
+            ],
+            "category": "undetermined",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 4245,
+          "status": "ok",
+          "detail": "4 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 4,
+            "coveragePct": 1
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 770,
+          "status": "ok",
+          "detail": "UNZONED (Gallatin County)",
+          "values": {
+            "code": "UNZONED",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "unzoned",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 1863,
+          "status": "ok",
+          "detail": "limited (Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes",
+            "hydrologicGroup": "D",
+            "drainage": "Well drained",
+            "soilSlopePct": 30
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 1863,
+          "status": "ok",
+          "detail": "avg grade 3%, max 6.2%",
+          "values": {
+            "gradePct": 3,
+            "maxGradePct": 6.2,
+            "reliefFt": 199,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 25,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 206,
+          "status": "ok",
+          "detail": "assessed $530,345, no tax amount",
+          "values": {
+            "assessedValue": 530345,
+            "landValue": 221765,
+            "improvementValue": 308580,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 615,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 416,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6031,
+          "status": "ok",
+          "detail": "16 cells, avg 5.3%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 5.3,
+            "maxSlopePct": 11.4,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06069818101020000",
+      "label": "BOZEMAN, 2.97 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel with a Bozeman mailing locality, outside city limits, in the county unzoned area.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 885,
+          "status": "ok",
+          "detail": "parcel 06069818101020000, 2.97 ac (mapped)",
+          "values": {
+            "parcelId": "06069818101020000",
+            "acres": 2.97,
+            "address": "15230 COTTONWOOD RD, BOZEMAN, MT 59715",
+            "lat": 45.583371,
+            "lon": -111.153633,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 730,
+          "status": "ok",
+          "detail": "425 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 425,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.11,
+            "medianDepthFt": 40
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 406,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 178,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 4095,
+          "status": "ok",
+          "detail": "1 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 1,
+            "coveragePct": 0.7
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 575,
+          "status": "ok",
+          "detail": "UNZONED (Gallatin County)",
+          "values": {
+            "code": "UNZONED",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "unzoned",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 5456,
+          "status": "ok",
+          "detail": "favorable (Hyalite-Beaverton complex, 0 to 4 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Hyalite-Beaverton complex, 0 to 4 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 2
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 5456,
+          "status": "ok",
+          "detail": "avg grade 3.4%, max 8.6%",
+          "values": {
+            "gradePct": 3.4,
+            "maxGradePct": 8.6,
+            "reliefFt": 19,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 45,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 225,
+          "status": "ok",
+          "detail": "assessed $1,067,605, no tax amount",
+          "values": {
+            "assessedValue": 1067605,
+            "landValue": 716325,
+            "improvementValue": 351280,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 741,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 20581,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 885,
+          "status": "ok",
+          "detail": "16 cells, avg 5.8%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 5.8,
+            "maxSlopePct": 15.3,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06079801358210000",
+      "label": "no locality, 0.1 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was \"No mapped zoning district\", now City of Bozeman zoning. Expected values checked by hand on 2026-11-02 (read-only): Gallatin city limits layer 267 returns NAME Bozeman: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/Gallatin_Incorporated_Cities_and_Towns/FeatureServer/267/query?geometry=-111.056899%2C45.687377&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=NAME&returnGeometry=false&f=json; City of Bozeman Zoning returns ZONING R-3: https://gisweb.bozeman.net/arcgis/rest/services/Open_Data/Zoning/FeatureServer/0/query?geometry=-111.056899%2C45.687377&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING&returnGeometry=false&f=json; county layer 42 returns no feature; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 764,
+          "status": "ok",
+          "detail": "parcel 06079801358210000, 0.1 ac (mapped)",
+          "values": {
+            "parcelId": "06079801358210000",
+            "acres": 0.1,
+            "address": "759 N 15TH AVE",
+            "lat": 45.687373,
+            "lon": -111.056939,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 1036,
+          "status": "ok",
+          "detail": "1506 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 1506,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.09,
+            "medianDepthFt": 42
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 370,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 203,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 2474,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 996,
+          "status": "ok",
+          "detail": "R-3 (City of Bozeman)",
+          "values": {
+            "code": "R-3",
+            "jurisdiction": "City of Bozeman",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6044,
+          "status": "ok",
+          "detail": "limited (Blossberg loam, 0 to 2 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Blossberg loam, 0 to 2 percent slopes",
+            "hydrologicGroup": "B/D",
+            "drainage": "Poorly drained",
+            "soilSlopePct": 1
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6044,
+          "status": "ok",
+          "detail": "avg grade 0.9%, max 1.5%",
+          "values": {
+            "gradePct": 0.9,
+            "maxGradePct": 1.5,
+            "reliefFt": 2,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 84,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 264,
+          "status": "ok",
+          "detail": "assessed $662,000, no tax amount",
+          "values": {
+            "assessedValue": 662000,
+            "landValue": 206513,
+            "improvementValue": 455487,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 839,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 769,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 374,
+          "status": "ok",
+          "detail": "16 cells, avg 2.8%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 2.8,
+            "maxSlopePct": 10,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06069905302080000",
+      "label": "BOZEMAN, 9.88 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county parcel south of Bozeman (Hyalite district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RR-10, DISTRICT_N HYALITE: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.016503%2C45.599720&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RR-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 864,
+          "status": "ok",
+          "detail": "parcel 06069905302080000, 9.88 ac (mapped)",
+          "values": {
+            "parcelId": "06069905302080000",
+            "acres": 9.88,
+            "address": "SKYRIDGE DR, BOZEMAN, MT 59715",
+            "lat": 45.599921,
+            "lon": -111.016656,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 12890,
+          "status": "ok",
+          "detail": "555 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 555,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.09,
+            "medianDepthFt": 228
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 289,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)",
+              "PARK ELECTRIC COOP INC"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 201,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 2912,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 210,
+          "status": "ok",
+          "detail": "RR-10 (Gallatin County)",
+          "values": {
+            "code": "RR-10",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6055,
+          "status": "ok",
+          "detail": "limited (Bavdark loam, 8 to 25 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Bavdark loam, 8 to 25 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 17
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6055,
+          "status": "ok",
+          "detail": "avg grade 10.8%, max 18.8%",
+          "values": {
+            "gradePct": 10.8,
+            "maxGradePct": 18.8,
+            "reliefFt": 174,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 30,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 795,
+          "status": "ok",
+          "detail": "assessed $1,228,455, no tax amount",
+          "values": {
+            "assessedValue": 1228455,
+            "landValue": 1228455,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 759,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18531,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6059,
+          "status": "ok",
+          "detail": "16 cells, avg 15%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 15,
+            "maxSlopePct": 21.2,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06069624301010000",
+      "label": "no locality, 158.98 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vacant parcel in the county unzoned area (INNERZONE UNZ). Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE UNZ, ZONED UNZONED: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.305586%2C45.558961&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 616,
+          "status": "ok",
+          "detail": "parcel 06069624301010000, 159.05 ac (mapped)",
+          "values": {
+            "parcelId": "06069624301010000",
+            "acres": 159.05,
+            "address": null,
+            "lat": 45.558556,
+            "lon": -111.305016,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 220,
+          "status": "ok",
+          "detail": "11 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 11,
+            "nearestDepthsCount": 5,
+            "nearestMi": 1.59,
+            "medianDepthFt": 524
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 272,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 165,
+          "status": "ok",
+          "detail": "zones D (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "D"
+            ],
+            "category": "undetermined",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 5063,
+          "status": "ok",
+          "detail": "2 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 2,
+            "coveragePct": 0.8
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 654,
+          "status": "ok",
+          "detail": "UNZONED (Gallatin County)",
+          "values": {
+            "code": "UNZONED",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "unzoned",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6075,
+          "status": "ok",
+          "detail": "moderate (Bangtail-Adel loams, 4 to 25 percent slopes)",
+          "values": {
+            "feasibility": "moderate",
+            "mapUnit": "Bangtail-Adel loams, 4 to 25 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 15
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6075,
+          "status": "ok",
+          "detail": "avg grade 13.4%, max 22.2%",
+          "values": {
+            "gradePct": 13.4,
+            "maxGradePct": 22.2,
+            "reliefFt": 663,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 70,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 1145,
+          "status": "ok",
+          "detail": "assessed $18,108, no tax amount",
+          "values": {
+            "assessedValue": 18108,
+            "landValue": 18108,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 771,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 689,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6048,
+          "status": "ok",
+          "detail": "16 cells, avg 22.6%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 22.6,
+            "maxSlopePct": 30.9,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06033804413010000",
+      "label": "BIG SKY, 3.32 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (Big Sky zoning district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RC-SF-10, DISTRICT_N BIG SKY: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.360143%2C45.246635&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RC-SF-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 678,
+          "status": "ok",
+          "detail": "parcel 06033804413010000, 3.33 ac (mapped)",
+          "values": {
+            "parcelId": "06033804413010000",
+            "acres": 3.33,
+            "address": "WILDERNESS RIDGE TRL, BIG SKY, MT 59716",
+            "lat": 45.246655,
+            "lon": -111.36022,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 209,
+          "status": "ok",
+          "detail": "246 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 246,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.02,
+            "medianDepthFt": 1058
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 309,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 324,
+          "status": "ok",
+          "detail": "zones D (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "D"
+            ],
+            "category": "undetermined",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 4024,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 598,
+          "status": "ok",
+          "detail": "RC-SF-10 (Gallatin County)",
+          "values": {
+            "code": "RC-SF-10",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 3340,
+          "status": "ok",
+          "detail": "limited (Yellowmule-Ouselfal complex, 8 to 25 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Yellowmule-Ouselfal complex, 8 to 25 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 17
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 3340,
+          "status": "ok",
+          "detail": "avg grade 9.8%, max 19%",
+          "values": {
+            "gradePct": 9.8,
+            "maxGradePct": 19,
+            "reliefFt": 113,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 38,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 228,
+          "status": "ok",
+          "detail": "assessed $2,012,317, no tax amount",
+          "values": {
+            "assessedValue": 2012317,
+            "landValue": 2012317,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 707,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18155,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 379,
+          "status": "ok",
+          "detail": "16 cells, avg 16.2%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 16.2,
+            "maxSlopePct": 25.6,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06033908402700000",
+      "label": "GALLATIN GATEWAY, 0.42 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improved lot near Big Sky / Gallatin Gateway (R-SF-11000); returned an empty zone code before the fix.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 770,
+          "status": "ok",
+          "detail": "parcel 06033908402700000, 0.42 ac (mapped)",
+          "values": {
+            "parcelId": "06033908402700000",
+            "acres": 0.42,
+            "address": "16 BEARTOOTH RD, GALLATIN GATEWAY, MT 59730",
+            "lat": 45.238616,
+            "lon": -111.253517,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 439,
+          "status": "ok",
+          "detail": "313 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 313,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.07,
+            "medianDepthFt": 202
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 322,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 152,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 3777,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 910,
+          "status": "ok",
+          "detail": "R-SF-11000 (Gallatin County)",
+          "values": {
+            "code": "R-SF-11000",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6045,
+          "status": "ok",
+          "detail": "favorable (Bridger loam, 2 to 8 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Bridger loam, 2 to 8 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 5
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6045,
+          "status": "ok",
+          "detail": "avg grade 1.3%, max 2.6%",
+          "values": {
+            "gradePct": 1.3,
+            "maxGradePct": 2.6,
+            "reliefFt": 4,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 56,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 203,
+          "status": "ok",
+          "detail": "assessed $1,479,400, no tax amount",
+          "values": {
+            "assessedValue": 1479400,
+            "landValue": 327612,
+            "improvementValue": 1151788,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 771,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18512,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6028,
+          "status": "ok",
+          "detail": "16 cells, avg 2.3%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 2.3,
+            "maxSlopePct": 3,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06110827101470000",
+      "label": "MANHATTAN, 19.79 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel near Manhattan in a gap of the county zoning map (no district and no unzoned polygon), outside mapped town limits.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 873,
+          "status": "ok",
+          "detail": "parcel 06110827101470000, 19.8 ac (mapped)",
+          "values": {
+            "parcelId": "06110827101470000",
+            "acres": 19.8,
+            "address": "170 HOSS RIDGE RD, MANHATTAN, MT 59741",
+            "lat": 45.90107,
+            "lon": -111.335438,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 455,
+          "status": "ok",
+          "detail": "149 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 149,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.1,
+            "medianDepthFt": 500
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 301,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 140,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 3097,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 299,
+          "status": "unavailable",
+          "detail": "No mapped zoning district",
+          "values": {
+            "code": null,
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "no_mapped_result",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 1314,
+          "status": "ok",
+          "detail": "moderate (Amesha loam, 8 to 15 percent slopes)",
+          "values": {
+            "feasibility": "moderate",
+            "mapUnit": "Amesha loam, 8 to 15 percent slopes",
+            "hydrologicGroup": "B",
+            "drainage": "Well drained",
+            "soilSlopePct": 12
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 1314,
+          "status": "ok",
+          "detail": "avg grade 6.2%, max 15%",
+          "values": {
+            "gradePct": 6.2,
+            "maxGradePct": 15,
+            "reliefFt": 118,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 16,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 429,
+          "status": "ok",
+          "detail": "assessed $1,554,437, no tax amount",
+          "values": {
+            "assessedValue": 1554437,
+            "landValue": 213407,
+            "improvementValue": 1341030,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 791,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 782,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: no zoning code returned (the browser skips this call too)",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6032,
+          "status": "ok",
+          "detail": "16 cells, avg 14.1%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 14.1,
+            "maxSlopePct": 35.6,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06101033302010000",
+      "label": "no locality, 74.64 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt parcel near Belgrade (River Rock area) in a gap of the county zoning map (no district and no unzoned polygon), outside mapped city limits.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 806,
+          "status": "ok",
+          "detail": "parcel 06101033302010000, 74.68 ac (mapped)",
+          "values": {
+            "parcelId": "06101033302010000",
+            "acres": 74.68,
+            "address": null,
+            "lat": 45.790464,
+            "lon": -111.239659,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 629,
+          "status": "ok",
+          "detail": "1580 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 1580,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.17,
+            "medianDepthFt": 73
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 346,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 341,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 1920,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 323,
+          "status": "unavailable",
+          "detail": "No mapped zoning district",
+          "values": {
+            "code": null,
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "no_mapped_result",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 793,
+          "status": "ok",
+          "detail": "favorable (Beaverell loam, 0 to 2 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Beaverell loam, 0 to 2 percent slopes",
+            "hydrologicGroup": "B",
+            "drainage": "Well drained",
+            "soilSlopePct": 1
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 793,
+          "status": "ok",
+          "detail": "avg grade 0.5%, max 0.7%",
+          "values": {
+            "gradePct": 0.5,
+            "maxGradePct": 0.7,
+            "reliefFt": 20,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 54,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 338,
+          "status": "ok",
+          "detail": "assessed $4,500, no tax amount",
+          "values": {
+            "assessedValue": 4500,
+            "landValue": 4500,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 752,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18516,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: no zoning code returned (the browser skips this call too)",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 3295,
+          "status": "ok",
+          "detail": "16 cells, avg 0.7%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 0.7,
+            "maxSlopePct": 1,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06042734301530000",
+      "label": "no locality, 2.76 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (RC-SF-2.5); returned an empty zone code before the fix.",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 444,
+          "status": "ok",
+          "detail": "parcel 06042734301530000, 2.76 ac (mapped)",
+          "values": {
+            "parcelId": "06042734301530000",
+            "acres": 2.76,
+            "address": "OUTLOOK TRL",
+            "lat": 45.266901,
+            "lon": -111.344732,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 305,
+          "status": "ok",
+          "detail": "315 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 315,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.07,
+            "medianDepthFt": 140
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 248,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 115,
+          "status": "ok",
+          "detail": "zones D (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "D"
+            ],
+            "category": "undetermined",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 2020,
+          "status": "ok",
+          "detail": "1 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 1,
+            "coveragePct": 2.3
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 801,
+          "status": "ok",
+          "detail": "RC-SF-2.5 (Gallatin County)",
+          "values": {
+            "code": "RC-SF-2.5",
+            "jurisdiction": "Gallatin County",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6023,
+          "status": "ok",
+          "detail": "limited (Lonniebee-Cowood complex, 35 to 60 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Lonniebee-Cowood complex, 35 to 60 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 48
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6023,
+          "status": "ok",
+          "detail": "avg grade 11.3%, max 20.8%",
+          "values": {
+            "gradePct": 11.3,
+            "maxGradePct": 20.8,
+            "reliefFt": 150,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 25,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 299,
+          "status": "ok",
+          "detail": "assessed $869,596, no tax amount",
+          "values": {
+            "assessedValue": 869596,
+            "landValue": 869596,
+            "improvementValue": 0,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 832,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18485,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6048,
+          "status": "ok",
+          "detail": "16 cells, avg 22%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 22,
+            "maxSlopePct": 33,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "06079812230210000",
+      "label": "no locality, 0.26 ac",
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was \"No mapped zoning district\", now City of Bozeman zoning (R-2).",
+      "layers": {
+        "parcel": {
+          "route": "/api/parcel-search",
+          "httpStatus": 200,
+          "ms": 504,
+          "status": "ok",
+          "detail": "parcel 06079812230210000, 0.26 ac (mapped)",
+          "values": {
+            "parcelId": "06079812230210000",
+            "acres": 0.26,
+            "address": "518 N 17TH AVE",
+            "lat": 45.685405,
+            "lon": -111.059186,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/well-search",
+          "httpStatus": 200,
+          "ms": 419,
+          "status": "ok",
+          "detail": "1476 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 1476,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.11,
+            "medianDepthFt": 42
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 284,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "providers": [
+              "NORTHWESTERN ENERGY LLC - (MT)"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 289,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 2534,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 765,
+          "status": "ok",
+          "detail": "R-2 (City of Bozeman)",
+          "values": {
+            "code": "R-2",
+            "jurisdiction": "City of Bozeman",
+            "countyStatus": "gallatin-v3",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable"
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6027,
+          "status": "ok",
+          "detail": "moderate (Urban land)",
+          "values": {
+            "feasibility": "moderate",
+            "mapUnit": "Urban land",
+            "hydrologicGroup": null,
+            "drainage": null,
+            "soilSlopePct": 0
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6027,
+          "status": "ok",
+          "detail": "avg grade 0.8%, max 1.7%",
+          "values": {
+            "gradePct": 0.8,
+            "maxGradePct": 1.7,
+            "reliefFt": 1,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 33,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 167,
+          "status": "ok",
+          "detail": "assessed $742,800, no tax amount",
+          "values": {
+            "assessedValue": 742800,
+            "landValue": 302880,
+            "improvementValue": 439920,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Montana Cadastral / ORION integration"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 842,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18139,
+          "status": "ok",
+          "detail": "NORTHWESTERN ENERGY LLC - (MT)",
+          "values": {
+            "provider": "NORTHWESTERN ENERGY LLC - (MT)",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "status": "unavailable",
+          "detail": "not requested: the browser has no zoning rules for Gallatin",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 3616,
+          "status": "ok",
+          "detail": "16 cells, avg 2.8%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 2.8,
+            "maxSlopePct": 6.8,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    }
+  ],
+  "summary": {
+    "parcels": 12,
+    "failed": 0,
+    "layerCounts": {
+      "ok": 130,
+      "unavailable": 38,
+      "error": 0,
+      "mismatch": 0,
+      "skipped": 0
+    }
+  }
+}
