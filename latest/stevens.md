@@ -1,16 +1,16 @@
 # County validation: Stevens, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-08T18:30:59.914Z
+- Run: 2026-11-09T23:09:01.341Z
 - Parcels: 12, with an error or mismatch: 1
-- Layer results: ok 139, unavailable 28, error 1, mismatch 0, skipped 0
+- Layer results: ok 138, unavailable 28, error 0, mismatch 2, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | mismatch | mismatch | ok | unavailable |
 | 0763202 | ok | ok | unavailable | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | ok | unavailable |
 | 0231200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 0000500 | ok | ok | unavailable | ok | error | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| 0000500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 2371220 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 2378200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 2214900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
@@ -27,7 +27,7 @@
 Why: Small unincorporated lot with a blank situs city (picked by discovery 2026-11-02, seed 42). Stevens County zoning layer: zoning=5, zoningtext RA-5 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-118.105897,48.629028&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). Since the Stevens adapter (src/counties/stevens.js, 2026-11-04) zoning-permits returns the named code RA-5, with the layer value 5 as zoning.numericCode; before, it returned 5. No Stevens panels in FEMA NFHL (no DFIRM 53065C features), so no high-risk zone. Checked 2026-11-02. Assessor land use code (property_u) 99, Other undeveloped land; the record carries no values (all 0), so AcresX shows them as not available, tax year 2026 (https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query?f=json&where=PARCELN%3D%278974701%27&outFields=PARCELN,property_u,year&returnGeometry=false); a tax category, not zoning. Checked 2026-11-04.
 
 - **Parcel**: ok. parcel 8974701, 0.75 ac (mapped) [parcelId=8974701, acres=0.75, lat=48.629028, lon=-118.105897, acresSource=mapped outline]
-- **Wells**: ok. 241 well record(s), 5 of nearest 5 report depth [wellCount=241, nearestDepthsCount=5, nearestMi=0.53, medianDepthFt=45]
+- **Wells**: ok. 241 well record(s), 5 of nearest 5 report depth [wellCount=241, nearestDepthsCount=5, nearestMi=0.53, medianDepthFt=18.5]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Dart loamy coarse sand, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Dart loamy coarse sand, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
 - **Terrain**: ok. avg grade 1.1%, max 3.1% [gradePct=1.1, maxGradePct=3.1, reliefFt=5, sampleCount=9]
@@ -36,8 +36,10 @@ Why: Small unincorporated lot with a blank situs city (picked by discovery 2026-
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP [provider=AVISTA CORP, confidence=low, distributionStatus=not_publicly_mapped]
-- **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured]
-- **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
+- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured]
+  - mismatch `zoning.code`: expected RA-5, got null
+- **Zoning rules**: mismatch. not requested: no zoning code returned (the browser skips this call too)
+  - mismatch `zoningRules.code`: expected RA-5, got null
 - **Assessment**: ok. assessed n/a, class 99 Other undeveloped land, no tax amount [taxPresent=false, taxYear=2026, propertyClass=99, propertyClassDescription=Other undeveloped land, source=Stevens County Assessor (RealPropertyParcels_Public)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
@@ -49,7 +51,7 @@ Why: Small unincorporated lot in the Lake Spokane urban growth area (picked by d
 - **Wells**: ok. 141 well record(s), 5 of nearest 5 report depth [wellCount=141, nearestDepthsCount=5, nearestMi=0.12, medianDepthFt=143]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Dart loamy coarse sand, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Dart loamy coarse sand, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: ok. avg grade 0.4%, max 0.7% [gradePct=0.4, maxGradePct=0.7, reliefFt=2, sampleCount=9]
+- **Terrain**: ok. avg grade 0.3%, max 0.4% [gradePct=0.3, maxGradePct=0.4, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1.1, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -65,10 +67,10 @@ Why: Small unincorporated lot in the Lake Spokane urban growth area (picked by d
 Why: Small lot inside Chewelah city limits (picked by discovery 2026-11-02, seed 42). Stevens Cities layer at -117.72695,48.276834 returns Chewelah (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query?f=json&geometry=-117.72695,48.276834&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false); the county zoning layer has no polygon there. Chewelah zoning layer (MapServer/2) at that point: name 'R1 - Residential' (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/2/query?f=json&geometry=-117.72695,48.276834&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false). Before the Stevens adapter AcresX said 'Stevens County (unincorporated areas)' and no zoning; it now returns City of Chewelah R1. City codes get no county rules. Checked 2026-11-04. Assessor land use code (property_u) 11, Household, single family units, tax year 2026 (https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query?f=json&where=PARCELN%3D%270231200%27&outFields=PARCELN,property_u,year&returnGeometry=false); a tax category, not zoning. Checked 2026-11-04.
 
 - **Parcel**: ok. parcel 0231200, 0.12 ac (mapped) [parcelId=0231200, acres=0.12, address=107 N BERNARD ST, CHEWELAH, 99109, lat=48.276834, lon=-117.72695, acresSource=mapped outline]
-- **Wells**: ok. 178 well record(s), 5 of nearest 5 report depth [wellCount=178, nearestDepthsCount=5, nearestMi=0.43, medianDepthFt=10]
+- **Wells**: ok. 178 well record(s), 5 of nearest 5 report depth [wellCount=178, nearestDepthsCount=5, nearestMi=0.43, medianDepthFt=39]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Chewelah fine sandy loam) [feasibility=limited, mapUnit=Chewelah fine sandy loam, hydrologicGroup=C, drainage=Somewhat poorly drained, soilSlopePct=2]
-- **Terrain**: ok. avg grade 0.9%, max 2.8% [gradePct=0.9, maxGradePct=2.8, reliefFt=1, sampleCount=9]
+- **Terrain**: ok. avg grade 0.7%, max 1.2% [gradePct=0.7, maxGradePct=1.2, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=3.3, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -87,7 +89,7 @@ Why: Small lot inside Colville city limits (315 N Main St). Stevens Cities layer
 - **Wells**: ok. 393 well record(s), 5 of nearest 5 report depth [wellCount=393, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=16]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Hodgson silt loam, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Hodgson silt loam, 3 to 15 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=9]
-- **Terrain**: error. USGS elevation was unavailable for 6 of 9 terrain points.
+- **Terrain**: ok. avg grade 0.8%, max 1.4% [gradePct=0.8, maxGradePct=1.4, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.2% [cellCount=16, avgSlopePct=1.2, maxSlopePct=1.9, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -106,8 +108,8 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 67 well record(s), 5 of nearest 5 report depth [wellCount=67, nearestDepthsCount=5, nearestMi=0.12, medianDepthFt=210]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Springdale sandy loam, 0 to 15 percent slopes) [feasibility=favorable, mapUnit=Springdale sandy loam, 0 to 15 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=8]
-- **Terrain**: ok. avg grade 12.9%, max 24.1% [gradePct=12.9, maxGradePct=24.1, reliefFt=190, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 20.6% [cellCount=16, avgSlopePct=20.6, maxSlopePct=31.2, partial=false]
+- **Terrain**: ok. avg grade 13%, max 24.2% [gradePct=13, maxGradePct=24.2, reliefFt=200, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 21.3% [cellCount=16, avgSlopePct=21.3, maxSlopePct=31.2, partial=false]
 - **Flood**: ok. high-risk zone (X, AE) (via Stevens County digitized FEMA FIRM) [high=true, intersects=true, zones=X; AE, category=high, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=7.8]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
@@ -221,7 +223,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Bridgeson silt loam, drained) [feasibility=limited, mapUnit=Bridgeson silt loam, drained, hydrologicGroup=C, drainage=Somewhat poorly drained, soilSlopePct=2]
 - **Terrain**: ok. avg grade 7%, max 20.7% [gradePct=7, maxGradePct=20.7, reliefFt=496, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.8% [cellCount=16, avgSlopePct=14.8, maxSlopePct=35.6, partial=false]
+- **Slope grid**: ok. 16 cells, avg 15.6% [cellCount=16, avgSlopePct=15.6, maxSlopePct=36.4, partial=false]
 - **Flood**: ok. high-risk zone (X, A) (via Stevens County digitized FEMA FIRM) [high=true, intersects=true, zones=X; A, category=high, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 15 NWI feature(s) [intersects=true, count=15, coveragePct=24]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
