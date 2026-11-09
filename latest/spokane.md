@@ -1,9 +1,9 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-08T18:27:34.983Z
-- Parcels: 12, with an error or mismatch: 2
-- Layer results: ok 151, unavailable 15, error 2, mismatch 0, skipped 0
+- Run: 2026-11-09T23:08:13.438Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 153, unavailable 15, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Zoning | Zoning rules | Assessment | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -11,13 +11,13 @@
 | 35234.0602 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 13013.2211 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
 | 57344.0125 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 43341.0110 | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 43341.0110 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 47071.9003 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 46301.9025 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 57302.9016 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 37094.9101 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 48121.9001 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48136.9052 | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 48136.9052 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 32322.9002 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 
 ## Parcel details
@@ -27,7 +27,7 @@
 Why: Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum "under 1 ac | city-named locality"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02; this is the layer src/counties/spokane-cities.js reads, code from ZoneLabel). The jurisdiction comes from the City of Spokane zoning added in PR #32.
 
 - **Parcel**: ok. parcel 35204.2729, 0.14 ac (mapped) [parcelId=35204.2729, acres=0.14, address=1317 E 12TH AVE, SPOKANE, lat=47.644811, lon=-117.390737, acresSource=mapped outline]
-- **Wells**: ok. 1881 well record(s), 5 of nearest 5 report depth [wellCount=1881, nearestDepthsCount=5, nearestMi=0.28, medianDepthFt=30]
+- **Wells**: ok. 1879 well record(s), 5 of nearest 5 report depth [wellCount=1879, nearestDepthsCount=5, nearestMi=0.28, medianDepthFt=30]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
 - **Soil**: ok. moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes) [feasibility=moderate, mapUnit=Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes, soilSlopePct=3]
 - **Terrain**: ok. avg grade 2%, max 4.1% [gradePct=2, maxGradePct=4.1, reliefFt=4, sampleCount=9]
@@ -106,7 +106,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 39 well record(s), 5 of nearest 5 report depth [wellCount=39, nearestDepthsCount=5, nearestMi=0.06, medianDepthFt=160]
 - **Existing well**: ok. Possible well association [status=possible_match, confidence=Low, score=45]
 - **Soil**: ok. moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Glenrose ashy silt loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
-- **Terrain**: error. USGS elevation was unavailable for 6 of 9 terrain points.
+- **Terrain**: ok. avg grade 2.6%, max 4.5% [gradePct=2.6, maxGradePct=4.5, reliefFt=14, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.6% [cellCount=16, avgSlopePct=5.6, maxSlopePct=11.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=7]
@@ -144,7 +144,7 @@ Why: Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2
 - **Wells**: ok. 310 well record(s), 5 of nearest 5 report depth [wellCount=310, nearestDepthsCount=5, nearestMi=0.19, medianDepthFt=265]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [feasibility=favorable, mapUnit=Scrabblers ashy fine sandy loam, 3 to 8 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=5]
-- **Terrain**: ok. avg grade 3.9%, max 11.3% [gradePct=3.9, maxGradePct=11.3, reliefFt=55, sampleCount=9]
+- **Terrain**: ok. avg grade 3.9%, max 11.1% [gradePct=3.9, maxGradePct=11.1, reliefFt=55, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.9% [cellCount=16, avgSlopePct=6.9, maxSlopePct=17.7, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -179,10 +179,10 @@ Why: Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 202
 Why: 5-40 ac parcel with a SPOKANE situs city that is outside city limits (county zoning RCV), picked by discovery 2026-11-02, seed 42. Shows the situs city is not the jurisdiction.
 
 - **Parcel**: ok. parcel 37094.9101, 5 ac (mapped) [parcelId=37094.9101, acres=5, address=2211 E WHISPERING SPRING LN, SPOKANE, 00000, lat=47.849368, lon=-117.37833, acresSource=mapped outline]
-- **Wells**: ok. 285 well record(s), 5 of nearest 5 report depth [wellCount=285, nearestDepthsCount=5, nearestMi=0.16, medianDepthFt=190]
+- **Wells**: ok. 285 well record(s), 5 of nearest 5 report depth [wellCount=285, nearestDepthsCount=5, nearestMi=0.16, medianDepthFt=178]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
-- **Terrain**: ok. avg grade 0.8%, max 4.4% [gradePct=0.8, maxGradePct=4.4, reliefFt=22, sampleCount=9]
+- **Terrain**: ok. avg grade 0.8%, max 4.5% [gradePct=0.8, maxGradePct=4.5, reliefFt=22, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.6% [cellCount=16, avgSlopePct=1.6, maxSlopePct=8.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -220,7 +220,7 @@ Why: Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 68 well record(s), 5 of nearest 5 report depth [wellCount=68, nearestDepthsCount=5, nearestMi=0.25, medianDepthFt=300]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Blackprince-Ardtoo complex, 15 to 30 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=22]
-- **Terrain**: error. USGS elevation was unavailable for 8 of 9 terrain points.
+- **Terrain**: ok. avg grade 7%, max 15.8% [gradePct=7, maxGradePct=15.8, reliefFt=147, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 12.3% [cellCount=16, avgSlopePct=12.3, maxSlopePct=22.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.7]

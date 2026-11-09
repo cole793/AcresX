@@ -2,8 +2,8 @@
   "county": "Spokane",
   "state": "WA",
   "baseUrl": "https://acresx.cole-groshens.workers.dev",
-  "startedAt": "2026-11-08T18:27:34.983Z",
-  "finishedAt": "2026-11-08T18:34:33.031Z",
+  "startedAt": "2026-11-09T23:08:13.438Z",
+  "finishedAt": "2026-11-09T23:15:11.818Z",
   "results": [
     {
       "parcelId": "35204.2729",
@@ -13,7 +13,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4500,
+          "ms": 8523,
           "status": "ok",
           "detail": "parcel 35204.2729, 0.14 ac (mapped)",
           "values": {
@@ -28,11 +28,11 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 454,
+          "ms": 332,
           "status": "ok",
-          "detail": "1881 well record(s), 5 of nearest 5 report depth",
+          "detail": "1879 well record(s), 5 of nearest 5 report depth",
           "values": {
-            "wellCount": 1881,
+            "wellCount": 1879,
             "nearestDepthsCount": 5,
             "nearestMi": 0.28,
             "medianDepthFt": 30
@@ -41,7 +41,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 382,
+          "ms": 461,
           "status": "ok",
           "detail": "MODERN ELECTRIC WATER COMPANY",
           "values": {
@@ -53,7 +53,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 52,
+          "ms": 151,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -71,7 +71,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 46,
+          "ms": 45,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -83,7 +83,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 1221,
+          "ms": 1180,
           "status": "ok",
           "detail": "R1 (City of Spokane)",
           "values": {
@@ -98,7 +98,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1155,
+          "ms": 415,
           "status": "ok",
           "detail": "moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes)",
           "values": {
@@ -112,7 +112,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1155,
+          "ms": 415,
           "status": "ok",
           "detail": "avg grade 2%, max 4.1%",
           "values": {
@@ -125,7 +125,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 150,
+          "ms": 175,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -137,7 +137,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 118,
+          "ms": 168,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -156,7 +156,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1080,
+          "ms": 814,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -168,7 +168,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18647,
+          "ms": 18520,
           "status": "ok",
           "detail": "MODERN ELECTRIC WATER COMPANY",
           "values": {
@@ -181,7 +181,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 20,
+          "ms": 24,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -191,7 +191,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 25,
+          "ms": 42,
           "status": "ok",
           "detail": "16 cells, avg 3.5%",
           "values": {
@@ -212,7 +212,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4916,
+          "ms": 7245,
           "status": "ok",
           "detail": "parcel 35234.0602, 0.42 ac (mapped)",
           "values": {
@@ -227,7 +227,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 410,
+          "ms": 240,
           "status": "ok",
           "detail": "1892 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -240,7 +240,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 314,
+          "ms": 356,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -253,7 +253,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 289,
+          "ms": 119,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -271,7 +271,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 222,
+          "ms": 46,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -283,7 +283,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 3194,
+          "ms": 1005,
           "status": "ok",
           "detail": "R-3 (City of Spokane Valley)",
           "values": {
@@ -298,7 +298,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 7735,
+          "ms": 225,
           "status": "ok",
           "detail": "moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes)",
           "values": {
@@ -312,7 +312,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 7735,
+          "ms": 225,
           "status": "ok",
           "detail": "avg grade 4.9%, max 8.7%",
           "values": {
@@ -325,7 +325,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 573,
+          "ms": 176,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -337,7 +337,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 108,
+          "ms": 179,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -356,7 +356,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1562,
+          "ms": 787,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -368,7 +368,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 985,
+          "ms": 18151,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -381,7 +381,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 58,
+          "ms": 41,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -391,7 +391,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 9280,
+          "ms": 36,
           "status": "ok",
           "detail": "16 cells, avg 7.3%",
           "values": {
@@ -412,7 +412,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 5255,
+          "ms": 9012,
           "status": "ok",
           "detail": "parcel 13013.2211, 0.16 ac (mapped)",
           "values": {
@@ -427,7 +427,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 199,
+          "ms": 145,
           "status": "ok",
           "detail": "353 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -440,7 +440,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 351,
+          "ms": 305,
           "status": "ok",
           "detail": "CITY OF CHENEY - (WA)",
           "values": {
@@ -452,7 +452,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 29,
+          "ms": 93,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -470,7 +470,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 39,
+          "ms": 28,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -482,7 +482,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 759,
+          "ms": 4778,
           "status": "ok",
           "detail": "R-1 (City of Cheney)",
           "values": {
@@ -497,7 +497,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 648,
+          "ms": 122,
           "status": "ok",
           "detail": "favorable (Cheney ashy silt loam, 0 to 8 percent slopes)",
           "values": {
@@ -511,7 +511,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 648,
+          "ms": 122,
           "status": "ok",
           "detail": "avg grade 3.3%, max 5.9%",
           "values": {
@@ -524,7 +524,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 130,
+          "ms": 172,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -536,7 +536,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 118,
+          "ms": 175,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -555,7 +555,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1306,
+          "ms": 778,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -567,7 +567,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 999,
+          "ms": 324,
           "status": "ok",
           "detail": "CITY OF CHENEY - (WA)",
           "values": {
@@ -580,7 +580,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 19,
+          "ms": 25,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -590,7 +590,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 29,
+          "ms": 30,
           "status": "ok",
           "detail": "16 cells, avg 6.7%",
           "values": {
@@ -611,7 +611,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4456,
+          "ms": 6803,
           "status": "ok",
           "detail": "parcel 57344.0125, 0.45 ac (mapped)",
           "values": {
@@ -626,7 +626,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 157,
+          "ms": 159,
           "status": "ok",
           "detail": "193 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -639,7 +639,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 317,
+          "ms": 358,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -653,7 +653,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 53,
+          "ms": 1763,
           "status": "ok",
           "detail": "high-risk zone (AE, X) (via FEMA NFHL)",
           "values": {
@@ -672,7 +672,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 62,
+          "ms": 52,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -684,7 +684,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 413,
+          "ms": 519,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -699,7 +699,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 11741,
+          "ms": 2677,
           "status": "ok",
           "detail": "favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes)",
           "values": {
@@ -713,7 +713,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 11741,
+          "ms": 2677,
           "status": "ok",
           "detail": "avg grade 14.3%, max 28.2%",
           "values": {
@@ -726,7 +726,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 235,
+          "ms": 194,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -738,7 +738,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 137,
+          "ms": 195,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -757,7 +757,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1221,
+          "ms": 766,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -769,7 +769,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18670,
+          "ms": 467,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -782,7 +782,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 45,
+          "ms": 31,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -794,7 +794,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 24,
+          "ms": 3301,
           "status": "ok",
           "detail": "16 cells, avg 24%",
           "values": {
@@ -815,7 +815,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4460,
+          "ms": 4658,
           "status": "ok",
           "detail": "parcel 43341.0110, 1.5 ac (mapped)",
           "values": {
@@ -830,7 +830,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 259,
+          "ms": 115,
           "status": "ok",
           "detail": "39 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -843,7 +843,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 360,
+          "ms": 330,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -857,7 +857,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 46,
+          "ms": 123,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -875,7 +875,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 53,
+          "ms": 31,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -887,7 +887,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 508,
+          "ms": 446,
           "status": "ok",
           "detail": "LTA (Spokane County)",
           "values": {
@@ -902,7 +902,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 17047,
+          "ms": 5162,
           "status": "ok",
           "detail": "moderate (Glenrose ashy silt loam, 8 to 25 percent slopes)",
           "values": {
@@ -916,15 +916,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 17047,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 6 of 9 terrain points.",
-          "values": {}
+          "ms": 5162,
+          "status": "ok",
+          "detail": "avg grade 2.6%, max 4.5%",
+          "values": {
+            "gradePct": 2.6,
+            "maxGradePct": 4.5,
+            "reliefFt": 14,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 139,
+          "ms": 171,
           "status": "ok",
           "detail": "Possible well association",
           "values": {
@@ -936,7 +941,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 124,
+          "ms": 167,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -955,7 +960,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1138,
+          "ms": 742,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -967,7 +972,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18679,
+          "ms": 18147,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -980,7 +985,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 21,
+          "ms": 24,
           "status": "ok",
           "detail": "LTA: Resource Lands (8 uses)",
           "values": {
@@ -992,7 +997,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 98,
+          "ms": 28,
           "status": "ok",
           "detail": "16 cells, avg 5.6%",
           "values": {
@@ -1013,7 +1018,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4421,
+          "ms": 9590,
           "status": "ok",
           "detail": "parcel 47071.9003, 2.32 ac (mapped)",
           "values": {
@@ -1028,7 +1033,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 172,
+          "ms": 138,
           "status": "ok",
           "detail": "232 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1041,7 +1046,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 309,
+          "ms": 373,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1054,7 +1059,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 27,
+          "ms": 90,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1072,7 +1077,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 32,
+          "ms": 34,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1084,7 +1089,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 413,
+          "ms": 571,
           "status": "ok",
           "detail": "RT (Spokane County)",
           "values": {
@@ -1099,7 +1104,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 345,
+          "ms": 5658,
           "status": "ok",
           "detail": "moderate (Lenz-Spokane complex, 3 to 15 percent slopes)",
           "values": {
@@ -1113,7 +1118,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 345,
+          "ms": 5658,
           "status": "ok",
           "detail": "avg grade 11.2%, max 16.3%",
           "values": {
@@ -1126,7 +1131,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 125,
+          "ms": 294,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1138,7 +1143,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 136,
+          "ms": 211,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1157,7 +1162,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 963,
+          "ms": 785,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1169,7 +1174,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1037,
+          "ms": 18153,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1182,7 +1187,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 15,
+          "ms": 29,
           "status": "ok",
           "detail": "RT: Rural (10 uses)",
           "values": {
@@ -1194,7 +1199,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 48,
+          "ms": 5895,
           "status": "ok",
           "detail": "16 cells, avg 15.8%",
           "values": {
@@ -1215,7 +1220,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 6954,
+          "ms": 8095,
           "status": "ok",
           "detail": "parcel 46301.9025, 4.61 ac (mapped)",
           "values": {
@@ -1230,7 +1235,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 231,
+          "ms": 126,
           "status": "ok",
           "detail": "310 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1243,7 +1248,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 521,
+          "ms": 347,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1257,7 +1262,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 438,
+          "ms": 89,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1275,7 +1280,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 243,
+          "ms": 30,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1287,7 +1292,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 560,
+          "ms": 513,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -1302,7 +1307,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6615,
+          "ms": 6028,
           "status": "ok",
           "detail": "favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes)",
           "values": {
@@ -1316,12 +1321,12 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6615,
+          "ms": 6028,
           "status": "ok",
-          "detail": "avg grade 3.9%, max 11.3%",
+          "detail": "avg grade 3.9%, max 11.1%",
           "values": {
             "gradePct": 3.9,
-            "maxGradePct": 11.3,
+            "maxGradePct": 11.1,
             "reliefFt": 55,
             "sampleCount": 9
           }
@@ -1329,7 +1334,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 200,
+          "ms": 170,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1341,7 +1346,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 160,
+          "ms": 169,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1360,7 +1365,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1076,
+          "ms": 613,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1372,7 +1377,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18707,
+          "ms": 18147,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1385,7 +1390,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 34,
+          "ms": 25,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -1397,7 +1402,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 10829,
+          "ms": 2096,
           "status": "ok",
           "detail": "16 cells, avg 6.9%",
           "values": {
@@ -1418,7 +1423,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4784,
+          "ms": 6252,
           "status": "ok",
           "detail": "parcel 57302.9016, 9.77 ac (mapped)",
           "values": {
@@ -1433,7 +1438,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 141,
+          "ms": 137,
           "status": "ok",
           "detail": "181 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1446,7 +1451,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 312,
+          "ms": 309,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1459,7 +1464,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 29,
+          "ms": 105,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1477,7 +1482,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 26,
+          "ms": 35,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -1489,7 +1494,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 400,
+          "ms": 466,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -1504,7 +1509,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 178,
+          "ms": 1087,
           "status": "ok",
           "detail": "limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes)",
           "values": {
@@ -1518,7 +1523,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 178,
+          "ms": 1087,
           "status": "ok",
           "detail": "avg grade 10.4%, max 25.6%",
           "values": {
@@ -1531,7 +1536,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 118,
+          "ms": 174,
           "status": "ok",
           "detail": "Likely existing well",
           "values": {
@@ -1543,7 +1548,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 113,
+          "ms": 168,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1562,7 +1567,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1077,
+          "ms": 738,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1574,7 +1579,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 419,
+          "ms": 18154,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1587,7 +1592,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 111,
+          "ms": 28,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -1599,7 +1604,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 22,
+          "ms": 454,
           "status": "ok",
           "detail": "16 cells, avg 22%",
           "values": {
@@ -1620,7 +1625,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4835,
+          "ms": 16048,
           "status": "ok",
           "detail": "parcel 37094.9101, 5 ac (mapped)",
           "values": {
@@ -1635,20 +1640,20 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 164,
+          "ms": 277,
           "status": "ok",
           "detail": "285 well record(s), 5 of nearest 5 report depth",
           "values": {
             "wellCount": 285,
             "nearestDepthsCount": 5,
             "nearestMi": 0.16,
-            "medianDepthFt": 190
+            "medianDepthFt": 178
           }
         },
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 351,
+          "ms": 406,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1661,7 +1666,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 56,
+          "ms": 106,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1679,7 +1684,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 48,
+          "ms": 46,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1691,7 +1696,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 435,
+          "ms": 485,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -1706,7 +1711,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 549,
+          "ms": 6044,
           "status": "ok",
           "detail": "favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes)",
           "values": {
@@ -1720,12 +1725,12 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 549,
+          "ms": 6044,
           "status": "ok",
-          "detail": "avg grade 0.8%, max 4.4%",
+          "detail": "avg grade 0.8%, max 4.5%",
           "values": {
             "gradePct": 0.8,
-            "maxGradePct": 4.4,
+            "maxGradePct": 4.5,
             "reliefFt": 22,
             "sampleCount": 9
           }
@@ -1733,7 +1738,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 268,
+          "ms": 187,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1745,7 +1750,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 123,
+          "ms": 174,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1764,7 +1769,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1120,
+          "ms": 788,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1776,7 +1781,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18666,
+          "ms": 18163,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1789,7 +1794,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 18,
+          "ms": 28,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -1801,7 +1806,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 29,
+          "ms": 35,
           "status": "ok",
           "detail": "16 cells, avg 1.6%",
           "values": {
@@ -1822,7 +1827,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4471,
+          "ms": 5015,
           "status": "ok",
           "detail": "parcel 48121.9001, 153.95 ac (mapped)",
           "values": {
@@ -1837,7 +1842,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 184,
+          "ms": 146,
           "status": "ok",
           "detail": "49 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1850,7 +1855,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 293,
+          "ms": 329,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1863,7 +1868,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 40,
+          "ms": 84,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1881,7 +1886,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 43,
+          "ms": 31,
           "status": "ok",
           "detail": "3 NWI feature(s)",
           "values": {
@@ -1893,7 +1898,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 371,
+          "ms": 517,
           "status": "ok",
           "detail": "FZ (Spokane County)",
           "values": {
@@ -1908,7 +1913,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 148,
+          "ms": 3920,
           "status": "ok",
           "detail": "limited (Keeler-Kruse complex, 15 to 30 percent slopes)",
           "values": {
@@ -1922,7 +1927,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 148,
+          "ms": 3920,
           "status": "ok",
           "detail": "avg grade 12.1%, max 28.7%",
           "values": {
@@ -1935,7 +1940,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 117,
+          "ms": 168,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1947,7 +1952,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 133,
+          "ms": 492,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1966,7 +1971,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1029,
+          "ms": 629,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1978,7 +1983,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 543,
+          "ms": 462,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1991,7 +1996,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 44,
+          "ms": 26,
           "status": "ok",
           "detail": "FZ: Resource Lands (8 uses)",
           "values": {
@@ -2003,7 +2008,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 49,
+          "ms": 29,
           "status": "ok",
           "detail": "16 cells, avg 19.4%",
           "values": {
@@ -2024,7 +2029,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4544,
+          "ms": 8941,
           "status": "ok",
           "detail": "parcel 48136.9052, 51.87 ac (mapped)",
           "values": {
@@ -2039,7 +2044,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 162,
+          "ms": 114,
           "status": "ok",
           "detail": "68 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2052,7 +2057,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 499,
+          "ms": 348,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -2065,7 +2070,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 167,
+          "ms": 84,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2083,7 +2088,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 625,
+          "ms": 35,
           "status": "ok",
           "detail": "7 NWI feature(s)",
           "values": {
@@ -2095,7 +2100,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 456,
+          "ms": 431,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -2110,7 +2115,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 17047,
+          "ms": 107,
           "status": "ok",
           "detail": "limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes)",
           "values": {
@@ -2124,15 +2129,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 17047,
-          "status": "error",
-          "detail": "USGS elevation was unavailable for 8 of 9 terrain points.",
-          "values": {}
+          "ms": 107,
+          "status": "ok",
+          "detail": "avg grade 7%, max 15.8%",
+          "values": {
+            "gradePct": 7,
+            "maxGradePct": 15.8,
+            "reliefFt": 147,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 168,
+          "ms": 209,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -2144,7 +2154,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 157,
+          "ms": 174,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -2163,7 +2173,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1105,
+          "ms": 572,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2175,7 +2185,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18688,
+          "ms": 18150,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -2188,7 +2198,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 50,
+          "ms": 29,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -2200,7 +2210,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 10238,
+          "ms": 33,
           "status": "ok",
           "detail": "16 cells, avg 12.3%",
           "values": {
@@ -2221,7 +2231,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4287,
+          "ms": 8257,
           "status": "ok",
           "detail": "parcel 32322.9002, 157.71 ac (mapped)",
           "values": {
@@ -2236,7 +2246,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 136,
+          "ms": 128,
           "status": "ok",
           "detail": "26 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2249,7 +2259,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 338,
+          "ms": 381,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -2263,7 +2273,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 50,
+          "ms": 100,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2281,7 +2291,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 41,
+          "ms": 36,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -2293,7 +2303,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 417,
+          "ms": 552,
           "status": "ok",
           "detail": "LTA (Spokane County)",
           "values": {
@@ -2308,7 +2318,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 194,
+          "ms": 202,
           "status": "ok",
           "detail": "moderate (Naff-Thatuna complex, 8 to 25 percent slopes)",
           "values": {
@@ -2322,7 +2332,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 194,
+          "ms": 202,
           "status": "ok",
           "detail": "avg grade 1%, max 1.8%",
           "values": {
@@ -2335,7 +2345,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 242,
+          "ms": 184,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -2347,7 +2357,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 118,
+          "ms": 194,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -2366,7 +2376,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1243,
+          "ms": 787,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2378,7 +2388,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18643,
+          "ms": 323,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -2391,7 +2401,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 17,
+          "ms": 32,
           "status": "ok",
           "detail": "LTA: Resource Lands (8 uses)",
           "values": {
@@ -2403,7 +2413,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 25,
+          "ms": 34,
           "status": "ok",
           "detail": "16 cells, avg 3.3%",
           "values": {
@@ -2419,11 +2429,11 @@
   ],
   "summary": {
     "parcels": 12,
-    "failed": 2,
+    "failed": 0,
     "layerCounts": {
-      "ok": 151,
+      "ok": 153,
       "unavailable": 15,
-      "error": 2,
+      "error": 0,
       "mismatch": 0,
       "skipped": 0
     }
