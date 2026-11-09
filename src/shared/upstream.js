@@ -4,7 +4,8 @@
 //   arcgisQuery(layerUrl, params, opts) -> features[] from <layerUrl>/query (ArcGIS-aware)
 //   arcgisJson(url, params, opts)       -> whole ArcGIS JSON answer (metadata, identify, ...)
 //   upstreamFetch(url, opts)            -> buffered Response, one attempt (shared/http.js
-//                                          fetchWithTimeout is built on it)
+//                                          fetchWithTimeout is built on it); opts.maxBytes
+//                                          fails (kind 'too_large') once the body passes it
 //   cachedJson(prefix, key, ttl, produce, { isValid }) -> Cache API wrapper, validated answers only
 //
 // Rules every request follows:
@@ -167,6 +168,30 @@ function rejectOnAbort(signal) {
 
 // Runs fn as a promise (a synchronous throw becomes a rejection). The promise may lose a race
 // against the abort signal and reject later, so it is marked handled.
+// Reads a response body, failing as soon as it passes maxBytes (opt-in; binary answers such as
+// terrain tiles). The stream is cancelled, so an oversized answer is never fully buffered.
+async function readBody(response, maxBytes, agency) {
+  if (!maxBytes) return response.arrayBuffer();
+  const tooLarge = () => Object.assign(new Error(`${agency} answer is larger than ${maxBytes} bytes`), { tooLarge: true });
+  const declared = Number(response.headers.get('Content-Length'));
+  if (Number.isFinite(declared) && declared > maxBytes) { try { await response.body?.cancel(); } catch {} throw tooLarge(); }
+  if (!response.body) return new ArrayBuffer(0);
+  const reader = response.body.getReader();
+  const parts = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) { try { await reader.cancel(); } catch {} throw tooLarge(); }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const part of parts) { out.set(part, at); at += part.byteLength; }
+  return out.buffer;
+}
+
 function quiet(fn) {
   const promise = (async () => fn())();
   promise.catch(() => {});
@@ -176,7 +201,7 @@ function quiet(fn) {
 const NULL_BODY_STATUS = new Set([101, 204, 205, 304]);
 
 // Returns { status, statusText, headers, buffer } or throws UpstreamError (timeout | network | cancelled).
-async function attemptOnce(url, init, { host, label, agency, timeoutMs, queueTimeoutMs = timeoutMs, signal, maxPerHost, attempt }) {
+async function attemptOnce(url, init, { host, label, agency, timeoutMs, queueTimeoutMs = timeoutMs, signal, maxPerHost, attempt, maxBytes }) {
   const controller = new AbortController();
   let timedOut = false, queuedOut = false;
   // First the queue budget (waiting for a host slot), then, once a slot is held, the request timeout.
@@ -192,10 +217,11 @@ async function attemptOnce(url, init, { host, label, agency, timeoutMs, queueTim
     timer = setTimeout(() => { timedOut = true; controller.abort(new Error('timeout')); }, timeoutMs);
     const { cf, ...rest } = init || {};
     const response = await Promise.race([quiet(() => fetch(url, { ...rest, signal: controller.signal })), aborted]);
-    const buffer = await Promise.race([quiet(() => response.arrayBuffer()), aborted]);
+    const buffer = await Promise.race([quiet(() => readBody(response, maxBytes, agency)), aborted]);
     return { status: response.status, statusText: response.statusText, headers: response.headers, buffer };
   } catch (error) {
     const fields = { host, label, attempt, cause: error };
+    if (error?.tooLarge) throw new UpstreamError(error.message, { ...fields, kind: 'too_large', retryable: false });
     if (queuedOut) throw new UpstreamError(`${agency} timed out after ${Math.round(queueTimeoutMs / 100) / 10}s waiting for a free connection`, { ...fields, kind: 'timeout', queued: true, retryable: true });
     if (timedOut) throw new UpstreamError(`${agency} timed out after ${Math.round(timeoutMs / 100) / 10}s`, { ...fields, kind: 'timeout', retryable: true });
     if (signal?.aborted) throw new UpstreamError(`${agency} request cancelled`, { ...fields, kind: 'cancelled', retryable: false });
@@ -335,14 +361,14 @@ export function arcgisJson(url, params = {}, opts = {}) {
 // (what callers of the old fetchWithTimeout check for); a network error rejects with the
 // original error.
 export async function upstreamFetch(input, opts = {}) {
-  const { timeoutMs = settings.timeoutMs, queueTimeoutMs, signal, maxPerHost = settings.maxPerHost, cf, label: labelOpt, agency: agencyOpt, ...init } = opts;
+  const { timeoutMs = settings.timeoutMs, queueTimeoutMs, signal, maxPerHost = settings.maxPerHost, cf, label: labelOpt, agency: agencyOpt, maxBytes, ...init } = opts;
   const url = String(input instanceof Request ? input.url : input);
   const host = hostOf(url);
   const label = labelOpt || pathLabel(url);
   const agency = agencyOpt || host;
   const started = Date.now();
   try {
-    const raw = await attemptOnce(input instanceof Request ? input : url, init, { host, label, agency, timeoutMs, queueTimeoutMs, signal, maxPerHost, attempt: 1 });
+    const raw = await attemptOnce(input instanceof Request ? input : url, init, { host, label, agency, timeoutMs, queueTimeoutMs, signal, maxPerHost, attempt: 1, maxBytes });
     logAttempt({ host, label, status: raw.status, started, ok: raw.status >= 200 && raw.status <= 299, attempt: 1, err: raw.status >= 200 && raw.status <= 299 ? null : `http: ${raw.status}` });
     const headers = new Headers(raw.headers);
     headers.delete('Content-Encoding');
