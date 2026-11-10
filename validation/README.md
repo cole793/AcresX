@@ -217,4 +217,9 @@ A key without a dot checks the layer status. `layer.field` checks a value from t
 per-parcel details (the names in `[...]`). Strings compare case-insensitively, a list value
 matches if any item matches, and `{ "min", "max" }` checks a numeric range.
 
+The zoning layer also records overlays when the county answer has them (Spokane: shoreline,
+channel migration, aquifer recharge, county wetlands and buffers, airport zones):
+`zoning.overlays` (names), `zoning.overlayTypes` and `zoning.overlaysUnavailable` (overlay layers
+that did not answer). They are listed in the zoning detail but never change the zoning status.
+
 Tests for the harness are in `test/validate-county.test.js` (offline, fetch stubbed).
