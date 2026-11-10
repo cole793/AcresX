@@ -1,21 +1,21 @@
 # Changes since the previous run: Stevens, WA
 
-- Run: 2026-11-09T23:09:01.341Z
+- Run: 2026-11-10T20:34:54.642Z
 
 ## Cells
 
-Parcel x layer cells: newly broken 2, still broken 0, recovered 1, newly unavailable 0.
+Parcel x layer cells: newly broken 1, still broken 2, recovered 0, newly unavailable 0.
 
 ### Newly broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 8974701 | Zoning | ok | mismatch | zoning.code: expected "RA-5", got null |
-| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected "RA-5", got null |
+| 2611300 | Power | ok | error | timeout after 30s |
 
-### Recovered
+### Still broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 0000500 | Terrain | error | ok | USGS elevation was unavailable for 6 of 9 terrain points. |
+| 8974701 | Zoning | mismatch | mismatch | zoning.code: expected "RA-5", got null |
+| 8974701 | Zoning rules | mismatch | mismatch | zoningRules.code: expected "RA-5", got null |
 
