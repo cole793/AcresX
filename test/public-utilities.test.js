@@ -10,6 +10,7 @@ import { configureUpstream } from '../src/shared/upstream.js';
 import {
   lookupPublicUtilities, distanceToParcelM, mainsFinding, countyConfig, COUNTY_UTILITIES, SERVED_MAX_M, LIKELY_MAX_M, PUBLIC_UTILITIES_CACHE_PREFIX
 } from '../src/services/public-utilities.js';
+import { WA_DOH_WATER_SOURCE, isPublicWaterSystem } from '../src/states/washington/public-water.js';
 
 const fixtureDir = new URL('./fixtures/', import.meta.url);
 const fixture = name => JSON.parse(readFileSync(new URL(`public-utilities-${name}.json`, fixtureDir), 'utf8'));
@@ -301,4 +302,29 @@ test('county lookup is case-insensitive and accepts "County"', () => {
   assert.equal(countyConfig('wa', 'spokane county').county, 'Spokane');
   assert.equal(countyConfig('ID', 'Kootenai').county, 'Kootenai');
   assert.equal(countyConfig('ID', 'Ada'), null);
+});
+
+// ---- WA DOH filter and frontend injection
+
+test('WA DOH: only Group A, community, active systems give a water finding', () => {
+  const row = over => ({ WS_Name: 'TEST CITY OF', WS_Grp: 'A', WS_Type: 'Comm', WS_Status: 'Active', Total_Conn: 100, DataSourceDate: Date.UTC(2026, 0, 1), ...over });
+  const read = rows => WA_DOH_WATER_SOURCE.read(rows, { now: Date.UTC(2026, 10, 10) });
+  assert.equal(read([row({})]).length, 1, 'a Group A community active system counts');
+  assert.equal(read([row({})])[0].provider, 'City of Test');
+  // Each row differs from a counted one only in the field named, so each check is needed.
+  for (const over of [{ WS_Grp: 'B' }, { WS_Type: 'NTNC' }, { WS_Type: 'TNC ' }, { WS_Status: 'Inactive' }]) {
+    assert.equal(isPublicWaterSystem(row(over)), false, JSON.stringify(over));
+    assert.deepEqual(read([row(over)]), [], `${JSON.stringify(over)}: no water finding`);
+  }
+});
+
+test('the homepage injects /public-utilities.js after /property-report-v2.js and before /browser-fallback.js', async () => {
+  const html = '<!doctype html><html><body><main></main></body></html>';
+  const env = { ASSETS: { fetch: async () => new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }) } };
+  const res = await worker.fetch(new Request('https://acresx.test/'), env, {});
+  const page = await res.text();
+  const at = name => page.indexOf(`<script src="/${name}.js"></script>`);
+  assert.ok(at('public-utilities') >= 0, 'public-utilities.js is injected');
+  assert.ok(at('property-report-v2') >= 0 && at('property-report-v2') < at('public-utilities'), 'after property-report-v2.js');
+  assert.ok(at('browser-fallback') > at('public-utilities'), 'before browser-fallback.js');
 });
