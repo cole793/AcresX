@@ -1,4 +1,4 @@
-import { getAvistaPowerIntelligence, isAvistaProvider } from '../utilities/avista.js';
+import { getAvistaPowerIntelligence, isAvistaProvider, serviceTerritoryBasis } from '../utilities/avista.js';
 import { getInlandPowerIntelligence, isInlandPowerProvider } from '../utilities/inland-power.js';
 import { getOsmPowerProximity } from '../utilities/osm-power.js';
 import { nearestAvistaLine } from '../utilities/avista-distribution.js';
@@ -117,7 +117,8 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
       lon: body.lon,
       parcelId: body.parcelId,
       address: body.address,
-      publishedLine: avistaLine
+      publishedLine: avistaLine,
+      state: body.state
     });
 
     result.proximity = proximity;
@@ -155,7 +156,7 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
     territory: {
       confirmed: true,
       confidence: 'moderate',
-      basis: 'Washington electric utility service-territory screening'
+      basis: serviceTerritoryBasis(body.state)
     },
     proximity,
     distribution: osmDistribution(proximity, `A dedicated ${provider} utility infrastructure adapter has not been built yet.`),

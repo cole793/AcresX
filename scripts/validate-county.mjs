@@ -565,7 +565,7 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
 
   const providers = layers.utility.status === 'ok' ? layers.utility.values.providers : [];
   layers.power = providers.length
-    ? interpretLayer('power', await call('/api/power-intelligence', { parcelId: resolvedId, address, lon, lat, geometry, providers }))
+    ? interpretLayer('power', await call('/api/power-intelligence', { state, parcelId: resolvedId, address, lon, lat, geometry, providers }))
     : notRequested('no utility provider identified (the browser skips this call too)');
 
   const zoningData = classifyResponse(zoningRes) ? null : zoningRes.data;

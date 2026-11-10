@@ -372,7 +372,7 @@
           "territory": {
             "confirmed": true,
             "confidence": "high",
-            "basis": "Washington electric utility service-territory screening"
+            "basis": "Electric utility service-territory screening"
           },
           "publicInfrastructure": {
             "available": true,

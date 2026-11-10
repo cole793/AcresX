@@ -37,7 +37,15 @@ function publishedLineDistribution(line) {
   };
 }
 
-export async function getAvistaPowerIntelligence({ provider, lat, lon, parcelId, address, publishedLine = null } = {}) {
+// The territory label names the parcel's state. Avista serves Washington and Idaho; with no
+// state given the label stays state-neutral rather than assuming Washington.
+const STATE_NAMES = { WA: 'Washington', ID: 'Idaho', MT: 'Montana' };
+export function serviceTerritoryBasis(state) {
+  const name = STATE_NAMES[String(state || '').trim().toUpperCase()];
+  return name ? `${name} electric utility service-territory screening` : 'Electric utility service-territory screening';
+}
+
+export async function getAvistaPowerIntelligence({ provider, lat, lon, parcelId, address, publishedLine = null, state = '' } = {}) {
   const hasPoint = Number.isFinite(Number(lat)) && Number.isFinite(Number(lon));
 
   return {
@@ -47,7 +55,7 @@ export async function getAvistaPowerIntelligence({ provider, lat, lon, parcelId,
     territory: {
       confirmed: true,
       confidence: 'high',
-      basis: 'Washington electric utility service-territory screening'
+      basis: serviceTerritoryBasis(state)
     },
     publicInfrastructure: {
       available: true,

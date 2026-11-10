@@ -111,3 +111,21 @@ test('wholesale names are skipped (BPA first in the raw list), and a resolved ra
     assert.deepEqual(resolved.body.alsoListed, ['PARK ELECTRIC COOP INC']);
   } finally { stub.restore(); }
 });
+
+test('the territory label names the parcel state (it said "Washington" for Idaho and Montana)', async () => {
+  const stub = stubFetch();
+  try {
+    const avistaIdaho = await timed({ state: 'ID', providers: ['AVISTA CORP'], ...point });
+    assert.equal(avistaIdaho.body.territory.basis, 'Idaho electric utility service-territory screening');
+    const avistaWa = await timed({ state: 'WA', providers: ['AVISTA CORP'], lat: 47.66, lon: -117.41 });
+    assert.equal(avistaWa.body.territory.basis, 'Washington electric utility service-territory screening');
+    const montana = await timed({ state: 'MT', providers: ['NORTHWESTERN ENERGY LLC - (MT)'], lat: 45.68, lon: -111.04 });
+    assert.equal(montana.body.adapter, 'generic-v2-osm');
+    assert.equal(montana.body.territory.basis, 'Montana electric utility service-territory screening');
+    const idahoCoop = await timed({ state: 'id', providers: ['KOOTENAI ELECTRIC COOPERATIVE'], ...point });
+    assert.equal(idahoCoop.body.territory.basis, 'Idaho electric utility service-territory screening');
+    // No state given: no guess.
+    const unknown = await timed({ providers: ['NORTHWESTERN ENERGY LLC - (MT)'], lat: 45.68, lon: -111.04 });
+    assert.equal(unknown.body.territory.basis, 'Electric utility service-territory screening');
+  } finally { stub.restore(); }
+});

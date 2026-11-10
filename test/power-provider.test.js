@@ -188,6 +188,8 @@ test('a ranked Coeur d\'Alene overlap shows Avista first with Kootenai Electric 
   const power = t.calls.filter(c => c.path === '/api/power-intelligence');
   assert.equal(power.length, 1);
   assert.deepEqual([...power[0].body.providers], ['AVISTA CORP', 'KOOTENAI ELECTRIC COOPERATIVE']);
+  // The parcel's state goes along, for the territory label.
+  assert.equal(power[0].body.state, 'ID');
   assert.deepEqual({ ...power[0].body.providerRanking }, { basis: 'avista_line_nearby', resolved: false, note: CDA_NOTE });
   // An open overlap is not a confirmed territory: 70, not 78.
   assert.equal(t.powerChip(), '70');

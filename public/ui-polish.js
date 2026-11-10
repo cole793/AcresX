@@ -11,6 +11,8 @@
     const p = parcel.properties || {};
     const center = typeof turf !== 'undefined' ? turf.centroid(parcel).geometry.coordinates : [null, null];
     return {
+      // The parcel's state, as findUtility (index.html) reads it, for the territory label.
+      state: document.getElementById('state')?.value || p._stateCode || 'WA',
       parcelId: p.ORIG_PARCEL_ID || p.PARCEL_ID_NR || '',
       address: [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', '),
       lon: center[0],
