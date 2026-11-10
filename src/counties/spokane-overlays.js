@@ -12,12 +12,15 @@
 //      are the water body itself (DESIGNATION is the lake name or blank) and are not used. The
 //      layer description still calls the designations "Proposed" (text from before the county
 //      adopted its Shoreline Master Program update), so the UI says to verify.
-//   /2 "100 Year Channel Migration Zones": field NAME ('100 Year Channel Migration Zone'). /1, the
-//      50-year zone, is not asked separately.
+//   /1 "50 Year Channel Migration Zones" and /2 "100 Year Channel Migration Zones": field NAME
+//      ('50 Year Channel Migration Zone', '100 Year Channel Migration Zone'). Both are asked; the
+//      50-year zone is the part the channel is expected to reach sooner.
 //   /3 "Critical Aquifer Recharge Areas": field SUSCEPT; the layer's renderer labels 'low' Low,
 //      'mod' Moderate and 'cara' High.
 //   /5 "Wetland": fields NAME ('PERMANENT MARSH', 'SEASONAL LAKE', ...) and TYP ('Wetland').
-//      The 190 ft / 250 ft wetland buffer layers (/6, /7) are not asked.
+//   /6 "Wetland Buffer 190ft" and /7 "Wetland Buffer 250ft": field NAME ('190 Foot Buffer',
+//      '250 Foot Buffer'); no layer description. Shown as the mapped buffer distance only: the
+//      buffer that actually applies depends on the wetland's rating, set in a delineation.
 // - https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer
 //   /0 "Airfield Overlay Zone": copyright "City of Spokane Planning Services"; description: airport
 //      compatibility zones for Spokane International (SIA) and Felts Field, based on WSDOT Aviation
@@ -30,7 +33,8 @@
 // only one, ISDSDE/LandCapacityAnalysis/MapServer/3, is surficial geology units from a late-1990s
 // land-capacity analysis) and fish and wildlife habitat conservation areas. So neither is shown.
 //
-// One query per layer (6 subrequests, 12 with retries), each read across the parcel outline with
+// One query per layer (9 subrequests, 18 with retries; with the 5 other county layers and a city
+// zoning layer the route stays under 30 of the 50-subrequest limit), each read across the parcel outline with
 // src/shared/polygon-coverage.js. A failing layer is listed in `unavailable` and only that overlay
 // is missing; the rest of the report is unaffected.
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
@@ -59,6 +63,13 @@ export const SPOKANE_OVERLAY_LAYERS = [
     detail: 'Area a river channel may move into; critical-areas review applies.'
   },
   {
+    type: 'channel_migration', url: `${CA}/1`, outFields: 'NAME', label: 'spokane-channel-migration-50',
+    key: a => text(a.NAME) || '50 Year Channel Migration Zone',
+    name: key => key,
+    source: 'Spokane County Channel Migration Zones (Building & Planning critical areas map)',
+    detail: 'Area a river channel is expected to move into within about 50 years; critical-areas review applies.'
+  },
+  {
     type: 'aquifer_recharge', url: `${CA}/3`, outFields: 'SUSCEPT', label: 'spokane-cara',
     key: a => SUSCEPTIBILITY[text(a.SUSCEPT).toUpperCase()] || text(a.SUSCEPT).toLowerCase(),
     name: key => `Critical aquifer recharge area: ${key} susceptibility`,
@@ -71,6 +82,20 @@ export const SPOKANE_OVERLAY_LAYERS = [
     name: key => `County-mapped wetland: ${key.toLowerCase()}`,
     source: 'Spokane County Wetland layer (Building & Planning critical areas map)',
     detail: 'Wetland buffers and a delineation may be required before building.'
+  },
+  {
+    type: 'wetland_buffer', url: `${CA}/6`, outFields: 'NAME', label: 'spokane-wetland-buffer-190',
+    key: a => text(a.NAME) || '190 Foot Buffer',
+    name: key => `Mapped wetland buffer: ${key.toLowerCase()}`,
+    source: 'Spokane County Wetland Buffer 190ft (Building & Planning critical areas map)',
+    detail: 'Mapped distance from a county wetland; the buffer that applies depends on the wetland rating from a delineation.'
+  },
+  {
+    type: 'wetland_buffer', url: `${CA}/7`, outFields: 'NAME', label: 'spokane-wetland-buffer-250',
+    key: a => text(a.NAME) || '250 Foot Buffer',
+    name: key => `Mapped wetland buffer: ${key.toLowerCase()}`,
+    source: 'Spokane County Wetland Buffer 250ft (Building & Planning critical areas map)',
+    detail: 'Mapped distance from a county wetland; the buffer that applies depends on the wetland rating from a delineation.'
   },
   {
     type: 'airport', url: `${ZL}/0`, outFields: 'AIRPORT,ZONENUM,ZONENAME', label: 'spokane-airfield-overlay',

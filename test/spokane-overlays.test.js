@@ -152,12 +152,15 @@ test('an overlay layer failing: only that overlay is "unavailable"; the others, 
   assert.match(html, /Shoreline designation: Rural Conservancy/);
 });
 
-test('subrequest budget: a city parcel asks at most 13 layers (no retries), all overlay layers once', async () => {
+test('subrequest budget: a city parcel asks 15 layers (no retries), all overlay layers once, under 50 with retries', async () => {
   const fx = fixture('45012.1111');
   stub(fx.responses);
   await getSpokaneCountyIntelligence(bodyOf(fx), profile);
-  // jurisdiction, county zoning, comp plan, UGA, permits, city zoning + 6 overlay layers = 12.
-  assert.ok(calls.length <= 13, String(calls.length));
+  // jurisdiction, county zoning, comp plan, UGA, permits, city zoning + 9 overlay layers = 15;
+  // every request may be retried once, so at most 30 of Cloudflare's 50 subrequests.
+  assert.equal(SPOKANE_OVERLAY_LAYERS.length, 9);
+  assert.equal(calls.length, 15, String(calls.length));
+  assert.ok(calls.length * 2 < 50);
   assert.equal(calls.filter(c => OVERLAY_PATH.test(pathOf(c.url))).length, SPOKANE_OVERLAY_LAYERS.length);
 });
 
@@ -202,4 +205,20 @@ test('browser: overlays render with coverage, source link and the verify framing
   assert.match(html, /Verify with Spokane County Building &amp; Planning|Verify with Spokane County Building & Planning/);
   // Kootenai / Yellowstone answers have no overlaysUnavailable: nothing added.
   assert.equal(renderOverlays({ overlays: [{ code: 'ENTRYWAY', name: 'Entryway Zoning District' }] }), '');
+});
+
+test('overlays present (48136.9052, Colbert): county wetland buffers 190 ft and 250 ft; no 50-year channel migration zone', async () => {
+  const fx = load('spokane-overlays-48136.9052');
+  stub(fx.responses);
+  const rings = ringsFromGeometry(fx.parcel.geometry);
+  const samples = samplePoints(rings);
+  const settled = await Promise.all(SPOKANE_OVERLAY_LAYERS.map(l => queryOverlayShares(l, { rings, lon: fx.parcel.lon, lat: fx.parcel.lat }, samples).then(value => ({ status: 'fulfilled', value }))));
+  const out = overlayResponse(settled);
+  assert.deepEqual(out.overlays.filter(o => o.type === 'wetland_buffer').map(o => o.name).sort(), ['Mapped wetland buffer: 190 foot buffer', 'Mapped wetland buffer: 250 foot buffer']);
+  for (const o of out.overlays.filter(o => o.type === 'wetland_buffer')) assert.match(o.detail, /depends on the wetland rating/);
+  assert.equal(out.overlays.some(o => /50 Year Channel Migration/.test(o.name)), false);
+  // The 50-year and 100-year zones are separate layers with their own names.
+  const cmz = SPOKANE_OVERLAY_LAYERS.filter(l => l.type === 'channel_migration');
+  assert.deepEqual(cmz.map(l => l.url.split('/').pop()).sort(), ['1', '2']);
+  assert.deepEqual(cmz.map(l => l.name(l.key({}))).sort(), ['100 Year Channel Migration Zone', '50 Year Channel Migration Zone']);
 });
