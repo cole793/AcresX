@@ -27,6 +27,23 @@ export const DEFAULT_BASE_URL = 'https://acresx.cole-groshens.workers.dev';
 export const DEFAULT_TIMEOUT_MS = 30000;
 const USER_AGENT = 'AcresX-county-validation/1 (+GitHub Actions)';
 
+// Overlay fields of a /api/zoning-permits answer (Spokane carries overlaysUnavailable; Yellowstone's
+// older overlays [{code, name}] count too). All null when the answer has no overlays array.
+function overlayValues(data) {
+  if (!Array.isArray(data?.overlays)) return { overlays: null, overlayTypes: null, overlaysUnavailable: null };
+  return {
+    overlays: data.overlays.map(o => text(o?.name || o?.code)).filter(Boolean),
+    overlayTypes: [...new Set(data.overlays.map(o => text(o?.type || o?.code)).filter(Boolean))],
+    overlaysUnavailable: Array.isArray(data.overlaysUnavailable) ? data.overlaysUnavailable.map(o => text(o?.type)).filter(Boolean) : null
+  };
+}
+function overlayDetail(values) {
+  if (!values.overlays) return '';
+  const found = values.overlays.length ? `overlays: ${values.overlays.join('; ')}` : 'overlays: none mapped';
+  const down = values.overlaysUnavailable?.length ? `; overlay layers unavailable: ${values.overlaysUnavailable.join(', ')}` : '';
+  return ` · ${found}${down}`;
+}
+
 // Layers in report order. `route` is the /api path the browser uses for that layer.
 export const LAYERS = [
   { key: 'parcel', label: 'Parcel', route: '/api/parcel-search' },
@@ -347,10 +364,15 @@ export const interpret = {
     const values = {
       code: z.code || null, jurisdiction: data.jurisdiction || data.permitJurisdiction?.name || null,
       countyStatus: data.countyStatus || null, zoningStatus: z.status || null,
-      allowedBuildings: data.allowedBuildings?.status || null, permitHistoryStatus: data.permitHistoryStatus || null
+      allowedBuildings: data.allowedBuildings?.status || null, permitHistoryStatus: data.permitHistoryStatus || null,
+      // Overlays (Spokane, src/counties/spokane-overlays.js): names and types found, and the overlay
+      // layers that did not answer. null when the county answer has no overlay fields. Additive:
+      // an overlay layer failing does not change the zoning status.
+      ...overlayValues(data)
     };
-    if (!data.available || !z.code) return unavailable(text(z.label || z.note) || 'no zoning result', values);
-    return ok(`${z.code} (${values.jurisdiction || 'jurisdiction n/a'})`, values);
+    const overlayText = overlayDetail(values);
+    if (!data.available || !z.code) return unavailable(`${text(z.label || z.note) || 'no zoning result'}${overlayText}`, values);
+    return ok(`${z.code} (${values.jurisdiction || 'jurisdiction n/a'})${overlayText}`, values);
   },
   zoningRules(data) {
     if (!data.available) return unavailable(text(data.status) || 'zoning rules not available', { status: data.status || null });

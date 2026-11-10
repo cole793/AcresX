@@ -22,7 +22,8 @@ test('zoning rules: a city zone code never gets Spokane County rules, even when 
     const city = await rules({ county: 'Spokane', zoneCode: 'RC', jurisdiction });
     assert.equal(city.available, false, jurisdiction);
     assert.equal(city.status, 'zone_not_mapped');
-    assert.match(city.note, /City zoning rules aren't mapped/);
+    assert.match(city.note, /aren't mapped in AcresX yet/);
+    assert.doesNotMatch(JSON.stringify(city), /Spokane County Zoning Code|DocumentCenter\/View\/47247/);
   }
 });
 

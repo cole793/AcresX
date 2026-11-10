@@ -79,6 +79,9 @@ function spokaneLayers(url, { zoning, permits } = {}) {
   if (path.includes('ZoningLookup/MapServer/4/')) return features([{ LANDUSECODE: 'RR', LANDUSEDESC: 'Rural Residential' }]);
   if (path.includes('ZoningLookup/MapServer/2/')) return features([]);
   if (path.includes('PermittingLookup/MapServer/0/')) return features([{ NAME: 'Spokane County', MUNITYP: 'Other' }]);
+  // Overlay layers (src/counties/spokane-overlays.js): none on this parcel. Before the permits
+  // line, which would also match CriticalAreasBPPublic/MapServer/5.
+  if (path.includes('/CriticalAreasBPPublic/') || /ZoningLookup\/MapServer\/[01]\//.test(path)) return features([]);
   if (path.includes('BPPublic/MapServer/5/')) return permits ? permits() : features([
     { PERMITNUM: 'B-1', PERMITTYPE: 'Residential', STATUS: 'Final', ADDRESS: '123 TEST RD', ISSUEDDATE: 1262304000000 },
     { PERMITNUM: 'B-1', PERMITTYPE: 'Residential', STATUS: 'Final', ADDRESS: '123 TEST RD', ISSUEDDATE: 1262304000000 },

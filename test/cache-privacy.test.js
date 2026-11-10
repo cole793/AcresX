@@ -69,8 +69,9 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
 
 test('cache prefixes moved past every version that could have held owner fields', () => {
   assert.match(MONTANA_PARCEL_CACHE_PREFIX, /\/v2\/$/);
-  // spokane-intelligence v3 stores jurisdiction-first, whole-parcel zoning shares (city zoning).
-  assert.match(SPOKANE_CACHE_PREFIX, /\/spokane-intelligence\/v3\/$/);
+  // spokane-intelligence v3 stores jurisdiction-first, whole-parcel zoning shares (city zoning);
+  // v4 adds the overlay layers.
+  assert.match(SPOKANE_CACHE_PREFIX, /\/spokane-intelligence\/v4\/$/);
   // yellowstone-intelligence v3: layers read across the parcel outline with named fields only.
   assert.match(YELLOWSTONE_CACHE_PREFIX, /\/yellowstone-intelligence\/v3\/$/);
   // gallatin-zoning v3: answers keyed by parcel outline and built from named fields only.
@@ -90,6 +91,9 @@ function spokaneLayers(url, { permits } = {}) {
   if (path.includes('ZoningLookup/MapServer/4/')) return features([{ LANDUSECODE: 'RR', LANDUSEDESC: 'Rural Residential' }]);
   if (path.includes('ZoningLookup/MapServer/2/')) return features([]);
   if (path.includes('PermittingLookup/MapServer/0/')) return features([{ NAME: 'Spokane County', MUNITYP: 'Other', OWNER_NAME: 'TEST OWNER' }]);
+  // Overlay layers (src/counties/spokane-overlays.js); before the permits line, which would also
+  // match CriticalAreasBPPublic/MapServer/5.
+  if (path.includes('/CriticalAreasBPPublic/') || /ZoningLookup\/MapServer\/[01]\//.test(path)) return features([{ SUSCEPT: 'low', OWNER_NAME: 'TEST OWNER' }]);
   if (path.includes('BPPublic/MapServer/5/')) return permits ? permits() : features([{ PERMITNUM: 'B-1', PERMITTYPE: 'Residential', STATUS: 'Final', ADDRESS: '123 TEST RD', OWNER_NAME: 'SMITH JOHN', OWNERADDRESS: '1 MAIL ST' }]);
   throw new Error(`unexpected ${path}`);
 }

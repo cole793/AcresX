@@ -41,6 +41,7 @@
       zoneName: z.name || '',
       jurisdiction: zp.jurisdiction || zp.permitJurisdiction?.name || '',
       jurisdictionType: z.jurisdictionType || '',
+      rules: z.rules || '', rulesNote: z.rulesNote || '', rulesUrl: z.rulesUrl || '', rulesUrlLabel: z.rulesUrlLabel || '',
       uga: Boolean(zp.urbanGrowthArea?.intersects),
       developmentAgreement: z.developmentAgreement || zp.comprehensivePlan?.developmentAgreement || ''
     };
@@ -53,7 +54,10 @@
     if (!/^(spokane|stevens|yellowstone|kootenai)$/i.test(county)) return null;
     // Spokane County rules are for unincorporated land only: a city zone code (City of Spokane,
     // Spokane Valley, Cheney, ...) never gets them, even if it shares letters with a county zone.
-    if (/^spokane$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^spokane county$/i.test(identity.jurisdiction)))) return null;
+    // A city zone is asked for only when the server says the city has a table with it
+    // (zoning.rules 'mapped', src/zoning/spokane-city-rules.js); the server then answers from that
+    // city's table. Otherwise the zoning tab shows "rules not mapped" with the city code link.
+    if (/^spokane$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^spokane county$/i.test(identity.jurisdiction))) && identity.rules !== 'mapped') return null;
     // Same for Stevens County rules: a city or town zone (Chewelah 'R1', Colville 'R-1', Kettle
     // Falls 'I') never gets them. The county answer's jurisdiction is 'Stevens County'.
     if (/^stevens$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^stevens county\b/i.test(identity.jurisdiction)))) return null;
@@ -108,12 +112,13 @@
 
     const uses = Array.isArray(power.uses) ? power.uses : [];
     const county = String(power.county || '').toLowerCase();
-    const context = county === 'stevens' ? ['Stevens County land-use screening', `Code ${power.sourceChapter || '3.03.020'}`] : county === 'yellowstone'
+    const city = county === 'spokane' && power.jurisdictionType === 'city';
+    const context = city ? [power.jurisdiction, `Code ${power.sourceChapter}`] : county === 'stevens' ? ['Stevens County land-use screening', `Code ${power.sourceChapter || '3.03.020'}`] : county === 'yellowstone'
       ? [power.jurisdiction || 'Yellowstone County', power.sourceChapter || 'Zoning regulations']
       : county === 'kootenai'
         ? [power.jurisdiction || 'Kootenai County', power.sourceChapter || 'County zoning code']
         : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
-    const sourceLabel = county === 'stevens' ? 'Stevens County Title 3 zoning regulations' : county === 'yellowstone'
+    const sourceLabel = city ? (power.codeLabel || `${power.jurisdiction} zoning code`) : county === 'stevens' ? 'Stevens County Title 3 zoning regulations' : county === 'yellowstone'
       ? `${power.jurisdiction || 'Yellowstone County'} zoning regulations`
       : county === 'kootenai'
         ? 'Kootenai County Zoning Code'
@@ -127,7 +132,7 @@
         <span class="zone-family">${esc(power.family || 'Zoning')}</span>
       </div>
       <div class="zone-density"><span>Residential / development intensity</span><strong>${esc(power.density || 'Verify project-specific density standards')}</strong></div>
-      <div class="zone-context">${[...(power.setback ? [`General structural setback: ${power.setback}`] : []), ...(power.buildingHeight ? [`Building height: ${power.buildingHeight}`] : []), ...context].filter(Boolean).map(x => `<span class="zone-context-pill">${esc(x)}</span>`).join('')}</div>
+      <div class="zone-context">${[...(power.setback ? [`${city ? 'Setbacks' : 'General structural setback'}: ${power.setback}`] : []), ...(power.buildingHeight ? [`Building height: ${power.buildingHeight}`] : []), ...context].filter(Boolean).map(x => `<span class="zone-context-pill">${esc(x)}</span>`).join('')}</div>
       <div class="zone-use-grid">
         ${uses.map(use => `<div class="zone-use"><span class="zone-use-dot ${esc(use.status)}"></span><div><strong>${esc(use.label)}</strong><span>${esc(statusLabel(use.status))}</span>${use.note ? `<span style="text-transform:none;line-height:1.35">${esc(use.note)}</span>` : ''}</div></div>`).join('')}
       </div>
@@ -137,8 +142,42 @@
     root.appendChild(block);
   }
 
+  // A city zone without a rules table (or a zone missing from the city's table): say so and link
+  // the city code. Never another jurisdiction's rules.
+  function appendNotMapped(info) {
+    if (typeof activeTab === 'undefined' || activeTab !== 'zoning') return;
+    addStyles();
+    const root = document.getElementById('results');
+    if (!root || root.querySelector('.zone-potential')) return;
+    const block = document.createElement('div');
+    block.className = 'zone-potential zone-not-mapped';
+    block.innerHTML = `
+      <div class="zone-potential-head">
+        <div><div class="eyebrow">Development potential</div><h4>${esc(info.code)}: rules not mapped</h4></div>
+        <span class="zone-family">${esc(info.jurisdiction || 'City zoning')}</span>
+      </div>
+      <div class="zone-density"><span>Zoning rules</span><strong>${esc(info.note || "Rules for this zone aren't mapped in AcresX yet; see the city's zoning code and verify with the city.")}</strong></div>
+      ${info.url ? `<div class="zone-source"><a href="${esc(info.url)}" target="_blank" rel="noopener">${esc(info.label || 'Open city zoning code ↗')}</a></div>` : ''}
+    `;
+    root.appendChild(block);
+  }
+
+  function notMappedInfo() {
+    const identity = currentZoningIdentity();
+    if (!identity || !/^spokane$/i.test(String(identity.county).replace(/\s+County$/i, '').trim())) return null;
+    const cached = typeof last !== 'undefined' ? last?.zoningDevelopmentPotential : null;
+    const cacheKey = `Spokane|${identity.jurisdiction}|${identity.zoneCode}`;
+    if (cached && cached._cacheKey === cacheKey && !cached.available && cached.status === 'zone_not_mapped' && cached.codeUrl) {
+      return { code: identity.zoneCode, jurisdiction: identity.jurisdiction, note: cached.note, url: cached.codeUrl, label: `Open ${cached.codeLabel || 'city zoning code'} ↗` };
+    }
+    if (identity.jurisdictionType !== 'city' || identity.rules !== 'not_mapped') return null;
+    return { code: identity.zoneCode, jurisdiction: identity.jurisdiction, note: identity.rulesNote, url: identity.rulesUrl, label: identity.rulesUrlLabel };
+  }
+
   async function renderPotential() {
     if (typeof activeTab === 'undefined' || activeTab !== 'zoning') return;
+    const unmapped = notMappedInfo();
+    if (unmapped) { appendNotMapped(unmapped); return; }
     const cached = typeof last !== 'undefined' ? last?.zoningDevelopmentPotential : null;
     if (cached?.available) {
       appendPotential(cached);
@@ -146,6 +185,7 @@
     }
     const loaded = await loadPotential();
     if (typeof activeTab !== 'undefined' && activeTab === 'zoning' && loaded?.available) appendPotential(loaded);
+    else { const info = notMappedInfo(); if (info) appendNotMapped(info); }
   }
 
   if (typeof renderSummary === 'function') {

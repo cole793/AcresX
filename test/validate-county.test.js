@@ -555,3 +555,26 @@ test('public water/sewer layer: statuses, providers and expected values', () => 
   assert.deepEqual(down.values.failedLayers, ['cda-sewer-pipes']);
   assert.equal(compareExpected({ 'publicUtilities.sewerPublic': true }, { publicUtilities: down }).length, 1);
 });
+
+test('zoning: Spokane overlays are recorded in the detail and values; a down overlay layer keeps zoning ok', () => {
+  const res = data => ({ route: '/api/zoning-permits', ok: true, httpStatus: 200, ms: 5, data });
+  const base = { available: true, county: 'Spokane', jurisdiction: 'Spokane County', zoning: { status: 'gis_match', code: 'RCV' } };
+  const found = interpretLayer('zoning', res({ ...base, overlays: [
+    { type: 'shoreline', name: 'Shoreline designation: Rural Conservancy', share: 0.89 },
+    { type: 'aquifer_recharge', name: 'Critical aquifer recharge area: low susceptibility', share: 1 }
+  ], overlaysUnavailable: [] }));
+  assert.equal(found.status, 'ok');
+  assert.equal(found.detail, 'RCV (Spokane County) · overlays: Shoreline designation: Rural Conservancy; Critical aquifer recharge area: low susceptibility');
+  assert.deepEqual(found.values.overlayTypes, ['shoreline', 'aquifer_recharge']);
+  assert.deepEqual(found.values.overlaysUnavailable, []);
+  assert.deepEqual(compareExpected({ 'zoning.overlays': 'Shoreline designation: Rural Conservancy', 'zoning.overlayTypes': 'aquifer_recharge' }, { zoning: found }), []);
+
+  const none = interpretLayer('zoning', res({ ...base, overlays: [], overlaysUnavailable: [{ type: 'airport' }] }));
+  assert.equal(none.status, 'ok', 'an overlay layer failing does not change the zoning status');
+  assert.match(none.detail, / · overlays: none mapped; overlay layers unavailable: airport$/);
+
+  // Counties without overlay fields: detail and status as before, overlay values null.
+  const kootenai = interpretLayer('zoning', res({ available: true, county: 'Kootenai', jurisdiction: 'Kootenai County', zoning: { status: 'gis_match', code: 'Rural' } }));
+  assert.equal(kootenai.detail, 'Rural (Kootenai County)');
+  assert.equal(kootenai.values.overlays, null);
+});

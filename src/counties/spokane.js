@@ -2,6 +2,7 @@ import { cachedJson, upstreamJson } from '../shared/upstream.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
 import { ringsFromGeometry, samplePoints, coverageNote } from '../shared/polygon-coverage.js';
 import { layerShares, queryJurisdictionShares, decideJurisdiction, queryCityZoningShares, cityZoning, jurisdictionNote, SPOKANE_JURISDICTIONS } from './spokane-cities.js';
+import { queryOverlays, overlayResponse } from './spokane-overlays.js';
 
 // The layer answers for one parcel (jurisdiction, county or city zoning, comp plan, UGA, permits)
 // are cached for a day (Cache API), only when every layer asked answered; the response is rebuilt
@@ -10,7 +11,8 @@ import { layerShares, queryJurisdictionShares, decideJurisdiction, queryCityZoni
 // (src/shared/personal-fields.js) before an answer is stored or used, so neither a cache hit nor
 // a fresh answer carries them. Bump the version in the prefix whenever what is stored changes, so
 // no entry in the old shape survives. v3: jurisdiction first, whole-parcel shares, city zoning.
-export const SPOKANE_CACHE_PREFIX = 'https://acresx.internal/cache/spokane-intelligence/v3/';
+// v4: overlay layers (spokane-overlays.js), one settled answer per layer.
+export const SPOKANE_CACHE_PREFIX = 'https://acresx.internal/cache/spokane-intelligence/v4/';
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 // The jurisdiction layer (SCOUT/PermittingLookup/MapServer/0) and the city zoning layers are in
@@ -189,22 +191,24 @@ export async function getSpokaneCountyIntelligence(body, profile) {
   const queryLayers = async () => {
     // County zoning is asked alongside the jurisdiction so an unincorporated parcel needs one
     // round trip; it is used only when the parcel is not inside a city.
-    const [jurisdiction, countyZoningR, comp, uga, permits] = await Promise.all([
+    // Overlays (6 small layer queries) are asked alongside too; each settles on its own.
+    const [jurisdiction, countyZoningR, comp, uga, permits, overlays] = await Promise.all([
       settle(queryJurisdictionShares(where, samples)),
       settle(layerShares(`${SPOKANE_GIS.zoningBase}/3`, where, samples, { outFields: COUNTY_ZONING_FIELDS, keyOf: a => attrValue(a, ['ZONECLASS']), agency: 'Spokane County GIS', label: 'spokane-zoning' })),
       settle(queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/4`, { lat, lon, outFields: 'LANDUSECODE,LANDUSEDESC,COMMENTS,DevFileNum,DevURL', label: 'spokane-comp-plan' })),
       settle(queryOfficialLayer(`${SPOKANE_GIS.zoningBase}/2`, { lat, lon, outFields: 'NAME,TYPE', label: 'spokane-uga' })),
-      settle(queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100, label: 'spokane-permits' }))
+      settle(queryOfficialLayer(SPOKANE_GIS.permitsLayer, { lat, lon, geometry, outFields: '*', limit: 100, label: 'spokane-permits' })),
+      queryOverlays(where, samples, settle)
     ]);
     const city = jurisdiction.status === 'fulfilled' ? decideJurisdiction(jurisdiction.value).city : null;
     const cityZoningR = city?.zoning ? await settle(queryCityZoningShares(city, where, samples)) : null;
-    return { jurisdiction, countyZoning: countyZoningR, cityZoning: cityZoningR, comp, uga, permits };
+    return { jurisdiction, countyZoning: countyZoningR, cityZoning: cityZoningR, comp, uga, permits, overlays };
   };
   const layers = await cachedJson(
     SPOKANE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS, queryLayers,
-    { isValid: answer => Object.values(answer).every(r => r === null || r.status === 'fulfilled') }
+    { isValid: answer => Object.values(answer).flat().every(r => r === null || r.status === 'fulfilled') }
   );
-  const { jurisdiction: jurisdictionR, countyZoning: zoningR, cityZoning: cityZoningR, comp: compR, uga: ugaR, permits: permitsR } = layers;
+  const { jurisdiction: jurisdictionR, countyZoning: zoningR, cityZoning: cityZoningR, comp: compR, uga: ugaR, permits: permitsR, overlays: overlaysR } = layers;
 
   const decision = jurisdictionR.status === 'fulfilled' ? decideJurisdiction(jurisdictionR.value) : null;
   const city = decision?.city || null;
@@ -261,6 +265,8 @@ export async function getSpokaneCountyIntelligence(body, profile) {
       method: matchMethod,
       ...(decision ? { jurisdictionShare: decision.share, otherJurisdictions: decision.others } : { jurisdictionError: jurisdictionR.reason?.message || 'unavailable' })
     },
+    // Critical areas, shoreline and airport overlays (additive; never part of the score).
+    ...overlayResponse(overlaysR, city),
     permitHistory,
     permitHistoryStatus: permitsR.status === 'fulfilled' ? (permitHistory.length ? 'found' : 'none') : 'unavailable',
     permitHistoryError: permitsR.status === 'rejected' ? permitsR.reason?.message || 'Permit service unavailable' : '',

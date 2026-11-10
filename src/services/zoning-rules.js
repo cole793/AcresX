@@ -1,4 +1,5 @@
 import { getSpokaneZoneDevelopmentPotential } from '../zoning/spokane-rules.js';
+import { getSpokaneCityZoneRules } from '../zoning/spokane-city-rules.js';
 import { getYellowstoneZoneDevelopmentPotential } from '../zoning/yellowstone-rules.js';
 import { getKootenaiZoneDevelopmentPotential } from '../zoning/kootenai-rules.js';
 import { getStevensZoneRules } from '../zoning/stevens-rules.js';
@@ -13,9 +14,15 @@ export async function handleZoningRules(request) {
 
   if (/^spokane$/i.test(county)) {
     // City zones share letters with county zones (Spokane Valley 'R-3', Cheney 'I-1') but not
-    // their rules. A jurisdiction other than the county never gets Spokane County rules.
+    // their rules. A jurisdiction other than the county gets its own city's table
+    // (src/zoning/spokane-city-rules.js) or "rules not mapped", never Spokane County rules.
     const jurisdiction = String(body.jurisdiction || '').trim();
-    if (jurisdiction && !/^spokane county$/i.test(jurisdiction)) return json({ available: false, county: 'Spokane', jurisdiction, zoneCode, status: 'zone_not_mapped', note: "City zoning rules aren't mapped in AcresX yet; see the city's zoning code." }, 200, 'public, max-age=3600');
+    if (jurisdiction && !/^spokane county$/i.test(jurisdiction)) {
+      const city = getSpokaneCityZoneRules(jurisdiction, zoneCode);
+      return city.available
+        ? json(city, 200, 'public, max-age=86400, s-maxage=604800')
+        : json(city, 200, 'public, max-age=3600');
+    }
     const potential = getSpokaneZoneDevelopmentPotential(zoneCode, {
       uga: Boolean(body.uga),
       developmentAgreement: body.developmentAgreement || ''
