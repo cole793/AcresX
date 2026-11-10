@@ -85,8 +85,10 @@
     const parcelId = p.ORIG_PARCEL_ID || p.PARCEL_ID_NR || 'Unknown';
     const address = [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', ') || `Parcel ${parcelId}`;
     const county = p._countyDisplay || p.COUNTY_NM || '—';
-    // utilityText (index.html) says "Not identified — contact the county" when the lookup failed.
-    const utility = typeof utilityText === 'function' ? utilityText(last.utility) : Array.isArray(last.utility) && last.utility.length ? last.utility.join(' / ') : 'Not identified';
+    // utilityText (index.html) says "Not identified — contact the county" when the lookup failed,
+    // and shows the ranked primary provider first with the others "also listed".
+    const list = Array.isArray(last.utility) ? last.utility : [];
+    const utility = typeof utilityText === 'function' ? utilityText(last.utility) : list.length ? [list[0], list.length > 1 ? `also listed: ${list.slice(1).join(', ')}` : ''].filter(Boolean).join(' · ') : 'Not identified';
     // WA parcels come from the statewide layer, which has no state field; ID and MT parcels carry _stateDisplay.
     const state = p._stateDisplay || STATE_NAMES[p._stateCode] || 'Washington';
     return { parcelId, address, county, state, utility };
