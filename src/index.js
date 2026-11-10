@@ -20,6 +20,7 @@ import { handlePropertyTaxTest } from './services/property-tax-test.js';
 import { handleExistingWell } from './services/existing-well.js';
 import { handleResoListings } from './services/reso-listings.js';
 import { handleUpstreamHealth } from './services/upstream-health.js';
+import { handlePublicUtilities } from './services/public-utilities.js';
 import { json } from './shared/http.js';
 import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
@@ -63,6 +64,7 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   if(request.method==='POST'&&url.pathname==='/api/well-search')return await handleWellSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/existing-well')return await handleExistingWell(request);
   if(request.method==='POST'&&url.pathname==='/api/reso-listings')return await handleResoListings(request,env);
+  if(request.method==='POST'&&url.pathname==='/api/public-utilities')return await handlePublicUtilities(request,env,ctx);
   if(request.method==='POST'&&url.pathname==='/api/utility-territory')return await handleUtilityTerritory(request);
   if(request.method==='POST'&&url.pathname==='/api/land-analysis')return await handleLandAnalysis(request,env,ctx);
   if(request.method==='POST'&&url.pathname==='/api/slope-grid')return await handleSlopeGrid(request,env,ctx);
