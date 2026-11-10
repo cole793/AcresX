@@ -1,0 +1,1062 @@
+{
+ "recorded": "2026-11-10",
+ "note": "Live answers recorded read-only on 2026-11-10 after the City of Cheney republished its zoning service (layer 3 is now PUD Overlay, layer 4 Zoning 2026). Keys are host+path. oldLayerZoningQuery is the live answer to the old configuration (layer 3 with outFields ZoneCODE,ZONE). metadata holds the service and layer ?f=json answers, trimmed (service: id/name/type of each layer and the description; layers: fields as name/type/alias).",
+ "parcel": {
+  "parcelId": "13013.2211",
+  "address": "3175 PHEASANT ST",
+  "lat": 47.510249,
+  "lon": -117.575987,
+  "geometry": {
+   "type": "Polygon",
+   "coordinates": [
+    [
+     [
+      -117.57565234786523,
+      47.510156145661135
+     ],
+     [
+      -117.57609601925972,
+      47.510156948370664
+     ],
+     [
+      -117.57610338731222,
+      47.51015696150848
+     ],
+     [
+      -117.57610042411542,
+      47.510230877518886
+     ],
+     [
+      -117.57609968962068,
+      47.51030481958773
+     ],
+     [
+      -117.57609853219145,
+      47.51032907489791
+     ],
+     [
+      -117.57609147504225,
+      47.510329062515126
+     ],
+     [
+      -117.57565217223838,
+      47.5103282672757
+     ],
+     [
+      -117.57565234786523,
+      47.510156145661135
+     ]
+    ]
+   ]
+  }
+ },
+ "responses": {
+  "gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0/query": {
+   "displayFieldName": "NAME",
+   "fieldAliases": {
+    "NAME": "Municipality Name",
+    "MUNITYP": "Municipal Type"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "NAME",
+     "type": "esriFieldTypeString",
+     "alias": "Municipality Name",
+     "length": 50
+    },
+    {
+     "name": "MUNITYP",
+     "type": "esriFieldTypeString",
+     "alias": "Municipal Type",
+     "length": 50
+    }
+   ],
+   "features": [
+    {
+     "attributes": {
+      "NAME": "Cheney",
+      "MUNITYP": "City"
+     },
+     "geometry": {
+      "rings": [
+       [
+        [
+         -117.564908,
+         47.513633
+        ],
+        [
+         -117.56492,
+         47.507467
+        ],
+        [
+         -117.563551,
+         47.507469
+        ],
+        [
+         -117.563551,
+         47.507442
+        ],
+        [
+         -117.561765,
+         47.507442
+        ],
+        [
+         -117.561875,
+         47.504868
+        ],
+        [
+         -117.559637,
+         47.504869
+        ],
+        [
+         -117.559675,
+         47.50342
+        ],
+        [
+         -117.556379,
+         47.503401
+        ],
+        [
+         -117.556394,
+         47.502952
+        ],
+        [
+         -117.558964,
+         47.500583
+        ],
+        [
+         -117.559411,
+         47.500218
+        ],
+        [
+         -117.560093,
+         47.499724
+        ],
+        [
+         -117.56018,
+         47.499558
+        ],
+        [
+         -117.560357,
+         47.499324
+        ],
+        [
+         -117.562198,
+         47.497311
+        ],
+        [
+         -117.562299,
+         47.497154
+        ],
+        [
+         -117.562352,
+         47.497028
+        ],
+        [
+         -117.562385,
+         47.496896
+        ],
+        [
+         -117.562395,
+         47.496732
+        ],
+        [
+         -117.562368,
+         47.496561
+        ],
+        [
+         -117.562336,
+         47.496463
+        ],
+        [
+         -117.562261,
+         47.496315
+        ],
+        [
+         -117.562146,
+         47.496162
+        ],
+        [
+         -117.561915,
+         47.495958
+        ],
+        [
+         -117.561694,
+         47.495826
+        ],
+        [
+         -117.561048,
+         47.495944
+        ],
+        [
+         -117.560394,
+         47.496038
+        ],
+        [
+         -117.559397,
+         47.496133
+        ],
+        [
+         -117.558393,
+         47.49617
+        ],
+        [
+         -117.55656,
+         47.496155
+        ],
+        [
+         -117.556623,
+         47.492748
+        ],
+        [
+         -117.546673,
+         47.492631
+        ],
+        [
+         -117.546643,
+         47.489616
+        ],
+        [
+         -117.550996,
+         47.485597
+        ],
+        [
+         -117.550991,
+         47.485174
+        ],
+        [
+         -117.55453,
+         47.481895
+        ],
+        [
+         -117.557777,
+         47.481904
+        ],
+        [
+         -117.560745,
+         47.479154
+        ],
+        [
+         -117.562785,
+         47.480301
+        ],
+        [
+         -117.562837,
+         47.480258
+        ],
+        [
+         -117.564474,
+         47.481176
+        ],
+        [
+         -117.564737,
+         47.481306
+        ],
+        [
+         -117.565099,
+         47.481456
+        ],
+        [
+         -117.565675,
+         47.481638
+        ],
+        [
+         -117.566283,
+         47.481764
+        ],
+        [
+         -117.5667,
+         47.481817
+        ],
+        [
+         -117.568147,
+         47.481917
+        ],
+        [
+         -117.56869,
+         47.482009
+        ],
+        [
+         -117.569029,
+         47.4821
+        ],
+        [
+         -117.569445,
+         47.482254
+        ],
+        [
+         -117.569756,
+         47.482404
+        ],
+        [
+         -117.57012,
+         47.482631
+        ],
+        [
+         -117.570121,
+         47.4824
+        ],
+        [
+         -117.569675,
+         47.482159
+        ],
+        [
+         -117.569372,
+         47.482033
+        ],
+        [
+         -117.569053,
+         47.481928
+        ],
+        [
+         -117.57012,
+         47.481929
+        ],
+        [
+         -117.570133,
+         47.478298
+        ],
+        [
+         -117.579891,
+         47.478318
+        ],
+        [
+         -117.579479,
+         47.479501
+        ],
+        [
+         -117.579441,
+         47.479689
+        ],
+        [
+         -117.579429,
+         47.479861
+        ],
+        [
+         -117.579458,
+         47.48015
+        ],
+        [
+         -117.579536,
+         47.48041
+        ],
+        [
+         -117.579665,
+         47.480662
+        ],
+        [
+         -117.57984,
+         47.480901
+        ],
+        [
+         -117.584332,
+         47.478327
+        ],
+        [
+         -117.585488,
+         47.47833
+        ],
+        [
+         -117.607967,
+         47.465312
+        ],
+        [
+         -117.607963,
+         47.46665
+        ],
+        [
+         -117.607748,
+         47.466749
+        ],
+        [
+         -117.607777,
+         47.468045
+        ],
+        [
+         -117.608623,
+         47.467666
+        ],
+        [
+         -117.609601,
+         47.467253
+        ],
+        [
+         -117.611095,
+         47.466664
+        ],
+        [
+         -117.611084,
+         47.471565
+        ],
+        [
+         -117.608795,
+         47.471904
+        ],
+        [
+         -117.607745,
+         47.472106
+        ],
+        [
+         -117.607744,
+         47.472392
+        ],
+        [
+         -117.607619,
+         47.472419
+        ],
+        [
+         -117.607582,
+         47.47849
+        ],
+        [
+         -117.607582,
+         47.48248
+        ],
+        [
+         -117.606195,
+         47.482243
+        ],
+        [
+         -117.60585,
+         47.482218
+        ],
+        [
+         -117.605051,
+         47.482202
+        ],
+        [
+         -117.605034,
+         47.483252
+        ],
+        [
+         -117.604221,
+         47.483503
+        ],
+        [
+         -117.604217,
+         47.48378
+        ],
+        [
+         -117.602244,
+         47.483765
+        ],
+        [
+         -117.602242,
+         47.485708
+        ],
+        [
+         -117.596903,
+         47.485661
+        ],
+        [
+         -117.596933,
+         47.496516
+        ],
+        [
+         -117.586887,
+         47.496419
+        ],
+        [
+         -117.586901,
+         47.499861
+        ],
+        [
+         -117.586809,
+         47.500137
+        ],
+        [
+         -117.586298,
+         47.505586
+        ],
+        [
+         -117.586243,
+         47.505816
+        ],
+        [
+         -117.586167,
+         47.506008
+        ],
+        [
+         -117.586081,
+         47.506168
+        ],
+        [
+         -117.585936,
+         47.506372
+        ],
+        [
+         -117.585663,
+         47.506653
+        ],
+        [
+         -117.585452,
+         47.506816
+        ],
+        [
+         -117.585217,
+         47.506964
+        ],
+        [
+         -117.585833,
+         47.507304
+        ],
+        [
+         -117.585415,
+         47.507305
+        ],
+        [
+         -117.585926,
+         47.507594
+        ],
+        [
+         -117.586062,
+         47.507703
+        ],
+        [
+         -117.586208,
+         47.507893
+        ],
+        [
+         -117.586261,
+         47.508031
+        ],
+        [
+         -117.586276,
+         47.508173
+        ],
+        [
+         -117.58631,
+         47.508173
+        ],
+        [
+         -117.586297,
+         47.50869
+        ],
+        [
+         -117.586257,
+         47.508689
+        ],
+        [
+         -117.586209,
+         47.510524
+        ],
+        [
+         -117.586217,
+         47.510713
+        ],
+        [
+         -117.58625,
+         47.5109
+        ],
+        [
+         -117.586171,
+         47.510909
+        ],
+        [
+         -117.586284,
+         47.511224
+        ],
+        [
+         -117.586269,
+         47.511996
+        ],
+        [
+         -117.580876,
+         47.51201
+        ],
+        [
+         -117.580894,
+         47.510956
+        ],
+        [
+         -117.575423,
+         47.510973
+        ],
+        [
+         -117.575426,
+         47.507441
+        ],
+        [
+         -117.570273,
+         47.507454
+        ],
+        [
+         -117.570261,
+         47.513607
+        ],
+        [
+         -117.564908,
+         47.513633
+        ]
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  "gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query": {
+   "displayFieldName": "ZONECLASS",
+   "fieldAliases": {
+    "ZONECLASS": "Zoning Classification",
+    "ZONEDESC": "Zoning Description",
+    "ZFILENUM": "Zone File Number",
+    "COMMENTS": "COMMENTS",
+    "URL": "URL",
+    "DevFileNum": "Development Agreement File Number",
+    "DevURL": "Link to Development Agreement"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "ZONECLASS",
+     "type": "esriFieldTypeString",
+     "alias": "Zoning Classification",
+     "length": 10
+    },
+    {
+     "name": "ZONEDESC",
+     "type": "esriFieldTypeString",
+     "alias": "Zoning Description",
+     "length": 100
+    },
+    {
+     "name": "ZFILENUM",
+     "type": "esriFieldTypeString",
+     "alias": "Zone File Number",
+     "length": 40
+    },
+    {
+     "name": "COMMENTS",
+     "type": "esriFieldTypeString",
+     "alias": "COMMENTS",
+     "length": 80
+    },
+    {
+     "name": "URL",
+     "type": "esriFieldTypeString",
+     "alias": "URL",
+     "length": 75
+    },
+    {
+     "name": "DevFileNum",
+     "type": "esriFieldTypeString",
+     "alias": "Development Agreement File Number",
+     "length": 50
+    },
+    {
+     "name": "DevURL",
+     "type": "esriFieldTypeString",
+     "alias": "Link to Development Agreement",
+     "length": 255
+    }
+   ],
+   "features": []
+  },
+  "services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/4/query": {
+   "objectIdFieldName": "OBJECTID",
+   "uniqueIdField": {
+    "name": "OBJECTID",
+    "isSystemMaintained": true
+   },
+   "globalIdFieldName": "",
+   "geometryProperties": {
+    "shapeAreaFieldName": "Shape__Area",
+    "shapeLengthFieldName": "Shape__Length",
+    "units": "esriMeters"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "ZoneCODE",
+     "type": "esriFieldTypeString",
+     "alias": "ZoneCODE",
+     "sqlType": "sqlTypeOther",
+     "length": 10,
+     "domain": null,
+     "defaultValue": null
+    },
+    {
+     "name": "ZONE",
+     "type": "esriFieldTypeString",
+     "alias": "ZONE",
+     "sqlType": "sqlTypeOther",
+     "length": 25,
+     "domain": null,
+     "defaultValue": null
+    }
+   ],
+   "features": [
+    {
+     "attributes": {
+      "ZoneCODE": "R-1",
+      "ZONE": "Single Family Residential"
+     },
+     "geometry": {
+      "rings": [
+       [
+        [
+         -117.58089,
+         47.512016
+        ],
+        [
+         -117.580906,
+         47.510964
+        ],
+        [
+         -117.57568,
+         47.51098
+        ],
+        [
+         -117.575681,
+         47.507476
+        ],
+        [
+         -117.575559,
+         47.507456
+        ],
+        [
+         -117.575556,
+         47.507311
+        ],
+        [
+         -117.580967,
+         47.507327
+        ],
+        [
+         -117.583598,
+         47.507289
+        ],
+        [
+         -117.583874,
+         47.507262
+        ],
+        [
+         -117.584311,
+         47.507184
+        ],
+        [
+         -117.58465,
+         47.507077
+        ],
+        [
+         -117.584826,
+         47.506999
+        ],
+        [
+         -117.585019,
+         47.507103
+        ],
+        [
+         -117.585061,
+         47.507084
+        ],
+        [
+         -117.585435,
+         47.50727
+        ],
+        [
+         -117.585946,
+         47.507559
+        ],
+        [
+         -117.586078,
+         47.507665
+        ],
+        [
+         -117.586227,
+         47.507858
+        ],
+        [
+         -117.58633,
+         47.508138
+        ],
+        [
+         -117.586263,
+         47.508986
+        ],
+        [
+         -117.586229,
+         47.510688
+        ],
+        [
+         -117.586228,
+         47.510872
+        ],
+        [
+         -117.586303,
+         47.5111
+        ],
+        [
+         -117.586283,
+         47.512002
+        ],
+        [
+         -117.58089,
+         47.512016
+        ]
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  "services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3/query": {
+   "objectIdFieldName": "OBJECTID",
+   "uniqueIdField": {
+    "name": "OBJECTID",
+    "isSystemMaintained": true
+   },
+   "globalIdFieldName": "",
+   "geometryProperties": {
+    "shapeAreaFieldName": "Shape__Area",
+    "shapeLengthFieldName": "Shape__Length",
+    "units": "esriMeters"
+   },
+   "geometryType": "esriGeometryPolygon",
+   "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+   },
+   "fields": [
+    {
+     "name": "PUDCODE",
+     "type": "esriFieldTypeString",
+     "alias": "PUDCODE",
+     "sqlType": "sqlTypeOther",
+     "length": 10,
+     "domain": null,
+     "defaultValue": null
+    },
+    {
+     "name": "ZONE",
+     "type": "esriFieldTypeString",
+     "alias": "ZONE",
+     "sqlType": "sqlTypeOther",
+     "length": 6,
+     "domain": null,
+     "defaultValue": null
+    }
+   ],
+   "features": [
+    {
+     "attributes": {
+      "PUDCODE": "PUD",
+      "ZONE": "R-1"
+     },
+     "geometry": {
+      "rings": [
+       [
+        [
+         -117.575669,
+         47.50747
+        ],
+        [
+         -117.580951,
+         47.507456
+        ],
+        [
+         -117.580892,
+         47.510958
+        ],
+        [
+         -117.575664,
+         47.510976
+        ],
+        [
+         -117.575669,
+         47.50747
+        ]
+       ]
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "oldLayerZoningQuery": {
+  "error": {
+   "code": 400,
+   "message": "Cannot perform query. Invalid query parameters.",
+   "details": [
+    "'outFields' parameter is invalid"
+   ]
+  }
+ },
+ "metadata": {
+  "services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer": {
+   "currentVersion": 12,
+   "serviceDescription": "Zoning effective March 12th, 2025 w/ passage of Ordinance Y-84; approved on February 10th, 2025.",
+   "layers": [
+    {
+     "id": 0,
+     "name": "Building Footprints 2026",
+     "type": "Feature Layer",
+     "geometryType": "esriGeometryPolygon"
+    },
+    {
+     "id": 1,
+     "name": "Cheney Parcels 2026",
+     "type": "Feature Layer",
+     "geometryType": "esriGeometryPolygon"
+    },
+    {
+     "id": 2,
+     "name": "Central Cheney Historic District",
+     "type": "Feature Layer",
+     "geometryType": "esriGeometryPolygon"
+    },
+    {
+     "id": 3,
+     "name": "PUD Overlay",
+     "type": "Feature Layer",
+     "geometryType": "esriGeometryPolygon"
+    },
+    {
+     "id": 4,
+     "name": "Zoning 2026",
+     "type": "Feature Layer",
+     "geometryType": "esriGeometryPolygon"
+    }
+   ],
+   "tables": []
+  },
+  "services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3": {
+   "id": 3,
+   "name": "PUD Overlay",
+   "type": "Feature Layer",
+   "geometryType": "esriGeometryPolygon",
+   "description": "To show the extent of zoning overlays for Planned Unit Developments (PUDs) within the corporate boundaries of the City of Cheney, Washington.",
+   "copyrightText": "Community Development Department, City of Cheney, 112 Anderson Road, Cheney, WA  99004, 509-498-9240",
+   "editingInfo": {
+    "lastEditDate": 1794327414009,
+    "schemaLastEditDate": 1794327414009,
+    "dataLastEditDate": 1794327414009
+   },
+   "fields": [
+    {
+     "name": "OBJECTID",
+     "type": "esriFieldTypeOID",
+     "alias": "OBJECTID"
+    },
+    {
+     "name": "AREA",
+     "type": "esriFieldTypeDouble",
+     "alias": "AREA"
+    },
+    {
+     "name": "PERIMETER",
+     "type": "esriFieldTypeDouble",
+     "alias": "PERIMETER"
+    },
+    {
+     "name": "CH_PUD_",
+     "type": "esriFieldTypeDouble",
+     "alias": "CH_PUD_"
+    },
+    {
+     "name": "CH_PUD_ID",
+     "type": "esriFieldTypeDouble",
+     "alias": "CH_PUD_ID"
+    },
+    {
+     "name": "PUDCODE",
+     "type": "esriFieldTypeString",
+     "alias": "PUDCODE"
+    },
+    {
+     "name": "ZONE",
+     "type": "esriFieldTypeString",
+     "alias": "ZONE"
+    },
+    {
+     "name": "Shape__Area",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Area"
+    },
+    {
+     "name": "Shape__Length",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Length"
+    }
+   ]
+  },
+  "services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/4": {
+   "id": 4,
+   "name": "Zoning 2026",
+   "type": "Feature Layer",
+   "geometryType": "esriGeometryPolygon",
+   "description": "",
+   "copyrightText": "",
+   "editingInfo": {
+    "lastEditDate": 1794327414164,
+    "schemaLastEditDate": 1794327414164,
+    "dataLastEditDate": 1794327414164
+   },
+   "fields": [
+    {
+     "name": "RuleID",
+     "type": "esriFieldTypeInteger",
+     "alias": "RuleID"
+    },
+    {
+     "name": "ZONE",
+     "type": "esriFieldTypeString",
+     "alias": "ZONE"
+    },
+    {
+     "name": "ZoneCODE",
+     "type": "esriFieldTypeString",
+     "alias": "ZoneCODE"
+    },
+    {
+     "name": "ACREAGE",
+     "type": "esriFieldTypeDouble",
+     "alias": "ACREAGE"
+    },
+    {
+     "name": "AREA",
+     "type": "esriFieldTypeDouble",
+     "alias": "AREA"
+    },
+    {
+     "name": "OBJECTID",
+     "type": "esriFieldTypeOID",
+     "alias": "OBJECTID"
+    },
+    {
+     "name": "Shape__Are",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Are"
+    },
+    {
+     "name": "Shape__Len",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Len"
+    },
+    {
+     "name": "Shape__Area",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Area"
+    },
+    {
+     "name": "Shape__Length",
+     "type": "esriFieldTypeDouble",
+     "alias": "Shape__Length"
+    }
+   ]
+  }
+ }
+}
