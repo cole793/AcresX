@@ -80,6 +80,7 @@ async function findFlood(parcel, signal) { return __ctl('flood', signal); }
 async function findWetlands(parcel, signal) { return __ctl('wetlands', signal); }
 async function findZoningPermits(parcel, signal) { return __ctl('zoningPermits', signal); }
 async function findLandAnalysis(parcel, signal) { return __ctl('land', signal); }
+async function findPublicUtilities(parcel, signal) { return __ctl('publicUtilities', signal); }
 `;
 
 const parcelFor = id => ({ type: 'Feature', properties: { ORIG_PARCEL_ID: id, SITUS_ADDRESS: '1 Test Rd' }, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } });
@@ -90,7 +91,8 @@ const ANSWERS = {
   flood: { available: true, category: 'minimal' },
   wetlands: { available: true, category: 'none' },
   zoningPermits: { available: true, county: 'Spokane', zoning: { status: 'gis_match', code: 'RR-10' }, permits: [] },
-  land: { available: true, soil: { available: true }, terrain: { available: true, gradePct: 4.2 } }
+  land: { available: true, soil: { available: true }, terrain: { available: true, gradePct: 4.2 } },
+  publicUtilities: { available: true, water: { status: 'not_found' }, sewer: { status: 'not_found' } }
 };
 const FOLLOWUP_ROUTES = {
   '/api/power-intelligence': { delay: 300, body: { available: true, provider: 'Avista Utilities', territory: { confirmed: true }, distribution: {} } },
@@ -134,7 +136,7 @@ function setup({ followups = false } = {}) {
   return { clock, ctx, document, run, $, text, asks, answer, fail, search, summaries, lastValue, calls, S: ctx.AcresXSections };
 }
 
-const SECTIONS = ['wells', 'utility', 'evidence', 'flood', 'wetlands', 'zoningPermits', 'land'];
+const SECTIONS = ['wells', 'utility', 'evidence', 'flood', 'wetlands', 'zoningPermits', 'land', 'publicUtilities'];
 
 test('the dashboard opens right after the parcel is found, with every section checking', async () => {
   const t = setup();
@@ -149,7 +151,7 @@ test('the dashboard opens right after the parcel is found, with every section ch
   }
   assert.equal(t.text('waterStatus'), 'Checking nearby well records…');
   assert.equal(t.text('scoreMetric'), 'Updating…');
-  assert.match(t.text('scoreNote'), /^Waiting for wells, utility, flood, wetlands, zoning, soil & terrain…$/);
+  assert.match(t.text('scoreNote'), /^Waiting for wells, utility, flood, wetlands, zoning, soil & terrain, public water\/sewer…$/);
   assert.equal(t.document.querySelector('#developmentCostCard .cost-value').textContent, 'Updating…');
   assert.match(t.text('status'), /Dashboard ready/);
   assert.equal(t.$('searchBtn').disabled, false);
@@ -275,7 +277,7 @@ test('the score and cost cards wait for every scored input, then compute once', 
   await t.search();
   const seen = new Set();
   const watch = () => seen.add(t.text('scoreMetric'));
-  for (const name of ['wells', 'wetlands', 'zoningPermits', 'land', 'evidence']) { t.answer(name); await t.clock.advance(200); watch(); }
+  for (const name of ['wells', 'wetlands', 'zoningPermits', 'land', 'evidence', 'publicUtilities']) { t.answer(name); await t.clock.advance(200); watch(); }
   assert.equal(t.text('scoreMetric'), 'Updating…');
   assert.match(t.text('scoreNote'), /^Waiting for utility, flood…$/);
   t.answer('flood');
@@ -365,6 +367,7 @@ async function findFlood(parcel, signal) { return __ctl('flood', signal); }
 async function findWetlands(parcel, signal) { return __ctl('wetlands', signal); }
 async function findZoningPermits(parcel, signal) { return __ctl('zoningPermits', signal); }
 async function findLandAnalysis(parcel, signal) { return __ctl('land', signal); }
+async function findPublicUtilities(parcel, signal) { return __ctl('publicUtilities', signal); }
 `;
 // Kootenai 47N03W052200: 2.89 ac on the assessor record, 1.98 ac from the mapped outline.
 const KOOTENAI_PARCEL = { type: 'Feature', properties: { ORIG_PARCEL_ID: '47N03W052200', ACRES: 2.89, _countyDisplay: 'Kootenai' }, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } };
@@ -447,7 +450,7 @@ test('acreage.js and wetlands-status.js render as their data arrives while zonin
   assert.equal(t.text('zoningMetric'), 'Checking…');
   assert.deepEqual(t.acreage(), ACREAGE_SHOWN, 'acreage kept across re-renders');
 
-  for (const name of ['wells', 'utility', 'evidence', 'flood', 'land']) t.answer(name);
+  for (const name of ['wells', 'utility', 'evidence', 'flood', 'land', 'publicUtilities']) t.answer(name);
   await t.clock.advance(150);
   assert.equal(t.text('scoreMetric'), 'Updating…', 'the score waits for zoning');
   assert.equal(t.text('overviewWetlands'), 'Mapped wetlands present');

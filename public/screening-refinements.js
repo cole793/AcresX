@@ -67,8 +67,12 @@
     const zoning = last?.zoningPermits?.zoning || {};
     const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
 
-    const water = depth != null ? (depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
-    const soilScore = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
+    // Public water / sewer (public-utilities.js) replace the well and septic inputs when served or likely.
+    const PU = window.AcresXUtilities;
+    const wellWater = depth != null ? (depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
+    const soilSeptic = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
+    const water = PU ? PU.waterScore(wellWater, last) : wellWater;
+    const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
     const terrainScore = !terrain.available ? 50 : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
     const FX = window.AcresXFlood;
     // Without flood-status.js loaded yet: the older scale, without throwing.
@@ -104,7 +108,9 @@
       else note.textContent = 'No nearby depth records returned';
     }
 
-    if (depth != null) {
+    // With public water the card's grade and status are public-utilities.js's; the depths stay as
+    // the "if a private well were needed" figures.
+    if (depth != null && !window.AcresXUtilities?.water(last)) {
       const label = depth <= 200 ? 'Shallow' : depth <= 400 ? 'Moderate' : 'Deep';
       if (grade) grade.textContent = label;
       if (status) status.textContent = stats.excluded ? `${stats.excluded} nonresidential well${stats.excluded === 1 ? '' : 's'} excluded from depth estimate` : 'Residential-comparable nearby well depths';
@@ -183,6 +189,8 @@
 
     const power = utilityFound ? { low: 5000, high: 25000, basis: 'Utility territory identified; distribution distance not yet mapped' } : { low: 10000, high: 35000, basis: 'Utility service proximity unverified' };
     const driveway = { low: 5000, high: 20000, basis: 'Placeholder allowance until access/driveway length is modeled' };
+    const PU = window.AcresXUtilities;
+    if (PU) { well = PU.waterCost(well, last); septic = PU.sewerCost(septic, last); }
     const components = { well, septic, power, driveway, sitework };
     return {
       components,
@@ -199,7 +207,7 @@
     if (!root || !title || !detail) return;
     const labels = { well: 'Well', septic: 'Septic', power: 'Power', driveway: 'Driveway', sitework: 'Site work' };
     title.textContent = 'Preliminary Development Cost';
-    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
+    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
     detail.classList.add('show');
     detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

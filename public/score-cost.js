@@ -56,8 +56,12 @@
     const zoning = last?.zoningPermits?.zoning || {};
     const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
 
-    const water = wells ? (wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
-    const soilScore = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
+    // Public water / sewer (public-utilities.js) replace the well and septic inputs when served or likely.
+    const PU = window.AcresXUtilities;
+    const wellWater = wells ? (wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
+    const soilSeptic = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
+    const water = PU ? PU.waterScore(wellWater, last) : wellWater;
+    const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
     const terrainScore = !terrain.available ? 50 : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
     const FX = window.AcresXFlood;
     // Without flood-status.js loaded yet: the older scale, without throwing.
@@ -119,6 +123,8 @@
       : { low: 10000, high: 35000, basis: 'Utility service proximity unverified' };
 
     const driveway = { low: 5000, high: 20000, basis: 'Placeholder allowance until access/driveway length is modeled' };
+    const PU = window.AcresXUtilities;
+    if (PU) { well = PU.waterCost(well, last); septic = PU.sewerCost(septic, last); }
     const components = { well, septic, power, driveway, sitework };
     const low = Object.values(components).reduce((sum, item) => sum + item.low, 0);
     const high = Object.values(components).reduce((sum, item) => sum + item.high, 0);
@@ -179,7 +185,7 @@
       <div>
         <div class="cost-kicker">Preliminary development estimate</div>
         <div class="cost-value">${money(estimate.low)}–${money(estimate.high)}</div>
-        <div class="cost-note">Planning range for well, septic, power, driveway and site work. This is a screening allowance, not a contractor or utility quote.</div>
+        <div class="cost-note">Planning range for water (well or connection), sewer (septic or connection), power, driveway and site work. This is a screening allowance, not a contractor or utility quote.</div>
         <div class="cost-pill">View assumptions →</div>
       </div>
     `;
@@ -200,7 +206,7 @@
       <div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>
       ${Object.entries(estimate.components).map(([key, item]) => `
         <div class="result-item">
-          <div class="result-top"><h4>${labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div>
+          <div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div>
           <div class="notice">${item.basis}</div>
         </div>
       `).join('')}
