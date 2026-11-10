@@ -108,6 +108,7 @@ test('Spokane Valley parcel 45012.1111 (R-3): "rules not mapped" with the SVMC l
   assert.equal(zp.zoning.code, 'R-3');
   assert.equal(zp.zoning.rules, 'not_mapped');
   assert.equal(zp.zoning.rulesUrl, 'https://ecode360.com/SP4654');
+  assert.equal(zp.zoning.codeUrl, 'https://ecode360.com/SP4654', 'the code moved from Code Publishing to eCode360');
   const answer = await rules(rulesRequest(zp));
   assert.equal(answer.available, false);
   assert.equal(answer.jurisdiction, 'City of Spokane Valley');

@@ -89,7 +89,8 @@ const CITIES = {
   },
   'SPOKANE VALLEY': {
     name: 'City of Spokane Valley', planningUrl: 'https://www.spokanevalleywa.gov/269/Planning-and-Zoning',
-    codeUrl: 'https://www.codepublishing.com/WA/SpokaneValley/',
+    // codepublishing.com/WA/SpokaneValley now only says the code moved to General Code eCode360.
+    codeUrl: 'https://ecode360.com/SP4654',
     zoning: {
       url: 'https://arcgis.spokanevalley.org/arcgis/rest/services/ViewerV3/LandUse/MapServer/1',
       agency: 'City of Spokane Valley GIS', label: 'spokane-valley-zoning', sourceField: 'Zoning',
