@@ -80,6 +80,29 @@ export function coverageShares(samples, features, keyOf) {
   return [...counts.values()].map(e => ({ key: e.key, share: e.count / samples.length, attributes: e.attributes })).sort((a, b) => b.share - a.share);
 }
 
+// Overlay layers (critical areas, airport zones) can stack: one point can sit in a shoreline
+// designation and, separately, in two nested airport zones. Here each key is counted on its own:
+// its share is the fraction of sample points inside any feature with that key. Returns
+// [{ key, share }] for every key the service returned, largest first; a feature the service said
+// intersects but no sample point falls in (it only touches an edge) keeps share 0. Features
+// without geometry (point queries) can't be placed, so each of their keys gets share 1.
+export function overlapShares(samples, features, keyOf) {
+  const byKey = new Map();
+  for (const f of Array.isArray(features) ? features : []) {
+    const key = keyOf(f?.attributes || {});
+    if (!key) continue;
+    const entry = byKey.get(key) || { key, rings: [] };
+    const rings = ringsFromGeometry(f?.geometry);
+    if (rings) entry.rings.push(rings);
+    byKey.set(key, entry);
+  }
+  return [...byKey.values()].map(e => {
+    if (!e.rings.length) return { key: e.key, share: 1 };
+    const hits = samples.filter(([x, y]) => e.rings.some(r => pointInRings(x, y, r))).length;
+    return { key: e.key, share: hits / Math.max(1, samples.length) };
+  }).sort((a, b) => b.share - a.share);
+}
+
 export const pct = share => `${Math.round(share * 100)}%`;
 
 // " Covers about 53% of the parcel; also partly X (about 20%); about 27% has no mapped county

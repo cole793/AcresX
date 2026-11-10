@@ -34,6 +34,9 @@ function stub(fx, override = []) {
     const key = pathOf(url);
     for (const [re, make] of override) if (re.test(key)) return make();
     if (fx.responses[key]) return json(fx.responses[key]);
+    // Overlay layers not recorded for this parcel: none there (before the permits line, which
+    // would also match CriticalAreasBPPublic/MapServer/5).
+    if (/CriticalAreasBPPublic\/MapServer\/\d+\/query|ZoningLookup\/MapServer\/[01]\/query/.test(key)) return json({ features: [] });
     if (/ZoningLookup\/MapServer\/4\/query/.test(key)) return json(COMP);
     if (/ZoningLookup\/MapServer\/2\/query/.test(key)) return json({ features: [] });
     if (/BPPublic\/MapServer\/5\/query/.test(key)) return json(PERMITS);
