@@ -454,7 +454,10 @@ test('spokane-assessor parity: recorded hits map to the Worker\'s record (exempt
     assert.equal(expected.body.available, true, id);
     const b = recorder(spokaneAnswers(id));
     const { api: fb } = browser(b.fetch);
-    assert.deepEqual(plain(await fb.run('spokane-assessor', { parcelId: id })), expected.body, id);
+    const browserBody = plain(await fb.run('spokane-assessor', { parcelId: id }));
+    assert.deepEqual(browserBody, expected.body, id);
+    // 35234.0602 has a Senior/Disabled exemption (SB): only the amount, no code or name.
+    assert.doesNotMatch(JSON.stringify(browserBody), /"SB"|Senior|Disabled/, id);
     assert.equal(b.calls.length, 1);
     for (const key of ['where', 'outFields', 'returnGeometry', 'resultRecordCount']) assert.equal(b.calls[0].params.get(key), w.calls[0].params.get(key), `${id} ${key}`);
     assertSafe(b.calls);

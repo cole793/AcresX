@@ -238,7 +238,7 @@ const spokaneRecord = {
   parcelNumber: '35234.0602', propertySearchUrl: SCOUT('35234.0602'), propertySearchLabel: 'View on Spokane County SCOUT',
   landValue: 110000, improvementValue: 479000, improvementValueNote: 'Assessed total minus land value',
   totalValue: 589000, taxableValue: 76466, netValue: 76466, marketLandValue: 110000, marketValue: 589000,
-  exemption: { code: 'SB', description: 'Senior/Disabled Level B', value: 512534 },
+  exemption: { code: null, description: 'Personal exemption applied (details on SCOUT)', value: 512534, personal: true },
   taxYear: 2027, taxAmount: null, taxAmountNote: 'Not published in the county GIS. The SCOUT page lists the tax bill.',
   assessorAcres: 0.42, taxCodeArea: '0140', segStatus: 'Active-Complete',
   propertyClass: '11', propertyClassDescription: 'Single Unit', propertyClassNote: 'Tax category, not zoning',
@@ -262,7 +262,7 @@ test('overview: Spokane fills assessed, land, year and the property class as a t
   assert.equal(fact('overviewAssessorClass'), '11 – Single Unit');
   assert.equal(document.getElementById('overviewAssessorClassWrap').querySelector('small.assessor-class-note').textContent, 'Tax category, not zoning');
   assert.equal(document.getElementById('propertyAssessmentSource').innerHTML,
-    '<strong>Assessment source:</strong> Spokane County Assessor · Improvements $479,000 (assessed total minus land value) · Exemption: Senior/Disabled Level B ($512,534 exempt) · Net taxable $76,466 · Market value $589,000 · Not in a current-use program · Tax amount Not available (Not published in the county GIS. The SCOUT page lists the tax bill). Assessor values are informational and are not the current tax bill. <a href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=35234.0602" target="_blank" rel="noopener">View on Spokane County SCOUT ↗</a>');
+    '<strong>Assessment source:</strong> Spokane County Assessor · Improvements $479,000 (assessed total minus land value) · Exemption: Personal exemption applied (details on SCOUT) ($512,534 exempt) · Net taxable $76,466 · Market value $589,000 · Not in a current-use program · Tax amount Not available (Not published in the county GIS. The SCOUT page lists the tax bill). Assessor values are informational and are not the current tax bill. <a href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=35234.0602" target="_blank" rel="noopener">View on Spokane County SCOUT ↗</a>');
 });
 
 test('overview: Spokane current-use land shows "Not available" for land value and the market land value instead, never $0', () => {

@@ -151,7 +151,9 @@
     return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
   }
 
-  // Spokane exemption { code, description, value } -> "Senior/Disabled Level B ($512,534 exempt)".
+  // Spokane exemption { code, description, value } -> "Homeowner exemption ($20,000 exempt)",
+  // "Personal exemption applied (details on SCOUT) ($512,534 exempt)" (the Worker never sends a
+  // Senior/Disabled code or name).
   function exemptionText(exemption) {
     if (!exemption || typeof exemption !== 'object') return '';
     const name = String(exemption.description || '').trim() || (exemption.code ? `code ${String(exemption.code).trim()}` : '');

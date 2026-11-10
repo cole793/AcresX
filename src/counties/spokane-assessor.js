@@ -97,10 +97,22 @@ const CURRENT_USE_PROGRAMS = Object.freeze({
   95: 'Current use: timberland (RCW 84.34)'
 });
 // Exemption codes whose names SCOUT shows (one parcel of each code checked, 2026-11-10).
+// SA/SB/SC are SCOUT's "Senior/Disabled Level A/B/C": they say something personal about the
+// owner (age or disability), so neither the code nor its name is returned (coordinator decision,
+// 2026-11-10); only the amount, as a personal exemption. 1HOME is shown as a homeowner exemption
+// (as Kootenai's). Other codes (DOR, GOVT, MFUH, 2HIST, ...) say nothing about the owner.
+export const SPOKANE_PERSONAL_EXEMPTION_CODES = Object.freeze(['SA', 'SB', 'SC']);
+export const SPOKANE_PERSONAL_EXEMPTION_LABEL = 'Personal exemption applied (details on SCOUT)';
 export const SPOKANE_EXEMPTIONS = Object.freeze({
-  SA: 'Senior/Disabled Level A', SB: 'Senior/Disabled Level B', SC: 'Senior/Disabled Level C',
-  MFUH: 'Multi Family Urban Housing', '2HIST': 'Historical Designation', '1HOME': 'Home Improvement'
+  MFUH: 'Multi Family Urban Housing', '2HIST': 'Historical Designation', '1HOME': 'Homeowner exemption'
 });
+
+// { code, description, value } with the personal codes reduced to the amount and a neutral label.
+function exemptionOf(code, value) {
+  if (!code && !value) return null;
+  if (code && SPOKANE_PERSONAL_EXEMPTION_CODES.includes(code.toUpperCase())) return { code: null, description: SPOKANE_PERSONAL_EXEMPTION_LABEL, value, personal: true };
+  return { code, description: code ? SPOKANE_EXEMPTIONS[code] || null : null, value };
+}
 
 function num(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
 function str(value) { const s = String(value ?? '').trim(); return s || null; }
@@ -165,7 +177,7 @@ export function mapSpokaneAssessorRecord(raw = {}) {
     netValue: valued ? taxable : null,
     marketLandValue: valued ? marketLand : null,
     marketValue: split ? assessed : null,
-    exemption: exemptionCode || exempted ? { code: exemptionCode, description: exemptionCode ? SPOKANE_EXEMPTIONS[exemptionCode] || null : null, value: exempted } : null,
+    exemption: exemptionOf(exemptionCode, exempted),
     taxYear: num(attrs.asmt_year),
     taxAmount: null,
     taxAmountNote: 'Not published in the county GIS. The SCOUT page lists the tax bill.',

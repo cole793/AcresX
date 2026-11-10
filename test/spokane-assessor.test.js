@@ -70,7 +70,7 @@ test('spokane assessment: a hit maps assessed, land, improvement, taxable values
     parcelNumber: '35234.0602', propertySearchUrl: SCOUT('35234.0602'), propertySearchLabel: 'View on Spokane County SCOUT',
     landValue: 110000, improvementValue: 479000, improvementValueNote: 'Assessed total minus land value',
     totalValue: 589000, taxableValue: 76466, netValue: 76466, marketLandValue: 110000, marketValue: 589000,
-    exemption: { code: 'SB', description: 'Senior/Disabled Level B', value: 512534 },
+    exemption: { code: null, description: 'Personal exemption applied (details on SCOUT)', value: 512534, personal: true },
     taxYear: 2027, taxAmount: null, taxAmountNote: 'Not published in the county GIS. The SCOUT page lists the tax bill.',
     assessorAcres: 0.42, taxCodeArea: '0140', segStatus: 'Active-Complete',
     propertyClass: '11', propertyClassDescription: 'Single Unit', propertyClassNote: 'Tax category, not zoning',
@@ -234,6 +234,24 @@ test('spokane mapper strips personal fields before reading the record (Worker an
   const firstStep = /function mapSpokaneAssessorRecord\(raw = \{\}\) \{\s*const attrs = withoutPersonalFields\(raw\);/;
   assert.match(workerSource, firstStep);
   assert.match(browserCopy, firstStep);
+});
+
+test('spokane assessment: a Senior/Disabled exemption (SA, SB, SC) returns only the amount, never its code or name; other codes keep theirs', async () => {
+  for (const code of ['SA', 'SB', 'SC', 'sb']) {
+    const attrs = { ...recorded['35234.0602'].features[0].attributes, exmp_code: code };
+    stubFetch(() => arcgisJson({ features: [{ attributes: attrs }] }));
+    const { body } = await assess('35234.0602');
+    assert.deepEqual(body.countyRecords[0].exemption, { code: null, description: 'Personal exemption applied (details on SCOUT)', value: 512534, personal: true }, code);
+    assert.equal(body.countyRecords[0].taxableValue, 76466, 'taxable value unchanged');
+    const text = JSON.stringify(body);
+    assert.doesNotMatch(text, /Senior|Disabled/i, code);
+    assert.ok(!text.includes(`"${code}"`), `the code ${code} is not in the answer`);
+    assert.ok(!Object.keys(body.records[0]).includes('exmp_code'));
+  }
+  const named = { '1HOME': 'Homeowner exemption', MFUH: 'Multi Family Urban Housing', '2HIST': 'Historical Designation', DOR: null, GOVT: null };
+  for (const [code, description] of Object.entries(named)) {
+    assert.deepEqual(mapSpokaneAssessorRecord({ PID_NUM: '12345.6789', assessed_amt: 300000, taxable_amt: 280000, land_value: 100000, exmp_code: code }).exemption, { code, description, value: 20000 }, code);
+  }
 });
 
 // ---- SCOUT link

@@ -725,10 +725,16 @@
   const SPOKANE_ASSESSOR_FIELDS = 'PID_NUM,prop_use_code,prop_use_desc,tax_year,asmt_year,land_value,assessed_amt,taxable_amt,exmp_code,exmp_amt,asmt_year_exmp_amt,tax_code_area,acreage,seg_status,site_address';
   const SPOKANE_LEGACY_FIELDS = ['PID_NUM', 'tax_year', 'asmt_year', 'land_value', 'exmp_amt', 'asmt_year_exmp_amt', 'acreage', 'site_address', 'prop_use_desc'];
   const SPOKANE_SCOUT_LABEL = 'View on Spokane County SCOUT';
+  // SA/SB/SC (Senior/Disabled) say something personal about the owner: no code or name, only the amount.
+  const SPOKANE_PERSONAL_EXEMPTION_CODES = Object.freeze(['SA', 'SB', 'SC']);
   const SPOKANE_EXEMPTIONS = Object.freeze({
-    SA: 'Senior/Disabled Level A', SB: 'Senior/Disabled Level B', SC: 'Senior/Disabled Level C',
-    MFUH: 'Multi Family Urban Housing', '2HIST': 'Historical Designation', '1HOME': 'Home Improvement'
+    MFUH: 'Multi Family Urban Housing', '2HIST': 'Historical Designation', '1HOME': 'Homeowner exemption'
   });
+  function spokaneExemption(code, value) {
+    if (!code && !value) return null;
+    if (code && SPOKANE_PERSONAL_EXEMPTION_CODES.includes(code.toUpperCase())) return { code: null, description: 'Personal exemption applied (details on SCOUT)', value, personal: true };
+    return { code, description: code ? SPOKANE_EXEMPTIONS[code] || null : null, value };
+  }
   function normalizeSpokaneParcelId(parcelId) {
     let id = String(parcelId ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (/^\d{12}$/.test(id) && id.startsWith('063')) id = id.slice(3);
@@ -774,7 +780,7 @@
       netValue: valued ? taxable : null,
       marketLandValue: valued ? marketLand : null,
       marketValue: split ? assessed : null,
-      exemption: exemptionCode || exempted ? { code: exemptionCode, description: exemptionCode ? SPOKANE_EXEMPTIONS[exemptionCode] || null : null, value: exempted } : null,
+      exemption: spokaneExemption(exemptionCode, exempted),
       taxYear: numOrNull(attrs.asmt_year),
       taxAmount: null,
       taxAmountNote: 'Not published in the county GIS. The SCOUT page lists the tax bill.',
