@@ -222,6 +222,30 @@
             "AVISTA CORP",
             "INLAND POWER & LIGHT CO"
           ],
+          "primary": {
+            "name": "AVISTA CORP",
+            "rank": 1,
+            "basis": "unresolved_overlap",
+            "resolved": false,
+            "confidence": "low",
+            "note": "AVISTA CORP and INLAND POWER & LIGHT CO both have mapped territory here and no official source available to AcresX separates them, so the order shown is not a likelihood — confirm with both."
+          },
+          "ranked": [
+            {
+              "name": "AVISTA CORP",
+              "type": "INVESTOR OWNED",
+              "rank": 1
+            },
+            {
+              "name": "INLAND POWER & LIGHT CO",
+              "type": "COOPERATIVE",
+              "rank": 2
+            }
+          ],
+          "alsoListed": [
+            "INLAND POWER & LIGHT CO"
+          ],
+          "wholesale": [],
           "matches": [
             {
               "name": "AVISTA CORP",
@@ -253,7 +277,8 @@
       }
     },
     "requests": [
-      "GET https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.4%2C47.6&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=20"
+      "GET https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.4%2C47.6&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&resultRecordCount=20",
+      "GET https://services3.arcgis.com/WlYQgAChrqj0tuQi/arcgis/rest/services/DER_Hosting_Capacity_PRD/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.4%2C47.6&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=330&units=esriSRUnit_Foot&outFields=SECTIONID&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=1000"
     ]
   },
   "utility-territory: HTTP 503": {

@@ -47,6 +47,11 @@ const ecologyWells = () => jsonResponse({ type: 'FeatureCollection', features: [
 
 // ---- HIFLD utility territory
 const hifld = () => features([{ NAME: 'AVISTA CORP', TYPE: 'INVESTOR OWNED', STATE: 'WA', YEAR: 2023 }, { NAME: 'INLAND POWER & LIGHT CO', TYPE: 'COOPERATIVE', STATE: 'WA' }]);
+// Avista's distribution map (src/utilities/avista-distribution.js, added after the snapshot was
+// first recorded) is down in these scenarios, so they keep the pre-ranking order and the OSM
+// distance. Ranking is tested in test/provider-ranking.test.js.
+const avistaDown = url => url.pathname.includes('/DER_Hosting_Capacity_PRD/');
+const withoutAvista = route => (url, init) => (avistaDown(url) ? new Response('down', { status: 503 }) : route(url, init));
 
 // ---- Overpass
 const overpass = () => jsonResponse({ elements: [
@@ -137,7 +142,7 @@ export const scenarios = [
     run: async () => responseOutput(await handleExistingWell(post('/api/existing-well', { state: 'WA', county: 'Spokane', parcelId: '47174.9017', geometry: spokaneParcel })))
   },
 
-  { name: 'utility-territory: two providers', requests: true, route: () => hifld(), run: async () => responseOutput(await handleUtilityTerritory(post('/api/utility-territory', { lat: 47.6, lon: -117.4 }))) },
+  { name: 'utility-territory: two providers', requests: true, route: withoutAvista(() => hifld()), run: async () => responseOutput(await handleUtilityTerritory(post('/api/utility-territory', { lat: 47.6, lon: -117.4 }))) },
   { name: 'utility-territory: HTTP 503', route: () => new Response('busy', { status: 503 }), run: async () => responseOutput(await handleUtilityTerritory(post('/api/utility-territory', { lat: 47.6, lon: -117.4 }))) },
   { name: 'utility-territory: ArcGIS error', route: () => arcgisError(400, 'Invalid geometry'), run: async () => responseOutput(await handleUtilityTerritory(post('/api/utility-territory', { lat: 47.6, lon: -117.4 }))) },
   { name: 'utility-territory: ArcGIS error without message', route: () => jsonResponse({ error: { code: 400 } }), run: async () => responseOutput(await handleUtilityTerritory(post('/api/utility-territory', { lat: 47.6, lon: -117.4 }))) },
@@ -160,7 +165,7 @@ export const scenarios = [
 
   {
     name: 'power: Avista with mapped OSM distribution', requests: true,
-    route: () => overpass(),
+    route: withoutAvista(() => overpass()),
     run: async () => responseOutput(await handlePowerIntelligence(post('/api/power-intelligence', { providers: ['Avista Corp'], lat: 47.6005, lon: -117.3995, geometry: spokaneParcel, parcelId: '47174.9017' })))
   },
   {
