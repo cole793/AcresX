@@ -50,6 +50,7 @@
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
 import { coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
+import { hasSpokaneCityRules, spokaneCityCodeLink } from '../zoning/spokane-city-rules.js';
 
 export const SPOKANE_JURISDICTIONS = 'https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0';
 const UNINCORPORATED = 'SPOKANE COUNTY';
@@ -199,6 +200,18 @@ export function jurisdictionNote(decision) {
   return ` About ${pct(decision.share)} of the parcel is ${where}; the rest is in ${decision.others.map(o => `${o.name} (about ${pct(o.share)})`).join(', ')}.`;
 }
 
+// Whether the city has a rules table with this zone (src/zoning/spokane-city-rules.js). The browser
+// asks /api/zoning-rules only when it does; otherwise it shows "rules not mapped" with the link.
+function cityRules(city, code) {
+  if (hasSpokaneCityRules(city.name, code)) return { rules: 'mapped' };
+  const link = spokaneCityCodeLink(city.name);
+  return {
+    rules: 'not_mapped',
+    rulesNote: `Rules for ${code} aren't mapped in AcresX yet; see the ${link?.codeLabel || "city's zoning code"} and verify with the city.`,
+    ...(link ? { rulesUrl: link.codeUrl, rulesUrlLabel: `Open ${link.codeLabel} ↗` } : {})
+  };
+}
+
 function links(city) {
   return city.planningUrl ? { url: city.planningUrl, urlLabel: city.planningLabel || `Open ${city.name} planning ↗` } : {};
 }
@@ -251,6 +264,6 @@ export function cityZoning(city, zoningR, samples, decision) {
     ...(city.codeUrl ? { codeUrl: city.codeUrl } : {}),
     ...(z.extra ? z.extra(top.attributes || {}) : {}),
     ...(others.length ? { otherZones: others.map(s => ({ code: s.key, share: s.share })) } : {}),
-    rules: 'not_mapped', rulesNote: "City zoning rules aren't mapped in AcresX yet; see the city's zoning code."
+    ...cityRules(city, top.key)
   };
 }
