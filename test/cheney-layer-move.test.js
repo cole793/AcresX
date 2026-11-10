@@ -13,6 +13,7 @@ import { configureLayerMoves, looksLikeMovedLayer, splitLayerUrl, currentLayerUr
 import { getSpokaneCountyIntelligence } from '../src/counties/spokane.js';
 import { spokaneCityInfo } from '../src/counties/spokane-cities.js';
 import { getZoningProfile } from '../src/zoning-counties.js';
+import { makeClock, makeContext, readPublic } from './ui-harness.js';
 
 const profile = getZoningProfile('Spokane');
 const realFetch = globalThis.fetch;
@@ -282,4 +283,53 @@ test('every Spokane city zoning layer has a layer-name pattern for the recovery,
   assert.equal(valley.test('Zoning Legacy'), false);
   assert.equal(spokaneCityInfo('Cheney').zoning.layerName.test('Zoning 2026'), true);
   assert.equal(spokaneCityInfo('Cheney').zoning.layerName.test('PUD Overlay'), false);
+});
+
+// ---- The city named as an overlay source (overlayNote, overlaySources, browser "none mapped").
+
+function renderOverlays(zoningPermits) {
+  const page = makeContext({ body: [['div', { id: 'results' }]], clock: makeClock(), fetch: async () => { throw new Error('no network'); } });
+  page.ctx.__last = { zoningPermits };
+  page.run('var last = __last; var activeTab = "zoning"; function renderResults() { document.getElementById("results").innerHTML = ""; }', 'index-inline.js');
+  page.run(readPublic('zoning-overlays.js'), 'zoning-overlays.js');
+  page.run('renderResults()');
+  return page.document.getElementById('results').children.map(c => c.innerHTML).join('');
+}
+
+test('a Cheney PUD entry: overlayNote and overlaySources name the City of Cheney alongside Spokane County', async () => {
+  stub();
+  const zp = await getSpokaneCountyIntelligence(body, profile);
+  assert.ok(zp.overlays.some(o => o.type === 'planned_unit_development'));
+  assert.match(zp.overlayNote, /^Overlays are mapped by Spokane County and the City of Cheney and are screening information only\./);
+  assert.match(zp.overlayNote, /Verify with City of Cheney before design\./);
+  assert.deepEqual(zp.overlaySources, ['Spokane County', 'City of Cheney']);
+  assert.deepEqual(zp.cityOverlaysChecked, [{ source: 'City of Cheney', layer: 'PUD Overlay' }]);
+  const html = renderOverlays(zp);
+  assert.match(html, /1 mapped overlay/);
+  assert.match(html, /mapped by Spokane County and the City of Cheney/);
+});
+
+test('a Cheney parcel with no PUD: the "none mapped" text names Spokane County and the City of Cheney and lists the PUD Overlay as checked', async () => {
+  stub({ override: [[/FeatureServer\/3\/query$/, () => json({ features: [] })]] });
+  const zp = await getSpokaneCountyIntelligence(body, profile);
+  assert.deepEqual(zp.overlays, []);
+  assert.deepEqual(zp.overlaysUnavailable, []);
+  assert.match(zp.overlayNote, /mapped by Spokane County and the City of Cheney/);
+  const html = renderOverlays(zp);
+  assert.match(html, /No mapped Spokane County or City of Cheney overlay on this parcel/);
+  assert.match(html, /Checked: Spokane County shoreline designations.*; City of Cheney PUD Overlay\./);
+  assert.doesNotMatch(html, /No mapped county overlay on this parcel/);
+});
+
+test('a failing PUD layer names no city source: the county-only note and "none" text stay, and the PUD layer is listed as unavailable', async () => {
+  stub({ override: [[/FeatureServer\/3\/query$/, () => new Response('down', { status: 500 })]] });
+  const zp = await getSpokaneCountyIntelligence(body, profile);
+  assert.equal(zp.zoning.code, 'R-1');
+  assert.match(zp.overlayNote, /^Overlays are mapped by Spokane County and are screening information only\./);
+  assert.equal(zp.overlaySources, undefined);
+  assert.equal(zp.cityOverlaysChecked, undefined);
+  assert.deepEqual(zp.overlaysUnavailable.map(o => o.type), ['planned_unit_development']);
+  assert.match(renderOverlays(zp), /City of Cheney PUD Overlay \(Community Development Department\): did not answer/);
+  // Other cities' answers (no city overlay layers) keep the county-only wording in the browser.
+  assert.match(renderOverlays({ overlays: [], overlaysUnavailable: [], overlayNote: 'x' }), /No mapped county overlay on this parcel/);
 });

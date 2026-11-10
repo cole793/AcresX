@@ -32,7 +32,15 @@
     const down = Array.isArray(zp.overlaysUnavailable) ? zp.overlaysUnavailable : [];
     const items = overlays.map(o => `<div class="zone-overlay"><strong>${escape(o.name)}</strong><span>${escape(coverage(o.share))}. ${escape(o.detail || '')}</span><span>Source: ${o.sourceUrl ? `<a href="${escape(o.sourceUrl)}" target="_blank" rel="noopener">${escape(o.source)} ↗</a>` : escape(o.source)}</span></div>`);
     const unknown = down.map(d => `<div class="zone-overlay unavailable"><strong>${escape(d.source)}: did not answer</strong><span>This overlay is unknown for the parcel, not absent. Check with the county or city.</span></div>`);
-    const none = !overlays.length && !down.length ? ['<div class="zone-overlay"><strong>No mapped county overlay on this parcel</strong><span>Checked: shoreline designations, channel migration zones (50- and 100-year), critical aquifer recharge areas, county-mapped wetlands and wetland buffers, airfield overlay zones and FAR Part 77 height-restricted parcels.</span></div>'] : [];
+    // City overlay layers that answered (Cheney's PUD Overlay): the city is named as a source too.
+    const cityChecked = (Array.isArray(zp.cityOverlaysChecked) ? zp.cityOverlaysChecked : []).filter(c => c && c.source);
+    const cities = [...new Set(cityChecked.map(c => c.source))];
+    const noneTitle = cities.length ? `No mapped Spokane County or ${cities.join(' or ')} overlay on this parcel` : 'No mapped county overlay on this parcel';
+    const countyList = 'shoreline designations, channel migration zones (50- and 100-year), critical aquifer recharge areas, county-mapped wetlands and wetland buffers, airfield overlay zones and FAR Part 77 height-restricted parcels';
+    const checkedText = cities.length
+      ? `Checked: Spokane County ${countyList}; ${cityChecked.map(c => `${c.source} ${c.layer || 'overlays'}`).join('; ')}.`
+      : `Checked: ${countyList}.`;
+    const none = !overlays.length && !down.length ? [`<div class="zone-overlay"><strong>${escape(noneTitle)}</strong><span>${escape(checkedText)}</span></div>`] : [];
     return `<div class="eyebrow">Overlays and critical areas</div><h4>${overlays.length ? `${overlays.length} mapped overlay${overlays.length === 1 ? '' : 's'}` : down.length ? 'Overlays partly unavailable' : 'None mapped'}</h4>${[...items, ...unknown, ...none].join('')}<div class="zone-overlay-note">${escape(zp.overlayNote || 'Overlays are screening information only. Verify with the county or city before design.')}</div>`;
   }
 

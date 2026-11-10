@@ -1,7 +1,7 @@
 import { cachedJson, upstreamJson } from '../shared/upstream.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
 import { ringsFromGeometry, samplePoints, coverageNote } from '../shared/polygon-coverage.js';
-import { layerShares, queryJurisdictionShares, decideJurisdiction, queryCityZoningShares, queryCityOverlays, cityOverlayEntries, cityZoning, jurisdictionNote, SPOKANE_JURISDICTIONS } from './spokane-cities.js';
+import { layerShares, queryJurisdictionShares, decideJurisdiction, queryCityZoningShares, queryCityOverlays, withCityOverlays, cityZoning, jurisdictionNote, SPOKANE_JURISDICTIONS } from './spokane-cities.js';
 import { queryOverlays, overlayResponse } from './spokane-overlays.js';
 
 // The layer answers for one parcel (jurisdiction, county or city zoning, comp plan, UGA, permits)
@@ -226,10 +226,7 @@ export async function getSpokaneCountyIntelligence(body, profile) {
       : countyZoning(zoningR, samples, decision, matchMethod);
 
   // County overlays, then the city's own (additive; never part of the score).
-  const overlayFields = overlayResponse(overlaysR, city);
-  const cityExtra = cityOverlayEntries(city, cityOverlaysR);
-  overlayFields.overlays.push(...cityExtra.overlays);
-  overlayFields.overlaysUnavailable.push(...cityExtra.unavailable);
+  const overlayFields = withCityOverlays(overlayResponse(overlaysR, city), city, cityOverlaysR);
 
   const permitHistory = permitsR.status === 'fulfilled'
     ? permitsR.value

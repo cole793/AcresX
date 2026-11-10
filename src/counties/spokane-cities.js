@@ -136,7 +136,7 @@ const CITIES = {
       agency: 'City of Cheney GIS', label: 'cheney-pud-overlay', outFields: 'PUDCODE,ZONE',
       key: a => (text(a.PUDCODE) ? `${text(a.PUDCODE)}${text(a.ZONE) ? ` (${text(a.ZONE)})` : ''}` : ''),
       name: key => `Planned Unit Development overlay: ${key}`,
-      source: 'City of Cheney PUD Overlay (Community Development Department)',
+      source: 'City of Cheney PUD Overlay (Community Development Department)', checkedLabel: 'PUD Overlay',
       detail: 'A Planned Unit Development approval can set its own lot sizes, densities and setbacks; check the PUD conditions with the City of Cheney.'
     }]
   },
@@ -248,8 +248,9 @@ export function queryCityOverlays(city, where, samples, settle) {
 
 // City overlay entries in the shape of src/counties/spokane-overlays.js overlayResponse, to append
 // to its `overlays` / `overlaysUnavailable`. Additive information only.
+// `checked` lists the city layers that answered ([{ source: city name, layer: checkedLabel }]).
 export function cityOverlayEntries(city, settled) {
-  const overlays = [], unavailable = [];
+  const overlays = [], unavailable = [], checked = [];
   (settled || []).forEach((r, i) => {
     const layer = city?.overlays?.[i];
     if (!layer) return;
@@ -257,11 +258,28 @@ export function cityOverlayEntries(city, settled) {
       unavailable.push({ type: layer.type, source: layer.source, sourceUrl: currentLayerUrl(layer.url), error: r?.reason?.message || 'unavailable' });
       return;
     }
+    checked.push({ source: city.name, layer: layer.checkedLabel || layer.source });
     for (const s of r.value?.shares || []) {
       overlays.push({ type: layer.type, name: layer.name(s.key), source: layer.source, sourceUrl: r.value.layerUrl || layer.url, share: s.share, detail: layer.detail });
     }
   });
-  return { overlays, unavailable };
+  return { overlays, unavailable, checked };
+}
+
+// Adds the city's overlays to the county overlay fields (spokane-overlays.js overlayResponse).
+// When a city overlay layer answered, the answer names the city as a source too (additive keys):
+// overlayNote "mapped by Spokane County and the City of Cheney", overlaySources ['Spokane County',
+// 'City of Cheney'], and cityOverlaysChecked (for the browser's "none mapped" text).
+export function withCityOverlays(fields, city, settled) {
+  const extra = cityOverlayEntries(city, settled);
+  const out = { ...fields, overlays: [...fields.overlays, ...extra.overlays], overlaysUnavailable: [...fields.overlaysUnavailable, ...extra.unavailable] };
+  if (!extra.checked.length) return out;
+  return {
+    ...out,
+    overlayNote: String(out.overlayNote || '').replace('mapped by Spokane County', `mapped by Spokane County and the ${city.name}`),
+    overlaySources: ['Spokane County', city.name],
+    cityOverlaysChecked: extra.checked
+  };
 }
 
 // " About 70% of the parcel is inside City of X limits; the rest is in Y (about 30%)."
