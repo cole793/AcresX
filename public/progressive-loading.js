@@ -37,11 +37,15 @@
     flood: { fn: 'findFlood', ms: 20000, label: 'flood', fallback: why => ({ available: false, ...(why === 'timeout' ? { error: 'Timed out', timedOut: true } : {}) }) },
     wetlands: { fn: 'findWetlands', ms: 20000, label: 'wetlands', fallback: why => ({ available: false, ...(why === 'timeout' ? { error: 'Timed out', timedOut: true } : {}) }) },
     zoningPermits: { fn: 'findZoningPermits', ms: 20000, label: 'zoning', fallback: why => ({ available: false, permits: [], zoning: { status: 'unavailable' }, ...(why === 'timeout' ? { error: 'Timed out', timedOut: true } : {}) }) },
-    land: { fn: 'findLandAnalysis', ms: 20000, label: 'soil & terrain', fallback: why => ({ available: false, error: why === 'timeout' ? 'Timed out' : 'Land analysis unavailable', soil: { available: false }, terrain: { available: false } }) }
+    land: { fn: 'findLandAnalysis', ms: 20000, label: 'soil & terrain', fallback: why => ({ available: false, error: why === 'timeout' ? 'Timed out' : 'Land analysis unavailable', soil: { available: false }, terrain: { available: false } }) },
+    // public/public-utilities.js (window.findPublicUtilities). A failure or timeout leaves both
+    // services 'unavailable', so the score and cost keep the private well/septic inputs.
+    publicUtilities: { fn: 'findPublicUtilities', ms: 15000, label: 'public water/sewer', fallback: why => { const f = { status: 'unavailable', basis: why === 'timeout' ? 'Public water/sewer lookup timed out' : 'Public water/sewer lookup failed' }; return { available: false, water: f, sewer: { ...f }, ...(why === 'timeout' ? { error: 'Timed out', timedOut: true } : {}) }; } }
   };
   const SECTION_NAMES = Object.keys(SECTIONS);
   // Inputs of the buildability score (score-cost.js / screening-refinements.js scoreFactors()).
-  const SCORE_INPUTS = ['wells', 'utility', 'flood', 'wetlands', 'zoningPermits', 'land'];
+  // publicUtilities swaps the water/septic factors and the well/septic cost lines (public-utilities.js).
+  const SCORE_INPUTS = ['wells', 'utility', 'flood', 'wetlands', 'zoningPermits', 'land', 'publicUtilities'];
   // Follow-up requests whose answers feed the score or the cost estimate.
   const SCORE_FOLLOWUPS = ['powerIntelligence'];
   const COST_FOLLOWUPS = ['existingWell'];
@@ -64,7 +68,8 @@
     utility: ['overviewUtility'],
     flood: ['overviewFlood'],
     wetlands: ['overviewWetlands'],
-    land: ['overviewSoil', 'overviewAvgGrade']
+    land: ['overviewSoil', 'overviewAvgGrade'],
+    publicUtilities: ['overviewPublicUtilities']
   };
   // Detail tab -> section.
   const TABS = { wells: 'wells', power: 'utility', listing: 'evidence', soil: 'land', slope: 'land', zoning: 'zoningPermits', permits: 'zoningPermits' };
@@ -245,7 +250,7 @@
       return;
     }
     if (run !== current) return;
-    last = { parcel, wells: [], utility: [], evidence: null, flood: null, wetlands: null, zoningPermits: null, land: null };
+    last = { parcel, wells: [], utility: [], evidence: null, flood: null, wetlands: null, zoningPermits: null, land: null, publicUtilities: null };
     root.__acresxLast = last;
     SECTION_NAMES.forEach(startSection);
     byId('dashboard').classList.add('show');

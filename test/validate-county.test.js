@@ -29,7 +29,8 @@ function happyResponses() {
     '/api/reso-listings': { available: true, configured: true, matchCount: 0, best: null, matchConfidence: 'none' },
     '/api/power-intelligence': { available: true, provider: 'Kootenai Electric Cooperative', distribution: { estimatedDistanceFt: 410.4, confidence: 'moderate', status: 'osm_mapped_proximity' } },
     '/api/zoning-rules': { available: true, county: 'Kootenai', code: 'R', family: 'Rural', uses: [{}, {}, {}] },
-    '/api/slope-grid': { available: true, cells: [{ gradePct: 2 }, { gradePct: 6 }], partial: false }
+    '/api/slope-grid': { available: true, cells: [{ gradePct: 2 }, { gradePct: 6 }], partial: false },
+    '/api/public-utilities': { available: true, water: { status: 'not_found', provider: null }, sewer: { status: 'not_found', provider: null }, sources: [{ id: 'x', ok: true }] }
   };
 }
 
@@ -79,7 +80,7 @@ test('browser request sequence and bodies are mirrored', async () => {
   const byRoute = route => calls.filter(x => x.route === route).map(x => x.body);
   assert.deepEqual(calls.map(x => x.route === '/api/hazards' ? `hazards:${x.body.kind}` : x.route), [
     '/api/parcel-search', '/api/well-search', '/api/utility-territory', 'hazards:flood', 'hazards:wetlands',
-    '/api/zoning-permits', '/api/land-analysis', '/api/existing-well', '/api/property-assessment',
+    '/api/zoning-permits', '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment',
     '/api/reso-listings', '/api/power-intelligence', '/api/zoning-rules', '/api/slope-grid'
   ]);
   assert.ok(calls.every(x => x.method === 'POST' && x.url.startsWith(BASE)));
@@ -89,6 +90,10 @@ test('browser request sequence and bodies are mirrored', async () => {
   assert.equal(zoning.county, 'Kootenai'); assert.equal(zoning.parcelId, 'TESTPIN1'); assert.deepEqual(zoning.geometry, square);
   assert.deepEqual(byRoute('/api/zoning-rules')[0], { county: 'Kootenai', zoneCode: 'Rural', zoneName: 'Rural', jurisdiction: 'Kootenai County', uga: false, developmentAgreement: '' });
   assert.deepEqual(byRoute('/api/power-intelligence')[0].providers, ['Kootenai Electric Cooperative']);
+  // public/public-utilities.js sends the zoning point and the outline.
+  const pu = byRoute('/api/public-utilities')[0];
+  assert.deepEqual([pu.state, pu.county, pu.lat, pu.lon], ['ID', 'Kootenai', zoning.lat, zoning.lon]);
+  assert.deepEqual(pu.geometry, square);
 });
 
 test('centroid skips the closing vertex like turf.centroid', () => {
@@ -537,4 +542,16 @@ test('harness accepts --delay and --retry-delay within bounds', () => {
   assert.equal(parseArgs(['--county', 'kootenai']).retryDelayMs, 15000);
   assert.throws(() => parseArgs(['--county', 'kootenai', '--retry-delay', '-1']), /--retry-delay/);
   assert.throws(() => parseArgs(['--county', 'kootenai', '--delay', 'abc']), /--delay/);
+});
+
+test('public water/sewer layer: statuses, providers and expected values', () => {
+  const res = data => ({ route: '/api/public-utilities', httpStatus: 200, ok: true, data, error: null, ms: 1 });
+  const cda = interpretLayer('publicUtilities', res({ available: true, water: { status: 'served', provider: "City of Coeur d'Alene (CDA Water)", distanceM: 13, others: [{ status: 'served', provider: 'CDA Water' }] }, sewer: { status: 'served', provider: "City of Coeur d'Alene", distanceM: 7 }, sources: [{ id: 'a', ok: true }] }));
+  assert.equal(cda.status, 'ok');
+  assert.match(cda.detail, /^water served \(City of Coeur d'Alene \(CDA Water\)\) 13 m; sewer served/);
+  assert.deepEqual(compareExpected({ 'publicUtilities.water': 'served', 'publicUtilities.waterProviders': 'CDA Water', 'publicUtilities.sewerPublic': true }, { publicUtilities: cda }), []);
+  const down = interpretLayer('publicUtilities', res({ available: true, water: { status: 'not_found' }, sewer: { status: 'unavailable' }, sources: [{ id: 'cda-sewer-pipes', ok: false }] }));
+  assert.equal(down.status, 'unavailable');
+  assert.deepEqual(down.values.failedLayers, ['cda-sewer-pipes']);
+  assert.equal(compareExpected({ 'publicUtilities.sewerPublic': true }, { publicUtilities: down }).length, 1);
 });

@@ -62,7 +62,14 @@ export const HEALTH_TARGETS = [
   arcgisInfo('Montana DNRC cadastral', 'https://gis.dnrc.mt.gov/arcgis'),
   arcgisInfo('Montana GWIC wells', 'https://mbmgmap.mtech.edu/server'),
   arcgisInfo('Yellowstone County GIS', 'https://gis.yellowstonecountymt.gov/arcgis'),
-  arcgisInfo('Gallatin County zoning', 'https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS')
+  arcgisInfo('Gallatin County zoning', 'https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS'),
+  // Public water/sewer (src/services/public-utilities.js): one probe per host not already above.
+  // Its other hosts (gismo, services.arcgis.com, services1/services5.arcgis.com, gis.cdaid.org,
+  // gis.postfalls.gov, map.kcgov.us, gis.stevenscountywa.gov, gis.yellowstonecountymt.gov,
+  // services3.arcgis.com) are probed by the targets above.
+  arcgisInfo('WA DOH drinking water service areas', 'https://services8.arcgis.com/rGGrs6HCnw87OFOT/arcgis'),
+  arcgisInfo('Montana MSDI water/sewer districts', 'https://gisservice.mt.gov/arcgis'),
+  arcgisInfo('City of Bozeman GIS (water/sewer mains, zoning)', 'https://gisweb.bozeman.net/arcgis')
 ];
 
 async function probe(target, timeoutMs) {
@@ -93,7 +100,7 @@ export async function checkUpstreamHealth(targets = HEALTH_TARGETS, timeoutMs = 
 }
 
 // The route is public, so an answer where every probe succeeded is reused for HEALTH_MEMO_MS
-// within an isolate (concurrent hits share the run in progress; a run with a failure is not kept): repeated GETs do not fan out 21 requests to government
+// within an isolate (concurrent hits share the run in progress; a run with a failure is not kept): repeated GETs do not fan out 24 requests to government
 // servers each time. checkedAt says how old the answer is.
 export const HEALTH_MEMO_MS = 60000;
 let memo = null; // { startedAt, promise }

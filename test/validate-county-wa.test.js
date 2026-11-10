@@ -34,7 +34,8 @@ function waResponses() {
     '/api/reso-listings': { available: true, configured: true, matchCount: 1, best: { status: 'Closed' }, matchConfidence: 'moderate' },
     '/api/power-intelligence': { available: true, provider: 'INLAND POWER & LIGHT COMPANY', distribution: { estimatedDistanceFt: 300, confidence: 'low' } },
     '/api/zoning-rules': { available: true, county: 'Spokane', code: 'RCV', family: 'Rural', uses: [{}] },
-    '/api/slope-grid': { available: true, cells: [{ gradePct: 3 }] }
+    '/api/slope-grid': { available: true, cells: [{ gradePct: 3 }] },
+    '/api/public-utilities': { available: true, water: { status: 'served', provider: 'Moab Irrigation Dist #20' }, sewer: { status: 'not_found', provider: null }, sources: [{ id: 'wa-doh-water', ok: true }] }
   };
 }
 
@@ -71,7 +72,7 @@ test('Washington parcels are looked up through /api/arcgis like findParcel, neve
   const routes = calls.map(c => (c.route === '/api/arcgis' ? `arcgis:${c.body.service}` : c.route === '/api/hazards' ? `hazards:${c.body.kind}` : c.route));
   assert.deepEqual(routes, [
     'arcgis:parcel', 'arcgis:wells', '/api/utility-territory', 'hazards:flood', 'hazards:wetlands', '/api/zoning-permits',
-    '/api/land-analysis', '/api/existing-well', '/api/property-assessment', '/api/reso-listings', '/api/power-intelligence',
+    '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment', '/api/reso-listings', '/api/power-intelligence',
     '/api/zoning-rules', '/api/slope-grid'
   ]);
   const parcelParams = calls[0].body.params;

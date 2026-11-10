@@ -117,6 +117,8 @@ const CASES = [
   ['existing-well Spokane', post('/api/existing-well', { state: 'WA', county: 'Spokane', ...parcel }), b => { assert.equal(b.status, 'strong_match'); assert.equal(b.match.wellTag, 'BAA123'); assert.equal(b.match.evidence.ownerMatch, true, 'owner names are still compared server-side'); }],
   ['reso-listings', post('/api/reso-listings', { parcelId: PARCEL })],
   ['utility-territory', post('/api/utility-territory', point), b => assert.ok(b.matches.length > 0)],
+  ...[['WA', 'Spokane'], ['WA', 'Stevens'], ['ID', 'Kootenai'], ['MT', 'Gallatin'], ['MT', 'Yellowstone']].map(([state, county]) =>
+    [`public-utilities ${county}`, post('/api/public-utilities', { state, county, ...parcel }), b => { assert.equal(b.available, true); assert.ok(b.sources.length > 0); }]),
   ['land-analysis', post('/api/land-analysis', parcel)],
   ['slope-grid', post('/api/slope-grid', parcel)],
   ['hazards wetlands', post('/api/hazards', { kind: 'wetlands', ...parcel })],

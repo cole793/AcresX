@@ -142,6 +142,7 @@
             <div class="property-overview-fact"><span>Wetland screening</span><strong id="overviewWetlands">—</strong></div>
             <div class="property-overview-fact"><span>Dominant soil</span><strong id="overviewSoil">—</strong></div>
             <div class="property-overview-fact"><span>Avg. nearby well depth</span><strong id="overviewWellDepth">—</strong></div>
+            <div class="property-overview-fact"><span>Public water / sewer</span><strong id="overviewPublicUtilities">—</strong></div>
           </div>
           <div class="property-overview-foot">Mapped acreage is calculated from the public parcel boundary and may differ slightly from assessor-recorded acreage.</div>
         </div>
@@ -226,6 +227,9 @@
     setFact('overviewWetlands', wetlands.text, wetlands.cls);
     setFact('overviewSoil', soil || 'Not available');
     setFact('overviewWellDepth', wellDepth ? `${wellDepth.depth.toLocaleString()} ft · ${wellDepth.count} nearby log${wellDepth.count === 1 ? '' : 's'}` : 'Not available');
+    // window.AcresXUtilities: public/public-utilities.js (served/likely public water and sewer).
+    const PU = window.AcresXUtilities;
+    setFact('overviewPublicUtilities', PU ? PU.overviewText(last) : 'Not checked', PU && (PU.water(last) || PU.sewer(last)) ? 'good' : '');
 
     renderAcreage(area);
 
