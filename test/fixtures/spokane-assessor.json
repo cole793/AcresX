@@ -1,0 +1,1113 @@
+{
+  "recorded": "2026-11-10",
+  "source": "https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0/query",
+  "outFields": "PID_NUM,prop_use_code,prop_use_desc,tax_year,asmt_year,land_value,assessed_amt,taxable_amt,exmp_code,exmp_amt,asmt_year_exmp_amt,tax_code_area,acreage,seg_status,site_address",
+  "note": "Live answers of the Spokane assessor parcel table for the listed PID_NUMs (this layer has no owner or mailing fields). The site address of 35234.0602 (a parcel with a senior/disabled exemption) is replaced with a placeholder.",
+  "answers": {
+    "35204.2729": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "35204.2729",
+            "prop_use_code": "77",
+            "prop_use_desc": "Churches",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 72900,
+            "assessed_amt": 72900,
+            "taxable_amt": 0,
+            "exmp_code": "DOR",
+            "exmp_amt": 66830,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "0010",
+            "acreage": 0.14,
+            "seg_status": "Active-Complete",
+            "site_address": "1317 E 12TH AVE"
+          }
+        }
+      ]
+    },
+    "35234.0602": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "35234.0602",
+            "prop_use_code": "11",
+            "prop_use_desc": "Single Unit",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 110000,
+            "assessed_amt": 589000,
+            "taxable_amt": 76466,
+            "exmp_code": "SB",
+            "exmp_amt": 541200,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "0140",
+            "acreage": 0.42,
+            "seg_status": "Active-Complete",
+            "site_address": "PLACEHOLDER SITE ADDRESS"
+          }
+        }
+      ]
+    },
+    "13013.2211": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "13013.2211",
+            "prop_use_code": "11",
+            "prop_use_desc": "Single Unit",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 100000,
+            "assessed_amt": 401500,
+            "taxable_amt": 401500,
+            "exmp_code": null,
+            "exmp_amt": null,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "0110",
+            "acreage": 0.16,
+            "seg_status": "Active-Complete",
+            "site_address": "3175 PHEASANT ST"
+          }
+        }
+      ]
+    },
+    "48121.9001": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "48121.9001",
+            "prop_use_code": "88",
+            "prop_use_desc": "Designated Forest Lnd",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 591360,
+            "assessed_amt": 10280,
+            "taxable_amt": 10280,
+            "exmp_code": null,
+            "exmp_amt": null,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "3528",
+            "acreage": 158.65,
+            "seg_status": "Active-Complete",
+            "site_address": "Unassigned Address"
+          }
+        }
+      ]
+    },
+    "48136.9052": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "48136.9052",
+            "prop_use_code": "88",
+            "prop_use_desc": "Designated Forest Lnd",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 283740,
+            "assessed_amt": 99910,
+            "taxable_amt": 99910,
+            "exmp_code": null,
+            "exmp_amt": null,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "3520",
+            "acreage": 50.23,
+            "seg_status": "Active-Complete",
+            "site_address": "15510 E DEER CREEK RD"
+          }
+        }
+      ]
+    },
+    "32322.9002": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "32322.9002",
+            "prop_use_code": "83",
+            "prop_use_desc": "Cur - Use - Ag",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 503410,
+            "assessed_amt": 62690,
+            "taxable_amt": 62690,
+            "exmp_code": null,
+            "exmp_amt": null,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "2400",
+            "acreage": 156.55,
+            "seg_status": "Active-Complete",
+            "site_address": "Unassigned Address"
+          }
+        }
+      ]
+    },
+    "46301.9025": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "46301.9025",
+            "prop_use_code": "85",
+            "prop_use_desc": "Mining",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 199510,
+            "assessed_amt": 199510,
+            "taxable_amt": 0,
+            "exmp_code": "GOVT",
+            "exmp_amt": 199510,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "0680",
+            "acreage": 4.58,
+            "seg_status": "Active-Complete",
+            "site_address": "0 ADDRESS UNKNOWN S"
+          }
+        }
+      ]
+    },
+    "57344.0125": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "57344.0125",
+            "prop_use_code": "91",
+            "prop_use_desc": "Vacant Land",
+            "tax_year": 2026,
+            "asmt_year": 2027,
+            "land_value": 387870,
+            "assessed_amt": 387870,
+            "taxable_amt": 387870,
+            "exmp_code": null,
+            "exmp_amt": null,
+            "asmt_year_exmp_amt": null,
+            "tax_code_area": "2240",
+            "acreage": 0.35,
+            "seg_status": "Active-Complete",
+            "site_address": "14324 N MEADOW LN"
+          }
+        }
+      ]
+    },
+    "miss": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "prop_use_code": "prop_use_code",
+        "prop_use_desc": "prop_use_desc",
+        "tax_year": "tax_year",
+        "asmt_year": "asmt_year",
+        "land_value": "land_value",
+        "assessed_amt": "assessed_amt",
+        "taxable_amt": "taxable_amt",
+        "exmp_code": "exmp_code",
+        "exmp_amt": "exmp_amt",
+        "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+        "tax_code_area": "tax_code_area",
+        "acreage": "acreage",
+        "seg_status": "seg_status",
+        "site_address": "site_address"
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "prop_use_code",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_code",
+          "length": 10
+        },
+        {
+          "name": "prop_use_desc",
+          "type": "esriFieldTypeString",
+          "alias": "prop_use_desc",
+          "length": 30
+        },
+        {
+          "name": "tax_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "tax_year"
+        },
+        {
+          "name": "asmt_year",
+          "type": "esriFieldTypeInteger",
+          "alias": "asmt_year"
+        },
+        {
+          "name": "land_value",
+          "type": "esriFieldTypeInteger",
+          "alias": "land_value"
+        },
+        {
+          "name": "assessed_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "assessed_amt"
+        },
+        {
+          "name": "taxable_amt",
+          "type": "esriFieldTypeInteger",
+          "alias": "taxable_amt"
+        },
+        {
+          "name": "exmp_code",
+          "type": "esriFieldTypeString",
+          "alias": "exmp_code",
+          "length": 20
+        },
+        {
+          "name": "exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "exmp_amt"
+        },
+        {
+          "name": "asmt_year_exmp_amt",
+          "type": "esriFieldTypeDouble",
+          "alias": "asmt_year_exmp_amt"
+        },
+        {
+          "name": "tax_code_area",
+          "type": "esriFieldTypeString",
+          "alias": "tax_code_area",
+          "length": 4
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        }
+      ],
+      "features": []
+    }
+  }
+}

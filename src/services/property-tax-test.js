@@ -2,11 +2,11 @@ import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
 import { getKootenaiAssessment, KC_ASSESSOR, KC_ASSESSOR_SOURCE } from '../counties/kootenai-assessor.js';
 import { getStevensAssessment, STEVENS_ASSESSOR, STEVENS_ASSESSOR_SOURCE } from '../counties/stevens-assessor.js';
+import { getSpokaneAssessment, SPOKANE_ASSESSOR, SPOKANE_ASSESSOR_SOURCE } from '../counties/spokane-assessor.js';
 import { FALLBACK_KINDS, fallbackHint } from '../shared/fallback.js';
 import { MONTANA_CADASTRAL_FIELDS } from '../states/montana/parcels.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
 
-const SPOKANE = 'https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query';
 const YELLOWSTONE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query';
 const MT_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query';
 const ID_PARCELS = 'https://services1.arcgis.com/CNPdEkvnGl65jCX8/ArcGIS/rest/services/Public_Idaho_Parcels_/FeatureServer/7/query';
@@ -48,9 +48,18 @@ export async function handlePropertyTaxTest(request) {
   const parcelId = String(body.parcelId || '').trim();
   if (!parcelId) return json({ error: 'parcelId is required' }, 400, 'no-store');
 
+  // Spokane: the county assessor parcel table (src/counties/spokane-assessor.js), values only (owner
+  // and taxpayer fields are never requested). `source` and `records` (the SCOUTSimple-shaped row)
+  // stay for older readers; countyRecords is the mapped record, same shape as Stevens and Kootenai.
+  // Failure degrades to available:false for this layer only, with a browser hint when a browser
+  // might get through.
   if (state === 'WA' && /^spokane$/i.test(county)) {
-    const features = await arcgis(SPOKANE, { where: `PID_NUM='${safe(parcelId)}'`, outFields: 'PID_NUM,tax_year,asmt_year,land_value,exmp_amt,asmt_year_exmp_amt,acreage,site_address,prop_use_desc' }, { label: 'spokane-assessor-values' });
-    return json({ available: Boolean(features.length), state, county: 'Spokane', parcelId, source: 'Spokane County Assessor SCOUTSimple', records: features.map(f => f.attributes || {}) }, 200, 'no-store');
+    const result = await getSpokaneAssessment(parcelId);
+    const base = { state, county: 'Spokane', parcelId, source: SPOKANE_ASSESSOR_SOURCE, countySource: SPOKANE_ASSESSOR_SOURCE, countySourceUrl: SPOKANE_ASSESSOR };
+    if (result.status === 'found') return json({ available: true, ...base, records: [result.legacy], countyRecords: [result.record] }, 200, 'no-store');
+    if (result.status === 'error') console.warn('Spokane assessor lookup failed', result.error);
+    const fallback = result.status === 'error' && result.browserFallback ? { fallback: fallbackHint(FALLBACK_KINDS.spokaneAssessor, { parcelId }) } : {};
+    return json({ available: false, ...base, records: [], countyRecords: [], ...(result.status === 'error' ? { error: result.error } : { note: 'No Spokane County Assessor record matched this parcel number.' }), ...fallback }, 200, 'no-store');
   }
 
   // Stevens: the county assessor layer, values only (owner fields are never requested). Failure

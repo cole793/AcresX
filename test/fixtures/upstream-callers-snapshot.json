@@ -292,14 +292,51 @@
       }
     }
   },
-  "property-tax: Spokane HTTP 500 rejects": {
+  "property-tax: Spokane HTTP 500 degrades to available:false": {
     "output": {
-      "error": "Source returned 500"
+      "ok": {
+        "status": 200,
+        "cache": "no-store",
+        "body": {
+          "available": false,
+          "state": "WA",
+          "county": "Spokane",
+          "parcelId": "47174.9017",
+          "source": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+          "countySource": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+          "countySourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0",
+          "records": [],
+          "countyRecords": [],
+          "error": "Spokane County Assessor returned 500",
+          "fallback": {
+            "mode": "browser",
+            "kind": "spokane-assessor",
+            "input": {
+              "parcelId": "47174.9017"
+            }
+          }
+        }
+      }
     }
   },
-  "property-tax: Spokane ArcGIS error without message rejects": {
+  "property-tax: Spokane ArcGIS error without message degrades to available:false": {
     "output": {
-      "error": "ArcGIS query failed"
+      "ok": {
+        "status": 200,
+        "cache": "no-store",
+        "body": {
+          "available": false,
+          "state": "WA",
+          "county": "Spokane",
+          "parcelId": "47174.9017",
+          "source": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+          "countySource": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+          "countySourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0",
+          "records": [],
+          "countyRecords": [],
+          "error": "Spokane County Assessor: query failed"
+        }
+      }
     }
   },
   "property-tax: Montana statewide errors are skipped, county record found": {

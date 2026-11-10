@@ -23,12 +23,12 @@ const IDWR = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells
 const ASSESSOR = id => `https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/${id}/query`;
 const FEMA = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
 const ESRI = 'https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis/rest/services/USA_Flood_Hazard_Areas_view/FeatureServer/0/query';
-const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov'];
+const ALLOWED = ['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org'];
 
 // Owner names and mailing addresses in the layers this module reads (Kootenai parcel `Name`,
 // assessor *_Primary / Recipient / mailing fields, IDWR `Owner`, Idaho statewide OWNER*/MAIL_*,
-// Stevens assessor file_as_na / last_name / first_name / owner_id / addr_*).
-const PERSONAL = /^(owner\w*|name|\w*name_primary|recipient_\w*|attentionline_\w*|deliveryaddr_\w*|lastline_\w*|(city|state|postalcd|country)_primary|mail\w*|public_std|file_as\w*|(first|last)_name|addr_\w*)$/i;
+// Stevens assessor file_as_na / last_name / first_name / owner_id / addr_*, Spokane owner_* / taxpayer_*).
+const PERSONAL = /^(owner\w*|taxpayer\w*|name|\w*name_primary|recipient_\w*|attentionline_\w*|deliveryaddr_\w*|lastline_\w*|(city|state|postalcd|country)_primary|mail\w*|public_std|file_as\w*|(first|last)_name|addr_\w*)$/i;
 
 // A recording fetch. handler({ base, params, n }) returns a body, a Response, or throws.
 function recorder(handler) {
@@ -113,7 +113,7 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'fema-flood', 'stevens-zoning']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'spokane-assessor', 'fema-flood', 'stevens-zoning']);
   assert.equal(typeof fb.run, 'function');
   assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
 });
@@ -434,6 +434,60 @@ test('stevens-assessor: the property search link follows the Worker rule in the 
     assert.equal(body.countyRecords[0].propertySearchUrl, want, sent);
     assert.deepEqual(body, expected.body, sent);
   }
+});
+
+// ---- 3c. Spokane assessor
+
+const SPOKANE = 'https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0/query';
+const SPOKANE_BACKUP = 'https://gismo.spokanecounty.org/arcgis/rest/services/CONNECTExplorer/CONNECTExplorer_REST/MapServer/14/query';
+const recordedSpokane = fixture('spokane-assessor.json').answers;
+const spokaneAnswers = id => ({ base, params }) => {
+  if (base !== SPOKANE && base !== SPOKANE_BACKUP) throw new Error(`unexpected ${base}`);
+  const asked = /PID_NUM='([^']+)'/.exec(params.get('where'))?.[1];
+  return asked === id ? recordedSpokane[id] : recordedSpokane.miss;
+};
+
+test('spokane-assessor parity: recorded hits map to the Worker\'s record (exemption, current use, church, government)', async () => {
+  for (const id of ['35234.0602', '48136.9052', '35204.2729', '46301.9025', '13013.2211']) {
+    const w = recorder(spokaneAnswers(id));
+    const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: id }, w.fetch);
+    assert.equal(expected.body.available, true, id);
+    const b = recorder(spokaneAnswers(id));
+    const { api: fb } = browser(b.fetch);
+    assert.deepEqual(plain(await fb.run('spokane-assessor', { parcelId: id })), expected.body, id);
+    assert.equal(b.calls.length, 1);
+    for (const key of ['where', 'outFields', 'returnGeometry', 'resultRecordCount']) assert.equal(b.calls[0].params.get(key), w.calls[0].params.get(key), `${id} ${key}`);
+    assertSafe(b.calls);
+  }
+});
+
+test('spokane-assessor parity: no record, a typed no-dot number, and a number that cannot be Spokane', async () => {
+  const expected = await apiJson('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: '99999.9999' }, recorder(spokaneAnswers('none')).fetch);
+  const { api: fb } = browser(recorder(spokaneAnswers('none')).fetch);
+  assert.deepEqual(plain(await fb.run('spokane-assessor', { parcelId: '99999.9999' })), expected.body);
+  const b = recorder(spokaneAnswers('35204.2729'));
+  const { api: fb2 } = browser(b.fetch);
+  assert.equal((await fb2.run('spokane-assessor', { parcelId: '352042729' })).countyRecords[0].parcelNumber, '35204.2729');
+  assert.equal(b.calls[0].params.get('where'), "PID_NUM='35204.2729'");
+  const none = recorder(() => { throw new Error('must not be sent'); });
+  const { api: fb3 } = browser(none.fetch);
+  assert.equal((await fb3.run('spokane-assessor', { parcelId: 'UNKNOWN' })).available, false);
+  assert.equal(none.calls.length, 0);
+});
+
+test('spokane-assessor: the backup layer after an error; a failure on both keeps the Worker answer; owner fields sent anyway are dropped', async () => {
+  const gone = recorder(({ base }) => (base === SPOKANE ? { error: { code: 404, message: 'Service not found' } } : recordedSpokane['13013.2211']));
+  const { api: fb } = browser(gone.fetch);
+  assert.equal((await fb.run('spokane-assessor', { parcelId: '13013.2211' })).countyRecords[0].totalValue, 401500);
+  assert.deepEqual(gone.calls.map(c => c.base), [SPOKANE, SPOKANE_BACKUP]);
+  assertSafe(gone.calls);
+  const { api: fb2 } = browser(blocked(503).fetch);
+  await assert.rejects(fb2.run('spokane-assessor', { parcelId: '13013.2211' }), /Spokane County Assessor returned 503/);
+  const all = fixture('spokane-assessor-13013.2211-all-fields.json');
+  const { api: fb3 } = browser(recorder(() => all).fetch);
+  const body = plain(await fb3.run('spokane-assessor', { parcelId: '13013.2211' }));
+  assert.equal(body.countyRecords[0].parcelNumber, '13013.2211');
+  assert.doesNotMatch(JSON.stringify(body), /PLACEHOLDER|owner|taxpayer/i);
 });
 
 // ---- 4. FEMA flood

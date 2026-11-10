@@ -28,21 +28,29 @@
   function normalize(data) {
     if (!data?.available) return null;
 
-    // County assessor records already mapped by the Worker: Kootenai (src/counties/kootenai-assessor.js)
-    // and Stevens WA (src/counties/stevens-assessor.js).
+    // County assessor records already mapped by the Worker: Kootenai (src/counties/kootenai-assessor.js),
+    // Stevens WA (src/counties/stevens-assessor.js) and Spokane WA (src/counties/spokane-assessor.js).
     if ((data.state === 'ID' || data.state === 'WA') && Array.isArray(data.countyRecords) && data.countyRecords.length) {
       const r = data.countyRecords[0] || {};
+      const link = propertySearchLink(r);
       return {
         totalValue: amount(r.totalValue),
         landValue: amount(r.landValue),
         improvementValue: amount(r.improvementValue),
+        improvementValueNote: String(r.improvementValueNote || ''),
+        marketLandValue: amount(r.marketLandValue),
+        exemption: exemptionText(r.exemption),
+        // Only records that carry the key (Spokane) say the tax amount is not available.
+        taxAmount: 'taxAmount' in r ? amount(r.taxAmount) : undefined,
+        taxAmountNote: String(r.taxAmountNote || ''),
         homeownerExemption: amount(r.homeownerExemption),
         netValue: amount(r.netValue),
         marketValue: amount(r.marketValue),
         currentUse: currentUseText(r.currentUse),
         valuesNote: String(r.valuesNote || ''),
         assessorAcres: amount(r.assessorAcres),
-        propertySearchUrl: propertySearchUrl(r.propertySearchUrl, r.propertyId),
+        propertySearchUrl: link?.href || '',
+        propertySearchLabel: link?.label || '',
         year: r.taxYear || null,
         propertyClass: classText(r),
         label: 'Assessor value',
@@ -97,10 +105,33 @@
     return code && descr ? `${code} – ${descr}` : code || descr;
   }
 
-  // Stevens: the county's property search page (hosted by True Automation), from the county layer's
-  // Propertyinformation field (src/counties/stevens-assessor.js). Checked again here before it is
-  // shown: https, exactly that host and path, one numeric prop_id equal to the record's.
+  // The county property page link, checked again here before it is shown, against an exact
+  // host and path per county; the label comes from this table, never from the answer.
+  //   Stevens: the county's property search (hosted by True Automation), from the county layer's
+  //   Propertyinformation field (src/counties/stevens-assessor.js): https, exactly that host and
+  //   path, one numeric prop_id equal to the record's.
+  //   Spokane: SCOUT (src/counties/spokane-assessor.js spokaneScoutUrl): https, exactly
+  //   cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx, only PID, equal to the record's.
   const PROPERTY_SEARCH_LABEL = 'View on the Stevens County property search (hosted by True Automation)';
+  const SCOUT_LABEL = 'View on Spokane County SCOUT';
+  function propertySearchLink(record) {
+    const value = record?.propertySearchUrl;
+    const stevens = propertySearchUrl(value, record?.propertyId);
+    if (stevens) return { href: stevens, label: PROPERTY_SEARCH_LABEL };
+    const scout = scoutUrl(value, record?.parcelNumber);
+    return scout ? { href: scout, label: SCOUT_LABEL } : null;
+  }
+  function scoutUrl(value, parcelNumber) {
+    const pid = String(parcelNumber ?? '').trim();
+    if (!/^\d{5}\.\d{4}$/.test(pid)) return '';
+    let url;
+    try { url = new URL(String(value ?? '')); } catch { return ''; }
+    if (url.protocol !== 'https:' || url.hostname !== 'cp.spokanecounty.org' || url.port || url.username || url.password) return '';
+    if (url.pathname.toLowerCase() !== '/scout/propertyinformation/summary.aspx') return '';
+    const keys = [...url.searchParams.keys()];
+    if (keys.length !== 1 || keys[0] !== 'PID' || url.searchParams.get('PID') !== pid) return '';
+    return `https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${pid}`;
+  }
   function propertySearchUrl(value, propertyId) {
     let url;
     try { url = new URL(String(value ?? '')); } catch { return ''; }
@@ -118,6 +149,16 @@
     const propId = url.searchParams.get('prop_id');
     if (propId == null || propertyId == null || Number(propId) !== Number(propertyId)) return '';
     return `https://propertysearch.trueautomation.com/PropertyAccess/Property.aspx?${new URLSearchParams(kept)}`;
+  }
+
+  // Spokane exemption { code, description, value } -> "Senior/Disabled Level B ($512,534 exempt)".
+  function exemptionText(exemption) {
+    if (!exemption || typeof exemption !== 'object') return '';
+    const name = String(exemption.description || '').trim() || (exemption.code ? `code ${String(exemption.code).trim()}` : '');
+    const value = amount(exemption.value);
+    const exempt = Number.isFinite(value) && value > 0 ? `${money(value)} exempt` : '';
+    if (!name && !exempt) return '';
+    return name && exempt ? `${name} (${exempt})` : name || exempt;
   }
 
   // Stevens currentUse { status, program, note } -> one line, or '' when the record has none.
@@ -220,8 +261,15 @@
       grid.appendChild(source);
     }
     const improvements = Number.isFinite(result.improvementValue)
-      ? ` · Improvements ${money(result.improvementValue)}`
+      ? ` · Improvements ${money(result.improvementValue)}${result.improvementValueNote ? ` (${escapeText(result.improvementValueNote.toLowerCase())})` : ''}`
       : '';
+    // Spokane current-use land: no assessed land value is published, so show the market land value.
+    const marketLand = Number.isFinite(result.marketLandValue) && !Number.isFinite(result.landValue)
+      ? ` · Market land value ${money(result.marketLandValue)}` : '';
+    const exemptionNote = result.exemption ? ` · Exemption: ${escapeText(result.exemption)}` : '';
+    const tax = result.taxAmount === undefined ? ''
+      : Number.isFinite(result.taxAmount) ? ` · Tax amount ${money(result.taxAmount)}`
+        : ` · Tax amount Not available${result.taxAmountNote ? ` (${escapeText(result.taxAmountNote.replace(/\.$/, ''))})` : ''}`;
     const exemption = Number.isFinite(result.homeownerExemption) && result.homeownerExemption > 0
       ? ` · Homeowner exemption ${money(result.homeownerExemption)}`
       : '';
@@ -230,9 +278,9 @@
     const currentUse = result.currentUse ? ` · ${escapeText(result.currentUse)}` : '';
     const valuesNote = result.valuesNote ? ` ${escapeText(result.valuesNote)}` : '';
     const link = result.propertySearchUrl
-      ? ` <a href="${escapeText(result.propertySearchUrl)}" target="_blank" rel="noopener">${PROPERTY_SEARCH_LABEL} ↗</a>`
+      ? ` <a href="${escapeText(result.propertySearchUrl)}" target="_blank" rel="noopener">${escapeText(result.propertySearchLabel || PROPERTY_SEARCH_LABEL)} ↗</a>`
       : '';
-    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${exemption}${net}${market}${currentUse}.${valuesNote} Assessor values are informational and are not the current tax bill.${link}`;
+    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${marketLand}${exemption}${exemptionNote}${net}${market}${currentUse}${tax}.${valuesNote} Assessor values are informational and are not the current tax bill.${link}`;
   }
 
   async function loadAssessment() {

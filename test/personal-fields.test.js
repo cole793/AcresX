@@ -31,6 +31,8 @@ const ALLOWED_KEYS = new Set(['ownerMatch', 'ownerSimilarity']);
 const PARCEL = 'P1234567';
 // Stevens parcel numbers are 7 digits (src/counties/stevens-assessor.js).
 const STEVENS_PARCEL = '0231200';
+// Spokane parcel numbers are 5 digits, a dot and 4 digits (src/counties/spokane-assessor.js).
+const SPOKANE_PARCEL = '35204.2729';
 const LON = -117.4, LAT = 47.6;
 const ring = [[LON, LAT], [LON + 0.002, LAT], [LON + 0.002, LAT + 0.002], [LON, LAT + 0.002], [LON, LAT]];
 const polygon = { type: 'Polygon', coordinates: [ring] };
@@ -38,7 +40,7 @@ const polygon = { type: 'Polygon', coordinates: [ring] };
 // Attributes that let each route find something (every parcel id field is the test parcel), plus
 // the planted owner and mailing fields.
 const attributes = {
-  OBJECTID: 1, PARCELID: PARCEL, Geocode: PARCEL, GEOCODE: PARCEL, GEO_CODE: PARCEL, TAX_ID: PARCEL, PARCEL_ID: PARCEL, PIN: PARCEL, PID: PARCEL, PID_NUM: PARCEL,
+  OBJECTID: 1, PARCELID: PARCEL, Geocode: PARCEL, GEOCODE: PARCEL, GEO_CODE: PARCEL, TAX_ID: PARCEL, PARCEL_ID: PARCEL, PIN: PARCEL, PID: PARCEL, PID_NUM: SPOKANE_PARCEL,
   PARCELN: STEVENS_PARCEL, ParcelNumber: PARCEL, County: 'Ada', COUNTY: 'Kootenai', SITE_ADD: '100 SITE RD', AddressLine1: '100 SITE RD', site_address: '100 SITE RD',
   ZONECLASS: 'RR-5', ZONEDESC: 'Rural Residential 5', ZONING: 'AS', ZONE: 'A-1', ZONE_NAME: 'Agricultural', JURISDICTION: 'Test County', NAME: 'TEST UTILITY',
   PERMITNUM: 'B-1', PERMITTYPE: 'Residential', WellTagNr: 'BAA123', WellID: 5, TotalDepth: 200, CompletedDepth: 200, WellUse: 'Domestic',
@@ -102,7 +104,7 @@ const CASES = [
   ['upstream-health', get('/api/upstream-health')],
   ['property-tax-test GET', get('/api/property-tax-test')],
   ['property-tax-test POST MT', post('/api/property-tax-test', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL })],
-  ['property-assessment WA', post('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: PARCEL }), b => assert.equal(b.available, true)],
+  ['property-assessment WA', post('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: SPOKANE_PARCEL }), b => { assert.equal(b.available, true); assert.equal(b.countyRecords[0].parcelNumber, SPOKANE_PARCEL); assert.equal(b.records[0].site_address, '100 SITE RD'); }],
   ['property-assessment MT Yellowstone', post('/api/property-assessment', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL }), b => { assert.equal(b.statewideRecords.length, 1); assert.equal(b.statewideRecords[0].TotalValue, 1000); }],
   ['property-assessment MT Gallatin', post('/api/property-assessment', { state: 'MT', county: 'Gallatin', parcelId: PARCEL }), b => assert.equal(b.statewideRecords.length, 1)],
   ['property-assessment ID Kootenai', post('/api/property-assessment', { state: 'ID', county: 'Kootenai', parcelId: PARCEL })],
@@ -273,9 +275,10 @@ const HINTED = [
   ['well-search ID (IDWR blocked)', post('/api/well-search', { state: 'ID', ...hintPoint }), 'idaho-wells', 502],
   ['property-assessment ID Kootenai (assessor blocked)', post('/api/property-assessment', { state: 'ID', county: 'Kootenai', parcelId: HINT_PARCEL }), 'kootenai-assessor', 200],
   ['property-assessment WA Stevens (assessor blocked)', post('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: '7654321' }), 'stevens-assessor', 200],
+  ['property-assessment WA Spokane (assessor blocked)', post('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: '76543.2100' }), 'spokane-assessor', 200],
   ['hazards flood (FEMA blocked)', post('/api/hazards', { kind: 'flood', ...hintParcel }), 'fema-flood', 200]
 ];
-const BLOCKED_HOSTS = new Set(['map.kcgov.us', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov']);
+const BLOCKED_HOSTS = new Set(['map.kcgov.us', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org']);
 
 test('hinted answers (browser fallback) carry no owner or mailing field', async () => {
   const blocked = (input, init) => {

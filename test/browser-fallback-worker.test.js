@@ -65,7 +65,7 @@ test('fallback: eligible failures are network, timeout and 403/429/5xx (HTTP or 
   }
   assert.equal(isFallbackEligible(null), false);
   assert.deepEqual(fallbackHint('fema-flood', { a: 1 }), { mode: 'browser', kind: 'fema-flood', input: { a: 1 } });
-  assert.deepEqual(Object.values(FALLBACK_KINDS), ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'fema-flood', 'stevens-zoning']);
+  assert.deepEqual(Object.values(FALLBACK_KINDS), ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'spokane-assessor', 'fema-flood', 'stevens-zoning']);
 });
 
 // ---- Kootenai zoning (/api/zoning-permits)
