@@ -11,12 +11,17 @@
     const p = parcel.properties || {};
     const center = typeof turf !== 'undefined' ? turf.centroid(parcel).geometry.coordinates : [null, null];
     return {
+      // The parcel's state, as findUtility (index.html) reads it, for the territory label.
+      state: document.getElementById('state')?.value || p._stateCode || 'WA',
       parcelId: p.ORIG_PARCEL_ID || p.PARCEL_ID_NR || '',
       address: [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', '),
       lon: center[0],
       lat: center[1],
       geometry: parcel.geometry || null,
-      providers: Array.isArray(last.utility) ? last.utility : []
+      // Ranked by /api/utility-territory: the primary first (findUtility, index.html). The
+      // ranking tells power intelligence whether the others are a resolved or open overlap.
+      providers: Array.isArray(last.utility) ? last.utility : [],
+      providerRanking: { basis: last.utility?.basis || '', resolved: last.utility?.resolved === true, note: last.utility?.note || '' }
     };
   }
 
@@ -25,7 +30,14 @@
     if (value === 'underground_distribution') return 'Underground distribution';
     if (value === 'distribution_cable') return 'Distribution cable';
     if (value === 'transformer') return 'Transformer';
+    if (value === 'utility_distribution_line') return 'Utility-published distribution line';
     return 'Mapped power infrastructure';
+  }
+
+  // Other utilities whose territory also covers the parcel (power intelligence, else the list).
+  function alsoListedProviders(power) {
+    if (Array.isArray(power?.alsoListed)) return power.alsoListed;
+    return Array.isArray(last?.utility) ? last.utility.slice(1) : [];
   }
 
   function applyPowerIntelligence(power) {
@@ -41,7 +53,8 @@
       if (grade) grade.textContent = `${String(distribution.confidence || 'Low').replace(/^./, c => c.toUpperCase())} confidence`;
       if (dot) dot.className = `traffic-dot ${distribution.confidence === 'low' ? 'amber' : 'green'}`;
     } else if (power.available) {
-      if (status) status.textContent = `${provider} territory identified · no nearby OSM distribution mapping found`;
+      const notVerified = ['timed_out', 'source_unavailable'].includes(power.proximity?.status);
+      if (status) status.textContent = notVerified ? `${provider} territory identified · distance not verified` : `${provider} territory identified · no nearby OSM distribution mapping found`;
       if (grade) grade.textContent = 'Verify utility';
       if (dot) dot.className = 'traffic-dot amber';
     }
@@ -162,16 +175,23 @@
     const evidence = proximity.evidence || {};
     const verification = power.verification || {};
     const nearest = proximity.nearest || null;
+    const alsoListed = alsoListedProviders(power);
+    const rankingNote = power.providerRanking?.note || last?.utility?.note || '';
+    const ranked = /^avista_line_/.test(power.providerRanking?.basis || last?.utility?.basis || '');
+    const providerLine = alsoListed.length
+      ? `${ranked ? 'Most likely provider.' : 'Overlapping territories (listed first, not ranked).'} Also listed: ${esc(alsoListed.join(', '))}.${rankingNote ? `<br>${esc(rankingNote)}` : ''}`
+      : territory.confirmed ? 'Likely electric utility territory identified.' : 'Serving utility identified from available territory data.';
+    const sourceLabel = distribution.status === 'utility_published_proximity' ? "Avista's distribution map" : 'OpenStreetMap';
 
     root.innerHTML = `
-      <div class="notice"><strong>${esc(provider)}</strong><br>${territory.confirmed ? 'Likely electric utility territory identified.' : 'Serving utility identified from available territory data.'}</div>
+      <div class="notice"><strong>${esc(provider)}</strong><br>${providerLine}</div>
       <div class="result-item">
         <h4>Distribution proximity screening</h4>
         <div class="data-grid">
           <div class="datum"><span>Nearest mapped infrastructure</span><strong>${Number.isFinite(distribution.estimatedDistanceFt) ? Math.round(distribution.estimatedDistanceFt).toLocaleString() + ' ft' : 'Not mapped nearby'}</strong></div>
           <div class="datum"><span>Infrastructure type</span><strong>${esc(infrastructureLabel(distribution.infrastructure))}</strong></div>
           <div class="datum"><span>Confidence</span><strong>${esc(String(distribution.confidence || 'Low').replace(/^./, c => c.toUpperCase()))}</strong></div>
-          <div class="datum"><span>Source</span><strong>OpenStreetMap</strong></div>
+          <div class="datum"><span>Source</span><strong>${sourceLabel}</strong></div>
         </div>
         <div class="notice">${esc(distribution.note || proximity.note || 'Public distribution mapping is incomplete.')}</div>
       </div>

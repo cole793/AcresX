@@ -1,6 +1,8 @@
 import { json } from '../shared/http.js';
 import { arcgisQuery } from '../shared/upstream.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
+import { nearestAvistaLine, inAvistaLayerExtent } from '../utilities/avista-distribution.js';
+import { rankProviders } from './provider-ranking.js';
 
 const HIFLD_RETAIL = 'https://services3.arcgis.com/OYP7N6mAJJCyH6hd/arcgis/rest/services/Electric_Retail_Service_Territories_HIFLD/FeatureServer/0';
 
@@ -18,6 +20,14 @@ export async function handleUtilityTerritory(request) {
   const lat = Number(body.lat);
   const lon = Number(body.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ error: 'lat and lon are required.' }, 400, 'no-store');
+
+  const state = String(body.state || '').toUpperCase();
+  // Avista's published distribution lines, for ranking (services/provider-ranking.js). Asked in
+  // parallel with HIFLD, only in Washington and Idaho, within that layer's extent; a failure only
+  // leaves the HIFLD order. Rings stop at 1,320 ft: ranking only needs "within 1,320 ft or not".
+  const avistaLookup = (state === 'WA' || state === 'ID' || !state) && inAvistaLayerExtent(lat, lon)
+    ? nearestAvistaLine({ lat, lon, rings: [330, 1320], timeoutMs: 4000 })
+    : Promise.resolve(null);
 
   // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
   let features;
@@ -46,12 +56,21 @@ export async function handleUtilityTerritory(request) {
     };
   }).filter(item => item.name);
 
-  const names = [...new Set(matches.map(item => item.name))];
+  const avista = await avistaLookup;
+  const ranking = rankProviders(matches, { avista, state });
+  // `providers` keeps every name (as before) but is now ordered: the primary first, then the
+  // other retail utilities, then wholesale federal marketers. `primary`, `ranked`, `alsoListed`
+  // and `wholesale` are additions.
+  const names = ranking.providers;
   return json({
     available: true,
     source: 'DOE / ORNL HIFLD Electric Retail Service Territories',
     sourceDate: '2025-08-21',
     providers: names,
+    primary: ranking.primary,
+    ranked: ranking.ranked,
+    alsoListed: ranking.alsoListed,
+    wholesale: ranking.wholesale,
     matches,
     confidence: names.length === 1 ? 'moderate' : names.length > 1 ? 'low' : 'low',
     note: names.length ? 'Retail electric service territory intersected the parcel center. Confirm new-service availability directly with the utility.' : 'No mapped retail electric service territory intersected the parcel center.'
