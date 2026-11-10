@@ -77,7 +77,19 @@
   if (oldFindParcel) {
     window.findParcel = async function (county, input) {
       if (!stateEl.value) throw new Error('Select a state before searching a parcel.');
-      if (stateEl.value === 'WA') return oldFindParcel(county, input);
+      if (stateEl.value === 'WA') {
+        // Spokane: the county's own parcel layer through /api/parcel-search first (~0.4 s; the
+        // statewide layer took 5-25 s). No parcel there (a miss, an id it cannot read, or an
+        // error) -> the statewide lookup, as before. src/counties/spokane-parcels.js.
+        if (/^spokane$/i.test(String(county || ''))) {
+          try {
+            const response = await fetch('/api/parcel-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:'WA', county:'Spokane', parcelId:String(input || '').trim()}) });
+            const data = await response.json();
+            if (response.ok && data?.available && data.parcel?.geometry) return data.parcel;
+          } catch (error) { console.warn('Spokane county parcel lookup failed; using the statewide layer', error); }
+        }
+        return oldFindParcel(county, input);
+      }
       if (!county) throw new Error(`Select a ${stateEl.value === 'ID' ? 'Idaho' : 'Montana'} county before searching.`);
       const response = await fetch('/api/parcel-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county, parcelId:String(input || '').trim()}) });
       const data = await response.json();

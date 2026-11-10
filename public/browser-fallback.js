@@ -3,7 +3,7 @@
 // network error, a timeout or a 403/429/5xx, its /api answer keeps its shape and adds
 //   fallback: { mode: 'browser', kind, input }          (src/shared/fallback.js)
 // This script wraps window.fetch for five /api routes (parcel search, zoning, wells, assessment,
-// flood), with Kootenai and Stevens kinds for zoning and assessment. When such an answer arrives it runs the
+// flood), with Kootenai and Stevens kinds for zoning and assessment and a Spokane kind for assessment. When such an answer arrives it runs the
 // known query for that kind from the user's browser and hands the page an answer in the Worker's
 // shape, so the existing render path shows it. It then labels the section
 // "Loaded directly from <agency>".
@@ -17,7 +17,7 @@
 // - One attempt per request, 12 s each, no cookies, no redirects (a redirect fails the request). If any request this kind depends on fails,
 //   the Worker's own (degraded) answer is kept.
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
-//   kootenai-assessor.js, stevens-assessor.js, stevens.js, stevens-cities.js,
+//   kootenai-assessor.js, stevens-assessor.js, spokane-assessor.js, stevens.js, stevens-cities.js,
 //   src/zoning/stevens-rules.js aliases, src/shared/polygon-coverage.js, src/shared/arcgis.js
 //   spatialParams, src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js).
 //   test/browser-fallback.test.js and test/stevens-zoning.test.js run both on the same recorded
@@ -36,7 +36,7 @@
   'use strict';
   if (root.AcresXFallback) return;
 
-  const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov']);
+  const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org']);
   const TIMEOUT_MS = 12000;
   // How much more time a progressive-loading section gets once its browser fallback starts.
   const EXTEND_MS = 30000;
@@ -714,6 +714,112 @@
     return { available: true, ...base, countyRecords: [mapStevensAssessorRecord(stevensBestRow(features))] };
   }
 
+  // ---- 3c. Spokane assessor (copy of src/counties/spokane-assessor.js and the Spokane branch of
+  // src/services/property-tax-test.js). The assessor parcel table, first layer, then the backup
+  // layer when the first answers with an error (not after a timeout: both are on the same host).
+
+  const SPOKANE_ASSESSOR = 'https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0';
+  const SPOKANE_ASSESSOR_BACKUP = 'https://gismo.spokanecounty.org/arcgis/rest/services/CONNECTExplorer/CONNECTExplorer_REST/MapServer/14';
+  const SPOKANE_ASSESSOR_SOURCE = 'Spokane County Assessor (assessor parcel table, Spokane County GIS)';
+  // Never add owner_*, taxpayer_* or any mailing field (the backup layer has them).
+  const SPOKANE_ASSESSOR_FIELDS = 'PID_NUM,prop_use_code,prop_use_desc,tax_year,asmt_year,land_value,assessed_amt,taxable_amt,exmp_code,exmp_amt,asmt_year_exmp_amt,tax_code_area,acreage,seg_status,site_address';
+  const SPOKANE_LEGACY_FIELDS = ['PID_NUM', 'tax_year', 'asmt_year', 'land_value', 'exmp_amt', 'asmt_year_exmp_amt', 'acreage', 'site_address', 'prop_use_desc'];
+  const SPOKANE_SCOUT_LABEL = 'View on Spokane County SCOUT';
+  // SA/SB/SC (Senior/Disabled) say something personal about the owner: no code or name, only the amount.
+  const SPOKANE_PERSONAL_EXEMPTION_CODES = Object.freeze(['SA', 'SB', 'SC']);
+  const SPOKANE_EXEMPTIONS = Object.freeze({
+    MFUH: 'Multi Family Urban Housing', '2HIST': 'Historical Designation', '1HOME': 'Homeowner exemption'
+  });
+  function spokaneExemption(code, value) {
+    if (!code && !value) return null;
+    if (code && SPOKANE_PERSONAL_EXEMPTION_CODES.includes(code.toUpperCase())) return { code: null, description: 'Personal exemption applied (details on SCOUT)', value, personal: true };
+    return { code, description: code ? SPOKANE_EXEMPTIONS[code] || null : null, value };
+  }
+  function normalizeSpokaneParcelId(parcelId) {
+    let id = String(parcelId ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (/^\d{12}$/.test(id) && id.startsWith('063')) id = id.slice(3);
+    return /^\d{9}$/.test(id) ? `${id.slice(0, 5)}.${id.slice(5)}` : null;
+  }
+  const spokaneScoutUrl = pid => (/^\d{5}\.\d{4}$/.test(String(pid ?? '')) ? `https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${pid}` : null);
+  function spokaneClassDescription(code, descr) {
+    const d = strOrNull(descr); if (!d) return null;
+    return code ? d.replace(new RegExp(`^\\s*${code.replace(/[^0-9A-Za-z]/g, '')}\\s*[-–:]?\\s+`), '').trim() || null : d;
+  }
+  function spokaneCurrentUse(code, assessed, marketLand) {
+    const program = code != null ? CURRENT_USE_PROGRAMS[Number(code)] || null : null;
+    if (program) return { status: 'classified', program };
+    if (assessed != null && marketLand != null && assessed < marketLand) {
+      return { status: 'reduced_land_value', program: null, note: 'The assessed value is below the market land value, which usually means part of the land is in a current-use or forest program. Verify with the assessor.' };
+    }
+    if (code == null && assessed == null) return { status: null, program: null };
+    return { status: 'not_classified', program: null };
+  }
+  function mapSpokaneAssessorRecord(raw = {}) {
+    const attrs = withoutPersonalFields(raw);
+    const parcelNumber = strOrNull(attrs.PID_NUM);
+    const code = strOrNull(attrs.prop_use_code);
+    const assessed = numOrNull(attrs.assessed_amt), taxable = numOrNull(attrs.taxable_amt), marketLand = numOrNull(attrs.land_value);
+    const valued = [assessed, taxable, marketLand].some(v => v != null && v !== 0);
+    const use = spokaneCurrentUse(code, valued ? assessed : null, valued ? marketLand : null);
+    const split = valued && (use.status === 'not_classified' || use.status === null) && assessed != null && marketLand != null && assessed >= marketLand;
+    const exemptionCode = strOrNull(attrs.exmp_code);
+    const exempted = valued && assessed != null && taxable != null && assessed > taxable ? assessed - taxable : null;
+    const inProgram = use.status === 'classified' || use.status === 'reduced_land_value';
+    const valuesNote = !valued ? 'The assessor record for this parcel carries no values. Check SCOUT or the Spokane County Assessor.'
+      : inProgram ? 'The land is assessed at its current-use value, so the assessed total is below market. The county GIS does not split it into land and improvements; SCOUT has the full breakdown.'
+        : null;
+    return {
+      parcelNumber,
+      propertySearchUrl: spokaneScoutUrl(parcelNumber),
+      propertySearchLabel: SPOKANE_SCOUT_LABEL,
+      landValue: split ? marketLand : null,
+      improvementValue: split ? assessed - marketLand : null,
+      improvementValueNote: split ? 'Assessed total minus land value' : null,
+      totalValue: valued ? assessed : null,
+      taxableValue: valued ? taxable : null,
+      netValue: valued ? taxable : null,
+      marketLandValue: valued ? marketLand : null,
+      marketValue: split ? assessed : null,
+      exemption: spokaneExemption(exemptionCode, exempted),
+      taxYear: numOrNull(attrs.asmt_year),
+      taxAmount: null,
+      taxAmountNote: 'Not published in the county GIS. The SCOUT page lists the tax bill.',
+      assessorAcres: numOrNull(attrs.acreage),
+      taxCodeArea: strOrNull(attrs.tax_code_area),
+      segStatus: strOrNull(attrs.seg_status),
+      propertyClass: code, propertyClassDescription: spokaneClassDescription(code, attrs.prop_use_desc),
+      propertyClassNote: 'Tax category, not zoning',
+      currentUse: use,
+      ...(valuesNote ? { valuesNote } : {})
+    };
+  }
+  function spokaneLegacyRecord(raw = {}) {
+    const attrs = withoutPersonalFields(raw);
+    const out = {};
+    for (const key of SPOKANE_LEGACY_FIELDS) if (key in attrs) out[key] = attrs[key];
+    return out;
+  }
+
+  async function spokaneAssessor(input, signal) {
+    const parcelId = parcelIdOf(input);
+    if (!parcelId) throw new Error('AcresX fallback: parcel number required');
+    const base = { state: 'WA', county: 'Spokane', parcelId, source: SPOKANE_ASSESSOR_SOURCE, countySource: SPOKANE_ASSESSOR_SOURCE, countySourceUrl: SPOKANE_ASSESSOR };
+    const miss = { available: false, ...base, records: [], countyRecords: [], note: 'No Spokane County Assessor record matched this parcel number.' };
+    const id = normalizeSpokaneParcelId(parcelId);
+    if (!id) return miss;
+    const params = { where: `PID_NUM='${id}'`, outFields: SPOKANE_ASSESSOR_FIELDS, returnGeometry: 'false', resultRecordCount: '5' };
+    let features;
+    try {
+      features = await arcgisFeatures(SPOKANE_ASSESSOR, params, { agency: 'Spokane County Assessor', signal });
+    } catch (error) {
+      if (signal?.aborted || /timed out/.test(String(error?.message))) throw error;
+      features = await arcgisFeatures(SPOKANE_ASSESSOR_BACKUP, params, { agency: 'Spokane County Assessor', signal });
+    }
+    const row = features.map(f => f?.attributes || {}).find(a => strOrNull(a.PID_NUM) === id);
+    if (!row) return miss;
+    return { available: true, ...base, records: [spokaneLegacyRecord(row)], countyRecords: [mapSpokaneAssessorRecord(row)] };
+  }
+
   // ---- 4. FEMA NFHL flood (copy of src/services/flood.js, FEMA path only)
 
   const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
@@ -1145,6 +1251,7 @@
     'idaho-wells': { api: '/api/well-search', run: idahoWells, agency: () => 'Idaho Department of Water Resources', targets: ['wellNote'] },
     'kootenai-assessor': { api: '/api/property-assessment', run: kootenaiAssessor, agency: () => 'Kootenai County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'stevens-assessor': { api: '/api/property-assessment', run: stevensAssessor, agency: () => 'Stevens County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
+    'spokane-assessor': { api: '/api/property-assessment', run: spokaneAssessor, agency: () => 'Spokane County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] },
     'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] }
   };

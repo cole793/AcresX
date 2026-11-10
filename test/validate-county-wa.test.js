@@ -65,17 +65,19 @@ const SPOKANE_LIKE_WHERE = `${SPOKANE_COUNTY_WHERE} AND (UPPER(ORIG_PARCEL_ID) L
 
 const runWa = (entry = { parcelId: '57344.0125' }, county = 'Spokane') => validateParcel(entry, { state: 'WA', county, baseUrl: BASE, requestDelayMs: 0 });
 
-test('Washington parcels are looked up through /api/arcgis like findParcel, never /api/parcel-search', async () => {
+test('Washington parcels: Spokane asks /api/parcel-search first; with no parcel there, /api/arcgis like findParcel', async () => {
+  // The stub has no /api/parcel-search answer (HTTP 404), so the statewide lookup runs.
   globalThis.fetch = stubFetch(waResponses());
   const result = await runWa();
   for (const [key, layer] of Object.entries(result.layers)) assert.equal(layer.status, 'ok', `${key}: ${layer.detail}`);
   const routes = calls.map(c => (c.route === '/api/arcgis' ? `arcgis:${c.body.service}` : c.route === '/api/hazards' ? `hazards:${c.body.kind}` : c.route));
+  assert.deepEqual(calls[0].body, { state: 'WA', county: 'Spokane', parcelId: '57344.0125' });
   assert.deepEqual(routes, [
-    'arcgis:parcel', 'arcgis:wells', '/api/utility-territory', 'hazards:flood', 'hazards:wetlands', '/api/zoning-permits',
+    '/api/parcel-search', 'arcgis:parcel', 'arcgis:wells', '/api/utility-territory', 'hazards:flood', 'hazards:wetlands', '/api/zoning-permits',
     '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment', '/api/reso-listings', '/api/power-intelligence',
     '/api/zoning-rules', '/api/slope-grid'
   ]);
-  const parcelParams = calls[0].body.params;
+  const parcelParams = calls[1].body.params;
   assert.equal(parcelParams.outFields, WA_PARCEL_FIELDS);
   assert.equal(parcelParams.f, 'geojson');
   assert.equal(parcelParams.where, SPOKANE_EXACT_WHERE);
@@ -162,7 +164,7 @@ test('no match or several matches fail the parcel layer with the browser message
   assert.equal(result.layers.parcel.status, 'error');
   assert.match(result.layers.parcel.detail, /Parcel not found/);
   assert.equal(result.layers.wells.status, 'skipped');
-  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(c => c.route), ['/api/parcel-search', '/api/arcgis', '/api/arcgis']);
 
   const feature = fixture.parcel.features[0];
   responses.parcel = { type: 'FeatureCollection', features: [clone(feature), clone(feature)] };
@@ -178,8 +180,56 @@ test('a slow statewide layer (Worker 502 timeout) is a parcel error, not a retry
   const result = await runWa();
   assert.equal(result.layers.parcel.status, 'error');
   assert.match(result.layers.parcel.detail, /timed out after 25s/);
-  assert.equal(calls.length, 1);
+  assert.deepEqual(calls.map(c => c.route), ['/api/parcel-search', '/api/arcgis']);
 });
+
+// The answers src/counties/spokane-parcels.js and spokane-assessor.js give for 57344.0125
+// (values from the live layers, 2026-11-10).
+const spokaneCountyParcel = () => {
+  const feature = clone(fixture.parcel.features[0]);
+  feature.properties = {
+    FIPS_NR: '063', COUNTY_NM: 'Spokane', ORIG_PARCEL_ID: '57344.0125', PARCEL_ID_NR: '063-57344.0125', _countyDisplay: 'Spokane', _stateCode: 'WA', _stateDisplay: 'Washington',
+    SITUS_ADDRESS: '14324 N MEADOW LN', SITUS_CITY_NM: 'NEWMAN LAKE', SITUS_ZIP_NR: '', DATA_LINK: 'https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=57344.0125', ACRES: 0.35
+  };
+  return { available: true, state: 'WA', county: 'Spokane', source: 'Spokane County GIS (Assessor/Parcels layer)', parcel: feature };
+};
+const spokaneAssessment = {
+  available: true, state: 'WA', county: 'Spokane', parcelId: '57344.0125', source: 'Spokane County Assessor (assessor parcel table, Spokane County GIS)',
+  records: [{ PID_NUM: '57344.0125', tax_year: 2026, asmt_year: 2027, land_value: 387870 }],
+  countyRecords: [{ parcelNumber: '57344.0125', landValue: 387870, improvementValue: 0, totalValue: 387870, taxableValue: 387870, netValue: 387870, taxYear: 2027, taxAmount: null, assessorAcres: 0.35, taxCodeArea: '2240', propertyClass: '91', propertyClassDescription: 'Vacant Land' }]
+};
+
+test('Spokane: a county-layer parcel is used as is (no statewide query); the assessment reads countyRecords first', async () => {
+  const responses = waResponses();
+  responses['/api/parcel-search'] = spokaneCountyParcel();
+  responses['/api/property-assessment'] = spokaneAssessment;
+  globalThis.fetch = stubFetch(responses);
+  const result = await runWa({ parcelId: '573440125' });
+  assert.deepEqual(calls[0], { route: '/api/parcel-search', body: { state: 'WA', county: 'Spokane', parcelId: '573440125' } });
+  assert.equal(calls.filter(c => c.body?.service === 'parcel').length, 0);
+  assert.equal(result.layers.parcel.status, 'ok');
+  assert.equal(result.layers.parcel.values.parcelId, '57344.0125');
+  // The county layer carries the assessor acreage.
+  assert.equal(result.layers.parcel.values.acres, 0.35);
+  assert.equal(body('/api/zoning-permits').dataLink, 'https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=57344.0125');
+  const a = result.layers.assessment;
+  assert.equal(a.status, 'ok');
+  assert.equal(a.values.propertyClass, '91');
+  assert.equal(a.values.assessedValue, 387870);
+  assert.equal(a.values.taxYear, 2027);
+  assert.equal(a.values.taxPresent, false);
+  assert.match(a.detail, /assessed \$387,870, class 91 Vacant Land, no tax amount/);
+
+  // An answer without a parcel (a miss or an error) goes on to the statewide layer.
+  for (const answer of [{ available: false, state: 'WA', county: 'Spokane', parcel: null, note: 'No match' }, { available: false, parcel: null, error: 'Spokane County parcel layer timed out' }]) {
+    responses['/api/parcel-search'] = answer;
+    globalThis.fetch = stubFetch(responses);
+    const r = await runWa();
+    assert.equal(r.layers.parcel.status, 'ok');
+    assert.deepEqual(calls.slice(0, 2).map(c => c.route), ['/api/parcel-search', '/api/arcgis']);
+  }
+});
+const body = route => calls.find(c => c.route === route).body;
 
 test('Stevens: an assessment answer of "currently supports" is unavailable; other HTTP 400s stay errors', async () => {
   const responses = waResponses();

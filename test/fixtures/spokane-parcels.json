@@ -1,0 +1,600 @@
+{
+  "recorded": "2026-11-10",
+  "source": "https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/Parcels/MapServer/0/query",
+  "note": "Live answers of Spokane County Assessor/Parcels/MapServer/0 (no owner fields on this layer).",
+  "answers": {
+    "57344.0125": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "site_address": "site_address",
+        "site_city": "site_city",
+        "site_zip": "site_zip",
+        "acreage": "acreage",
+        "seg_status": "seg_status"
+      },
+      "geometryType": "esriGeometryPolygon",
+      "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        },
+        {
+          "name": "site_city",
+          "type": "esriFieldTypeString",
+          "alias": "site_city",
+          "length": 30
+        },
+        {
+          "name": "site_zip",
+          "type": "esriFieldTypeString",
+          "alias": "site_zip",
+          "length": 10
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "57344.0125",
+            "site_address": "14324 N MEADOW LN",
+            "site_city": "NEWMAN LAKE",
+            "site_zip": null,
+            "acreage": 0.35,
+            "seg_status": "Active-Complete"
+          },
+          "geometry": {
+            "rings": [
+              [
+                [
+                  -117.0953000025389,
+                  47.78796328909989
+                ],
+                [
+                  -117.09530969528372,
+                  47.787573725452006
+                ],
+                [
+                  -117.09537862340858,
+                  47.78766184962548
+                ],
+                [
+                  -117.09553017286785,
+                  47.78776183063645
+                ],
+                [
+                  -117.09556182458182,
+                  47.78778271169236
+                ],
+                [
+                  -117.09558159614119,
+                  47.78781007872424
+                ],
+                [
+                  -117.09565499260387,
+                  47.7878652544974
+                ],
+                [
+                  -117.09601681462478,
+                  47.788072026444
+                ],
+                [
+                  -117.09601217892794,
+                  47.78807951631465
+                ],
+                [
+                  -117.09594022383364,
+                  47.78814657365012
+                ],
+                [
+                  -117.0958545098527,
+                  47.788187843401694
+                ],
+                [
+                  -117.09578419705329,
+                  47.78822169845313
+                ],
+                [
+                  -117.09561995734988,
+                  47.788266270805515
+                ],
+                [
+                  -117.09553536130747,
+                  47.7881861617558
+                ],
+                [
+                  -117.09545634467388,
+                  47.78811133663586
+                ],
+                [
+                  -117.0953000025389,
+                  47.78796328909989
+                ]
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "48121.9001": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "site_address": "site_address",
+        "site_city": "site_city",
+        "site_zip": "site_zip",
+        "acreage": "acreage",
+        "seg_status": "seg_status"
+      },
+      "geometryType": "esriGeometryPolygon",
+      "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        },
+        {
+          "name": "site_city",
+          "type": "esriFieldTypeString",
+          "alias": "site_city",
+          "length": 30
+        },
+        {
+          "name": "site_zip",
+          "type": "esriFieldTypeString",
+          "alias": "site_zip",
+          "length": 10
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "48121.9001",
+            "site_address": "Unassigned Address",
+            "site_city": "Elk",
+            "site_zip": "99009",
+            "acreage": 158.65,
+            "seg_status": "Active-Complete"
+          },
+          "geometry": {
+            "rings": [
+              [
+                [
+                  -117.17534397485379,
+                  47.93842174994316
+                ],
+                [
+                  -117.18594016727671,
+                  47.93872117590733
+                ],
+                [
+                  -117.18604159101655,
+                  47.94585680489077
+                ],
+                [
+                  -117.1796197940294,
+                  47.94564798837672
+                ],
+                [
+                  -117.17906857980778,
+                  47.945156086539754
+                ],
+                [
+                  -117.1790148153036,
+                  47.94510810688102
+                ],
+                [
+                  -117.17867179527508,
+                  47.944559426298646
+                ],
+                [
+                  -117.17818459058772,
+                  47.94432160399302
+                ],
+                [
+                  -117.17799654818847,
+                  47.944112441425595
+                ],
+                [
+                  -117.17757317397658,
+                  47.94386545622612
+                ],
+                [
+                  -117.17685676008107,
+                  47.94360645340022
+                ],
+                [
+                  -117.17653031980286,
+                  47.94358681145636
+                ],
+                [
+                  -117.17557102616246,
+                  47.943263562109436
+                ],
+                [
+                  -117.17538816438892,
+                  47.94322661944828
+                ],
+                [
+                  -117.17534846225753,
+                  47.9432185989991
+                ],
+                [
+                  -117.17534750717988,
+                  47.94218453338296
+                ],
+                [
+                  -117.17534413189829,
+                  47.938589136388984
+                ],
+                [
+                  -117.17534397485379,
+                  47.93842174994316
+                ]
+              ],
+              [
+                [
+                  -117.17534917490575,
+                  47.94399042762621
+                ],
+                [
+                  -117.175348568632,
+                  47.94333312680987
+                ],
+                [
+                  -117.17551049468571,
+                  47.943365840059776
+                ],
+                [
+                  -117.17648020095817,
+                  47.94369259770592
+                ],
+                [
+                  -117.17648487505625,
+                  47.94369417223888
+                ],
+                [
+                  -117.17649791955004,
+                  47.943694957245405
+                ],
+                [
+                  -117.17680888373589,
+                  47.94371366799291
+                ],
+                [
+                  -117.17747986732036,
+                  47.94395624695519
+                ],
+                [
+                  -117.17787013656135,
+                  47.9441839198673
+                ],
+                [
+                  -117.17806195522769,
+                  47.944397282781516
+                ],
+                [
+                  -117.17849641101758,
+                  47.944609357326065
+                ],
+                [
+                  -117.17853897657945,
+                  47.944630135327166
+                ],
+                [
+                  -117.17860255500871,
+                  47.94473183399796
+                ],
+                [
+                  -117.17887248096834,
+                  47.945163598342084
+                ],
+                [
+                  -117.17942823896577,
+                  47.945641754408385
+                ],
+                [
+                  -117.17535057833939,
+                  47.945508966999505
+                ],
+                [
+                  -117.17534917490575,
+                  47.94399042762621
+                ]
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "46301.9025": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "site_address": "site_address",
+        "site_city": "site_city",
+        "site_zip": "site_zip",
+        "acreage": "acreage",
+        "seg_status": "seg_status"
+      },
+      "geometryType": "esriGeometryPolygon",
+      "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        },
+        {
+          "name": "site_city",
+          "type": "esriFieldTypeString",
+          "alias": "site_city",
+          "length": 30
+        },
+        {
+          "name": "site_zip",
+          "type": "esriFieldTypeString",
+          "alias": "site_zip",
+          "length": 10
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        }
+      ],
+      "features": [
+        {
+          "attributes": {
+            "PID_NUM": "46301.9025",
+            "site_address": "0 ADDRESS UNKNOWN S",
+            "site_city": "UNKNOWN",
+            "site_zip": null,
+            "acreage": 4.58,
+            "seg_status": "Active-Complete"
+          },
+          "geometry": {
+            "rings": [
+              [
+                [
+                  -117.28890679363687,
+                  47.72936975221244
+                ],
+                [
+                  -117.28840743979289,
+                  47.72936904964816
+                ],
+                [
+                  -117.2883989096595,
+                  47.72834920862668
+                ],
+                [
+                  -117.28662948167364,
+                  47.728346695540665
+                ],
+                [
+                  -117.28662593829141,
+                  47.727729871948846
+                ],
+                [
+                  -117.28839375063771,
+                  47.72773238580847
+                ],
+                [
+                  -117.28912460957534,
+                  47.72773341776203
+                ],
+                [
+                  -117.2891362076666,
+                  47.72779757625487
+                ],
+                [
+                  -117.28914612630828,
+                  47.72786176550791
+                ],
+                [
+                  -117.28915438409382,
+                  47.7279260605904
+                ],
+                [
+                  -117.28916097734297,
+                  47.727990444399474
+                ],
+                [
+                  -117.28916590415935,
+                  47.72805489498684
+                ],
+                [
+                  -117.28916916235666,
+                  47.72811939464242
+                ],
+                [
+                  -117.2891707518822,
+                  47.72818392278204
+                ],
+                [
+                  -117.28917067266073,
+                  47.728248459147444
+                ],
+                [
+                  -117.28916892353939,
+                  47.72831298508032
+                ],
+                [
+                  -117.2891655068368,
+                  47.72837748072349
+                ],
+                [
+                  -117.28916042146689,
+                  47.72844192644037
+                ],
+                [
+                  -117.2891536688042,
+                  47.72850630201744
+                ],
+                [
+                  -117.28914525402213,
+                  47.72857058833952
+                ],
+                [
+                  -117.2891351760124,
+                  47.72863476609596
+                ],
+                [
+                  -117.28912343948764,
+                  47.728698815830114
+                ],
+                [
+                  -117.2891100477999,
+                  47.72876271673645
+                ],
+                [
+                  -117.28909500607828,
+                  47.72882645035129
+                ],
+                [
+                  -117.28907831853009,
+                  47.72888999752904
+                ],
+                [
+                  -117.28905998848532,
+                  47.7289533377898
+                ],
+                [
+                  -117.28904002293953,
+                  47.729016453707985
+                ],
+                [
+                  -117.28901842772798,
+                  47.729079323574545
+                ],
+                [
+                  -117.28899520982402,
+                  47.729141930289934
+                ],
+                [
+                  -117.28890679363687,
+                  47.72936975221244
+                ]
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "miss": {
+      "displayFieldName": "nbhd_name",
+      "fieldAliases": {
+        "PID_NUM": "Parcel Number",
+        "site_address": "site_address",
+        "site_city": "site_city",
+        "site_zip": "site_zip",
+        "acreage": "acreage",
+        "seg_status": "seg_status"
+      },
+      "geometryType": "esriGeometryPolygon",
+      "spatialReference": {
+        "wkid": 4326,
+        "latestWkid": 4326
+      },
+      "fields": [
+        {
+          "name": "PID_NUM",
+          "type": "esriFieldTypeString",
+          "alias": "Parcel Number",
+          "length": 255
+        },
+        {
+          "name": "site_address",
+          "type": "esriFieldTypeString",
+          "alias": "site_address",
+          "length": 50
+        },
+        {
+          "name": "site_city",
+          "type": "esriFieldTypeString",
+          "alias": "site_city",
+          "length": 30
+        },
+        {
+          "name": "site_zip",
+          "type": "esriFieldTypeString",
+          "alias": "site_zip",
+          "length": 10
+        },
+        {
+          "name": "acreage",
+          "type": "esriFieldTypeDouble",
+          "alias": "acreage"
+        },
+        {
+          "name": "seg_status",
+          "type": "esriFieldTypeString",
+          "alias": "seg_status",
+          "length": 20
+        }
+      ],
+      "features": []
+    }
+  }
+}

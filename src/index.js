@@ -8,6 +8,7 @@ import { getStevensCountyIntelligence } from './counties/stevens.js';
 import { findYellowstoneParcel, findMontanaParcel } from './states/montana/parcels.js';
 import { findMontanaWells } from './states/montana/wells.js';
 import { findIdahoParcel } from './states/idaho/parcels.js';
+import { searchSpokaneParcel } from './counties/spokane-parcels.js';
 import { findIdahoWells } from './states/idaho/wells.js';
 import { handleLandAnalysis } from './services/land-analysis.js';
 import { handleSlopeGrid } from './services/slope-grid.js';
@@ -33,6 +34,8 @@ async function handleParcelSearch(request) {
   // Owner and mailing fields never leave the Worker (owner decision, 2026-10-29). The adapters do
   // not request or keep them; this strip is the last guard.
   if (state === 'MT') { const parcel = withoutPersonalFields(/^yellowstone$/i.test(county) ? await findYellowstoneParcel(parcelId) : await findMontanaParcel(parcelId, county)); return json({ available: true, state: 'MT', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
+  // Spokane: the county's own parcel layer; the browser falls back to the statewide WA layer when this has no parcel.
+  if (state === 'WA' && /^spokane$/i.test(county)) { const { body: answer, cache } = await searchSpokaneParcel(parcelId); return json(withoutPersonalFields(answer), 200, cache); }
   if (state === 'ID') { const parcel = withoutPersonalFields(await findIdahoParcel(parcelId, county)); return json({ available: true, state: 'ID', county: county || parcel.properties?._countyDisplay || '', parcel }, 200, 'public, max-age=300, s-maxage=3600'); }
   return json({ available: false, error: 'This state/county parcel adapter is not supported by the new router yet.' }, 400, 'no-store');
 }

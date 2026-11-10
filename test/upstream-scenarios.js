@@ -146,12 +146,12 @@ export const scenarios = [
   { name: 'utility-territory: ArcGIS error without message', route: () => jsonResponse({ error: { code: 400 } }), run: async () => responseOutput(await handleUtilityTerritory(post('/api/utility-territory', { lat: 47.6, lon: -117.4 }))) },
 
   {
-    name: 'property-tax: Spokane HTTP 500 rejects',
+    name: 'property-tax: Spokane HTTP 500 degrades to available:false',
     route: () => new Response('down', { status: 500 }),
     run: async () => responseOutput(await handlePropertyTaxTest(post('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: '47174.9017' })))
   },
   {
-    name: 'property-tax: Spokane ArcGIS error without message rejects',
+    name: 'property-tax: Spokane ArcGIS error without message degrades to available:false',
     route: () => jsonResponse({ error: { code: 400 } }),
     run: async () => responseOutput(await handlePropertyTaxTest(post('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: '47174.9017' })))
   },

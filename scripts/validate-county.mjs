@@ -382,12 +382,13 @@ export const interpret = {
     });
   },
   assessment(data) {
-    // Kootenai (Idaho) and Stevens (WA) answers carry their values in countyRecords
-    // (src/counties/kootenai-assessor.js, stevens-assessor.js). Montana's Yellowstone countyRecords
+    // Kootenai (Idaho), Stevens and Spokane (WA) answers carry their values in countyRecords
+    // (src/counties/kootenai-assessor.js, stevens-assessor.js, spokane-assessor.js); it comes first,
+    // since Spokane also keeps its older raw `records` row. Montana's Yellowstone countyRecords
     // hold only ids and address (no values), so Montana reads only its statewide record, as before.
     const countyRecord = (data.state === 'ID' || data.state === 'WA') && Array.isArray(data.countyRecords) ? data.countyRecords[0] : null;
-    const record = (Array.isArray(data.statewideRecords) && data.statewideRecords[0]) || (Array.isArray(data.records) && data.records[0])
-      || countyRecord || null;
+    const record = countyRecord || (Array.isArray(data.statewideRecords) && data.statewideRecords[0]) || (Array.isArray(data.records) && data.records[0])
+      || null;
     if (!data.available || !record) return unavailable('no assessment record found');
     const pick = keys => { for (const k of keys) { const v = finite(record[k]); if (v != null) return v; } return null; };
     const total = pick(['VAL_TOTAL', 'TotalValue', 'total_value', 'totalValue']);
@@ -462,7 +463,14 @@ export function waParcelWhere(county, input) {
 
 // Returns a postJson-shaped result whose data is { parcel } on a single match, or { error } with
 // the browser's own message when there is no match or more than one.
+// Spokane first asks /api/parcel-search (the county's own layer, src/counties/spokane-parcels.js),
+// like window.findParcel in public/state-selector.js; only an answer with a parcel outline is
+// used, anything else (a miss, an error, HTTP failure) goes on to the statewide lookup.
 export async function lookupWaParcel(call, county, parcelId) {
+  if (/^spokane$/i.test(text(county))) {
+    const res = await call('/api/parcel-search', { state: 'WA', county: 'Spokane', parcelId: text(parcelId) });
+    if (!classifyResponse(res) && res.data?.available && res.data.parcel?.geometry) return { ...res, data: { parcel: res.data.parcel, lookup: 'county layer' } };
+  }
   const { fips, n, exactWhere, likeWhere } = waParcelWhere(county, parcelId);
   const params = where => ({ f: 'geojson', where, outFields: WA_PARCEL_FIELDS, returnGeometry: 'true', outSR: '4326' });
   let res = await call('/api/arcgis', { service: 'parcel', params: { ...params(exactWhere), resultRecordCount: '20' } });

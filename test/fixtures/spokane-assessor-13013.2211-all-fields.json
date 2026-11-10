@@ -1,0 +1,415 @@
+{
+  "recorded": "2026-11-10",
+  "source": "https://gismo.spokanecounty.org/arcgis/rest/services/CONNECTExplorer/CONNECTExplorer_REST/MapServer/14/query",
+  "note": "outFields=* answer of the backup layer; every owner, taxpayer and mailing value replaced with a PLACEHOLDER.",
+  "displayFieldName": "owner_name",
+  "fieldAliases": {
+    "owner_name": "owner_name",
+    "owner_address1": "owner_address1",
+    "owner_city": "owner_city",
+    "owner_state": "owner_state",
+    "owner_zip": "owner_zip",
+    "prop_use_desc": "prop_use_desc",
+    "site_address": "site_address",
+    "site_city": "site_city",
+    "site_state": "site_state",
+    "site_zip": "site_zip",
+    "taxpayer_name": "taxpayer_name",
+    "taxpayer_address1": "taxpayer_address1",
+    "taxpayer_city": "taxpayer_city",
+    "taxpayer_state": "taxpayer_state",
+    "taxpayer_zip": "taxpayer_zip",
+    "land_value": "land_value",
+    "asmt_year_exmp_code": "asmt_year_exmp_code",
+    "OBJECTID": "row_num",
+    "asmt_year_exmp_amt": "asmt_year_exmp_amt",
+    "eff_from_date": "eff_from_date",
+    "asmt_year": "asmt_year",
+    "PID_NUM": "Parcel Number",
+    "ACO_NUM": "ACO_NUM",
+    "PIDMAP": "PIDMAP",
+    "parcel": "parcel",
+    "exmp_code": "exmp_code",
+    "exmp_amt": "exmp_amt",
+    "nbhd_code": "nbhd_code",
+    "nbhd_name": "nbhd_name",
+    "owner_address2": "owner_address2",
+    "owner_country": "owner_country",
+    "prop_use_code": "prop_use_code",
+    "tax_year": "tax_year",
+    "site_str_nbr": "site_str_nbr",
+    "site_str_nbr_suf": "site_str_nbr_suf",
+    "site_str_dir": "site_str_dir",
+    "site_str_dir_suf": "site_str_dir_suf",
+    "site_str_name": "site_str_name",
+    "site_str_type": "site_str_type",
+    "site_apartment": "site_apartment",
+    "soil_id": "soil_id",
+    "bldg_only_flag": "bldg_only_flag",
+    "vacant_land_flag": "vacant_land_flag",
+    "res_com_flag": "res_com_flag",
+    "appraiser_id": "appraiser_id",
+    "acreage": "acreage",
+    "assessed_amt": "assessed_amt",
+    "taxable_amt": "taxable_amt",
+    "tax_code_area": "tax_code_area",
+    "inspection_cycle": "inspection_cycle",
+    "parcel_location": "parcel_location",
+    "taxpayer_address2": "taxpayer_address2",
+    "taxpayer_country": "taxpayer_country",
+    "eff_to_date": "eff_to_date",
+    "seg_status": "seg_status",
+    "Shape.STArea()": "Shape.STArea()",
+    "Shape.STLength()": "Shape.STLength()"
+  },
+  "fields": [
+    {
+      "name": "owner_name",
+      "type": "esriFieldTypeString",
+      "alias": "owner_name"
+    },
+    {
+      "name": "owner_address1",
+      "type": "esriFieldTypeString",
+      "alias": "owner_address1"
+    },
+    {
+      "name": "owner_city",
+      "type": "esriFieldTypeString",
+      "alias": "owner_city"
+    },
+    {
+      "name": "owner_state",
+      "type": "esriFieldTypeString",
+      "alias": "owner_state"
+    },
+    {
+      "name": "owner_zip",
+      "type": "esriFieldTypeString",
+      "alias": "owner_zip"
+    },
+    {
+      "name": "prop_use_desc",
+      "type": "esriFieldTypeString",
+      "alias": "prop_use_desc"
+    },
+    {
+      "name": "site_address",
+      "type": "esriFieldTypeString",
+      "alias": "site_address"
+    },
+    {
+      "name": "site_city",
+      "type": "esriFieldTypeString",
+      "alias": "site_city"
+    },
+    {
+      "name": "site_state",
+      "type": "esriFieldTypeString",
+      "alias": "site_state"
+    },
+    {
+      "name": "site_zip",
+      "type": "esriFieldTypeString",
+      "alias": "site_zip"
+    },
+    {
+      "name": "taxpayer_name",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_name"
+    },
+    {
+      "name": "taxpayer_address1",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_address1"
+    },
+    {
+      "name": "taxpayer_city",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_city"
+    },
+    {
+      "name": "taxpayer_state",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_state"
+    },
+    {
+      "name": "taxpayer_zip",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_zip"
+    },
+    {
+      "name": "land_value",
+      "type": "esriFieldTypeInteger",
+      "alias": "land_value"
+    },
+    {
+      "name": "asmt_year_exmp_code",
+      "type": "esriFieldTypeString",
+      "alias": "asmt_year_exmp_code"
+    },
+    {
+      "name": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "alias": "row_num"
+    },
+    {
+      "name": "asmt_year_exmp_amt",
+      "type": "esriFieldTypeDouble",
+      "alias": "asmt_year_exmp_amt"
+    },
+    {
+      "name": "eff_from_date",
+      "type": "esriFieldTypeDate",
+      "alias": "eff_from_date"
+    },
+    {
+      "name": "asmt_year",
+      "type": "esriFieldTypeInteger",
+      "alias": "asmt_year"
+    },
+    {
+      "name": "PID_NUM",
+      "type": "esriFieldTypeString",
+      "alias": "Parcel Number"
+    },
+    {
+      "name": "ACO_NUM",
+      "type": "esriFieldTypeString",
+      "alias": "ACO_NUM"
+    },
+    {
+      "name": "PIDMAP",
+      "type": "esriFieldTypeString",
+      "alias": "PIDMAP"
+    },
+    {
+      "name": "parcel",
+      "type": "esriFieldTypeString",
+      "alias": "parcel"
+    },
+    {
+      "name": "exmp_code",
+      "type": "esriFieldTypeString",
+      "alias": "exmp_code"
+    },
+    {
+      "name": "exmp_amt",
+      "type": "esriFieldTypeDouble",
+      "alias": "exmp_amt"
+    },
+    {
+      "name": "nbhd_code",
+      "type": "esriFieldTypeString",
+      "alias": "nbhd_code"
+    },
+    {
+      "name": "nbhd_name",
+      "type": "esriFieldTypeString",
+      "alias": "nbhd_name"
+    },
+    {
+      "name": "owner_address2",
+      "type": "esriFieldTypeString",
+      "alias": "owner_address2"
+    },
+    {
+      "name": "owner_country",
+      "type": "esriFieldTypeString",
+      "alias": "owner_country"
+    },
+    {
+      "name": "prop_use_code",
+      "type": "esriFieldTypeString",
+      "alias": "prop_use_code"
+    },
+    {
+      "name": "tax_year",
+      "type": "esriFieldTypeInteger",
+      "alias": "tax_year"
+    },
+    {
+      "name": "site_str_nbr",
+      "type": "esriFieldTypeInteger",
+      "alias": "site_str_nbr"
+    },
+    {
+      "name": "site_str_nbr_suf",
+      "type": "esriFieldTypeString",
+      "alias": "site_str_nbr_suf"
+    },
+    {
+      "name": "site_str_dir",
+      "type": "esriFieldTypeString",
+      "alias": "site_str_dir"
+    },
+    {
+      "name": "site_str_dir_suf",
+      "type": "esriFieldTypeString",
+      "alias": "site_str_dir_suf"
+    },
+    {
+      "name": "site_str_name",
+      "type": "esriFieldTypeString",
+      "alias": "site_str_name"
+    },
+    {
+      "name": "site_str_type",
+      "type": "esriFieldTypeString",
+      "alias": "site_str_type"
+    },
+    {
+      "name": "site_apartment",
+      "type": "esriFieldTypeString",
+      "alias": "site_apartment"
+    },
+    {
+      "name": "soil_id",
+      "type": "esriFieldTypeString",
+      "alias": "soil_id"
+    },
+    {
+      "name": "bldg_only_flag",
+      "type": "esriFieldTypeString",
+      "alias": "bldg_only_flag"
+    },
+    {
+      "name": "vacant_land_flag",
+      "type": "esriFieldTypeString",
+      "alias": "vacant_land_flag"
+    },
+    {
+      "name": "res_com_flag",
+      "type": "esriFieldTypeString",
+      "alias": "res_com_flag"
+    },
+    {
+      "name": "appraiser_id",
+      "type": "esriFieldTypeString",
+      "alias": "appraiser_id"
+    },
+    {
+      "name": "acreage",
+      "type": "esriFieldTypeDouble",
+      "alias": "acreage"
+    },
+    {
+      "name": "assessed_amt",
+      "type": "esriFieldTypeInteger",
+      "alias": "assessed_amt"
+    },
+    {
+      "name": "taxable_amt",
+      "type": "esriFieldTypeInteger",
+      "alias": "taxable_amt"
+    },
+    {
+      "name": "tax_code_area",
+      "type": "esriFieldTypeString",
+      "alias": "tax_code_area"
+    },
+    {
+      "name": "inspection_cycle",
+      "type": "esriFieldTypeString",
+      "alias": "inspection_cycle"
+    },
+    {
+      "name": "parcel_location",
+      "type": "esriFieldTypeString",
+      "alias": "parcel_location"
+    },
+    {
+      "name": "taxpayer_address2",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_address2"
+    },
+    {
+      "name": "taxpayer_country",
+      "type": "esriFieldTypeString",
+      "alias": "taxpayer_country"
+    },
+    {
+      "name": "eff_to_date",
+      "type": "esriFieldTypeDate",
+      "alias": "eff_to_date"
+    },
+    {
+      "name": "seg_status",
+      "type": "esriFieldTypeString",
+      "alias": "seg_status"
+    },
+    {
+      "name": "Shape.STArea()",
+      "type": "esriFieldTypeDouble",
+      "alias": "Shape.STArea()"
+    },
+    {
+      "name": "Shape.STLength()",
+      "type": "esriFieldTypeDouble",
+      "alias": "Shape.STLength()"
+    }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "owner_name": "PLACEHOLDER OWNER_NAME",
+        "owner_address1": "PLACEHOLDER OWNER_ADDRESS1",
+        "owner_city": "PLACEHOLDER OWNER_CITY",
+        "owner_state": "PLACEHOLDER OWNER_STATE",
+        "owner_zip": "PLACEHOLDER OWNER_ZIP",
+        "prop_use_desc": "Single Unit",
+        "site_address": "3175 PHEASANT ST",
+        "site_city": "CHENEY",
+        "site_state": "WA",
+        "site_zip": null,
+        "taxpayer_name": "PLACEHOLDER TAXPAYER_NAME",
+        "taxpayer_address1": "PLACEHOLDER TAXPAYER_ADDRESS1",
+        "taxpayer_city": "PLACEHOLDER TAXPAYER_CITY",
+        "taxpayer_state": "PLACEHOLDER TAXPAYER_STATE",
+        "taxpayer_zip": "PLACEHOLDER TAXPAYER_ZIP",
+        "land_value": 100000,
+        "asmt_year_exmp_code": null,
+        "OBJECTID": 4286,
+        "asmt_year_exmp_amt": null,
+        "eff_from_date": 1420099200000,
+        "asmt_year": 2027,
+        "PID_NUM": "13013.2211",
+        "ACO_NUM": "20150794",
+        "PIDMAP": "3.2211",
+        "parcel": "13013.2211",
+        "exmp_code": null,
+        "exmp_amt": null,
+        "nbhd_code": "331350",
+        "nbhd_name": "HVSTB",
+        "owner_address2": null,
+        "owner_country": null,
+        "prop_use_code": "11",
+        "tax_year": 2026,
+        "site_str_nbr": 3175,
+        "site_str_nbr_suf": null,
+        "site_str_dir": null,
+        "site_str_dir_suf": null,
+        "site_str_name": "PHEASANT",
+        "site_str_type": "ST  ",
+        "site_apartment": null,
+        "soil_id": "T1SL ",
+        "bldg_only_flag": "N",
+        "vacant_land_flag": "N",
+        "res_com_flag": "R",
+        "appraiser_id": "155",
+        "acreage": 0.16,
+        "assessed_amt": 401500,
+        "taxable_amt": 401500,
+        "tax_code_area": "0110",
+        "inspection_cycle": "3",
+        "parcel_location": "13013.2211",
+        "taxpayer_address2": null,
+        "taxpayer_country": null,
+        "eff_to_date": null,
+        "seg_status": "Active-Complete",
+        "Shape.STArea()": 6958.509180165822,
+        "Shape.STLength()": 347.3651566876715
+      }
+    }
+  ]
+}

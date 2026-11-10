@@ -77,3 +77,14 @@ test('overview: Stevens assessor acres from the assessment are shown next to map
   const none = renderOverviewWithAssessment({ parcel: stevensParcel(), mappedSqm: acresToSqm(5.94), assessorAcres: 0 });
   assert.equal(none.properties.ACRES, undefined);
 });
+
+// Spokane: a county-layer parcel (src/counties/spokane-parcels.js) carries the assessor acres as
+// ACRES; a statewide fallback parcel has none, and the assessment's acreage fills it like Stevens.
+test('overview: Spokane shows assessor and mapped acreage, from the county parcel layer or from the assessment', () => {
+  const county = renderOverview({ parcel: parcel({ ORIG_PARCEL_ID: '57344.0125', _countyDisplay: 'Spokane', ACRES: 0.35 }), mappedSqm: acresToSqm(0.45) });
+  assert.equal(county.detail, '0.35 ac (assessor) · 0.45 ac mapped');
+  const statewide = () => ({ type: 'Feature', geometry: square, properties: { ORIG_PARCEL_ID: '57344.0125', _countyDisplay: 'Spokane' } });
+  const after = renderOverviewWithAssessment({ parcel: statewide(), mappedSqm: acresToSqm(0.45), assessorAcres: 0.35 });
+  assert.equal(after.overview.detail, '0.35 ac (assessor) · 0.45 ac mapped');
+  assert.equal(after.properties.ACRES, 0.35);
+});

@@ -229,3 +229,78 @@ test('report: Stevens shows the assessor class next to zoning and the assessed v
   assert.match(html, /<span>Zoning<\/span><strong>AR-10<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>88 – Designated forest land under chapter 84.33 RCW<\/strong><small>Tax category, not zoning<\/small>/);
   assert.match(html, /<span>Assessed Value<\/span><strong>\$26,794<\/strong><\/div><div><span>Land Value<\/span><strong>\$12,794<\/strong>/);
 });
+
+// ---- Spokane County WA (src/counties/spokane-assessor.js): countyRecords like Stevens, plus the
+// older raw `records` row. Records as the API returns them for 35234.0602 and 48136.9052
+// (test/fixtures/spokane-assessor.json, see test/spokane-assessor.test.js).
+const SCOUT = pid => `https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=${pid}`;
+const spokaneRecord = {
+  parcelNumber: '35234.0602', propertySearchUrl: SCOUT('35234.0602'), propertySearchLabel: 'View on Spokane County SCOUT',
+  landValue: 110000, improvementValue: 479000, improvementValueNote: 'Assessed total minus land value',
+  totalValue: 589000, taxableValue: 76466, netValue: 76466, marketLandValue: 110000, marketValue: 589000,
+  exemption: { code: null, description: 'Personal exemption applied (details on SCOUT)', value: 512534, personal: true },
+  taxYear: 2027, taxAmount: null, taxAmountNote: 'Not published in the county GIS. The SCOUT page lists the tax bill.',
+  assessorAcres: 0.42, taxCodeArea: '0140', segStatus: 'Active-Complete',
+  propertyClass: '11', propertyClassDescription: 'Single Unit', propertyClassNote: 'Tax category, not zoning',
+  currentUse: { status: 'not_classified', program: null }
+};
+const spokaneForest = {
+  ...spokaneRecord, parcelNumber: '48136.9052', propertySearchUrl: SCOUT('48136.9052'),
+  landValue: null, improvementValue: null, improvementValueNote: null, totalValue: 99910, taxableValue: 99910, netValue: 99910,
+  marketLandValue: 283740, marketValue: null, exemption: null, assessorAcres: 50.23, taxCodeArea: '3520',
+  propertyClass: '88', propertyClassDescription: 'Designated Forest Lnd', currentUse: { status: 'classified', program: 'Designated forest land (RCW 84.33)' },
+  valuesNote: 'The land is assessed at its current-use value, so the assessed total is below market. The county GIS does not split it into land and improvements; SCOUT has the full breakdown.'
+};
+const spokaneCounty = record => ({ available: true, state: 'WA', county: 'Spokane', parcelId: record.parcelNumber, records: [{ PID_NUM: record.parcelNumber, land_value: record.marketLandValue }], countyRecords: [record] });
+
+test('overview: Spokane fills assessed, land, year and the property class as a tax category, with exemption, tax amount and the SCOUT link', () => {
+  const { A, fact, document } = page();
+  A.renderAssessment(A.normalize(spokaneCounty(spokaneRecord)));
+  assert.equal(fact('overviewAssessorValue'), '$589,000');
+  assert.equal(fact('overviewLandValue'), '$110,000');
+  assert.equal(fact('overviewAssessmentYear'), '2027');
+  assert.equal(fact('overviewAssessorClass'), '11 – Single Unit');
+  assert.equal(document.getElementById('overviewAssessorClassWrap').querySelector('small.assessor-class-note').textContent, 'Tax category, not zoning');
+  assert.equal(document.getElementById('propertyAssessmentSource').innerHTML,
+    '<strong>Assessment source:</strong> Spokane County Assessor · Improvements $479,000 (assessed total minus land value) · Exemption: Personal exemption applied (details on SCOUT) ($512,534 exempt) · Net taxable $76,466 · Market value $589,000 · Not in a current-use program · Tax amount Not available (Not published in the county GIS. The SCOUT page lists the tax bill). Assessor values are informational and are not the current tax bill. <a href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=35234.0602" target="_blank" rel="noopener">View on Spokane County SCOUT ↗</a>');
+});
+
+test('overview: Spokane current-use land shows "Not available" for land value and the market land value instead, never $0', () => {
+  const { A, fact, document } = page();
+  A.renderAssessment(A.normalize(spokaneCounty(spokaneForest)));
+  assert.equal(fact('overviewAssessorValue'), '$99,910');
+  assert.equal(fact('overviewLandValue'), 'Not available');
+  assert.equal(fact('overviewAssessorClass'), '88 – Designated Forest Lnd');
+  const source = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.ok(!source.includes('$0'), source);
+  assert.match(source, /Spokane County Assessor · Market land value \$283,740 · Net taxable \$99,910 · Designated forest land \(RCW 84\.33\) · Tax amount Not available/);
+  assert.match(source, /does not split it into land and improvements/);
+});
+
+test('overview: the page checks the SCOUT link again; another host, path, PID or extra parameter is not shown', () => {
+  const { A, document } = page();
+  const url = SCOUT('35234.0602');
+  for (const bad of [
+    url.replace('cp.spokanecounty.org', 'evil.example'),
+    url.replace('cp.spokanecounty.org', 'cp.spokanecounty.org.evil.com'),
+    url.replace('cp.spokanecounty.org', 'evil-spokanecounty.org'),
+    url.replace('https:', 'http:'),
+    url.replace('Summary.aspx', 'Other.aspx'),
+    url.replace('35234.0602', '35234.0603'),
+    `${url}&redirect=//evil.com`,
+    'javascript:alert(1)'
+  ]) {
+    A.renderAssessment(A.normalize(spokaneCounty({ ...spokaneRecord, propertySearchUrl: bad })));
+    assert.ok(!document.getElementById('propertyAssessmentSource').innerHTML.includes('<a '), bad);
+  }
+  // The label comes from the page, not the answer.
+  A.renderAssessment(A.normalize(spokaneCounty({ ...spokaneRecord, propertySearchLabel: '<img src=x onerror=alert(1)>' })));
+  assert.match(document.getElementById('propertyAssessmentSource').innerHTML, />View on Spokane County SCOUT ↗<\/a>$/);
+});
+
+test('report: Spokane shows the assessor class next to zoning and the assessed value', () => {
+  const { report } = page();
+  const html = report({ parcel: { type: 'Feature', properties: { ORIG_PARCEL_ID: '35234.0602' }, geometry: null }, propertyAssessment: spokaneCounty(spokaneRecord), zoningPermits: { zoning: { code: 'R-3' } } });
+  assert.match(html, /<span>Zoning<\/span><strong>R-3<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>11 – Single Unit<\/strong><small>Tax category, not zoning<\/small>/);
+  assert.match(html, /<span>Assessed Value<\/span><strong>\$589,000<\/strong><\/div><div><span>Land Value<\/span><strong>\$110,000<\/strong>/);
+});

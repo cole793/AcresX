@@ -6,7 +6,9 @@
       "state": "WA",
       "county": "Spokane",
       "parcelId": "47174.9017",
-      "source": "Spokane County Assessor SCOUTSimple",
+      "source": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+      "countySource": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+      "countySourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0",
       "records": [
         {
           "PID_NUM": "47174.9017",
@@ -18,6 +20,35 @@
           "acreage": 5.1,
           "site_address": "123 TEST RD",
           "prop_use_desc": "91 Undeveloped Land"
+        }
+      ],
+      "countyRecords": [
+        {
+          "parcelNumber": "47174.9017",
+          "propertySearchUrl": "https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=47174.9017",
+          "propertySearchLabel": "View on Spokane County SCOUT",
+          "landValue": null,
+          "improvementValue": null,
+          "improvementValueNote": null,
+          "totalValue": null,
+          "taxableValue": null,
+          "netValue": null,
+          "marketLandValue": 120000,
+          "marketValue": null,
+          "exemption": null,
+          "taxYear": 2025,
+          "taxAmount": null,
+          "taxAmountNote": "Not published in the county GIS. The SCOUT page lists the tax bill.",
+          "assessorAcres": 5.1,
+          "taxCodeArea": null,
+          "segStatus": null,
+          "propertyClass": null,
+          "propertyClassDescription": "91 Undeveloped Land",
+          "propertyClassNote": "Tax category, not zoning",
+          "currentUse": {
+            "status": null,
+            "program": null
+          }
         }
       ]
     }
