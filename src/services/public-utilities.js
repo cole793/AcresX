@@ -12,11 +12,15 @@
 //     note, checkedAt }
 //   Finding = { status, provider, basis, source: { name, url }, distanceM?, asOf?, others? }
 //   status:
-//     served       inside an official service-area / district polygon, or an official main within
-//                  SERVED_MAX_M of the parcel outline
-//     likely       a main SERVED_MAX_M..LIKELY_MAX_M from the outline, inside city/town limits
-//                  where that city publishes no map for that utility, or a planning-only or stale
-//                  layer (Gallatin's planning areas, Spokane County's 2021 sewer mains)
+//     served       inside an official service-area / district polygon AND inside city/town limits,
+//                  or an official main within SERVED_MAX_M of the parcel outline
+//     likely       a main SERVED_MAX_M..LIKELY_MAX_M from the outline; a district polygon outside
+//                  city limits ("inside <district> service area; confirm a main reaches the
+//                  parcel"); inside city/town limits where that city publishes no map for that
+//                  utility; or a planning-only or stale layer (Gallatin's planning areas, Spokane
+//                  County's 2021 sewer mains)
+//   Inside a city that publishes its own map, no main within LIKELY_MAX_M stays not_found (a line
+//   extension can be costly, so the private well/septic cost is kept).
 //     not_found    every layer for that service answered and none matched
 //     unavailable  nothing matched and at least one layer for that service failed, or the county
 //                  has no sources configured
@@ -176,7 +180,21 @@ async function runSource(source, ctx) {
   }
   const features = await arcgisQuery(source.url, { where: source.where || '1=1', outFields: source.outFields, ...pointParams(ctx) }, opts);
   const attrs = withoutPersonalFields(features).map(f => f?.attributes || {});
-  return (source.read(attrs, ctx) || []).map(f => ({ source: sourceRef(source), ...f }));
+  return (source.read(attrs, ctx) || []).map(f => ({ source: sourceRef(source), ...f, ...(f.status === 'served' ? { fromArea: true } : {}) }));
+}
+
+// Coordinator refinement (2026-11-10): a service-area or district polygon is "served" only inside
+// city limits. Outside them (Whitworth Water District #2, Moab and Pasadena Park irrigation
+// districts, Stevens PUD Suncrest, the Montana districts) the polygon says the district covers the
+// parcel, not that a main reaches it, so it is "likely". Main distances are not affected. When the
+// city-limits layer failed, the parcel is treated as outside (the answer is incomplete anyway).
+export function cityLimitsRule(findings) {
+  const inCity = findings.some(f => f.inCity);
+  return findings.filter(f => f.service).map(f => {
+    if (!f.fromArea || inCity) { const { fromArea: _a, ...rest } = f; return rest; }
+    const { fromArea: _a, ...rest } = f;
+    return { ...rest, status: 'likely', basis: `inside ${f.provider} service area; confirm a main reaches the parcel` };
+  });
 }
 
 // Best finding per service: served over likely; then the nearest main (a measured main says more
@@ -225,7 +243,7 @@ export async function lookupPublicUtilities({ state, county, lat, lon, geometry 
   }
   const ctx = { lat, lon, target: targetOf(geometry, lon, lat), now };
   const results = await Promise.allSettled(config.sources.map(source => runSource(source, ctx)));
-  const findings = results.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+  const findings = cityLimitsRule(results.flatMap(r => (r.status === 'fulfilled' ? r.value : [])));
   const sources = config.sources.map((s, i) => ({
     id: s.id, name: s.name, url: s.url, services: s.services, ok: results[i].status === 'fulfilled',
     ...(results[i].status === 'fulfilled' ? {} : { error: text(results[i].reason?.message) || 'request failed' })

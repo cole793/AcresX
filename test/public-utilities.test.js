@@ -47,7 +47,7 @@ const run = fx => lookupPublicUtilities(fx.request);
 // ---- Recorded parcels
 
 test('every recorded parcel gives the statuses it gave live', async () => {
-  assert.ok(FIXTURES.length >= 8, `found ${FIXTURES.length} fixtures`);
+  assert.ok(FIXTURES.length >= 10, `found ${FIXTURES.length} fixtures`);
   for (const name of FIXTURES) {
     const fx = fixture(name);
     replay(fx);
@@ -156,7 +156,7 @@ const TIER_CONFIG = {
   sources: [
     { id: 'area', name: 'Water areas', url: 'https://example.test/area/0', services: ['water'], kind: 'area', outFields: 'NAME', read: rows => rows.map(a => ({ service: 'water', status: 'served', provider: a.NAME, basis: `inside ${a.NAME}` })) },
     { id: 'mains', name: 'Sewer mains', url: 'https://example.test/mains/0', services: ['sewer'], kind: 'mains', outFields: 'ID', provider: 'Test City', mainLabel: 'Test City sewer main' },
-    { id: 'limits', name: 'City limits', url: 'https://example.test/limits/0', services: ['water', 'sewer'], kind: 'area', outFields: 'CITY', read: rows => rows.flatMap(a => (a.CITY ? [{ service: 'sewer', status: 'likely', provider: a.CITY, basis: `inside ${a.CITY} limits; no sewer utility map published` }] : [])) }
+    { id: 'limits', name: 'City limits', url: 'https://example.test/limits/0', services: ['water', 'sewer'], kind: 'area', outFields: 'CITY', read: rows => rows.flatMap(a => (a.CITY ? [{ service: null, inCity: a.CITY }, ...(a.MAPPED ? [] : [{ service: 'sewer', status: 'likely', provider: a.CITY, basis: `inside ${a.CITY} limits; no sewer utility map published` }])] : [])) }
   ]
 };
 function tierFetch({ area = [], mains = [], limits = [], fail = [] }) {
@@ -170,9 +170,9 @@ function tierFetch({ area = [], mains = [], limits = [], fail = [] }) {
 const tier = () => lookupPublicUtilities({ state: 'WA', county: 'Test', lat: LAT, lon: LON, geometry: { type: 'Polygon', coordinates: [square] } }, { config: TIER_CONFIG });
 
 test('each status tier: served, likely, not_found, unavailable', async () => {
-  tierFetch({ area: [{ attributes: { NAME: 'Test Water District' } }], mains: [mainAt(10)] });
+  tierFetch({ area: [{ attributes: { NAME: 'Test Water District' } }], mains: [mainAt(10)], limits: [{ attributes: { CITY: 'City of Test', MAPPED: true } }] });
   let r = await tier();
-  assert.deepEqual([r.water.status, r.sewer.status], ['served', 'served']);
+  assert.deepEqual([r.water.status, r.sewer.status], ['served', 'served'], 'district polygon inside city limits, main within 30 m');
   tierFetch({ mains: [mainAt(60)] });
   r = await tier();
   assert.deepEqual([r.water.status, r.sewer.status, r.sewer.distanceM], ['not_found', 'likely', 60]);
@@ -188,6 +188,36 @@ test('each status tier: served, likely, not_found, unavailable', async () => {
   assert.equal(r.sewer.status, 'unavailable');
   assert.match(r.sewer.basis, /Sewer mains did not answer/);
   assert.equal(r.water.status, 'not_found', 'water does not depend on the sewer layer');
+});
+
+test('a district polygon outside city limits is likely, not served; a near main still serves', async () => {
+  tierFetch({ area: [{ attributes: { NAME: 'Test Water District' } }], mains: [mainAt(10)] });
+  const r = await tier();
+  assert.equal(r.water.status, 'likely');
+  assert.equal(r.water.basis, 'inside Test Water District service area; confirm a main reaches the parcel');
+  assert.equal(r.sewer.status, 'served', 'a main within 30 m is served with or without city limits');
+  tierFetch({ area: [{ attributes: { NAME: 'Test Water District' } }], fail: ['limits'] });
+  const down = await tier();
+  assert.equal(down.water.status, 'likely', 'city limits unknown: treated as outside');
+  assert.equal(down.water.incomplete, true);
+});
+
+test('recorded rural districts: Whitworth Water District #2 (Chattaroy) and Stevens PUD Suncrest are likely', async () => {
+  for (const [name, provider] of [['spokane-47071.9003', 'Whitworth Water District #2'], ['stevens-0763202', 'Stevens Co Pud - Suncrest']]) {
+    const fx = fixture(name);
+    replay(fx);
+    const r = await run(fx);
+    assert.equal(r.water.status, 'likely', name);
+    assert.equal(r.water.provider, provider);
+    assert.equal(r.water.basis, `inside ${provider} service area; confirm a main reaches the parcel`);
+    assert.equal(r.sewer.status, 'not_found');
+  }
+});
+
+test('in a city with its own maps, no main within 100 m stays not_found (no cost swap)', async () => {
+  tierFetch({ mains: [mainAt(150)], limits: [{ attributes: { CITY: 'City of Test', MAPPED: true } }] });
+  const r = await tier();
+  assert.equal(r.sewer.status, 'not_found');
 });
 
 test('a failed layer degrades only its service; a served answer stays served but is marked incomplete', async () => {

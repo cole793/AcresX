@@ -19,7 +19,8 @@
 // Scale: the water factor is 92 for nearby wells <= 200 ft deep, 76 for <= 400 ft, 55 deeper, 40
 // with no depths; septic is 92 for favorable soil, 66 moderate, 38 limited, 50 unavailable. A
 // mapped public connection is as good as the best private case, so served = 92; likely (main
-// 30-100 m away, city limits without a utility map, a planning area) is a notch lower, 85, still
+// 30-100 m away, a district polygon outside city limits, city limits without a utility map, a
+// planning area) is a notch lower, 85, still
 // above a moderate well or soil.
 // Costs: a planning allowance for the connection/capacity (system development) fee plus a
 // service line or side sewer from the street, not a fee lookup. Rural wells here run $14k-$50k

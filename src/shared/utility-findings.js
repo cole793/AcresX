@@ -7,13 +7,18 @@ const text = value => (value == null ? '' : String(value).replace(/\s+/g, ' ').t
 export const SERVICE_LABEL = { water: 'water', sewer: 'sewer' };
 
 // Inside city/town limits where that city publishes no map for a utility: "likely" for each
-// service in `unmapped`. Cities that publish one are decided by their own map instead.
+// service in `unmapped`. Cities that publish one are decided by their own map instead. Every
+// call also returns a { service: null, inCity } marker: a district polygon counts as served only
+// inside city limits (src/services/public-utilities.js cityLimitsRule).
 export function cityLimitsFindings(cityName, unmapped) {
   if (!cityName) return [];
-  return unmapped.map(service => ({
-    service, status: 'likely', provider: cityName,
-    basis: `inside ${cityName} limits; no ${service} utility map published`
-  }));
+  return [
+    { service: null, inCity: cityName },
+    ...unmapped.map(service => ({
+      service, status: 'likely', provider: cityName,
+      basis: `inside ${cityName} limits; no ${service} utility map published`
+    }))
+  ];
 }
 
 // A district / service-area polygon: "served" for each service, named.
