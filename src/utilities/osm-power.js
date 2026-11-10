@@ -70,22 +70,35 @@ function elementPoints(element) {
   return [];
 }
 
-async function overpassQuery(query) {
+// Overpass time box. Was 18 s per endpoint, one after the other: 36 s worst case, past the
+// browser's 15 s follow-up limit (public/progressive-loading.js FOLLOWUP_TIMEOUT_MS) and the
+// validator's 30 s cap (scripts/validate-county.mjs DEFAULT_TIMEOUT_MS). On 2026-11-10 both
+// endpoints reset or hung from a cloud session, and answered 429 to Cloudflare. Now the two
+// endpoints share one deadline (default 8 s from the request): the first gets up to 5 s, the
+// second whatever is left, and the query's own [timeout:] asks Overpass to stop at the same time.
+export const OVERPASS_BUDGET_MS = 8000;
+const FIRST_ENDPOINT_MS = 5000;
+const MIN_ATTEMPT_MS = 750;
+
+async function overpassQuery(query, { deadline = Date.now() + OVERPASS_BUDGET_MS, signal } = {}) {
   let lastError;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
+  for (const [index, endpoint] of OVERPASS_ENDPOINTS.entries()) {
+    const left = deadline - Date.now();
+    if (left < MIN_ATTEMPT_MS || signal?.aborted) break;
+    const timeoutMs = index === 0 ? Math.min(FIRST_ENDPOINT_MS, left) : left;
     try {
-      // One attempt per endpoint (the second endpoint is the retry), 18 s each as before.
+      // One attempt per endpoint (the second endpoint is the retry).
       return await upstreamJson(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: `data=${encodeURIComponent(query)}`,
-        timeoutMs: 18000, retries: 0, label: 'overpass-power', agency: 'Overpass'
+        timeoutMs, queueTimeoutMs: Math.min(timeoutMs, 2000), retries: 0, signal, label: 'overpass-power', agency: 'Overpass'
       });
     } catch (error) {
       lastError = error;
     }
   }
-  throw lastError || new Error('OpenStreetMap power query failed.');
+  throw lastError || Object.assign(new Error('Overpass did not answer in time'), { kind: 'timeout' });
 }
 
 function confidenceFor({ nearest, poles, lines, transformers, providerKnown }) {
@@ -103,17 +116,18 @@ function confidenceFor({ nearest, poles, lines, transformers, providerKnown }) {
   return { score: Math.min(score, 100), confidence };
 }
 
-export async function getOsmPowerProximity({ lat, lon, geometry, provider }) {
+export async function getOsmPowerProximity({ lat, lon, geometry, provider, deadline = Date.now() + OVERPASS_BUDGET_MS, signal }) {
   const center = { lat: Number(lat), lon: Number(lon) };
   if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) {
     return { available: false, status: 'invalid_location', confidence: 'low' };
   }
 
   const radiusM = 5000;
-  const query = `[out:json][timeout:15];(node["power"="pole"](around:${radiusM},${center.lat},${center.lon});node["power"="transformer"](around:${radiusM},${center.lat},${center.lon});way["power"="minor_line"](around:${radiusM},${center.lat},${center.lon});way["power"="cable"](around:${radiusM},${center.lat},${center.lon}););out tags geom center;`;
+  const serverTimeoutS = Math.max(1, Math.round((deadline - Date.now()) / 1000));
+  const query = `[out:json][timeout:${serverTimeoutS}];(node["power"="pole"](around:${radiusM},${center.lat},${center.lon});node["power"="transformer"](around:${radiusM},${center.lat},${center.lon});way["power"="minor_line"](around:${radiusM},${center.lat},${center.lon});way["power"="cable"](around:${radiusM},${center.lat},${center.lon}););out tags geom center;`;
 
   try {
-    const data = await overpassQuery(query);
+    const data = await overpassQuery(query, { deadline, signal });
     const features = (data.elements || []).map(element => {
       const points = elementPoints(element);
       if (!points.length) return null;
@@ -173,9 +187,10 @@ export async function getOsmPowerProximity({ lat, lon, geometry, provider }) {
     return {
       available: false,
       adapter: 'osm-power-v1',
-      status: 'source_unavailable',
+      status: error?.kind === 'timeout' || error?.kind === 'cancelled' ? 'timed_out' : 'source_unavailable',
       confidence: 'low',
-      error: error?.message || 'OpenStreetMap power proximity unavailable.'
+      error: error?.message || 'OpenStreetMap power proximity unavailable.',
+      note: 'Distance not verified: OpenStreetMap power data was unavailable. This does not mean power is unavailable.'
     };
   }
 }

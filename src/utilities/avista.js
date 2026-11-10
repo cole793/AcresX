@@ -4,7 +4,40 @@ export function isAvistaProvider(provider = '') {
   return /\bavista\b/i.test(String(provider));
 }
 
-export async function getAvistaPowerIntelligence({ provider, lat, lon, parcelId, address } = {}) {
+// Distance to Avista's own published distribution line sections (avista-distribution.js
+// nearestAvistaLine(), measured to the parcel edge). Screening only: a line section is not a
+// service point and says nothing about capacity.
+function publishedLineDistribution(line) {
+  if (line?.available && Number.isFinite(line.nearestFt)) {
+    return {
+      status: 'utility_published_proximity',
+      estimatedDistanceFt: line.nearestFt,
+      confidence: line.nearestFt <= 1320 ? 'moderate' : 'low',
+      infrastructure: 'utility_distribution_line',
+      source: line.source,
+      sourceUrl: line.sourceUrl,
+      note: `Avista's published distribution map shows a line section about ${line.nearestFt.toLocaleString('en-US')} ft from the parcel. It is not a service point; Avista confirms the route, capacity and cost.`
+    };
+  }
+  if (line?.available) {
+    return {
+      status: 'no_published_line_nearby',
+      estimatedDistanceFt: null,
+      confidence: 'low',
+      source: line.source,
+      sourceUrl: line.sourceUrl,
+      note: `Avista's published distribution map shows no line within ${Number(line.searchedFt || 0).toLocaleString('en-US')} ft of the parcel. Distance not verified.`
+    };
+  }
+  return {
+    status: 'not_publicly_mapped',
+    estimatedDistanceFt: null,
+    confidence: 'low',
+    note: "Distance not verified: Avista's published distribution map did not answer. AcresX will not invent a line-distance estimate."
+  };
+}
+
+export async function getAvistaPowerIntelligence({ provider, lat, lon, parcelId, address, publishedLine = null } = {}) {
   const hasPoint = Number.isFinite(Number(lat)) && Number.isFinite(Number(lon));
 
   return {
@@ -30,12 +63,7 @@ export async function getAvistaPowerIntelligence({ provider, lat, lon, parcelId,
       usableForResidentialExtensionCost: false,
       note: 'Transmission infrastructure is not a residential service connection and is intentionally excluded from the development-cost estimate.'
     },
-    distribution: {
-      status: 'not_publicly_mapped',
-      estimatedDistanceFt: null,
-      confidence: 'low',
-      note: 'A reliable public pole, transformer, or primary-distribution layer has not been identified yet. AcresX will not invent a line-distance estimate.'
-    },
+    distribution: publishedLineDistribution(publishedLine),
     costEstimate: {
       available: false,
       low: null,

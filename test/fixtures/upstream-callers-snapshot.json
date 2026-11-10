@@ -476,12 +476,14 @@
             "source": "OpenStreetMap / Overpass API",
             "sourceUrl": "https://www.openstreetmap.org",
             "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
-          }
+          },
+          "alsoListed": []
         }
       }
     },
     "requests": [
-      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A15%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B"
+      "GET https://services3.arcgis.com/WlYQgAChrqj0tuQi/arcgis/rest/services/DER_Hosting_Capacity_PRD/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=330&units=esriSRUnit_Foot&outFields=SECTIONID&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=1000",
+      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B"
     ]
   },
   "power: first Overpass endpoint fails, second answers": {
@@ -609,13 +611,14 @@
             "confidence": "high",
             "infrastructure": "overhead_distribution",
             "note": "Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route."
-          }
+          },
+          "alsoListed": []
         }
       }
     },
     "requests": [
-      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A15%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B",
-      "POST https://overpass.private.coffee/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A15%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B"
+      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B",
+      "POST https://overpass.private.coffee/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5000%2C47.6005%2C-117.3995)%3B)%3Bout%20tags%20geom%20center%3B"
     ]
   },
   "power: both Overpass endpoints fail": {
@@ -632,14 +635,15 @@
             "adapter": "osm-power-v1",
             "status": "source_unavailable",
             "confidence": "low",
-            "error": "Overpass returned 504"
+            "error": "Overpass returned 504",
+            "note": "Distance not verified: OpenStreetMap power data was unavailable. This does not mean power is unavailable."
           },
           "distribution": {
             "status": "source_unavailable",
             "estimatedDistanceFt": null,
             "confidence": "low",
             "infrastructure": "unknown",
-            "note": "Electric utility territory was not identified for this parcel."
+            "note": "Distance not verified: OpenStreetMap power data was unavailable. This does not mean power is unavailable."
           },
           "verification": {
             "required": true,
