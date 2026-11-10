@@ -2,18 +2,18 @@
   "county": "Spokane",
   "state": "WA",
   "baseUrl": "https://acresx.cole-groshens.workers.dev",
-  "startedAt": "2026-11-09T23:08:13.438Z",
-  "finishedAt": "2026-11-09T23:15:11.818Z",
+  "startedAt": "2026-11-10T20:34:33.760Z",
+  "finishedAt": "2026-11-10T20:42:49.308Z",
   "results": [
     {
       "parcelId": "35204.2729",
       "label": "City of Spokane, 0.14 ac",
-      "why": "Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum \"under 1 ac | city-named locality\"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02; this is the layer src/counties/spokane-cities.js reads, code from ZoneLabel). The jurisdiction comes from the City of Spokane zoning added in PR #32.",
+      "why": "Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum \"under 1 ac | city-named locality\"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02; this is the layer src/counties/spokane-cities.js reads, code from ZoneLabel). The jurisdiction comes from the City of Spokane zoning added in PR #32. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): WA DOH service area 'SPOKANE CITY OF' (Group A, Comm, Active); City of Spokane Water_Main/2 distribution main 6.6 m and Sewer_Gravity_Main/1 main 9.1 m from the outline.",
       "layers": {
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 8523,
+          "ms": 17871,
           "status": "ok",
           "detail": "parcel 35204.2729, 0.14 ac (mapped)",
           "values": {
@@ -28,11 +28,11 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 332,
+          "ms": 344,
           "status": "ok",
-          "detail": "1879 well record(s), 5 of nearest 5 report depth",
+          "detail": "1925 well record(s), 5 of nearest 5 report depth",
           "values": {
-            "wellCount": 1879,
+            "wellCount": 1925,
             "nearestDepthsCount": 5,
             "nearestMi": 0.28,
             "medianDepthFt": 30
@@ -41,7 +41,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 461,
+          "ms": 326,
           "status": "ok",
           "detail": "MODERN ELECTRIC WATER COMPANY",
           "values": {
@@ -53,7 +53,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 151,
+          "ms": 241,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -71,7 +71,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 45,
+          "ms": 220,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -83,7 +83,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 1180,
+          "ms": 5552,
           "status": "ok",
           "detail": "R1 (City of Spokane)",
           "values": {
@@ -95,10 +95,34 @@
             "permitHistoryStatus": "none"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 564,
+          "status": "ok",
+          "detail": "water served (City of Spokane) 7 m; sewer served (City of Spokane) 9 m",
+          "values": {
+            "water": "served",
+            "sewer": "served",
+            "waterProvider": "City of Spokane",
+            "sewerProvider": "City of Spokane",
+            "waterProviders": [
+              "City of Spokane"
+            ],
+            "sewerProviders": [
+              "City of Spokane"
+            ],
+            "waterPublic": true,
+            "sewerPublic": true,
+            "waterDistanceM": 7,
+            "sewerDistanceM": 9,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 415,
+          "ms": 6055,
           "status": "ok",
           "detail": "moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes)",
           "values": {
@@ -112,11 +136,11 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 415,
+          "ms": 6055,
           "status": "ok",
-          "detail": "avg grade 2%, max 4.1%",
+          "detail": "avg grade 2.2%, max 4.1%",
           "values": {
-            "gradePct": 2,
+            "gradePct": 2.2,
             "maxGradePct": 4.1,
             "reliefFt": 4,
             "sampleCount": 9
@@ -125,7 +149,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 175,
+          "ms": 193,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -137,7 +161,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 168,
+          "ms": 206,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -156,7 +180,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 814,
+          "ms": 690,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -168,7 +192,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18520,
+          "ms": 697,
           "status": "ok",
           "detail": "MODERN ELECTRIC WATER COMPANY",
           "values": {
@@ -181,7 +205,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 24,
+          "ms": 52,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -191,13 +215,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 42,
+          "ms": 6211,
           "status": "ok",
-          "detail": "16 cells, avg 3.5%",
+          "detail": "16 cells, avg 3.7%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 3.5,
-            "maxSlopePct": 5.4,
+            "avgSlopePct": 3.7,
+            "maxSlopePct": 5.6,
             "partial": false
           }
         }
@@ -212,7 +236,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 7245,
+          "ms": 4836,
           "status": "ok",
           "detail": "parcel 35234.0602, 0.42 ac (mapped)",
           "values": {
@@ -227,11 +251,11 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 240,
+          "ms": 337,
           "status": "ok",
-          "detail": "1892 well record(s), 5 of nearest 5 report depth",
+          "detail": "1891 well record(s), 5 of nearest 5 report depth",
           "values": {
-            "wellCount": 1892,
+            "wellCount": 1891,
             "nearestDepthsCount": 5,
             "nearestMi": 0.2,
             "medianDepthFt": 25
@@ -240,7 +264,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 356,
+          "ms": 1311,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -253,7 +277,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 119,
+          "ms": 1535,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -271,7 +295,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 46,
+          "ms": 681,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -283,7 +307,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 1005,
+          "ms": 1243,
           "status": "ok",
           "detail": "R-3 (City of Spokane Valley)",
           "values": {
@@ -295,10 +319,36 @@
             "permitHistoryStatus": "none"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 588,
+          "status": "ok",
+          "detail": "water served (Spokane County Water District #3 System #1); sewer likely (Spokane County Utilities) 5 m",
+          "values": {
+            "water": "served",
+            "sewer": "likely",
+            "waterProvider": "Spokane County Water District #3 System #1",
+            "sewerProvider": "Spokane County Utilities",
+            "waterProviders": [
+              "Spokane County Water District #3 System #1",
+              "City of Spokane Valley"
+            ],
+            "sewerProviders": [
+              "Spokane County Utilities",
+              "City of Spokane Valley"
+            ],
+            "waterPublic": true,
+            "sewerPublic": true,
+            "waterDistanceM": null,
+            "sewerDistanceM": 5,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 225,
+          "ms": 5687,
           "status": "ok",
           "detail": "moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes)",
           "values": {
@@ -312,7 +362,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 225,
+          "ms": 5687,
           "status": "ok",
           "detail": "avg grade 4.9%, max 8.7%",
           "values": {
@@ -325,7 +375,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 176,
+          "ms": 195,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -337,7 +387,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 179,
+          "ms": 177,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -356,7 +406,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 787,
+          "ms": 695,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -368,7 +418,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18151,
+          "ms": 601,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -381,7 +431,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 41,
+          "ms": 22,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -391,7 +441,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 36,
+          "ms": 4328,
           "status": "ok",
           "detail": "16 cells, avg 7.3%",
           "values": {
@@ -412,7 +462,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 9012,
+          "ms": 7357,
           "status": "ok",
           "detail": "parcel 13013.2211, 0.16 ac (mapped)",
           "values": {
@@ -427,20 +477,20 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 145,
+          "ms": 208,
           "status": "ok",
           "detail": "353 well record(s), 5 of nearest 5 report depth",
           "values": {
             "wellCount": 353,
             "nearestDepthsCount": 5,
             "nearestMi": 0.13,
-            "medianDepthFt": 20
+            "medianDepthFt": 17
           }
         },
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 305,
+          "ms": 252,
           "status": "ok",
           "detail": "CITY OF CHENEY - (WA)",
           "values": {
@@ -452,7 +502,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 93,
+          "ms": 238,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -470,7 +520,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 28,
+          "ms": 93,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -482,22 +532,54 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 4778,
-          "status": "ok",
-          "detail": "R-1 (City of Cheney)",
+          "ms": 544,
+          "status": "unavailable",
+          "detail": "City of Cheney zoning lookup unavailable",
           "values": {
-            "code": "R-1",
+            "code": null,
             "jurisdiction": "City of Cheney",
             "countyStatus": "official_adapter",
-            "zoningStatus": "gis_match",
+            "zoningStatus": "unavailable",
             "allowedBuildings": null,
             "permitHistoryStatus": "none"
+          },
+          "mismatches": [
+            {
+              "key": "zoning.code",
+              "layer": "zoning",
+              "expected": "R-1",
+              "actual": null
+            }
+          ]
+        },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 383,
+          "status": "ok",
+          "detail": "water served (City of Cheney) 6 m; sewer served (City of Cheney) 9 m",
+          "values": {
+            "water": "served",
+            "sewer": "served",
+            "waterProvider": "City of Cheney",
+            "sewerProvider": "City of Cheney",
+            "waterProviders": [
+              "City of Cheney"
+            ],
+            "sewerProviders": [
+              "City of Cheney"
+            ],
+            "waterPublic": true,
+            "sewerPublic": true,
+            "waterDistanceM": 6,
+            "sewerDistanceM": 9,
+            "failedLayers": []
           }
         },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 122,
+          "ms": 5303,
           "status": "ok",
           "detail": "favorable (Cheney ashy silt loam, 0 to 8 percent slopes)",
           "values": {
@@ -511,7 +593,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 122,
+          "ms": 5303,
           "status": "ok",
           "detail": "avg grade 3.3%, max 5.9%",
           "values": {
@@ -524,7 +606,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 172,
+          "ms": 209,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -536,7 +618,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 175,
+          "ms": 178,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -555,7 +637,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 778,
+          "ms": 699,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -567,7 +649,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 324,
+          "ms": 358,
           "status": "ok",
           "detail": "CITY OF CHENEY - (WA)",
           "values": {
@@ -578,19 +660,17 @@
           }
         },
         "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 25,
           "status": "unavailable",
-          "detail": "zone_not_mapped",
-          "values": {
-            "status": "zone_not_mapped"
-          }
+          "detail": "not requested: no zoning code returned (the browser skips this call too)",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 30,
+          "ms": 977,
           "status": "ok",
           "detail": "16 cells, avg 6.7%",
           "values": {
@@ -601,7 +681,14 @@
           }
         }
       },
-      "mismatches": []
+      "mismatches": [
+        {
+          "key": "zoning.code",
+          "layer": "zoning",
+          "expected": "R-1",
+          "actual": null
+        }
+      ]
     },
     {
       "parcelId": "57344.0125",
@@ -611,7 +698,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 6803,
+          "ms": 4435,
           "status": "ok",
           "detail": "parcel 57344.0125, 0.45 ac (mapped)",
           "values": {
@@ -626,7 +713,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 159,
+          "ms": 144,
           "status": "ok",
           "detail": "193 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -639,7 +726,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 358,
+          "ms": 297,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -653,7 +740,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 1763,
+          "ms": 472,
           "status": "ok",
           "detail": "high-risk zone (AE, X) (via FEMA NFHL)",
           "values": {
@@ -672,7 +759,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 52,
+          "ms": 299,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -684,7 +771,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 519,
+          "ms": 682,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -696,10 +783,32 @@
             "permitHistoryStatus": "none"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 797,
+          "status": "ok",
+          "detail": "water likely (Moab Irrigation Dist #20); sewer not_found",
+          "values": {
+            "water": "likely",
+            "sewer": "not_found",
+            "waterProvider": "Moab Irrigation Dist #20",
+            "sewerProvider": null,
+            "waterProviders": [
+              "Moab Irrigation Dist #20"
+            ],
+            "sewerProviders": [],
+            "waterPublic": true,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2677,
+          "ms": 2522,
           "status": "ok",
           "detail": "favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes)",
           "values": {
@@ -713,7 +822,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2677,
+          "ms": 2522,
           "status": "ok",
           "detail": "avg grade 14.3%, max 28.2%",
           "values": {
@@ -726,7 +835,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 194,
+          "ms": 267,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -738,7 +847,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 195,
+          "ms": 464,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -757,7 +866,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 766,
+          "ms": 709,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -769,7 +878,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 467,
+          "ms": 357,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -782,7 +891,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 31,
+          "ms": 26,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -794,7 +903,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 3301,
+          "ms": 476,
           "status": "ok",
           "detail": "16 cells, avg 24%",
           "values": {
@@ -810,12 +919,12 @@
     {
       "parcelId": "43341.0110",
       "label": "unincorporated, 1.5 ac, LTA, wetlands",
-      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning LTA Large Tract Agricultural from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.217847,47.448652&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: when NFHL doesn't answer, the Esri fallback holds high/moderate-risk zones only and returns no X.",
+      "why": "Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning LTA Large Tract Agricultural from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.217847,47.448652&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: when NFHL doesn't answer, the Esri fallback holds high/moderate-risk zones only and returns no X. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): no DOH service area or Spokane County water district at the point, no city or county sewer main within 300 m, unincorporated.",
       "layers": {
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 4658,
+          "ms": 276,
           "status": "ok",
           "detail": "parcel 43341.0110, 1.5 ac (mapped)",
           "values": {
@@ -830,7 +939,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 115,
+          "ms": 167,
           "status": "ok",
           "detail": "39 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -857,25 +966,23 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 123,
+          "ms": 5503,
           "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
+          "detail": "no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only)",
           "values": {
             "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
+            "intersects": false,
+            "zones": [],
+            "category": "limited",
+            "provider": "Esri USA Flood Hazard Areas",
+            "coverage": "high-and-moderate-risk-only",
+            "emptyResult": true
           }
         },
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 31,
+          "ms": 362,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -887,7 +994,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 446,
+          "ms": 4943,
           "status": "ok",
           "detail": "LTA (Spokane County)",
           "values": {
@@ -899,10 +1006,30 @@
             "permitHistoryStatus": "none"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 458,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5162,
+          "ms": 6055,
           "status": "ok",
           "detail": "moderate (Glenrose ashy silt loam, 8 to 25 percent slopes)",
           "values": {
@@ -916,20 +1043,20 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5162,
+          "ms": 6055,
           "status": "ok",
-          "detail": "avg grade 2.6%, max 4.5%",
+          "detail": "avg grade 2%, max 4.5%",
           "values": {
-            "gradePct": 2.6,
+            "gradePct": 2,
             "maxGradePct": 4.5,
-            "reliefFt": 14,
+            "reliefFt": 13,
             "sampleCount": 9
           }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 171,
+          "ms": 204,
           "status": "ok",
           "detail": "Possible well association",
           "values": {
@@ -941,7 +1068,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 167,
+          "ms": 174,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -960,7 +1087,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 742,
+          "ms": 803,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -972,7 +1099,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18147,
+          "ms": 551,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -985,7 +1112,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 24,
+          "ms": 28,
           "status": "ok",
           "detail": "LTA: Resource Lands (8 uses)",
           "values": {
@@ -997,7 +1124,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 28,
+          "ms": 2477,
           "status": "ok",
           "detail": "16 cells, avg 5.6%",
           "values": {
@@ -1013,12 +1140,12 @@
     {
       "parcelId": "47071.9003",
       "label": "Chattaroy, 2.32 ac, RT",
-      "why": "Unincorporated 1-5 ac parcel (picked by discovery 2026-11-02, seed 42; its lookup timed out in that run). County zoning RT Rural Traditional at the centroid (-117.293144,47.859658).",
+      "why": "Unincorporated 1-5 ac parcel (picked by discovery 2026-11-02, seed 42; its lookup timed out in that run). County zoning RT Rural Traditional at the centroid (-117.293144,47.859658). Public water/sewer hand-checked 2026-11-10 (read-only queries of the layers themselves): WA DOH service area WHITWORTH WATER DISTRICT 2 (Group A, Comm, Active) and Spokane County DistrictLookup/MapServer/6 Whitworth Water District #2 at the point, unincorporated (PermittingLookup/0 Spokane County), no city or county sewer main within 300 m. A district polygon outside city limits is likely, not served.",
       "layers": {
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 9590,
+          "ms": 5281,
           "status": "ok",
           "detail": "parcel 47071.9003, 2.32 ac (mapped)",
           "values": {
@@ -1033,7 +1160,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 138,
+          "ms": 230,
           "status": "ok",
           "detail": "232 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1046,7 +1173,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 373,
+          "ms": 401,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1059,7 +1186,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 90,
+          "ms": 3609,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1077,7 +1204,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 34,
+          "ms": 223,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1089,7 +1216,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 571,
+          "ms": 738,
           "status": "ok",
           "detail": "RT (Spokane County)",
           "values": {
@@ -1101,10 +1228,33 @@
             "permitHistoryStatus": "none"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 428,
+          "status": "ok",
+          "detail": "water likely (Whitworth Water District #2); sewer not_found",
+          "values": {
+            "water": "likely",
+            "sewer": "not_found",
+            "waterProvider": "Whitworth Water District #2",
+            "sewerProvider": null,
+            "waterProviders": [
+              "Whitworth Water District #2",
+              "Whitworth Water District 2"
+            ],
+            "sewerProviders": [],
+            "waterPublic": true,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5658,
+          "ms": 2419,
           "status": "ok",
           "detail": "moderate (Lenz-Spokane complex, 3 to 15 percent slopes)",
           "values": {
@@ -1118,7 +1268,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5658,
+          "ms": 2419,
           "status": "ok",
           "detail": "avg grade 11.2%, max 16.3%",
           "values": {
@@ -1131,7 +1281,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 294,
+          "ms": 219,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1143,7 +1293,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 211,
+          "ms": 169,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1162,7 +1312,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 785,
+          "ms": 670,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1174,7 +1324,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18153,
+          "ms": 18440,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1187,7 +1337,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 29,
+          "ms": 22,
           "status": "ok",
           "detail": "RT: Rural (10 uses)",
           "values": {
@@ -1199,7 +1349,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 5895,
+          "ms": 2993,
           "status": "ok",
           "detail": "16 cells, avg 15.8%",
           "values": {
@@ -1220,7 +1370,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 8095,
+          "ms": 4435,
           "status": "ok",
           "detail": "parcel 46301.9025, 4.61 ac (mapped)",
           "values": {
@@ -1235,7 +1385,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 126,
+          "ms": 246,
           "status": "ok",
           "detail": "310 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1248,7 +1398,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 347,
+          "ms": 276,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1262,7 +1412,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 89,
+          "ms": 524,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1280,7 +1430,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 30,
+          "ms": 112,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1292,7 +1442,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 513,
+          "ms": 567,
           "status": "ok",
           "detail": "RCV (Spokane County)",
           "values": {
@@ -1304,10 +1454,32 @@
             "permitHistoryStatus": "none"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 363,
+          "status": "ok",
+          "detail": "water likely (Pasadena Park Irr Dist 17); sewer not_found",
+          "values": {
+            "water": "likely",
+            "sewer": "not_found",
+            "waterProvider": "Pasadena Park Irr Dist 17",
+            "sewerProvider": null,
+            "waterProviders": [
+              "Pasadena Park Irr Dist 17"
+            ],
+            "sewerProviders": [],
+            "waterPublic": true,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6028,
+          "ms": 6060,
           "status": "ok",
           "detail": "favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes)",
           "values": {
@@ -1321,7 +1493,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6028,
+          "ms": 6060,
           "status": "ok",
           "detail": "avg grade 3.9%, max 11.1%",
           "values": {
@@ -1334,7 +1506,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 170,
+          "ms": 187,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1346,7 +1518,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 169,
+          "ms": 184,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -1365,7 +1537,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 613,
+          "ms": 711,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1377,7 +1549,893 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 18147,
+          "ms": 18431,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION",
+          "values": {
+            "provider": "BONNEVILLE POWER ADMINISTRATION",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 70,
+          "status": "ok",
+          "detail": "RCV: Rural (10 uses)",
+          "values": {
+            "code": "RCV",
+            "family": "Rural",
+            "useCount": 10
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6041,
+          "status": "ok",
+          "detail": "16 cells, avg 6.8%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 6.8,
+            "maxSlopePct": 17.6,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "57302.9016",
+      "label": "Mead, 9.78 ac, RCV, wetlands",
+      "why": "Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning RCV from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.173978,47.813929&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: on 2026-11-02 NFHL didn't answer for this parcel and the Esri fallback (high/moderate-risk zones only) returned no zones.",
+      "layers": {
+        "parcel": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 4369,
+          "status": "ok",
+          "detail": "parcel 57302.9016, 9.77 ac (mapped)",
+          "values": {
+            "parcelId": "57302.9016",
+            "acres": 9.77,
+            "address": "17238 N MOUNTAIN TOP LN, MEAD",
+            "lat": 47.813929,
+            "lon": -117.173978,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 135,
+          "status": "ok",
+          "detail": "181 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 181,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.21,
+            "medianDepthFt": 345
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 383,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
+          "values": {
+            "providers": [
+              "BONNEVILLE POWER ADMINISTRATION",
+              "INLAND POWER & LIGHT COMPANY"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 107,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 174,
+          "status": "ok",
+          "detail": "1 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 1,
+            "coveragePct": 2.8
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 637,
+          "status": "ok",
+          "detail": "RCV (Spokane County)",
+          "values": {
+            "code": "RCV",
+            "jurisdiction": "Spokane County",
+            "countyStatus": "official_adapter",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "none"
+          }
+        },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 421,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6028,
+          "status": "ok",
+          "detail": "limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Quinnamose-Micapeak complex, 30 to 55 percent slopes",
+            "hydrologicGroup": "B",
+            "drainage": "Well drained",
+            "soilSlopePct": 42
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6028,
+          "status": "ok",
+          "detail": "avg grade 9.2%, max 16.9%",
+          "values": {
+            "gradePct": 9.2,
+            "maxGradePct": 16.9,
+            "reliefFt": 135,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 207,
+          "status": "ok",
+          "detail": "Likely existing well",
+          "values": {
+            "status": "strong_match",
+            "confidence": "High",
+            "score": 100
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 204,
+          "status": "ok",
+          "detail": "assessed n/a, no tax amount",
+          "values": {
+            "assessedValue": null,
+            "landValue": 125010,
+            "improvementValue": null,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Spokane County Assessor SCOUTSimple"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 701,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18456,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION",
+          "values": {
+            "provider": "BONNEVILLE POWER ADMINISTRATION",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 14,
+          "status": "ok",
+          "detail": "RCV: Rural (10 uses)",
+          "values": {
+            "code": "RCV",
+            "family": "Rural",
+            "useCount": 10
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 3016,
+          "status": "ok",
+          "detail": "16 cells, avg 22%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 22,
+            "maxSlopePct": 32.5,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "37094.9101",
+      "label": "Spokane situs, 5 ac, RCV",
+      "why": "5-40 ac parcel with a SPOKANE situs city that is outside city limits (county zoning RCV), picked by discovery 2026-11-02, seed 42. Shows the situs city is not the jurisdiction.",
+      "layers": {
+        "parcel": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 4437,
+          "status": "ok",
+          "detail": "parcel 37094.9101, 5 ac (mapped)",
+          "values": {
+            "parcelId": "37094.9101",
+            "acres": 5,
+            "address": "2211 E WHISPERING SPRING LN, SPOKANE, 00000",
+            "lat": 47.849368,
+            "lon": -117.37833,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 171,
+          "status": "ok",
+          "detail": "285 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 285,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.16,
+            "medianDepthFt": 178
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 292,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
+          "values": {
+            "providers": [
+              "BONNEVILLE POWER ADMINISTRATION",
+              "INLAND POWER & LIGHT COMPANY"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 1178,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 128,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 489,
+          "status": "ok",
+          "detail": "RCV (Spokane County)",
+          "values": {
+            "code": "RCV",
+            "jurisdiction": "Spokane County",
+            "countyStatus": "official_adapter",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "none"
+          }
+        },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 514,
+          "status": "ok",
+          "detail": "water likely (Whitworth Water District #2); sewer not_found",
+          "values": {
+            "water": "likely",
+            "sewer": "not_found",
+            "waterProvider": "Whitworth Water District #2",
+            "sewerProvider": null,
+            "waterProviders": [
+              "Whitworth Water District #2",
+              "Whitworth Water District 2"
+            ],
+            "sewerProviders": [],
+            "waterPublic": true,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 4566,
+          "status": "ok",
+          "detail": "favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes",
+            "hydrologicGroup": "A",
+            "drainage": "Somewhat excessively drained",
+            "soilSlopePct": 4
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 4566,
+          "status": "ok",
+          "detail": "avg grade 0.8%, max 4.4%",
+          "values": {
+            "gradePct": 0.8,
+            "maxGradePct": 4.4,
+            "reliefFt": 22,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 209,
+          "status": "ok",
+          "detail": "No existing well match found",
+          "values": {
+            "status": "no_match",
+            "confidence": "Low",
+            "score": 0
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 173,
+          "status": "ok",
+          "detail": "assessed n/a, no tax amount",
+          "values": {
+            "assessedValue": null,
+            "landValue": 245000,
+            "improvementValue": null,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Spokane County Assessor SCOUTSimple"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 657,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18424,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION",
+          "values": {
+            "provider": "BONNEVILLE POWER ADMINISTRATION",
+            "distanceFt": null,
+            "confidence": "low",
+            "distributionStatus": "no_verified_distance"
+          }
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 52,
+          "status": "ok",
+          "detail": "RCV: Rural (10 uses)",
+          "values": {
+            "code": "RCV",
+            "family": "Rural",
+            "useCount": 10
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 4720,
+          "status": "ok",
+          "detail": "16 cells, avg 1.6%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 1.6,
+            "maxSlopePct": 8.8,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "48121.9001",
+      "label": "Elk, 154 ac, FZ, wetlands",
+      "why": "Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning FZ Forest Land from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.177199,47.944269&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02.",
+      "layers": {
+        "parcel": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 4718,
+          "status": "ok",
+          "detail": "parcel 48121.9001, 153.95 ac (mapped)",
+          "values": {
+            "parcelId": "48121.9001",
+            "acres": 153.95,
+            "address": "ELK, 99009",
+            "lat": 47.943689,
+            "lon": -117.177668,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 171,
+          "status": "ok",
+          "detail": "49 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 49,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.49,
+            "medianDepthFt": 400
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 303,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
+          "values": {
+            "providers": [
+              "BONNEVILLE POWER ADMINISTRATION",
+              "INLAND POWER & LIGHT COMPANY"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 198,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 451,
+          "status": "ok",
+          "detail": "3 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 3,
+            "coveragePct": 0.6
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 656,
+          "status": "ok",
+          "detail": "FZ (Spokane County)",
+          "values": {
+            "code": "FZ",
+            "jurisdiction": "Spokane County",
+            "countyStatus": "official_adapter",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "none"
+          }
+        },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 385,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6070,
+          "status": "ok",
+          "detail": "limited (Keeler-Kruse complex, 15 to 30 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Keeler-Kruse complex, 15 to 30 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 23
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6070,
+          "status": "ok",
+          "detail": "avg grade 11.7%, max 27.2%",
+          "values": {
+            "gradePct": 11.7,
+            "maxGradePct": 27.2,
+            "reliefFt": 587,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 194,
+          "status": "ok",
+          "detail": "No existing well match found",
+          "values": {
+            "status": "no_match",
+            "confidence": "Low",
+            "score": 0
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 321,
+          "status": "ok",
+          "detail": "assessed n/a, no tax amount",
+          "values": {
+            "assessedValue": null,
+            "landValue": 591360,
+            "improvementValue": null,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Spokane County Assessor SCOUTSimple"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 696,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": null,
+          "ms": 30002,
+          "status": "error",
+          "detail": "timeout after 30s",
+          "values": {}
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 72,
+          "status": "ok",
+          "detail": "FZ: Resource Lands (8 uses)",
+          "values": {
+            "code": "FZ",
+            "family": "Resource Lands",
+            "useCount": 8
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 6050,
+          "status": "ok",
+          "detail": "16 cells, avg 19.4%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 19.4,
+            "maxSlopePct": 40.1,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "48136.9052",
+      "label": "Colbert, 51.9 ac, RCV, wetlands",
+      "why": "Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42).",
+      "layers": {
+        "parcel": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 4441,
+          "status": "ok",
+          "detail": "parcel 48136.9052, 51.87 ac (mapped)",
+          "values": {
+            "parcelId": "48136.9052",
+            "acres": 51.87,
+            "address": "15510 E DEER CREEK RD, COLBERT",
+            "lat": 47.928279,
+            "lon": -117.194683,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 207,
+          "status": "ok",
+          "detail": "68 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 68,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.25,
+            "medianDepthFt": 300
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 418,
+          "status": "ok",
+          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
+          "values": {
+            "providers": [
+              "BONNEVILLE POWER ADMINISTRATION",
+              "INLAND POWER & LIGHT COMPANY"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 604,
+          "status": "ok",
+          "detail": "zones X (via FEMA NFHL)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "FEMA NFHL",
+            "coverage": null,
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 349,
+          "status": "ok",
+          "detail": "7 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 7,
+            "coveragePct": 3.7
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 630,
+          "status": "ok",
+          "detail": "RCV (Spokane County)",
+          "values": {
+            "code": "RCV",
+            "jurisdiction": "Spokane County",
+            "countyStatus": "official_adapter",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "none"
+          }
+        },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 426,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6036,
+          "status": "ok",
+          "detail": "limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Blackprince-Ardtoo complex, 15 to 30 percent slopes",
+            "hydrologicGroup": "B",
+            "drainage": "Well drained",
+            "soilSlopePct": 22
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 6036,
+          "status": "ok",
+          "detail": "avg grade 6.9%, max 14.8%",
+          "values": {
+            "gradePct": 6.9,
+            "maxGradePct": 14.8,
+            "reliefFt": 150,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 211,
+          "status": "ok",
+          "detail": "No existing well match found",
+          "values": {
+            "status": "no_match",
+            "confidence": "Low",
+            "score": 12
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 195,
+          "status": "ok",
+          "detail": "assessed n/a, no tax amount",
+          "values": {
+            "assessedValue": null,
+            "landValue": 283740,
+            "improvementValue": null,
+            "taxPresent": false,
+            "netValue": null,
+            "homeownerExemption": null,
+            "taxYear": null,
+            "propertyClass": null,
+            "propertyClassDescription": null,
+            "source": "Spokane County Assessor SCOUTSimple"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 641,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 18974,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1402,815 +2460,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 2096,
-          "status": "ok",
-          "detail": "16 cells, avg 6.9%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 6.9,
-            "maxSlopePct": 17.7,
-            "partial": false
-          }
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "57302.9016",
-      "label": "Mead, 9.78 ac, RCV, wetlands",
-      "why": "Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning RCV from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.173978,47.813929&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02. Only flood.high is expected: on 2026-11-02 NFHL didn't answer for this parcel and the Esri fallback (high/moderate-risk zones only) returned no zones.",
-      "layers": {
-        "parcel": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 6252,
-          "status": "ok",
-          "detail": "parcel 57302.9016, 9.77 ac (mapped)",
-          "values": {
-            "parcelId": "57302.9016",
-            "acres": 9.77,
-            "address": "17238 N MOUNTAIN TOP LN, MEAD",
-            "lat": 47.813929,
-            "lon": -117.173978,
-            "acresSource": "mapped outline"
-          }
-        },
-        "wells": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 137,
-          "status": "ok",
-          "detail": "181 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 181,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.21,
-            "medianDepthFt": 345
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 309,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
-          "values": {
-            "providers": [
-              "BONNEVILLE POWER ADMINISTRATION",
-              "INLAND POWER & LIGHT COMPANY"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 105,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 35,
-          "status": "ok",
-          "detail": "1 NWI feature(s)",
-          "values": {
-            "intersects": true,
-            "count": 1,
-            "coveragePct": 2.8
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 466,
-          "status": "ok",
-          "detail": "RCV (Spokane County)",
-          "values": {
-            "code": "RCV",
-            "jurisdiction": "Spokane County",
-            "countyStatus": "official_adapter",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "none"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 1087,
-          "status": "ok",
-          "detail": "limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes)",
-          "values": {
-            "feasibility": "limited",
-            "mapUnit": "Quinnamose-Micapeak complex, 30 to 55 percent slopes",
-            "hydrologicGroup": "B",
-            "drainage": "Well drained",
-            "soilSlopePct": 42
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 1087,
-          "status": "ok",
-          "detail": "avg grade 10.4%, max 25.6%",
-          "values": {
-            "gradePct": 10.4,
-            "maxGradePct": 25.6,
-            "reliefFt": 136,
-            "sampleCount": 9
-          }
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 174,
-          "status": "ok",
-          "detail": "Likely existing well",
-          "values": {
-            "status": "strong_match",
-            "confidence": "High",
-            "score": 100
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 168,
-          "status": "ok",
-          "detail": "assessed n/a, no tax amount",
-          "values": {
-            "assessedValue": null,
-            "landValue": 125010,
-            "improvementValue": null,
-            "taxPresent": false,
-            "netValue": null,
-            "homeownerExemption": null,
-            "taxYear": null,
-            "propertyClass": null,
-            "propertyClassDescription": null,
-            "source": "Spokane County Assessor SCOUTSimple"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 738,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 18154,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION",
-          "values": {
-            "provider": "BONNEVILLE POWER ADMINISTRATION",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 28,
-          "status": "ok",
-          "detail": "RCV: Rural (10 uses)",
-          "values": {
-            "code": "RCV",
-            "family": "Rural",
-            "useCount": 10
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 454,
-          "status": "ok",
-          "detail": "16 cells, avg 22%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 22,
-            "maxSlopePct": 32.5,
-            "partial": false
-          }
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "37094.9101",
-      "label": "Spokane situs, 5 ac, RCV",
-      "why": "5-40 ac parcel with a SPOKANE situs city that is outside city limits (county zoning RCV), picked by discovery 2026-11-02, seed 42. Shows the situs city is not the jurisdiction.",
-      "layers": {
-        "parcel": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 16048,
-          "status": "ok",
-          "detail": "parcel 37094.9101, 5 ac (mapped)",
-          "values": {
-            "parcelId": "37094.9101",
-            "acres": 5,
-            "address": "2211 E WHISPERING SPRING LN, SPOKANE, 00000",
-            "lat": 47.849368,
-            "lon": -117.37833,
-            "acresSource": "mapped outline"
-          }
-        },
-        "wells": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 277,
-          "status": "ok",
-          "detail": "285 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 285,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.16,
-            "medianDepthFt": 178
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 406,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
-          "values": {
-            "providers": [
-              "BONNEVILLE POWER ADMINISTRATION",
-              "INLAND POWER & LIGHT COMPANY"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 106,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 46,
-          "status": "ok",
-          "detail": "no NWI wetlands",
-          "values": {
-            "intersects": false,
-            "count": 0,
-            "coveragePct": 0
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 485,
-          "status": "ok",
-          "detail": "RCV (Spokane County)",
-          "values": {
-            "code": "RCV",
-            "jurisdiction": "Spokane County",
-            "countyStatus": "official_adapter",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "none"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 6044,
-          "status": "ok",
-          "detail": "favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes)",
-          "values": {
-            "feasibility": "favorable",
-            "mapUnit": "Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes",
-            "hydrologicGroup": "A",
-            "drainage": "Somewhat excessively drained",
-            "soilSlopePct": 4
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 6044,
-          "status": "ok",
-          "detail": "avg grade 0.8%, max 4.5%",
-          "values": {
-            "gradePct": 0.8,
-            "maxGradePct": 4.5,
-            "reliefFt": 22,
-            "sampleCount": 9
-          }
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 187,
-          "status": "ok",
-          "detail": "No existing well match found",
-          "values": {
-            "status": "no_match",
-            "confidence": "Low",
-            "score": 0
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 174,
-          "status": "ok",
-          "detail": "assessed n/a, no tax amount",
-          "values": {
-            "assessedValue": null,
-            "landValue": 245000,
-            "improvementValue": null,
-            "taxPresent": false,
-            "netValue": null,
-            "homeownerExemption": null,
-            "taxYear": null,
-            "propertyClass": null,
-            "propertyClassDescription": null,
-            "source": "Spokane County Assessor SCOUTSimple"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 788,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 18163,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION",
-          "values": {
-            "provider": "BONNEVILLE POWER ADMINISTRATION",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 28,
-          "status": "ok",
-          "detail": "RCV: Rural (10 uses)",
-          "values": {
-            "code": "RCV",
-            "family": "Rural",
-            "useCount": 10
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 35,
-          "status": "ok",
-          "detail": "16 cells, avg 1.6%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 1.6,
-            "maxSlopePct": 8.8,
-            "partial": false
-          }
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "48121.9001",
-      "label": "Elk, 154 ac, FZ, wetlands",
-      "why": "Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42). Zoning FZ Forest Land from Spokane County (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.177199,47.944269&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false). FEMA NFHL MapServer/28 on the parcel outline: zone X only. Checked 2026-11-02.",
-      "layers": {
-        "parcel": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 5015,
-          "status": "ok",
-          "detail": "parcel 48121.9001, 153.95 ac (mapped)",
-          "values": {
-            "parcelId": "48121.9001",
-            "acres": 153.95,
-            "address": "ELK, 99009",
-            "lat": 47.943689,
-            "lon": -117.177668,
-            "acresSource": "mapped outline"
-          }
-        },
-        "wells": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 146,
-          "status": "ok",
-          "detail": "49 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 49,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.49,
-            "medianDepthFt": 400
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 329,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
-          "values": {
-            "providers": [
-              "BONNEVILLE POWER ADMINISTRATION",
-              "INLAND POWER & LIGHT COMPANY"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 84,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 31,
-          "status": "ok",
-          "detail": "3 NWI feature(s)",
-          "values": {
-            "intersects": true,
-            "count": 3,
-            "coveragePct": 0.6
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 517,
-          "status": "ok",
-          "detail": "FZ (Spokane County)",
-          "values": {
-            "code": "FZ",
-            "jurisdiction": "Spokane County",
-            "countyStatus": "official_adapter",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "none"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 3920,
-          "status": "ok",
-          "detail": "limited (Keeler-Kruse complex, 15 to 30 percent slopes)",
-          "values": {
-            "feasibility": "limited",
-            "mapUnit": "Keeler-Kruse complex, 15 to 30 percent slopes",
-            "hydrologicGroup": "C",
-            "drainage": "Well drained",
-            "soilSlopePct": 23
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 3920,
-          "status": "ok",
-          "detail": "avg grade 12.1%, max 28.7%",
-          "values": {
-            "gradePct": 12.1,
-            "maxGradePct": 28.7,
-            "reliefFt": 604,
-            "sampleCount": 9
-          }
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 168,
-          "status": "ok",
-          "detail": "No existing well match found",
-          "values": {
-            "status": "no_match",
-            "confidence": "Low",
-            "score": 0
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 492,
-          "status": "ok",
-          "detail": "assessed n/a, no tax amount",
-          "values": {
-            "assessedValue": null,
-            "landValue": 591360,
-            "improvementValue": null,
-            "taxPresent": false,
-            "netValue": null,
-            "homeownerExemption": null,
-            "taxYear": null,
-            "propertyClass": null,
-            "propertyClassDescription": null,
-            "source": "Spokane County Assessor SCOUTSimple"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 629,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 462,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION",
-          "values": {
-            "provider": "BONNEVILLE POWER ADMINISTRATION",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 26,
-          "status": "ok",
-          "detail": "FZ: Resource Lands (8 uses)",
-          "values": {
-            "code": "FZ",
-            "family": "Resource Lands",
-            "useCount": 8
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 29,
-          "status": "ok",
-          "detail": "16 cells, avg 19.4%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 19.4,
-            "maxSlopePct": 41.4,
-            "partial": false
-          }
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "48136.9052",
-      "label": "Colbert, 51.9 ac, RCV, wetlands",
-      "why": "Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026-11-02, seed 42).",
-      "layers": {
-        "parcel": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 8941,
-          "status": "ok",
-          "detail": "parcel 48136.9052, 51.87 ac (mapped)",
-          "values": {
-            "parcelId": "48136.9052",
-            "acres": 51.87,
-            "address": "15510 E DEER CREEK RD, COLBERT",
-            "lat": 47.928279,
-            "lon": -117.194683,
-            "acresSource": "mapped outline"
-          }
-        },
-        "wells": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 114,
-          "status": "ok",
-          "detail": "68 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 68,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.25,
-            "medianDepthFt": 300
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 348,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION; INLAND POWER & LIGHT COMPANY",
-          "values": {
-            "providers": [
-              "BONNEVILLE POWER ADMINISTRATION",
-              "INLAND POWER & LIGHT COMPANY"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 84,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 35,
-          "status": "ok",
-          "detail": "7 NWI feature(s)",
-          "values": {
-            "intersects": true,
-            "count": 7,
-            "coveragePct": 3.7
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 431,
-          "status": "ok",
-          "detail": "RCV (Spokane County)",
-          "values": {
-            "code": "RCV",
-            "jurisdiction": "Spokane County",
-            "countyStatus": "official_adapter",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "none"
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 107,
-          "status": "ok",
-          "detail": "limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes)",
-          "values": {
-            "feasibility": "limited",
-            "mapUnit": "Blackprince-Ardtoo complex, 15 to 30 percent slopes",
-            "hydrologicGroup": "B",
-            "drainage": "Well drained",
-            "soilSlopePct": 22
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 107,
-          "status": "ok",
-          "detail": "avg grade 7%, max 15.8%",
-          "values": {
-            "gradePct": 7,
-            "maxGradePct": 15.8,
-            "reliefFt": 147,
-            "sampleCount": 9
-          }
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 209,
-          "status": "ok",
-          "detail": "No existing well match found",
-          "values": {
-            "status": "no_match",
-            "confidence": "Low",
-            "score": 12
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 174,
-          "status": "ok",
-          "detail": "assessed n/a, no tax amount",
-          "values": {
-            "assessedValue": null,
-            "landValue": 283740,
-            "improvementValue": null,
-            "taxPresent": false,
-            "netValue": null,
-            "homeownerExemption": null,
-            "taxYear": null,
-            "propertyClass": null,
-            "propertyClassDescription": null,
-            "source": "Spokane County Assessor SCOUTSimple"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 572,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 18150,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION",
-          "values": {
-            "provider": "BONNEVILLE POWER ADMINISTRATION",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 29,
-          "status": "ok",
-          "detail": "RCV: Rural (10 uses)",
-          "values": {
-            "code": "RCV",
-            "family": "Rural",
-            "useCount": 10
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 33,
+          "ms": 5189,
           "status": "ok",
           "detail": "16 cells, avg 12.3%",
           "values": {
@@ -2231,7 +2481,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 8257,
+          "ms": 5552,
           "status": "ok",
           "detail": "parcel 32322.9002, 157.71 ac (mapped)",
           "values": {
@@ -2246,7 +2496,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 128,
+          "ms": 145,
           "status": "ok",
           "detail": "26 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2259,7 +2509,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 381,
+          "ms": 266,
           "status": "ok",
           "detail": "BONNEVILLE POWER ADMINISTRATION; AVISTA CORP; INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -2273,7 +2523,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 100,
+          "ms": 162,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2291,7 +2541,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 36,
+          "ms": 315,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -2303,7 +2553,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 552,
+          "ms": 5021,
           "status": "ok",
           "detail": "LTA (Spokane County)",
           "values": {
@@ -2315,10 +2565,30 @@
             "permitHistoryStatus": "unavailable"
           }
         },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 393,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 202,
+          "ms": 5738,
           "status": "ok",
           "detail": "moderate (Naff-Thatuna complex, 8 to 25 percent slopes)",
           "values": {
@@ -2332,7 +2602,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 202,
+          "ms": 5738,
           "status": "ok",
           "detail": "avg grade 1%, max 1.8%",
           "values": {
@@ -2345,7 +2615,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 184,
+          "ms": 215,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -2357,7 +2627,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 194,
+          "ms": 165,
           "status": "ok",
           "detail": "assessed n/a, no tax amount",
           "values": {
@@ -2376,7 +2646,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 787,
+          "ms": 646,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2387,21 +2657,16 @@
         },
         "power": {
           "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 323,
-          "status": "ok",
-          "detail": "BONNEVILLE POWER ADMINISTRATION",
-          "values": {
-            "provider": "BONNEVILLE POWER ADMINISTRATION",
-            "distanceFt": null,
-            "confidence": "low",
-            "distributionStatus": "no_verified_distance"
-          }
+          "httpStatus": null,
+          "ms": 30000,
+          "status": "error",
+          "detail": "timeout after 30s",
+          "values": {}
         },
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 32,
+          "ms": 39,
           "status": "ok",
           "detail": "LTA: Resource Lands (8 uses)",
           "values": {
@@ -2413,7 +2678,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 34,
+          "ms": 3989,
           "status": "ok",
           "detail": "16 cells, avg 3.3%",
           "values": {
@@ -2429,12 +2694,12 @@
   ],
   "summary": {
     "parcels": 12,
-    "failed": 0,
+    "failed": 3,
     "layerCounts": {
-      "ok": 153,
+      "ok": 162,
       "unavailable": 15,
-      "error": 0,
-      "mismatch": 0,
+      "error": 2,
+      "mismatch": 1,
       "skipped": 0
     }
   }
