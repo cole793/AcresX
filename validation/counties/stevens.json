@@ -5,12 +5,14 @@
     {
       "parcelId": "8974701",
       "label": "unincorporated, 0.75 ac, RA-5",
-      "why": "Small unincorporated lot with a blank situs city (picked by discovery 2026-11-02, seed 42). Stevens County zoning layer: zoning=5, zoningtext RA-5 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-118.105897,48.629028&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). Since the Stevens adapter (src/counties/stevens.js, 2026-11-04) zoning-permits returns the named code RA-5, with the layer value 5 as zoning.numericCode; before, it returned 5. No Stevens panels in FEMA NFHL (no DFIRM 53065C features), so no high-risk zone. Checked 2026-11-02. Assessor land use code (property_u) 99, Other undeveloped land; the record carries no values (all 0), so AcresX shows them as not available, tax year 2026 (https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query?f=json&where=PARCELN%3D%278974701%27&outFields=PARCELN,property_u,year&returnGeometry=false); a tax category, not zoning. Checked 2026-11-04.",
+      "why": "Small unincorporated lot with a blank situs city (picked by discovery 2026-11-02, seed 42). Stevens County zoning layer: zoning=5, zoningtext RA-5 (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/1/query?f=json&geometry=-118.105897,48.629028&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoningtext,name,type,zoning_nam&returnGeometry=false). Since the Stevens adapter (src/counties/stevens.js, 2026-11-04) zoning-permits returns the named code RA-5, with the layer value 5 as zoning.numericCode; before, it returned 5. No Stevens panels in FEMA NFHL (no DFIRM 53065C features), so no high-risk zone. Checked 2026-11-02. Assessor land use code (property_u) 99, Other undeveloped land; the record carries no values (all 0), so AcresX shows them as not available, tax year 2026 (https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query?f=json&where=PARCELN%3D%278974701%27&outFields=PARCELN,property_u,year&returnGeometry=false); a tax category, not zoning. Checked 2026-11-04. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): no DOH service area at the point; outside every city polygon.",
       "expected": {
         "zoning.code": "RA-5",
         "zoningRules.code": "RA-5",
         "flood.high": false,
-        "assessment.propertyClass": "99"
+        "assessment.propertyClass": "99",
+        "publicUtilities.water": "not_found",
+        "publicUtilities.sewer": "not_found"
       }
     },
     {
@@ -34,10 +36,12 @@
     {
       "parcelId": "0000500",
       "label": "City of Colville, 0.16 ac",
-      "why": "Small lot inside Colville city limits (315 N Main St). Stevens Cities layer at -117.9063,48.54675 returns Colville (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query?f=json&geometry=-117.9063,48.54675&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false). Colville zoning layer (MapServer/3) at that point: ZONING C-2, NAME Central Business (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/3/query?f=json&geometry=-117.9063,48.54675&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,NAME&returnGeometry=false); AcresX now labels the jurisdiction City of Colville (before: 'Stevens County (unincorporated areas)'). Checked 2026-11-02 and 2026-11-04. Assessor land use code (property_u) 55, Retail trade - Automotive, marine craft, aircraft, and accessories, tax year 2026 (https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query?f=json&where=PARCELN%3D%270000500%27&outFields=PARCELN,property_u,year&returnGeometry=false); a tax category, not zoning. Checked 2026-11-04.",
+      "why": "Small lot inside Colville city limits (315 N Main St). Stevens Cities layer at -117.9063,48.54675 returns Colville (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/0/query?f=json&geometry=-117.9063,48.54675&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=name&returnGeometry=false). Colville zoning layer (MapServer/3) at that point: ZONING C-2, NAME Central Business (https://gis.stevenscountywa.gov/server/rest/services/Stevens_County_Zoning_Data/MapServer/3/query?f=json&geometry=-117.9063,48.54675&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,NAME&returnGeometry=false); AcresX now labels the jurisdiction City of Colville (before: 'Stevens County (unincorporated areas)'). Checked 2026-11-02 and 2026-11-04. Assessor land use code (property_u) 55, Retail trade - Automotive, marine craft, aircraft, and accessories, tax year 2026 (https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0/query?f=json&where=PARCELN%3D%270000500%27&outFields=PARCELN,property_u,year&returnGeometry=false); a tax category, not zoning. Checked 2026-11-04. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): WA DOH 'COLVILLE WATER DEPARTMENT' (Group A, Comm, Active); inside Colville (Cities layer 0), which publishes no sewer map.",
       "expected": {
         "zoning.code": "C-2",
-        "assessment.propertyClass": "55"
+        "assessment.propertyClass": "55",
+        "publicUtilities.water": "served",
+        "publicUtilities.sewer": "likely"
       }
     },
     {

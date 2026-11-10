@@ -5,8 +5,11 @@
     {
       "parcelId": "06079621201790000",
       "label": "no locality, 19.33 ac",
-      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant land in the county unzoned area.",
-      "expected": {}
+      "why": "Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant land in the county unzoned area. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): no MSDI water/sewer district, GDA planning area or city polygon at the point; no Bozeman main within 300 m.",
+      "expected": {
+        "publicUtilities.water": "not_found",
+        "publicUtilities.sewer": "not_found"
+      }
     },
     {
       "parcelId": "06079611101010000",
@@ -91,8 +94,11 @@
     {
       "parcelId": "06079812230210000",
       "label": "no locality, 0.26 ac",
-      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was \"No mapped zoning district\", now City of Bozeman zoning (R-2).",
-      "expected": {}
+      "why": "Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was \"No mapped zoning district\", now City of Bozeman zoning (R-2). Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): Bozeman COB_Utilities Wastewater_Utility/MapServer/8 collector 3.3 m and Water_Utility/MapServer/6 distribution main 12.0 m from the outline; inside Bozeman city limits (layer 267).",
+      "expected": {
+        "publicUtilities.water": "served",
+        "publicUtilities.sewer": "served"
+      }
     }
   ],
   "discover": {

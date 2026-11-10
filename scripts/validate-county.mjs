@@ -39,6 +39,7 @@ export const LAYERS = [
   { key: 'wetlands', label: 'Wetlands', route: '/api/hazards' },
   { key: 'utility', label: 'Utility', route: '/api/utility-territory' },
   { key: 'power', label: 'Power', route: '/api/power-intelligence' },
+  { key: 'publicUtilities', label: 'Public water/sewer', route: '/api/public-utilities' },
   { key: 'zoning', label: 'Zoning', route: '/api/zoning-permits' },
   { key: 'zoningRules', label: 'Zoning rules', route: '/api/zoning-rules' },
   { key: 'assessment', label: 'Assessment', route: '/api/property-assessment' },
@@ -49,7 +50,7 @@ export const LAYERS = [
 export const READ_ONLY_ROUTES = new Set([
   '/api/arcgis', '/api/parcel-search', '/api/well-search', '/api/existing-well', '/api/land-analysis',
   '/api/slope-grid', '/api/hazards', '/api/utility-territory', '/api/power-intelligence',
-  '/api/zoning-permits', '/api/zoning-rules', '/api/property-assessment', '/api/reso-listings'
+  '/api/zoning-permits', '/api/zoning-rules', '/api/property-assessment', '/api/reso-listings', '/api/public-utilities'
 ]);
 
 // /api/reso-listings accepts sync options (sync, cursor, incremental, ...) that write to the live
@@ -322,6 +323,25 @@ export const interpret = {
       provider: data.provider || null, distanceFt: ft != null ? Math.round(ft) : null, confidence: d.confidence || null, distributionStatus: d.status || null
     });
   },
+  // /api/public-utilities (src/services/public-utilities.js). ok when both services were checked
+  // (served, likely or not_found); unavailable when a service could not be checked. values.water /
+  // values.sewer hold the status; waterPublic / sewerPublic are true for served or likely.
+  publicUtilities(data) {
+    const w = data.water || {}, s = data.sewer || {};
+    const isPublic = f => f.status === 'served' || f.status === 'likely';
+    const values = {
+      water: w.status || null, sewer: s.status || null, waterProvider: w.provider || null, sewerProvider: s.provider || null,
+      // Every provider named for the service (the chosen one, then the other sources that matched).
+      waterProviders: [w.provider, ...(Array.isArray(w.others) ? w.others.map(o => o.provider) : [])].filter(Boolean),
+      sewerProviders: [s.provider, ...(Array.isArray(s.others) ? s.others.map(o => o.provider) : [])].filter(Boolean),
+      waterPublic: isPublic(w), sewerPublic: isPublic(s), waterDistanceM: finite(w.distanceM), sewerDistanceM: finite(s.distanceM),
+      failedLayers: (Array.isArray(data.sources) ? data.sources : []).filter(x => !x.ok).map(x => x.id)
+    };
+    const part = (name, f) => `${name} ${f.status || '?'}${f.provider ? ` (${f.provider})` : ''}${finite(f.distanceM) != null ? ` ${f.distanceM} m` : ''}`;
+    const detail = `${part('water', w)}; ${part('sewer', s)}`;
+    if (data.available === false || w.status === 'unavailable' || s.status === 'unavailable') return unavailable(detail, values);
+    return ok(detail, values);
+  },
   zoning(data) {
     const z = data.zoning || {};
     const values = {
@@ -522,6 +542,8 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
   const zoningAt = zoningPoint(geometry) || center;
   const zoningRes = await call('/api/zoning-permits', { county: parcelCounty, parcelId: resolvedId, address, lat: zoningAt.lat, lon: zoningAt.lon, geometry, dataLink: p.DATA_LINK || '' });
   layers.zoning = interpretLayer('zoning', zoningRes);
+  // public/public-utilities.js: same body as the browser (state, county, the zoning point, outline).
+  layers.publicUtilities = interpretLayer('publicUtilities', await call('/api/public-utilities', { state, county: parcelCounty || county, lat: zoningAt.lat, lon: zoningAt.lon, geometry }));
   const landRes = await call('/api/land-analysis', { geometry });
   layers.soil = interpretLayer('soil', landRes);
   layers.terrain = interpretLayer('terrain', landRes);

@@ -21,7 +21,9 @@ test('Kootenai has hand-checked zoning, flood and assessor class for at least 4 
   const layers = {
     zoning: { status: 'ok', values: { code: 'R-12', jurisdiction: "City of Coeur d'Alene" } },
     flood: { status: 'ok', values: { high: false, zones: ['X'] } },
-    assessment: { status: 'ok', values: { propertyClass: '541' } }
+    assessment: { status: 'ok', values: { propertyClass: '541' } },
+    // Live run of /api/public-utilities on 2026-11-09 (in-process Worker).
+    publicUtilities: { status: 'ok', values: { water: 'served', waterProviders: ["City of Coeur d'Alene (CDA Water)", 'CDA Water'], sewer: 'served', sewerPublic: true } }
   };
   assert.deepEqual(compareExpected(byId.C72150030040.expected, layers), []);
 });
