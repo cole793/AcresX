@@ -113,6 +113,7 @@ const CASES = [
   ['parcel-search MT Gallatin', post('/api/parcel-search', { state: 'MT', county: 'Gallatin', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.PARCELID, PARCEL)],
   ['parcel-search MT Yellowstone', post('/api/parcel-search', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.GEOCODE, PARCEL)],
   ['parcel-search ID Ada', post('/api/parcel-search', { state: 'ID', county: 'Ada', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.SITUS_ADDRESS, '100 SITE RD')],
+  ['parcel-search WA Spokane', post('/api/parcel-search', { state: 'WA', county: 'Spokane', parcelId: SPOKANE_PARCEL }), b => { assert.equal(b.parcel.properties.ORIG_PARCEL_ID, SPOKANE_PARCEL); assert.equal(b.parcel.properties.SITUS_ADDRESS, '100 SITE RD'); }],
   ['parcel-search ID Kootenai', post('/api/parcel-search', { state: 'ID', county: 'Kootenai', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.PIN, PARCEL)],
   ['well-search MT', post('/api/well-search', { state: 'MT', ...point }), b => { assert.ok(b.wells.length > 0); assert.equal(b.wells[0].properties.ProjectName, 'Montana GWIC well'); }],
   ['well-search ID', post('/api/well-search', { state: 'ID', ...point }), b => { assert.ok(b.wells.length > 0); assert.equal(b.wells[0].properties.ProjectName, 'Domestic'); }],
