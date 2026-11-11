@@ -41,13 +41,23 @@ Merged 2026-11-05 to 11-07 (owner-approved, all deploys succeeded): #41 Stevens 
 (RealPropertyParcels_Public), #42 Stevens flood from the county's digitized FIRM, #43 Stevens
 zoning adapter (city layers, LAMIRD/UGA).
 
+Merged 2026-11-09 to 11-11 (owner-approved, all deploys succeeded): #46, #48, #49, #50, #51,
+#52.
+
 ## County report card (checklist score)
 
-Kootenai 87, Yellowstone 80, Spokane 79, Gallatin 75 (all level 2, 2026-11-03); Stevens 78
-(level 2, 2026-11-07).
+Kootenai 87, Yellowstone 80, Gallatin 75 (all level 2, 2026-11-03); Stevens 78 (level 2,
+2026-11-07); Spokane about 90 (2026-11-11), level 2; level 3 pending a second consecutive clean
+daily run.
+City of Spokane and Spokane Valley zoning rules are blocked: their code sites block automated
+fetches, and the owner was asked for the code pages.
 Kootenai's first fully clean run was 2026-11-03T23:25Z; level 3 needs a second consecutive clean
 daily run plus the owner comparing 2 parcels with the county site. All five counties are in the
 daily validation run.
+
+Daily run 2026-11-11: Kootenai, Spokane, Stevens and Yellowstone had 0 problems; Gallatin had 1
+(GWIC wells timeout). Those results weren't published to `validation-results` because the
+artifact upload failed (fixed on `claude/validation-publish-resilience`).
 
 ## Offered next (not approved)
 
@@ -83,6 +93,11 @@ Each entry: date, the exact action approved.
   2026-10-29. "Not yet" on contacting the county.
 - 2026-10-28: "Start 1 and 2" from the backend audit; browser fallback option A; keep the
   power-provider score change (Avista-territory parcels about +0.1).
+- 2026-11-09 to 11-11: merges #46, #48, #49, #50, #51 and #52, each owner-approved; all deploys
+  succeeded.
+- 2026-11-11: owner reviewed Spokane parcels 35204.2729 and 57344.0125 on the live site against
+  SCOUT and signed off (checklist §7 owner sign-off for Spokane). Owner earlier confirmed
+  Kootenai C72150030040 = R-12 (1 of 2 Kootenai sign-off parcels).
 
 ## Next steps (offered, not approved)
 
