@@ -31,7 +31,11 @@ status per county. It needs internet access, so it runs in GitHub Actions
 (`.github/workflows/county-validation.yml`), not in `npm test`. Each run commits its results to
 the `validation-results` branch, so they can be read without Actions artifact access:
 `git fetch origin validation-results && git show origin/validation-results:latest/kootenai.md`.
-See `validation/README.md`.
+See `validation/README.md`. Each matrix leg pushes its own county's results with
+`scripts/publish-validation-results.sh` (rebuild on the branch tip and retry, never force), so
+publishing doesn't depend on Actions artifacts; the artifact upload is `continue-on-error`. The
+push and retry logic is tested offline against a local bare repo in
+`test/publish-validation-results.test.js`.
 
 The daily scheduled run (13:23 UTC, counties with saved parcels only) compares each county with
 its previous run (`latest/<county>-changes.md`) and keeps one GitHub issue per county open while

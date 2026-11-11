@@ -73,12 +73,23 @@ jobs:
           echo "list=$list" >> "$GITHUB_OUTPUT"
           echo "Counties: $list"
 
+  # Each leg validates one county and commits its own results to the `validation-results` branch
+  # (last step), so publishing goes over plain git and never depends on the Actions artifact
+  # service (on 2026-11-11 artifact uploads failed and the results were lost). This is the only
+  # job with write access, and only the two git steps get the token: checkout keeps no
+  # credentials, so the validation scripts never see it. The publish script only ever pushes to
+  # refs/heads/validation-results (never main, never --force); legs touch disjoint files and
+  # rebuild on the remote tip before each push attempt, so concurrent legs and runs can't clobber
+  # each other. Pushes made with GITHUB_TOKEN don't start other workflows, and
+  # deploy-cloudflare.yml only runs on main anyway.
   validate:
     needs: counties
     # An empty matrix is an error in Actions; with no county to run there is nothing to do.
     if: ${{ needs.counties.outputs.list != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -87,6 +98,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -98,7 +111,12 @@ jobs:
       - name: Fetch the previous run's results
         env:
           COUNTY: ${{ matrix.county }}
+          TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
         run: |
+          # Git auth for this step only (checkout keeps no credentials).
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.$SERVER_URL/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
           mkdir -p previous
           if git fetch -q --depth=1 origin "+refs/heads/validation-results:refs/remotes/origin/validation-results" 2>/dev/null \
             && git show "origin/validation-results:latest/$COUNTY.json" > "previous/$COUNTY.json" 2>/dev/null; then
@@ -134,7 +152,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           if [ ! -f "validation-results/$COUNTY.json" ]; then echo "No report to compare."; exit 0; fi
-          node scripts/validation-alerts.mjs --county "$COUNTY" \
+          node scripts/validation-alerts.mjs --county "$COUNTY" --run-id "$RUN_ID" \
             --current "validation-results/$COUNTY.json" --previous "previous/$COUNTY.json" --out validation-results \
             --run-url "$REPO_URL/actions/runs/$RUN_ID" \
             --results-url "$REPO_URL/blob/validation-results/latest/$COUNTY.md" \
@@ -153,121 +171,35 @@ jobs:
             echo "No report was written for $COUNTY (the script failed; see the run log)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      # Convenience copy only: nothing downstream needs the artifact, so an artifact-service
+      # outage is a warning on this step, not a failed leg.
       - name: Upload results
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: county-validation-${{ matrix.county }}
           path: validation-results/
           if-no-files-found: warn
 
-  # Commits every county's results to the `validation-results` branch so they can be read with
-  # `git fetch` (see validation/README.md). One job collects all matrix legs, so legs of the same
-  # run never race each other; the retry loop covers a different run pushing at the same time.
-  # This is the only job with write access, and it only ever pushes HEAD to
-  # refs/heads/validation-results (never main, never --force). Pushes made with GITHUB_TOKEN don't
-  # start other workflows, and deploy-cloudflare.yml only runs on main anyway.
-  publish:
-    needs: [counties, validate]
-    if: ${{ always() && needs.counties.result == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Download results
-        # A run where every leg crashed has no artifacts; the commit step then warns per county.
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          pattern: county-validation-*
-          path: collected
-          merge-multiple: true
-
-      - name: Checkout repository (for git credentials only)
-        uses: actions/checkout@v4
-        with:
-          path: repo
-          fetch-depth: 1
-
       - name: Commit results to the validation-results branch
+        if: always()
         env:
-          COUNTIES: ${{ needs.counties.outputs.list }}
+          COUNTY: ${{ matrix.county }}
           RUN_ID: ${{ github.run_id }}
+          TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
         run: |
-          set -euo pipefail
-          BRANCH=validation-results
-          COLLECTED="$GITHUB_WORKSPACE/collected"
-          RESULTS="$GITHUB_WORKSPACE/results"
-          DATE=$(date -u +%F)
-          cd repo
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-
-          # Rebuild the commits on top of the branch as it is on the remote right now.
-          build() {
-            git worktree remove --force "$RESULTS" 2>/dev/null || true
-            git worktree prune
-            git branch -D "$BRANCH-new" 2>/dev/null || true
-            set +e; git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; exists=$?; set -e
-            if [ "$exists" -eq 0 ]; then
-              git fetch -q --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
-              git worktree add -q --detach "$RESULTS" "origin/$BRANCH"
-            elif [ "$exists" -eq 2 ]; then
-              echo "No $BRANCH branch yet; starting it as an orphan."
-              git worktree add -q --detach "$RESULTS" HEAD
-              git -C "$RESULTS" checkout -q --orphan "$BRANCH-new"
-              git -C "$RESULTS" rm -rfq .
-            else
-              echo "::error::Could not list remote branches (git ls-remote exit $exists)."
-              exit 1
-            fi
-            made=0
-            for county in $(echo "$COUNTIES" | jq -r '.[]'); do
-              case "$county" in *[!a-z0-9-]*|'') echo "Skipping invalid county name"; continue ;; esac
-              if [ ! -f "$COLLECTED/$county.json" ]; then
-                echo "::warning::No results for $county (its validation step failed before writing a report)."
-                continue
-              fi
-              mkdir -p "$RESULTS/latest" "$RESULTS/history/$DATE"
-              failed=$(jq -r '.summary.failed // "unknown"' "$COLLECTED/$county.json")
-              if [ "$(jq -r '.discovered // false' "$COLLECTED/$county.json")" = "true" ]; then
-                # Discovery output never replaces latest/<county>.json: that file is the saved-parcel
-                # baseline the next scheduled run compares with.
-                cp "$COLLECTED/$county.json" "$RESULTS/latest/$county-discover-report.json"
-                cp "$COLLECTED/$county.md" "$RESULTS/latest/$county-discover-report.md"
-                if [ -f "$COLLECTED/$county-discovered.json" ]; then cp "$COLLECTED/$county-discovered.json" "$RESULTS/latest/"; fi
-                cp "$COLLECTED/$county.json" "$RESULTS/history/$DATE/$county-$RUN_ID-discover.json"
-                message="Validation $county $DATE run $RUN_ID (discover): $failed failed"
-              else
-                cp "$COLLECTED/$county.json" "$COLLECTED/$county.md" "$RESULTS/latest/"
-                if [ -f "$COLLECTED/$county-changes.md" ]; then cp "$COLLECTED/$county-changes.md" "$RESULTS/latest/"; fi
-                cp "$COLLECTED/$county.json" "$RESULTS/history/$DATE/$county-$RUN_ID.json"
-                message="Validation $county $DATE run $RUN_ID: $failed failed"
-              fi
-              git -C "$RESULTS" add -A latest history
-              if git -C "$RESULTS" diff --cached --quiet; then continue; fi
-              git -C "$RESULTS" commit -q -m "$message"
-              made=$((made + 1))
-            done
-          }
-
-          for attempt in 1 2 3; do
-            build
-            if [ "$made" -eq 0 ]; then echo "Nothing to commit."; exit 0; fi
-            if git -C "$RESULTS" push origin "HEAD:refs/heads/$BRANCH"; then
-              echo "Pushed $made commit(s) to $BRANCH."
-              exit 0
-            fi
-            echo "Push rejected (attempt $attempt); another run probably pushed first. Retrying."
-            sleep $((attempt * 5 + RANDOM % 5))
-          done
-          echo "::error::Could not push to $BRANCH after 3 attempts."
-          exit 1
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.$SERVER_URL/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          RESULTS_DIR=validation-results bash scripts/publish-validation-results.sh
 
   # Opens, updates or closes one issue per county from the decision the validate job wrote
-  # (<county>-alert.json, made by scripts/validation-alerts.mjs). Scheduled runs only. This is the
-  # only job that can write issues, and it has no other permissions (no checkout, no contents).
+  # (<county>-alert.json, made by scripts/validation-alerts.mjs). Scheduled runs only. It reads the
+  # decision from the artifact, or, when the artifact is missing (artifact-service outage), from
+  # latest/<county>-alert.json on the validation-results branch, used only when its runId is this
+  # run's. So issues follow the validation results, not upload success. This is the only job that
+  # can write issues; besides that it can only read contents (no checkout).
   # Titles and bodies come from files and quoted variables, never from expressions in the script.
   alert:
     needs: [counties, validate]
@@ -275,6 +207,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      contents: read
       issues: write
     steps:
       - name: Download results
@@ -290,6 +223,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           COUNTIES: ${{ needs.counties.outputs.list }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           LABEL=validation-alert
@@ -297,8 +231,15 @@ jobs:
             case "$county" in *[!a-z0-9-]*|'') echo "Skipping invalid county name"; continue ;; esac
             alert="collected/$county-alert.json"
             if [ ! -f "$alert" ]; then
-              echo "::warning::No alert decision for $county (its validation or comparison step failed)."
-              continue
+              alert="branch-$county-alert.json"
+              if gh api -H 'Accept: application/vnd.github.raw' \
+                  "repos/$GH_REPO/contents/latest/$county-alert.json?ref=validation-results" > "$alert" 2>/dev/null \
+                && [ "$(jq -r '.runId // empty' "$alert" 2>/dev/null)" = "$RUN_ID" ]; then
+                echo "$county: no artifact; using this run's decision from the validation-results branch."
+              else
+                echo "::warning::No alert decision for $county from this run (its validation, comparison or publish step failed)."
+                continue
+              fi
             fi
             county_label="county:$county"
             alerting=$(jq -r '.alerting' "$alert")

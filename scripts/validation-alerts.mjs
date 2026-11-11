@@ -4,7 +4,7 @@
 // GitHub. The workflow's `alert` job reads the decision and runs `gh` (see validation/README.md).
 //
 //   node scripts/validation-alerts.mjs --county kootenai --current validation-results/kootenai.json \
-//     [--previous previous/kootenai.json] [--out validation-results] [--run-url URL] [--results-url URL]
+//     [--previous previous/kootenai.json] [--out validation-results] [--run-id ID] [--run-url URL] [--results-url URL]
 //
 // Writes <out>/<county>-changes.md (what changed since the previous run) and
 // <out>/<county>-alert.json (the alert decision plus the rendered issue title, body and comments).
@@ -263,8 +263,8 @@ export function buildAlert(previous, current, links = {}, options = {}) {
 // --- CLI -------------------------------------------------------------------------------------
 
 export function parseArgs(argv) {
-  const args = { county: '', current: '', previous: '', out: 'validation-results', runUrl: '', resultsUrl: '', changesUrl: '', historyUrl: '' };
-  const flags = { '--county': 'county', '--current': 'current', '--previous': 'previous', '--out': 'out', '--run-url': 'runUrl', '--results-url': 'resultsUrl', '--changes-url': 'changesUrl', '--history-url': 'historyUrl' };
+  const args = { county: '', current: '', previous: '', out: 'validation-results', runId: '', runUrl: '', resultsUrl: '', changesUrl: '', historyUrl: '' };
+  const flags = { '--county': 'county', '--current': 'current', '--previous': 'previous', '--out': 'out', '--run-id': 'runId', '--run-url': 'runUrl', '--results-url': 'resultsUrl', '--changes-url': 'changesUrl', '--history-url': 'historyUrl' };
   for (let i = 0; i < argv.length; i++) {
     const key = flags[argv[i]];
     if (!key) throw new Error(`Unknown argument: ${argv[i]}`);
@@ -272,6 +272,7 @@ export function parseArgs(argv) {
   }
   if (!/^[a-z0-9-]+$/.test(args.county)) throw new Error('--county is required (lowercase file name, e.g. kootenai).');
   if (!args.current) throw new Error('--current is required.');
+  if (args.runId && !/^[0-9]+$/.test(args.runId)) throw new Error('--run-id must be digits.');
   for (const [flag, k] of Object.entries(flags)) if (k.endsWith('Url') && args[k] && !/^https:\/\/[^\s<>()]+$/.test(args[k])) throw new Error(`${flag} must be an https URL.`);
   return args;
 }
@@ -288,7 +289,9 @@ async function main() {
   if (!current) throw new Error(`No current report at ${args.current}.`);
   const previous = await readJson(args.previous);
   const links = { runUrl: args.runUrl, resultsUrl: args.resultsUrl, changesUrl: args.changesUrl, historyUrl: args.historyUrl };
-  const alert = buildAlert(previous, current, links);
+  // runId lets the workflow's alert job tell this run's decision from an older one when it reads
+  // latest/<county>-alert.json from the validation-results branch (artifact fallback).
+  const alert = { ...(args.runId ? { runId: args.runId } : {}), ...buildAlert(previous, current, links) };
   await mkdir(args.out, { recursive: true });
   await writeFile(path.join(args.out, `${args.county}-changes.md`), renderChanges(current, alert.changes));
   await writeFile(path.join(args.out, `${args.county}-alert.json`), JSON.stringify(alert, null, 2) + '\n');
