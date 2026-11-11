@@ -70,8 +70,8 @@ test('withoutPersonalFields drops owner/mailing keys at any depth and keeps zoni
 test('cache prefixes moved past every version that could have held owner fields', () => {
   assert.match(MONTANA_PARCEL_CACHE_PREFIX, /\/v2\/$/);
   // spokane-intelligence v3 stores jurisdiction-first, whole-parcel zoning shares (city zoning);
-  // v4 adds the overlay layers.
-  assert.match(SPOKANE_CACHE_PREFIX, /\/spokane-intelligence\/v4\/$/);
+  // v4 adds the overlay layers; v5 stores the city layer URL and the city overlays.
+  assert.match(SPOKANE_CACHE_PREFIX, /\/spokane-intelligence\/v5\/$/);
   // yellowstone-intelligence v3: layers read across the parcel outline with named fields only.
   assert.match(YELLOWSTONE_CACHE_PREFIX, /\/yellowstone-intelligence\/v3\/$/);
   // gallatin-zoning v3: answers keyed by parcel outline and built from named fields only.

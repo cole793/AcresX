@@ -30,12 +30,22 @@
 //   ("Official Zoning Ordinance 20-009") was also last edited 2024-05-30. ViewerV3 is the newest.
 //   Zoning_Desg is sometimes another zone's text ('I' polygons labelled '... (R-3)'), so it is used
 //   as the name only when its parenthesised code matches Zoning.
-// - City of Cheney: https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3
-//   "Zoning_2025"; copyright "Community Development Department, City of Cheney"; service
-//   description "Zoning effective March 12th, 2025 w/ passage of Ordinance Y-84". Linked from the
-//   city's Maps and Planning pages (cityofcheney.org/196/Maps, /192/Planning-Department) through
-//   the cheney.maps.arcgis.com zoning app. Fields: ZoneCODE ('R-1'), ZONE ('Single Family
-//   Residential').
+// - City of Cheney: https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/4
+//   "Zoning 2026". The city republished the service around 2026-11-10 and renumbered its layers:
+//   0 Building Footprints 2026, 1 Cheney Parcels 2026, 2 Central Cheney Historic District,
+//   3 PUD Overlay, 4 Zoning 2026 (`?f=json`, checked 2026-11-10; layer 3 was "Zoning_2025" before,
+//   so the old layer-3 query now fails with 400 "Cannot perform query. Invalid query parameters.").
+//   Layer 4 fields: RuleID, ZONE ('Single Family Residential'), ZoneCODE ('R-1'), ACREAGE, AREA;
+//   last edit 2026-11-10. Service description "Zoning effective March 12th, 2025 w/ passage of
+//   Ordinance Y-84; approved on February 10th, 2025." Layer 3 "PUD Overlay" (description "To show
+//   the extent of zoning overlays for Planned Unit Developments (PUDs) within the corporate
+//   boundaries of the City of Cheney, Washington."; copyright "Community Development Department,
+//   City of Cheney"): fields PUDCODE ('PUD') and ZONE (the underlying zone, 'R-1' or 'R-3'); shown
+//   as an additive overlay. Point check 2026-11-10 for parcel 13013.2211 (3175 Pheasant St):
+//   .../FeatureServer/4/query?f=json&geometry=-117.575987,47.510249&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneCODE,ZONE&returnGeometry=false
+//   -> ZoneCODE 'R-1', ZONE 'Single Family Residential'; layer 3 with outFields=PUDCODE,ZONE ->
+//   'PUD', 'R-1'. Linked from the city's Maps and Planning pages (cityofcheney.org/196/Maps,
+//   /192/Planning-Department) through the cheney.maps.arcgis.com zoning app.
 // - City of Airway Heights: https://services6.arcgis.com/yrsL3gWPR8ZySnTr/arcgis/rest/services/Current_Zoning_Districts/FeatureServer/0
 //   Org yrsL3gWPR8ZySnTr is "City of Airway Heights, WA GIS" (urlKey cawh); item credits "City of
 //   Airway Heights, Spokane County". Field Zoning_Dis ('I-2, Heavy Industrial', 'Open Space').
@@ -47,8 +57,18 @@
 // - Medical Lake, Deer Park, Millwood: no public zoning layer found (ArcGIS Online search and the
 //   city sites). Medical Lake publishes its zoning map as an image and Deer Park as PDFs. Millwood's
 //   site sits behind a bot check, so no page was verified. The towns were not researched.
+//
+// Renumbered layers: each city layer names the layer it expects (`layerName`). When a query fails
+// with a moved-layer error (src/shared/arcgis-layer-move.js: ArcGIS 400 "Invalid query
+// parameters", an invalid field, "Layer not found"), the service's `?f=json` is read once, the one
+// layer whose name matches and that has every outField is asked instead, a {"evt":"layer-moved"}
+// line is logged, and the new id is kept for the rest of the isolate's life. Layer names on
+// 2026-11-10: City of Spokane Zoning/FeatureServer has only 5 "Zoning"; Spokane Valley
+// ViewerV3/LandUse has 1 "Zoning" and 4 "Zoning Legacy" (hence the exact pattern); Airway Heights
+// has only 0 "Current_Zoning_Districts"; Liberty Lake only 0 "2024 Zoning".
 import { arcgisQuery, spatialParams } from '../shared/arcgis.js';
-import { coverageShares, coverageNote, pct } from '../shared/polygon-coverage.js';
+import { queryWithLayerRecovery, currentLayerUrl } from '../shared/arcgis-layer-move.js';
+import { coverageShares, overlapShares, coverageNote, pct } from '../shared/polygon-coverage.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
 import { hasSpokaneCityRules, spokaneCityCodeLink } from '../zoning/spokane-city-rules.js';
 
@@ -72,6 +92,8 @@ function airwayParts(attrs) {
   return i > 0 ? { code: value.slice(0, i).trim(), name: value.slice(i + 1).trim() } : { code: value, name: '' };
 }
 
+const CHENEY_ZONING_SERVICE = 'https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer';
+
 // Keyed by the jurisdiction layer's NAME, upper-cased. planningUrl only where the page loaded on
 // 2026-11-02 (my.spokanecity.org is behind a bot check for scripts; the code link comes from the
 // city zoning layer's own description).
@@ -80,7 +102,7 @@ const CITIES = {
     name: 'City of Spokane', planningUrl: 'https://my.spokanecity.org/smc/?Title=17C', planningLabel: 'Open Spokane Municipal Code Title 17C ↗',
     zoning: {
       url: 'https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5',
-      agency: 'City of Spokane GIS', label: 'spokane-city-zoning', sourceField: 'ZoneLabel',
+      agency: 'City of Spokane GIS', label: 'spokane-city-zoning', sourceField: 'ZoneLabel', layerName: /zoning/i,
       outFields: 'ZoneLabel,ZoneCode,ZoneDesc,ZoneGen,Height,Ordinance',
       code: a => text(a.ZoneLabel) || text(a.ZoneCode),
       name: a => text(a.ZoneDesc),
@@ -93,7 +115,7 @@ const CITIES = {
     codeUrl: 'https://ecode360.com/SP4654',
     zoning: {
       url: 'https://arcgis.spokanevalley.org/arcgis/rest/services/ViewerV3/LandUse/MapServer/1',
-      agency: 'City of Spokane Valley GIS', label: 'spokane-valley-zoning', sourceField: 'Zoning',
+      agency: 'City of Spokane Valley GIS', label: 'spokane-valley-zoning', sourceField: 'Zoning', layerName: /^\s*zoning\s*$/i,
       outFields: 'Zoning,Zoning_Desg',
       code: a => text(a.Zoning),
       name: (a, code) => valleyName(a, code)
@@ -102,18 +124,27 @@ const CITIES = {
   CHENEY: {
     name: 'City of Cheney', planningUrl: 'https://www.cityofcheney.org/192/Planning-Department',
     zoning: {
-      url: 'https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3',
-      agency: 'City of Cheney GIS', label: 'cheney-zoning', sourceField: 'ZoneCODE',
+      url: `${CHENEY_ZONING_SERVICE}/4`,
+      agency: 'City of Cheney GIS', label: 'cheney-zoning', sourceField: 'ZoneCODE', layerName: /zoning/i,
       outFields: 'ZoneCODE,ZONE',
       code: a => text(a.ZoneCODE),
       name: a => text(a.ZONE)
-    }
+    },
+    // City overlays (additive information; never change the zone, the rules or the score).
+    overlays: [{
+      type: 'planned_unit_development', url: `${CHENEY_ZONING_SERVICE}/3`, layerName: /\bPUD\b|planned unit/i,
+      agency: 'City of Cheney GIS', label: 'cheney-pud-overlay', outFields: 'PUDCODE,ZONE',
+      key: a => (text(a.PUDCODE) ? `${text(a.PUDCODE)}${text(a.ZONE) ? ` (${text(a.ZONE)})` : ''}` : ''),
+      name: key => `Planned Unit Development overlay: ${key}`,
+      source: 'City of Cheney PUD Overlay (Community Development Department)', checkedLabel: 'PUD Overlay',
+      detail: 'A Planned Unit Development approval can set its own lot sizes, densities and setbacks; check the PUD conditions with the City of Cheney.'
+    }]
   },
   'AIRWAY HEIGHTS': {
     name: 'City of Airway Heights', planningUrl: 'https://cawh.org/planning-department-information/',
     zoning: {
       url: 'https://services6.arcgis.com/yrsL3gWPR8ZySnTr/arcgis/rest/services/Current_Zoning_Districts/FeatureServer/0',
-      agency: 'City of Airway Heights GIS', label: 'airway-heights-zoning', sourceField: 'Zoning_Dis',
+      agency: 'City of Airway Heights GIS', label: 'airway-heights-zoning', sourceField: 'Zoning_Dis', layerName: /zoning/i,
       outFields: 'Zoning_Dis',
       code: a => airwayParts(a).code,
       name: a => airwayParts(a).name
@@ -123,7 +154,7 @@ const CITIES = {
     name: 'City of Liberty Lake', planningUrl: 'https://www.libertylakewa.gov/476/Zoning-Information',
     zoning: {
       url: 'https://services.arcgis.com/sAiTgWHcD4FbRdCu/arcgis/rest/services/Liberty_Lake_Zoning/FeatureServer/0',
-      agency: 'City of Liberty Lake GIS', label: 'liberty-lake-zoning', sourceField: 'Class_Abv',
+      agency: 'City of Liberty Lake GIS', label: 'liberty-lake-zoning', sourceField: 'Class_Abv', layerName: /zoning/i,
       outFields: 'Class_Abv,Class_Desc',
       code: a => text(a.Class_Abv),
       name: a => text(a.Class_Desc)
@@ -189,9 +220,66 @@ export function decideJurisdiction(shares) {
   };
 }
 
-export function queryCityZoningShares(city, where, samples) {
+const recovery = layer => ({ namePattern: layer.layerName, fields: layer.outFields.split(','), agency: layer.agency, label: layer.label });
+
+// The city zoning answer: { layerUrl, shares }. layerUrl is the layer that answered (the new URL
+// after a moved-layer recovery).
+export async function queryCityZoningShares(city, where, samples) {
   const z = city.zoning;
-  return layerShares(z.url, where, samples, { outFields: z.outFields, keyOf: a => z.code(a), agency: z.agency, label: z.label });
+  const { layerUrl, value } = await queryWithLayerRecovery(
+    z.url, url => layerShares(url, where, samples, { outFields: z.outFields, keyOf: a => z.code(a), agency: z.agency, label: z.label }), recovery(z)
+  );
+  return { layerUrl, shares: value };
+}
+
+// One overlay layer of a city (CITIES[...].overlays): { layerUrl, shares: [{ key, share }] }.
+async function queryCityOverlay(layer, where, samples) {
+  const { layerUrl, value } = await queryWithLayerRecovery(layer.url, async url => {
+    const features = await arcgisQuery(url, { ...spatialParams(where), outFields: layer.outFields }, { agency: layer.agency, label: layer.label });
+    return overlapShares(samples, withoutPersonalFields(features), layer.key).map(s => ({ key: s.key, share: round3(s.share) }));
+  }, recovery(layer));
+  return { layerUrl, shares: value };
+}
+
+// The city's overlay layers, one settled answer each ([] for a city without any).
+export function queryCityOverlays(city, where, samples, settle) {
+  return Promise.all((city?.overlays || []).map(layer => settle(queryCityOverlay(layer, where, samples))));
+}
+
+// City overlay entries in the shape of src/counties/spokane-overlays.js overlayResponse, to append
+// to its `overlays` / `overlaysUnavailable`. Additive information only.
+// `checked` lists the city layers that answered ([{ source: city name, layer: checkedLabel }]).
+export function cityOverlayEntries(city, settled) {
+  const overlays = [], unavailable = [], checked = [];
+  (settled || []).forEach((r, i) => {
+    const layer = city?.overlays?.[i];
+    if (!layer) return;
+    if (r?.status !== 'fulfilled') {
+      unavailable.push({ type: layer.type, source: layer.source, sourceUrl: currentLayerUrl(layer.url), error: r?.reason?.message || 'unavailable' });
+      return;
+    }
+    checked.push({ source: city.name, layer: layer.checkedLabel || layer.source });
+    for (const s of r.value?.shares || []) {
+      overlays.push({ type: layer.type, name: layer.name(s.key), source: layer.source, sourceUrl: r.value.layerUrl || layer.url, share: s.share, detail: layer.detail });
+    }
+  });
+  return { overlays, unavailable, checked };
+}
+
+// Adds the city's overlays to the county overlay fields (spokane-overlays.js overlayResponse).
+// When a city overlay layer answered, the answer names the city as a source too (additive keys):
+// overlayNote "mapped by Spokane County and the City of Cheney", overlaySources ['Spokane County',
+// 'City of Cheney'], and cityOverlaysChecked (for the browser's "none mapped" text).
+export function withCityOverlays(fields, city, settled) {
+  const extra = cityOverlayEntries(city, settled);
+  const out = { ...fields, overlays: [...fields.overlays, ...extra.overlays], overlaysUnavailable: [...fields.overlaysUnavailable, ...extra.unavailable] };
+  if (!extra.checked.length) return out;
+  return {
+    ...out,
+    overlayNote: String(out.overlayNote || '').replace('mapped by Spokane County', `mapped by Spokane County and the ${city.name}`),
+    overlaySources: ['Spokane County', city.name],
+    cityOverlaysChecked: extra.checked
+  };
 }
 
 // " About 70% of the parcel is inside City of X limits; the rest is in Y (about 30%)."
@@ -220,7 +308,7 @@ function links(city) {
 // The zoning block for a parcel inside a city, town or the air base. Cities with a zoning layer
 // get the zone covering most of the parcel; the others get an honest "city zoning applies". A
 // failing city layer degrades to "unavailable" for that city only, still naming the city.
-// `zoningR` is the settled city-layer answer (shares), or null when the city has no layer.
+// `zoningR` is the settled city-layer answer ({ layerUrl, shares }), or null when the city has no layer.
 export function cityZoning(city, zoningR, samples, decision) {
   const note = jurisdictionNote(decision);
   const verify = `Verify allowed uses, density, setbacks and overlays with ${city.name}.`;
@@ -242,18 +330,19 @@ export function cityZoning(city, zoningR, samples, decision) {
   });
   if (!city.zoning) return seeCity(`${city.name} does not publish a zoning map layer AcresX can read.`);
   const z = city.zoning;
+  const layerUrl = zoningR?.value?.layerUrl || currentLayerUrl(z.url);
   if (zoningR?.status !== 'fulfilled') {
     const message = zoningR?.reason?.message || 'request failed';
     return {
       status: 'unavailable', code: null, name: '', jurisdictionType: 'city',
       label: `${city.name} zoning lookup unavailable`,
       note: `${applies} The ${city.name} zoning map did not answer (${message}); check with the city.${note}`,
-      sourceUrl: z.url, ...links(city), error: message
+      sourceUrl: layerUrl, ...links(city), error: message
     };
   }
-  const covered = (zoningR.value || []).filter(s => s.key);
+  const covered = (zoningR.value?.shares || []).filter(s => s.key);
   const top = covered[0];
-  if (!top) return { ...seeCity(`The ${city.name} zoning map returned no zone on this parcel (it may be right-of-way or newly annexed).`), sourceUrl: z.url, sourceLabel: 'Open city zoning layer ↗' };
+  if (!top) return { ...seeCity(`The ${city.name} zoning map returned no zone on this parcel (it may be right-of-way or newly annexed).`), sourceUrl: layerUrl, sourceLabel: 'Open city zoning layer ↗' };
   const others = covered.slice(1).filter(s => s.share >= 0.05);
   const uncovered = 1 - covered.reduce((t, s) => t + s.share, 0);
   const shareNote = samples.length > 1 ? coverageNote(top, others, uncovered, 'city zone') : '';
@@ -261,7 +350,7 @@ export function cityZoning(city, zoningR, samples, decision) {
     status: 'gis_match', code: top.key, name: z.name(top.attributes || {}, top.key), jurisdictionType: 'city',
     label: `${city.name} zoning`,
     note: `Mapped from the ${city.name} official zoning map. City zoning applies inside city limits, not Spokane County zoning. ${verify}${shareNote}${note}`,
-    sourceUrl: z.url, sourceField: z.sourceField, ...links(city),
+    sourceUrl: layerUrl, sourceField: z.sourceField, ...links(city),
     ...(city.codeUrl ? { codeUrl: city.codeUrl } : {}),
     ...(z.extra ? z.extra(top.attributes || {}) : {}),
     ...(others.length ? { otherZones: others.map(s => ({ code: s.key, share: s.share })) } : {}),

@@ -40,6 +40,8 @@ function stub(fx, override = []) {
     if (/ZoningLookup\/MapServer\/4\/query/.test(key)) return json(COMP);
     if (/ZoningLookup\/MapServer\/2\/query/.test(key)) return json({ features: [] });
     if (/BPPublic\/MapServer\/5\/query/.test(key)) return json(PERMITS);
+    // Cheney's PUD Overlay, when the parcel's fixture does not record it: no PUD there.
+    if (/Cheney__WA___Zoning_Map___2025_WFL1\/FeatureServer\/3\/query/.test(key)) return json({ features: [] });
     throw new Error(`unexpected request ${key}`);
   };
 }
@@ -259,7 +261,7 @@ const parcel = { type: 'Polygon', coordinates: [[[-117.30, 47.50], [-117.29, 47.
 const synthetic = responses => ({ parcel: { parcelId: 'TEST', lat: 47.505, lon: -117.295, geometry: parcel }, responses });
 const J = 'gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0/query';
 const Z = 'gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query';
-const CHENEY = 'services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/3/query';
+const CHENEY = 'services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/4/query';
 
 test('county zoning: the zone covering most of the parcel wins and the others are noted', async () => {
   stub(synthetic({
