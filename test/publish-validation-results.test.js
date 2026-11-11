@@ -148,6 +148,21 @@ test('rejects invalid county names and run ids', async () => {
   await assert.rejects(publish(clone, { COUNTY: 'kootenai', RESULTS_DIR: results, RUN_ID: '1;x' }), /RUN_ID must be digits/);
 });
 
+test('only publishes to validation-results; other branches need test mode, main and master never', async () => {
+  const clone = makeClone('leg');
+  const results = writeResults('out', 'kootenai', { runId: '1' });
+  const run = env => publish(clone, { COUNTY: 'kootenai', RESULTS_DIR: results, RUN_ID: '1', ...env });
+  await assert.rejects(run({ BRANCH: 'other-results' }), /Refusing to publish to other-results \(only validation-results/);
+  for (const branch of ['main', 'master']) {
+    await assert.rejects(run({ BRANCH: branch }), new RegExp(`Refusing to publish to ${branch}\\.`));
+    await assert.rejects(run({ BRANCH: branch, PUBLISH_TEST_MODE: '1' }), new RegExp(`Refusing to publish to ${branch}\\.`));
+  }
+  assert.deepEqual(files('main'), ['README.md']);
+  assert.equal(git(path.join(dir, 'origin.git'), 'branch', '--list', 'other-results', 'master'), '');
+  await run({ BRANCH: 'other-results', PUBLISH_TEST_MODE: '1' });
+  assert.ok(files('other-results').includes('latest/kootenai.json'));
+});
+
 test('validation-alerts --run-id must be digits', () => {
   assert.equal(parseArgs(['--county', 'kootenai', '--current', 'x', '--run-id', '123']).runId, '123');
   assert.throws(() => parseArgs(['--county', 'kootenai', '--current', 'x', '--run-id', '12a']), /--run-id/);

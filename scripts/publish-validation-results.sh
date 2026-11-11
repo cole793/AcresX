@@ -11,7 +11,8 @@
 #   COUNTY       county file name (required, lowercase letters, digits and dashes)
 #   RESULTS_DIR  directory holding <county>.json, .md, -changes.md, -alert.json, -discovered.json
 #   RUN_ID       GitHub Actions run id (required, digits)
-#   BRANCH       results branch (default validation-results)
+#   BRANCH       results branch (default validation-results). Any other branch is refused unless
+#                PUBLISH_TEST_MODE=1 (tests only); main and master are always refused.
 #   REMOTE       git remote (default origin)
 #   DATE         UTC date for history/ (default today)
 #   ATTEMPTS     push attempts (default 5)
@@ -32,6 +33,14 @@ DATE=${DATE:-$(date -u +%F)}
 ATTEMPTS=${ATTEMPTS:-5}
 RETRY_SECONDS=${RETRY_SECONDS:-5}
 
+case "$BRANCH" in
+  main|master) echo "::error::Refusing to publish to $BRANCH." >&2; exit 1 ;;
+  validation-results) ;;
+  *)
+    if [ "${PUBLISH_TEST_MODE:-}" != "1" ]; then
+      echo "::error::Refusing to publish to $BRANCH (only validation-results is allowed)." >&2; exit 1
+    fi ;;
+esac
 case "$COUNTY" in *[!a-z0-9-]*|'') echo "::error::Invalid county name." >&2; exit 1 ;; esac
 case "$RUN_ID" in *[!0-9]*|'') echo "::error::RUN_ID must be digits." >&2; exit 1 ;; esac
 case "$DATE" in [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;; *) echo "::error::DATE must be YYYY-MM-DD." >&2; exit 1 ;; esac
