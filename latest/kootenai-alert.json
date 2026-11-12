@@ -1,0 +1,29 @@
+{
+  "runId": "43304774155",
+  "county": "Kootenai",
+  "alerting": false,
+  "aboveThreshold": false,
+  "changed": false,
+  "title": "Validation: Kootenai — 0 layers broken",
+  "body": "The scheduled county validation for Kootenai, ID found broken layers (run 2026-11-12T20:53:51.242Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43304774155\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 0, still broken 0, recovered 0, newly unavailable 0.\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-12T20:53:51.242Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43304774155\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 0, still broken 0, recovered 0, newly unavailable 0.\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-12T20:53:51.242Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43304774155\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n",
+  "decision": {
+    "alerting": false,
+    "aboveThreshold": false,
+    "alertLayers": [],
+    "watchLayers": [],
+    "belowThreshold": [],
+    "minParcels": 3,
+    "comparable": true,
+    "reason": null
+  },
+  "changes": {
+    "comparable": true,
+    "reason": null,
+    "newlyBroken": [],
+    "stillBroken": [],
+    "recovered": [],
+    "newlyUnavailable": []
+  }
+}
