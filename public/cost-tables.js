@@ -82,7 +82,9 @@
     // Generic public connection ranges stay in public/public-utilities.js (WATER_COST, SEWER_COST).
     home: { livingSf: 2000, garageSf: 500, valuationLow: 350000, valuationHigh: 500000 },
     // Driveway section: 12 ft wide, 6 in crushed base, 6 in subgrade excavation, 1.5 ton/cy.
-    driveway: { widthFt: 12, baseDepthFt: 0.5, excavationDepthFt: 0.5, tonsPerCy: 1.5, unknownLengthFt: { low: 100, high: 500 } },
+    // Over longFt the measured length is shown as a range from 100 ft; maxFt caps it ("a private
+    // road or easement likely serves this parcel"). Both are AcresX assumptions.
+    driveway: { widthFt: 12, baseDepthFt: 0.5, excavationDepthFt: 0.5, tonsPerCy: 1.5, unknownLengthFt: { low: 100, high: 500 }, longFt: 1000, maxFt: 1500 },
     // Building-pad earthwork by slope tier (cy), on a 60 x 80 ft pad (4,800 sf).
     padCy: { flat: { low: 89, high: 178 }, rolling: { low: 178, high: 356 }, steep: { low: 356, high: 622 }, verySteep: { low: 622, high: 1067 } }
   });
@@ -94,6 +96,48 @@
         avista: {
           ...avistaRates(AVISTA_WA),
           allowance: { value: 7210, unit: 'per individual residence', asOf: '2025-05-15', source: AVISTA_WA, verified: true, note: 'Sheet 51A; the March 2026 rate filing did not change the allowance. Needs at least 4,800 kWh/yr of new load.' }
+        },
+        // Inland Power publishes no tariff; its online estimator (JavaScript, public, no login or
+        // bot check; robots.txt allows it) was driven in headless Chromium on 2026-11-12 and its
+        // "Estimated Cost" recorded per design. Distance = feet from the nearest electrical
+        // facility to the meter. 100 ft offers the short (low-voltage) designs and asks whether the
+        // nearest facility is a transformer; 200 ft and up offer the long (high-voltage) designs and
+        // do not ask (nearestIsTransformer null). Excludes trenching, conduit and vaults.
+        inland: {
+          source: { name: 'Inland Power online residential service estimator, recorded 2026-11-12', url: 'https://www.inlandpower.com/residential-service-estimator' },
+          recorded: '2026-11-12', maxFt: 2640, verified: true,
+          points: [
+          { ft: 100, design: 'Short Overhead', nearestIsTransformer: 'No', cost: 8100 },
+          { ft: 100, design: 'Short Overhead', nearestIsTransformer: 'Yes', cost: 2700 },
+          { ft: 100, design: 'Short Underground from Overhead', nearestIsTransformer: 'No', cost: 8000 },
+          { ft: 100, design: 'Short Underground from Overhead', nearestIsTransformer: 'Yes', cost: 2700 },
+          { ft: 100, design: 'Short Underground from Underground', nearestIsTransformer: 'No', cost: 9200 },
+          { ft: 100, design: 'Short Underground from Underground', nearestIsTransformer: 'Yes', cost: 1600 },
+          { ft: 200, design: 'Long Overhead', nearestIsTransformer: null, cost: 10300 },
+          { ft: 200, design: 'Long Overhead & Underground', nearestIsTransformer: null, cost: 14400 },
+          { ft: 200, design: 'Long Underground', nearestIsTransformer: null, cost: 13200 },
+          { ft: 200, design: 'Long Underground from Underground', nearestIsTransformer: null, cost: 10400 },
+          { ft: 300, design: 'Long Overhead', nearestIsTransformer: null, cost: 10500 },
+          { ft: 300, design: 'Long Overhead & Underground', nearestIsTransformer: null, cost: 14600 },
+          { ft: 300, design: 'Long Underground', nearestIsTransformer: null, cost: 13900 },
+          { ft: 300, design: 'Long Underground from Underground', nearestIsTransformer: null, cost: 11000 },
+          { ft: 400, design: 'Long Overhead', nearestIsTransformer: null, cost: 13700 },
+          { ft: 400, design: 'Long Overhead & Underground', nearestIsTransformer: null, cost: 17800 },
+          { ft: 400, design: 'Long Underground', nearestIsTransformer: null, cost: 14500 },
+          { ft: 400, design: 'Long Underground from Underground', nearestIsTransformer: null, cost: 11700 },
+          { ft: 500, design: 'Long Overhead', nearestIsTransformer: null, cost: 13900 },
+          { ft: 500, design: 'Long Overhead & Underground', nearestIsTransformer: null, cost: 18000 },
+          { ft: 500, design: 'Long Underground', nearestIsTransformer: null, cost: 15200 },
+          { ft: 500, design: 'Long Underground from Underground', nearestIsTransformer: null, cost: 12300 },
+          { ft: 1000, design: 'Long Overhead', nearestIsTransformer: null, cost: 24000 },
+          { ft: 1000, design: 'Long Overhead & Underground', nearestIsTransformer: null, cost: 28100 },
+          { ft: 1000, design: 'Long Underground', nearestIsTransformer: null, cost: 18500 },
+          { ft: 1000, design: 'Long Underground from Underground', nearestIsTransformer: null, cost: 15600 },
+          { ft: 2640, design: 'Long Overhead', nearestIsTransformer: null, cost: 51600 },
+          { ft: 2640, design: 'Long Overhead & Underground', nearestIsTransformer: null, cost: 55700 },
+          { ft: 2640, design: 'Long Underground', nearestIsTransformer: null, cost: 33800 },
+          { ft: 2640, design: 'Long Underground from Underground', nearestIsTransformer: null, cost: 30900 }
+          ]
         }
       },
       connections: [

@@ -12,9 +12,12 @@
 //   'Highway', 'Freeway', 'Freeway Ramp', 'Other Ramp', 'Alley', 'Easement', 'Unimproved',
 //   'Public Safety Only', 'Other', 'Unknown'), Jurisdiction (a city name, 'Spokane County' or a
 //   neighbouring county) and BuildStatus ('Established', 'Pending', 'Vacated', 'Unknown', 'None').
-//   It is used for (a) highways and arterials anywhere and (b) local streets inside a city, where
-//   streets are taken as public (a private lane inside city limits would count as public: an
-//   accepted limit of this layer).
+//   Highways, arterials and collectors count as public anywhere; local streets and alleys count as
+//   public inside a city (a private lane inside city limits would count as public: an accepted
+//   limit of this layer); easement, unimproved and unincorporated local roads count as private
+//   or unknown.
+// Both public and private roads are returned (src/services/road-access.js measures the driveway
+// to the nearest road of any kind and also reports the nearest public road).
 // Freeways and ramps are left out: a home cannot take access from them.
 
 const BASE = 'https://gismo.spokanecounty.org/arcgis/rest/services/OpenData/Transportation/MapServer';
@@ -23,21 +26,37 @@ export const SPOKANE_PUBLIC_SAFETY_STREETS = `${BASE}/1`;
 
 const text = v => (v == null ? '' : String(v).trim());
 
+const PUBLIC_JUR = new Set(['County', 'City/municipal']);
+const ARTERIAL = new Set(['Highway', 'Major Arterial', 'Minor Arterial', 'Collector']);
+
 export const SPOKANE_ROADS = {
   state: 'WA', county: 'Spokane',
   source: { name: 'Spokane County GIS road centerlines (Engineering Streets, Public Safety Streets)', url: BASE },
   layers: [
     {
+      // Every traveled road in the road log, public or private (proposed and unclassified ones left out).
       id: 'spokane-engineering-streets', url: SPOKANE_ENGINEERING_STREETS,
-      where: "JurDesc IN ('County','City/municipal')",
+      where: "JurDesc IS NOT NULL AND JurDesc NOT IN ('Proposed or projected; not traveled','None')",
       outFields: 'RoadName,JurDesc',
-      describe: a => ({ name: text(a.RoadName), kind: text(a.JurDesc) === 'County' ? 'county road' : 'city street' })
+      describe: a => {
+        const jur = text(a.JurDesc);
+        const isPublic = PUBLIC_JUR.has(jur);
+        return { name: text(a.RoadName), kind: jur === 'County' ? 'county road' : jur === 'City/municipal' ? 'city street' : /private/i.test(jur) ? 'private road' : `non-county road (${jur})`, public: isPublic };
+      }
     },
     {
+      // The E911 centerline: highways and arterials anywhere, local streets and alleys (public inside
+      // a city), and easement / unimproved roads (private access).
       id: 'spokane-public-safety-streets', url: SPOKANE_PUBLIC_SAFETY_STREETS,
-      where: "(BuildStatus IS NULL OR BuildStatus NOT IN ('Vacated','Pending')) AND (RoadClass IN ('Highway','Major Arterial','Minor Arterial','Collector') OR (RoadClass = 'Local' AND Jurisdiction <> 'Spokane County'))",
+      where: "(BuildStatus IS NULL OR BuildStatus NOT IN ('Vacated','Pending')) AND RoadClass IN ('Highway','Major Arterial','Minor Arterial','Collector','Local','Alley','Easement','Unimproved')",
       outFields: 'FullName,RoadClass,Jurisdiction',
-      describe: a => ({ name: text(a.FullName), kind: text(a.RoadClass) === 'Local' ? `city street (${text(a.Jurisdiction)})` : text(a.RoadClass).toLowerCase() })
+      describe: a => {
+        const cls = text(a.RoadClass), jur = text(a.Jurisdiction);
+        const inCity = jur && jur !== 'Spokane County';
+        const isPublic = ARTERIAL.has(cls) || ((cls === 'Local' || cls === 'Alley') && inCity);
+        const kind = ARTERIAL.has(cls) ? cls.toLowerCase() : cls === 'Easement' ? 'easement road (private access)' : cls === 'Unimproved' ? 'unimproved road' : isPublic ? `city street (${jur})` : 'local road (public status not mapped)';
+        return { name: text(a.FullName), kind, public: isPublic };
+      }
     }
   ]
 };

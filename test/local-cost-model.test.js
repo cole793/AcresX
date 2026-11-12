@@ -41,7 +41,8 @@ function facts({ county = 'Spokane', provider = '', distanceFt, distStatus = 'ut
 }
 const NONE = { status: 'not_found', provider: null, basis: 'none found' };
 const SERVED = provider => ({ status: 'served', provider, basis: `${provider} main 7 m from the parcel`, source: { name: 'Mains', url: 'https://gis.example.test/3' } });
-const ROAD = (distanceFt, name = 'Test Rd') => ({ available: true, status: 'found', distanceFt, road: { name, kind: 'county road' }, source: { name: 'County road centerlines', url: 'https://gis.example.test/roads' } });
+const ROAD = (distanceFt, name = 'Test Rd', extra = {}) => ({ available: true, status: 'found', distanceFt, road: { name, kind: 'county road', public: true }, nearestPublic: { distanceFt, road: { name, kind: 'county road', public: true } }, source: { name: 'County road centerlines', url: 'https://gis.example.test/roads' }, ...extra });
+const PRIVATE_ROAD = (distanceFt, publicFt) => ROAD(distanceFt, 'Whispering Spring Ln', { road: { name: 'Whispering Spring Ln', kind: 'private road', public: false }, nearestPublic: publicFt == null ? null : { distanceFt: publicFt, road: { name: 'Little Spokane Dr', kind: 'county road', public: true } }, searchedFt: 2640 });
 
 const PAGE = [
   ['div', { class: 'overview-grid' }, '', [
@@ -114,8 +115,34 @@ test('Kootenai Electric: $750 engineering fee plus a labeled generic range', () 
   assert.deepEqual([far.low, far.high], [5000, 25000]);
 });
 
-test('Inland Power, Modern and unknown providers: generic, "no published tariff found"', () => {
-  for (const provider of ['Inland Power & Light', 'Modern Electric Water Co']) {
+// Inland Power estimator, recorded 2026-11-12 (cost-tables.js power.inland.points): at each
+// recorded distance the cheapest-dearest design; linear between distances; meter = line distance + 100 ft.
+//   100 ft (short designs, nearest facility not a transformer): $8,000-$9,200; transformer: $1,600-$2,700
+//   200 ft: $10,300-$14,400 · 400 ft: $11,700-$17,800 · 1,000 ft: $15,600-$28,100 · 2,640 ft: $30,900-$55,700
+test('Inland Power: its online estimator, interpolated, with the transformer case and the 2,640 ft limit', () => {
+  const at = d => estimate({ county: 'Spokane', provider: 'Inland Power & Light', distanceFt: d, distStatus: 'osm_mapped_proximity' }).components.electric;
+  const e300 = at(300);
+  assert.deepEqual([e300.low, e300.high], [11700, 17800]);
+  assert.match(e300.basis, /Inland Power online estimator, recorded 2026-11-12/);
+  assert.match(e300.basis, /excludes trenching, conduit and vaults/);
+  assert.ok(e300.sources.some(s => s.url === 'https://www.inlandpower.com/residential-service-estimator' && s.asOf === '2026-11-12' && s.verified));
+  const e0 = at(0);
+  assert.deepEqual([e0.low, e0.high], [8000, 9200]);
+  assert.match(e0.basis, /if it is a transformer: \$1,600-\$2,700/);
+  const far = at(3000);
+  assert.deepEqual([far.low, far.high], [30900, 55700]);
+  assert.match(far.basis, /Beyond the estimator's 2,640 ft limit/);
+  // Unknown distance: 200 ft to 1,420 ft to the meter; 1,420 ft = 1,000 + 420/1,640 of the way to 2,640.
+  const u = estimate({ county: 'Spokane', provider: 'Inland Power & Light' }).components.electric;
+  assert.deepEqual([u.low, u.high], [10300, Math.round(28100 + (55700 - 28100) * 420 / 1640)]);
+  assert.equal(u.confidence, 'Low');
+  // Kootenai has no Inland table: generic.
+  const k = estimate({ county: 'Kootenai', provider: 'Inland Power & Light', distanceFt: 300, distStatus: 'osm_mapped_proximity' }).components.electric;
+  assert.deepEqual([k.low, k.high], [3500 + 300 * 14, 6000 + 300 * 22]);
+});
+
+test('Modern, Vera and unknown providers: generic, "no published tariff found"', () => {
+  for (const provider of ['Modern Electric Water Co', 'Vera Water & Power']) {
     const e = estimate({ county: 'Spokane', provider, distanceFt: 300, distStatus: 'osm_mapped_proximity' }).components.electric;
     assert.deepEqual([e.low, e.high], [3500 + 300 * 14, 6000 + 300 * 22]);
     assert.match(e.basis, new RegExp(`${provider.replace(/[&]/g, '\\&')}: no published line-extension tariff found`));
@@ -249,11 +276,39 @@ test('driveway: measured length x local DOT $/ft; unknown length -> labeled 100-
   assert.match(k.basis, /Culvert not included/);
   const s = estimate({ county: 'Spokane', road: ROAD(300) }).components.driveway;
   assert.deepEqual([s.low, s.high], [Math.round(300 * id(32, 37)), Math.round(300 * id(45, 50))]);
-  for (const road of [{ available: false, status: 'source_unavailable' }, { available: true, status: 'none_within', distanceFt: null, searchedFt: 2640 }, undefined]) {
+  for (const road of [{ available: false, status: 'source_unavailable' }, undefined]) {
     const u = estimate({ county: 'Kootenai', road }).components.driveway;
     assert.deepEqual([u.low, u.high], [Math.round(100 * id(29, 21)), Math.round(500 * id(34.2, 24))]);
     assert.match(u.basis, /range for a 100-500 ft driveway/);
   }
+});
+
+// Coordinator follow-up 2026-11-12: measure to the nearest road of any kind; a long distance is a
+// range from 100 ft; the length is capped at 1,500 ft with an access note.
+test('driveway: private roads, long distances and the 1,500 ft cap', () => {
+  const id = (agg, exc) => agg / 3 + exc * 2 / 9;
+  const lo = id(29, 21), hi = id(34.2, 24);
+  // The nearest road is private: its exact length, with the access note and the public road named.
+  const p = estimate({ county: 'Kootenai', road: PRIVATE_ROAD(40, 2482) }).components.driveway;
+  assert.deepEqual([p.low, p.high], [Math.round(40 * lo), Math.round(40 * hi)]);
+  assert.match(p.basis, /The nearest public road is Little Spokane Dr at 2,482 ft/);
+  assert.match(p.basis, /a private road or easement likely serves this parcel; verify access/);
+  // Only a public road, over 1,000 ft: "100 ft to N ft", verify the access route.
+  const long = estimate({ county: 'Kootenai', road: ROAD(1265) }).components.driveway;
+  assert.deepEqual([long.low, long.high], [Math.round(100 * lo), Math.round(1265 * hi)]);
+  assert.match(long.basis, /the range is 100 ft to 1,265 ft\. Verify the access route\./);
+  assert.deepEqual([...long.lengthRangeFt], [100, 1265]);
+  // Over the 1,500 ft cap.
+  const cap = estimate({ county: 'Kootenai', road: ROAD(2482) }).components.driveway;
+  assert.deepEqual([cap.low, cap.high], [Math.round(100 * lo), Math.round(1500 * hi)]);
+  assert.match(cap.basis, /Capped at 1,500 ft: a private road or easement likely serves this parcel; verify access\./);
+  // No road at all within the search: 100 ft to the cap.
+  const none = estimate({ county: 'Kootenai', road: { available: true, status: 'none_within', distanceFt: null, nearestPublic: null, searchedFt: 2640 } }).components.driveway;
+  assert.deepEqual([none.low, none.high], [Math.round(100 * lo), Math.round(1500 * hi)]);
+  assert.match(none.basis, /No mapped road within 2,640 ft.*a private road or easement likely serves this parcel; verify access/);
+  // At 1,000 ft exactly: still the measured length.
+  const edge = estimate({ county: 'Kootenai', road: ROAD(1000) }).components.driveway;
+  assert.deepEqual([edge.low, edge.high], [Math.round(1000 * lo), Math.round(1000 * hi)]);
 });
 
 test('site work: slope tiers as pad earthwork x local excavation $/cy + allowance', () => {
@@ -347,14 +402,24 @@ function stub(routes) {
   return calls;
 }
 
-test('road access: Kootenai public roads only, nearest in the first ring that has one', async () => {
-  const calls = stub({ [KOOTENAI_ROADS_LAYER]: ring => json({ features: ring >= 1320 ? [roadFeature({ ST_NAME: 'BEST', ST_TYPE: 'RD', CARTO_TYPE: 'LOCAL ROAD' }), roadFeature({ ST_NAME: 'FAR', CARTO_TYPE: 'LOCAL ROAD' }, 0.004)] : [] }) });
+test('road access: Kootenai nearest road of any kind, then searches on for the nearest public road', async () => {
+  // A private lane in the first ring; the public road only in the 2,640 ft ring.
+  const calls = stub({ [KOOTENAI_ROADS_LAYER]: ring => json({ features: [
+    ...(ring >= 330 ? [roadFeature({ ST_NAME: 'BIRDSONG', ST_TYPE: 'LN', CARTO_TYPE: 'LOCAL ROAD', STATUS: 'PRIVATE' }, 0.0005)] : []),
+    ...(ring >= 2640 ? [roadFeature({ ST_NAME: 'TWINLOW', ST_TYPE: 'RD', CARTO_TYPE: 'LOCAL ROAD', STATUS: 'PUBLIC' }, 0.008)] : [])
+  ] }) });
   const r = await lookupRoadAccess({ state: 'ID', county: 'Kootenai', lat: LAT, lon: LON });
   assert.equal(r.status, 'found');
-  assert.ok(Math.abs(r.distanceFt - 490) < 10, `about 490 ft, got ${r.distanceFt}`);
-  assert.deepEqual(r.road, { name: 'BEST RD', kind: 'local road' });
-  assert.deepEqual(calls.map(c => c.ring), [330, 1320]);
-  assert.match(calls[0].where, /STATUS = 'PUBLIC'/);
+  assert.ok(Math.abs(r.distanceFt - 123) < 5, `about 123 ft, got ${r.distanceFt}`);
+  assert.deepEqual(r.road, { name: 'BIRDSONG LN', kind: 'private local road', public: false });
+  assert.equal(r.nearestPublic.road.name, 'TWINLOW RD');
+  assert.ok(Math.abs(r.nearestPublic.distanceFt - 1966) < 20, `about 1,966 ft, got ${r.nearestPublic.distanceFt}`);
+  assert.deepEqual(calls.map(c => c.ring), [330, 1320, 2640]);
+  assert.match(calls[0].where, /STATUS IN \('PUBLIC','PRIVATE','MIXED'\)/);
+  // A public road in the first ring stops the search there.
+  const one = stub({ [KOOTENAI_ROADS_LAYER]: () => json({ features: [roadFeature({ ST_NAME: 'BEST', ST_TYPE: 'RD', CARTO_TYPE: 'LOCAL ROAD', STATUS: 'PUBLIC' }, 0.0005)] }) });
+  const q = await lookupRoadAccess({ state: 'ID', county: 'Kootenai', lat: LAT, lon: LON });
+  assert.deepEqual([q.road.public, q.nearestPublic.distanceFt, one.length], [true, q.distanceFt, 1]);
 });
 
 test('road access: Spokane asks both street layers; a failed layer makes the answer unavailable', async () => {

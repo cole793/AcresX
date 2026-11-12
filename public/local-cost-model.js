@@ -96,6 +96,24 @@
     const a = T.allowance.value;
     return { oh: { basic: oh, cost: Math.max(0, oh - a) }, ug: { basic: ug, cost: Math.max(0, ug - a) }, allowance: a };
   }
+  // Inland Power estimator outputs recorded at a few distances (cost-tables.js power.inland.points):
+  // at each recorded distance, the cheapest and dearest design it offered (the envelope); between
+  // recorded distances, linear interpolation of that envelope; outside them, the nearest one.
+  function inlandRange(points, ft, transformer) {
+    const at = {};
+    for (const p of points) {
+      // Long designs do not ask whether the nearest facility is a transformer (null): both answers.
+      if ((p.nearestIsTransformer != null && p.nearestIsTransformer !== transformer) || !Number.isFinite(p.cost)) continue;
+      const e = at[p.ft] || (at[p.ft] = { ft: p.ft, low: Infinity, high: -Infinity, designs: [] });
+      e.low = Math.min(e.low, p.cost); e.high = Math.max(e.high, p.cost); e.designs.push(p.design);
+    }
+    const env = Object.values(at).sort((a, b) => a.ft - b.ft);
+    if (!env.length) return { low: 0, high: 0, designs: [] };
+    if (ft <= env[0].ft) return { ...env[0] };
+    if (ft >= env[env.length - 1].ft) return { ...env[env.length - 1] };
+    const j = env.findIndex(e => e.ft >= ft), a = env[j - 1], b = env[j], t = (ft - a.ft) / (b.ft - a.ft);
+    return { low: a.low + (b.low - a.low) * t, high: a.high + (b.high - a.high) * t, designs: [...new Set([...a.designs, ...b.designs])] };
+  }
   function genericPower(P, d) {
     if (Number.isFinite(d) && d <= 2640) {
       const ft = Math.max(50, d);
@@ -122,6 +140,21 @@
       return line('electric', Math.min(a.oh.cost, a.ug.cost), Math.max(b.oh.cost, b.ug.cost), 'Power (Avista line extension)',
         `Distance to Avista's line not mapped: Avista ${stateName} Schedule 51 for ${P.unknownLineFt.low}-${P.unknownLineFt.high.toLocaleString('en-US')} ft of new primary plus an assumed ${s} ft service, overhead to underground, minus the allowance. ${tail}`,
         src, { confidence: 'Low', formula: 'avista', allowance: T.allowance.value });
+    }
+    if (/inland power/i.test(f.provider) && C.power.inland) {
+      const I = C.power.inland, s = P.serviceDropFt;
+      const known = f.distanceFt != null;
+      const dLow = (known ? f.distanceFt : P.unknownLineFt.low) + s;
+      const dHigh = (known ? f.distanceFt : P.unknownLineFt.high) + s;
+      const lo = inlandRange(I.points, Math.min(dLow, I.maxFt), 'No');
+      const hi = inlandRange(I.points, Math.min(dHigh, I.maxFt), 'No');
+      const yes = inlandRange(I.points, Math.min(dLow, I.maxFt), 'Yes');
+      const dText = known ? `${f.distanceFt.toLocaleString('en-US')} ft to mapped power (${f.from}) plus an assumed ${s} ft to the meter` : `distance to Inland's line not mapped; ${dLow.toLocaleString('en-US')}-${dHigh.toLocaleString('en-US')} ft to the meter`;
+      const over = dHigh > I.maxFt ? ` Beyond the estimator's ${I.maxFt.toLocaleString('en-US')} ft limit Inland quotes each job; the ${I.maxFt.toLocaleString('en-US')} ft value is used.` : '';
+      const designs = [...new Set([...lo.designs, ...hi.designs])].join(', ');
+      return line('electric', lo.low, hi.high, 'Power (Inland Power line extension)',
+        `Inland Power online estimator, recorded ${I.recorded}: ${dText}, across its ${designs} designs, nearest facility not a transformer${yes ? ` (if it is a transformer: ${usd0(yes.low)}-${usd0(yes.high)})` : ''}.${over} Ballpark only: Inland's estimate excludes trenching, conduit and vaults for underground service (the applicant's cost), rock and easements. Get an Inland Power estimate.`,
+        [{ name: I.source.name, url: I.source.url, asOf: I.recorded, verified: true }], { confidence: known ? 'Moderate' : 'Low', formula: 'inland' });
     }
     const g = genericPower(P, f.distanceFt);
     if (/kootenai electric/i.test(f.provider) && C.power.kec) {
@@ -266,16 +299,32 @@
     const rate = `$${r.low.toFixed(2)}-$${r.high.toFixed(2)}/ft (${d.widthFt} ft wide, 6 in crushed base at $${D.aggregatePerTon.low}-$${D.aggregatePerTon.high}/ton, 6 in excavation at $${D.excavationPerCy.low}-$${D.excavationPerCy.high}/cy; ${C.state === 'WA' ? 'WSDOT Eastern Region' : 'ITD'} low bids)`;
     const tail = 'Materials at highway-bid prices; small jobs cost more. Culvert not included (not inferable from mapped data).';
     const srcs = [...refs(D.aggregatePerTon), ...refs(D.excavationPerCy)];
+    const fmt = n => Number(n).toLocaleString('en-US');
+    const PRIVATE = 'a private road or easement likely serves this parcel; verify access';
+    const roadSrc = { name: ra?.source?.name || 'County road centerlines', url: ra?.source?.url || '', asOf: '', verified: true };
+    const range = (lo, hi, text, conf, lengthFt) => line('driveway', lo * r.low, hi * r.high, 'Driveway', `${text} x ${rate}. ${tail}`, [...srcs, roadSrc], { confidence: conf, lengthFt, lengthRangeFt: [lo, hi] });
     if (ra?.available && ra.status === 'found' && Number.isFinite(Number(ra.distanceFt))) {
       const L = Math.max(0, Number(ra.distanceFt));
-      return line('driveway', L * r.low, L * r.high, 'Driveway',
-        `${L.toLocaleString('en-US')} ft straight line from the parcel interior point (assumed homesite) to ${ra.road?.name || 'the nearest public road'}${ra.road?.kind ? ` (${ra.road.kind})` : ''} on the county's road centerline map, x ${rate}. ${tail}`,
-        [...srcs, { name: ra.source?.name || 'County road centerlines', url: ra.source?.url || '', asOf: '', verified: true }], { confidence: 'Moderate', lengthFt: L });
+      const road = ra.road || {};
+      const isPrivate = road.public === false;
+      const pub = ra.nearestPublic;
+      const named = `${road.name || 'the nearest road'}${road.kind ? ` (${road.kind})` : ''}`;
+      const pubText = isPrivate ? (pub ? ` The nearest public road is ${pub.road?.name || 'unnamed'} at ${fmt(pub.distanceFt)} ft.` : ` No public road within ${fmt(ra.searchedFt || 0)} ft.`) : '';
+      const where = `${fmt(L)} ft straight line from the parcel interior point (assumed homesite) to ${named} on the county's road centerline map.${pubText}`;
+      if (L <= d.longFt) {
+        return range(L, L, `${where}${isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ''} Driveway ${fmt(L)} ft`, 'Moderate', L);
+      }
+      const hi = Math.min(L, d.maxFt);
+      const capped = L > d.maxFt ? ` Capped at ${fmt(d.maxFt)} ft: ${PRIVATE}.` : isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ' Verify the access route.';
+      return range(d.unknownLengthFt.low, hi, `${where} That is long for a driveway, so the range is ${fmt(d.unknownLengthFt.low)} ft to ${fmt(hi)} ft.${capped}`, 'Low', null);
+    }
+    if (ra?.available && ra.status === 'none_within') {
+      return range(d.unknownLengthFt.low, d.maxFt, `No mapped road within ${fmt(ra.searchedFt || 0)} ft of the parcel interior point: ${PRIVATE}. Range ${fmt(d.unknownLengthFt.low)} ft to ${fmt(d.maxFt)} ft (cap)`, 'Low', null);
     }
     const U = d.unknownLengthFt;
-    const why = ra?.available && ra.status === 'none_within' ? `No mapped public road within ${Number(ra.searchedFt || 0).toLocaleString('en-US')} ft (access may be by private road or easement)` : ra?.status === 'source_unavailable' ? 'The county road map did not answer' : 'Driveway length not measured';
+    const why = ra?.status === 'source_unavailable' ? 'The county road map did not answer' : 'Driveway length not measured';
     return line('driveway', U.low * r.low, U.high * r.high, 'Driveway',
-      `${why}; range for a ${U.low}-${U.high} ft driveway x ${rate}. ${tail}`, srcs, { confidence: 'Low', lengthFt: null });
+      `${why}; range for a ${U.low}-${U.high} ft driveway x ${rate}. ${tail}`, srcs, { confidence: 'Low', lengthFt: null, lengthRangeFt: [U.low, U.high] });
   }
   function sitework(l, C, P) {
     const { band, grade } = slopeBand(l);
