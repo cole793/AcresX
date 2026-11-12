@@ -27,7 +27,8 @@ county, optionally tick `discover`, optionally give a base URL (for example a PR
 Manual runs also take `delay_ms` (pause between parcels, default 5000) and `retry_delay_ms`
 (pause before the parcel-lookup retry, default 15000). The run summary shows what changed since
 the previous run and the table, and the `county-validation-<county>` artifact holds the JSON and
-Markdown. A scheduled run checks every county file **that has saved parcels** daily at 13:23 UTC
+Markdown (a convenience copy; the `validation-results` branch is the record, see "Where results
+live"). A scheduled run checks every county file **that has saved parcels** daily at 13:23 UTC
 (about 6:23 am Pacific), never with discovery, with 5 s between parcels.
 
 ## Rate limits
@@ -76,8 +77,13 @@ labelled `validation-alert` and `county:<county>`, titled `Validation: <County> 
 
 The decision is made offline by `scripts/validation-alerts.mjs` (tests in
 `test/validation-alerts.test.js`) and written to `<county>-alert.json`; the workflow's `alert` job
-only looks up the open issue and runs `gh`. That job runs on scheduled runs only and is the only
-job with `issues: write` (and nothing else). Upstream error text is escaped in issue bodies, and
+only looks up the open issue and runs `gh`. It reads the decision from the run's artifact, or,
+when there is none (artifact-service outage), from `latest/<county>-alert.json` on the
+`validation-results` branch, which it uses only when the file's `runId` is the current run's (a
+stale decision from an earlier run is ignored with a warning, and that county's issue is left as
+it is). So issues follow the validation results, not whether the artifact upload worked. That
+job runs on scheduled runs only and is the only job with `issues: write` (plus `contents: read`
+to read the branch). Upstream error text is escaped in issue bodies, and
 `@` and `#` are broken with a zero-width space, so an issue never mentions anyone or links other
 issues. Manual runs never open, comment on or close issues.
 
@@ -100,6 +106,7 @@ Layout on that branch:
 |---|---|
 | `latest/<county>.json`, `latest/<county>.md` | The most recent saved-parcel run, overwritten each time. Discovery runs never replace it (it is the baseline for alerts). |
 | `latest/<county>-changes.md` | What changed in that run since the run before it (see "Alerts"). |
+| `latest/<county>-alert.json` | That run's alert decision, with its `runId` (see "Alerts"). |
 | `latest/<county>-discover-report.json`, `.md` | The report from the most recent `discover` run. |
 | `latest/<county>-discovered.json` | The sample from the most recent `discover` run. A later run without discovery leaves it in place; check its `generatedAt`. |
 | `history/<YYYY-MM-DD>/<county>-<run_id>.json` | Every saved-parcel run's JSON report, kept (the date is UTC). Discovery runs are `<county>-<run_id>-discover.json`. |
@@ -109,8 +116,22 @@ after the run id for discovery runs), so
 `git log origin/validation-results` is a quick pass/fail history. `<run_id>` is the GitHub Actions
 run id (`https://github.com/<owner>/<repo>/actions/runs/<run_id>`).
 
-The branch holds only results and shares no history with `main`. The workflow's `publish` job is
-the only job with write access, and it only pushes to `validation-results`. Pushing there doesn't
+The branch holds only results and shares no history with `main`.
+
+**Publishing.** Each matrix leg of the `validate` job publishes its own county as its last step,
+with `scripts/publish-validation-results.sh` (tests in `test/publish-validation-results.test.js`),
+over plain git. It doesn't use Actions artifacts, so an artifact-service outage (as on 2026-11-11,
+when every upload failed with an HTML "Failed to CreateArtifact" answer and the old separate
+`publish` job, which downloaded the artifacts, never ran) no longer loses results: the upload
+step is `continue-on-error` and only warns. The script fetches the branch tip, copies only that
+county's files onto it, commits and pushes; when the push is rejected because another leg or run
+pushed first, it rebuilds on the new tip and tries again (5 attempts, growing pause with jitter),
+never merging or forcing. Legs touch disjoint files, so a retry always applies cleanly. A leg
+whose validation crashed before writing a report publishes nothing (a warning); a leg that can't
+push after 5 attempts fails. The `validate` job is the only job with write access
+(`contents: write`); checkout keeps no credentials and only the two git steps (fetching the
+previous results, publishing) get the token, so the validation scripts never see it. The script
+only pushes to `validation-results`. Pushing there doesn't
 deploy anything: the deploy workflow runs on `main` only, and pushes made with the workflow's
 token don't start other workflows. Don't merge `validation-results` into `main` or open a PR
 from it.
