@@ -289,8 +289,13 @@ test('driveway: private roads, long distances and the 1,500 ft cap', () => {
   const id = (agg, exc) => agg / 3 + exc * 2 / 9;
   const lo = id(29, 21), hi = id(34.2, 24);
   // The nearest road is private: its exact length, with the access note and the public road named.
-  const p = estimate({ county: 'Kootenai', road: PRIVATE_ROAD(40, 2482) }).components.driveway;
-  assert.deepEqual([p.low, p.high], [Math.round(40 * lo), Math.round(40 * hi)]);
+  const p = estimate({ county: 'Kootenai', road: PRIVATE_ROAD(240, 2482) }).components.driveway;
+  assert.deepEqual([p.low, p.high], [Math.round(240 * lo), Math.round(240 * hi)]);
+  // Under 50 ft: the 50 ft minimum allowance.
+  const short = estimate({ county: 'Kootenai', road: PRIVATE_ROAD(1, 2482) }).components.driveway;
+  assert.deepEqual([short.low, short.high], [Math.round(50 * lo), Math.round(50 * hi)]);
+  assert.match(short.basis, /Driveway 50 ft \(minimum allowance\)/);
+  assert.equal(short.lengthFt, 50);
   assert.match(p.basis, /The nearest public road is Little Spokane Dr at 2,482 ft/);
   assert.match(p.basis, /a private road or easement likely serves this parcel; verify access/);
   // Only a public road, over 1,000 ft: "100 ft to N ft", verify the access route.

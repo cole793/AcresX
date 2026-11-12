@@ -312,7 +312,9 @@
       const pubText = isPrivate ? (pub ? ` The nearest public road is ${pub.road?.name || 'unnamed'} at ${fmt(pub.distanceFt)} ft.` : ` No public road within ${fmt(ra.searchedFt || 0)} ft.`) : '';
       const where = `${fmt(L)} ft straight line from the parcel interior point (assumed homesite) to ${named} on the county's road centerline map.${pubText}`;
       if (L <= d.longFt) {
-        return range(L, L, `${where}${isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ''} Driveway ${fmt(L)} ft`, 'Moderate', L);
+        const len = Math.max(L, d.minFt);
+        const minText = len > L ? ` Driveway ${fmt(len)} ft (minimum allowance)` : ` Driveway ${fmt(len)} ft`;
+        return range(len, len, `${where}${isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ''}${minText}`, 'Moderate', len);
       }
       const hi = Math.min(L, d.maxFt);
       const capped = L > d.maxFt ? ` Capped at ${fmt(d.maxFt)} ft: ${PRIVATE}.` : isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ' Verify the access route.';

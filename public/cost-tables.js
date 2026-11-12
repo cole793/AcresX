@@ -82,9 +82,10 @@
     // Generic public connection ranges stay in public/public-utilities.js (WATER_COST, SEWER_COST).
     home: { livingSf: 2000, garageSf: 500, valuationLow: 350000, valuationHigh: 500000 },
     // Driveway section: 12 ft wide, 6 in crushed base, 6 in subgrade excavation, 1.5 ton/cy.
-    // Over longFt the measured length is shown as a range from 100 ft; maxFt caps it ("a private
+    // Below minFt the driveway is the minFt "minimum allowance". Over longFt the measured length is
+    // shown as a range from 100 ft; maxFt caps it ("a private
     // road or easement likely serves this parcel"). Both are AcresX assumptions.
-    driveway: { widthFt: 12, baseDepthFt: 0.5, excavationDepthFt: 0.5, tonsPerCy: 1.5, unknownLengthFt: { low: 100, high: 500 }, longFt: 1000, maxFt: 1500 },
+    driveway: { widthFt: 12, baseDepthFt: 0.5, excavationDepthFt: 0.5, tonsPerCy: 1.5, unknownLengthFt: { low: 100, high: 500 }, minFt: 50, longFt: 1000, maxFt: 1500 },
     // Building-pad earthwork by slope tier (cy), on a 60 x 80 ft pad (4,800 sf).
     padCy: { flat: { low: 89, high: 178 }, rolling: { low: 178, high: 356 }, steep: { low: 356, high: 622 }, verySteep: { low: 622, high: 1067 } }
   });
