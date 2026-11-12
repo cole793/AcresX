@@ -1,5 +1,6 @@
 // Pins the county coverage registry (src/config/county-coverage.js) to the checklist audits and
-// live validation runs of 2026-11-03 (Stevens: 2026-11-07). A change to a level, date, score or capability must change this
+// live validation runs of 2026-11-03 (Stevens: 2026-11-07; Kootenai and Yellowstone: level 3 from the
+// 2026-11-09 to 11-11 daily runs plus the owner's 2026-11-12 sign-off). A change to a level, date, score or capability must change this
 // test too, so it shows up in review instead of slipping in with an unrelated edit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ const V = 'validated', P = 'partial', N = 'not_configured';
 
 const EXPECTED = {
   'ID:Kootenai': {
-    level: 2, priority: 1, lastValidated: '2026-11-03', checklistScore: 87, checklistScoreDate: '2026-11-03',
+    level: 3, priority: 1, lastValidated: '2026-11-11', checklistScore: 87, checklistScoreDate: '2026-11-03',
     capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: P }
   },
   'WA:Spokane': {
@@ -17,7 +18,7 @@ const EXPECTED = {
     capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: P }
   },
   'MT:Yellowstone': {
-    level: 2, priority: 1, lastValidated: '2026-11-03', checklistScore: 80, checklistScoreDate: '2026-11-03',
+    level: 3, priority: 1, lastValidated: '2026-11-11', checklistScore: 80, checklistScoreDate: '2026-11-03',
     capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: P }
   },
   'MT:Gallatin': {
@@ -33,7 +34,7 @@ const EXPECTED = {
 const byKey = Object.fromEntries(COUNTY_COVERAGE.map(c => [c.key, c]));
 
 for (const [key, want] of Object.entries(EXPECTED)) {
-  test(`${key} matches its ${want.checklistScoreDate} audit`, () => {
+  test(`${key} matches its audit (score ${want.checklistScoreDate}, validated ${want.lastValidated})`, () => {
     const county = byKey[key];
     assert.ok(county, `${key} is in the registry`);
     assert.equal(county.level, want.level);
@@ -46,12 +47,30 @@ for (const [key, want] of Object.entries(EXPECTED)) {
   });
 }
 
-test('no county claims level 3 yet (needs two consecutive clean runs plus owner sign-off)', () => {
-  assert.deepEqual(COUNTY_COVERAGE.filter(c => c.level >= 3).map(c => c.key), []);
+test('only Kootenai and Yellowstone claim level 3 (two consecutive clean runs plus owner sign-off)', () => {
+  assert.deepEqual(COUNTY_COVERAGE.filter(c => c.level >= 3).map(c => c.key).sort(), ['ID:Kootenai', 'MT:Yellowstone']);
 });
 
-test('Kootenai notes record the first clean run, not a level-3 claim', () => {
-  assert.match(byKey['ID:Kootenai'].notes, /^First clean validation run 2026-11-03T23:25Z \(after the terrain fix\); level 3 needs a second consecutive clean run plus owner sign-off/);
+test('Kootenai notes record the clean runs and the owner sign-off', () => {
+  const notes = byKey['ID:Kootenai'].notes;
+  assert.match(notes, /^Level 3 \(checklist section 7\)/);
+  assert.match(notes, /run 42716955430/);
+  assert.match(notes, /run 42895735135/);
+  assert.match(notes, /2026-11-11 \(run 43094606201/);
+  assert.match(notes, /Owner signed off on 2026-11-12/);
+  assert.match(notes, /0L8210010030/);
+  assert.match(notes, /C72150030040/);
+});
+
+test('Yellowstone notes record the clean runs and the owner sign-off', () => {
+  const notes = byKey['MT:Yellowstone'].notes;
+  assert.match(notes, /^Level 3 \(checklist section 7\)/);
+  assert.match(notes, /run 42716955430/);
+  assert.match(notes, /run 42895735135/);
+  assert.match(notes, /2026-11-11 \(run 43094606201/);
+  assert.match(notes, /Owner signed off on 2026-11-12/);
+  assert.match(notes, /03103233201230000/);
+  assert.match(notes, /03072527101010000/);
 });
 
 test('Spokane notes name the WA validation tool run', () => {
@@ -82,7 +101,7 @@ test('counties outside the audit carry no validated claims, date or score', () =
 test('registry summary counts levels from the same data', () => {
   const { summary } = getCountyCoverageRegistry();
   assert.equal(summary.total, COUNTY_COVERAGE.length);
-  assert.equal(summary.byLevel[2], 5);
-  assert.equal(summary.byLevel[3], undefined);
+  assert.equal(summary.byLevel[2], 3);
+  assert.equal(summary.byLevel[3], 2);
   assert.equal(summary.byLevel[1], COUNTY_COVERAGE.length - 5);
 });

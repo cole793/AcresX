@@ -29,7 +29,7 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| (none) | | | |
+| `claude/level-3-kootenai-yellowstone` | see git | (none yet) | Kootenai + Yellowstone to level 3; awaiting verifier |
 
 Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
 HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
@@ -46,14 +46,13 @@ Merged 2026-11-09 to 11-11 (owner-approved, all deploys succeeded): #46, #48, #4
 
 ## County report card (checklist score)
 
-Kootenai 87, Yellowstone 80, Gallatin 75 (all level 2, 2026-11-03); Stevens 78 (level 2,
-2026-11-07); Spokane about 90 (2026-11-11), level 2; level 3 pending a second consecutive clean
-daily run.
+Kootenai 87 and Yellowstone 80: **level 3** (lastValidated 2026-11-11; clean daily runs
+2026-11-09, 11-10 and 11-11, owner sign-off 2026-11-12; on `claude/level-3-kootenai-yellowstone`,
+not merged yet). Gallatin 75 (level 2, 2026-11-03); Stevens 78 (level 2, 2026-11-07); Spokane
+about 90 (2026-11-11), level 2; level 3 pending one more consecutive clean daily run.
 City of Spokane and Spokane Valley zoning rules are blocked: their code sites block automated
 fetches, and the owner was asked for the code pages.
-Kootenai's first fully clean run was 2026-11-03T23:25Z; level 3 needs a second consecutive clean
-daily run plus the owner comparing 2 parcels with the county site. All five counties are in the
-daily validation run.
+All five counties are in the daily validation run.
 
 Daily run 2026-11-11: Kootenai, Spokane, Stevens and Yellowstone had 0 problems; Gallatin had 1
 (GWIC wells timeout). Those results weren't published to `validation-results` because the
@@ -98,6 +97,8 @@ Each entry: date, the exact action approved.
 - 2026-11-11: owner reviewed Spokane parcels 35204.2729 and 57344.0125 on the live site against
   SCOUT and signed off (checklist §7 owner sign-off for Spokane). Owner earlier confirmed
   Kootenai C72150030040 = R-12 (1 of 2 Kootenai sign-off parcels).
+- 2026-11-12: owner signed off Kootenai (0L8210010030, plus C72150030040 earlier) and Yellowstone
+  (03103233201230000, 03072527101010000) after comparing with county/state sources.
 
 ## Next steps (offered, not approved)
 
