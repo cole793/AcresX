@@ -39,7 +39,7 @@ function render(last, { withUtilities = true } = {}) {
   const page = makeContext({ body: PAGE, clock, fetch: async () => { throw new Error('no network'); }, autoIds: true });
   page.ctx.__last = last;
   page.run('var last = __last; var activeTab = "wells"; function renderSummary() {} function renderResults() { document.getElementById("results").innerHTML = "<p>wells list</p>"; }', 'index-inline.js');
-  for (const f of ['score-cost.js', 'screening-refinements.js', 'spokane-cost-model.js', ...(withUtilities ? ['public-utilities.js'] : [])]) page.run(readPublic(f), f);
+  for (const f of ['score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', ...(withUtilities ? ['public-utilities.js'] : [])]) page.run(readPublic(f), f);
   page.run('renderSummary(last.parcel)');
   const $ = id => page.document.getElementById(id);
   const chips = page.document.querySelector('.score-factor-line')?.textContent || '';
@@ -100,12 +100,17 @@ test('listing data never changes the score, with or without public utilities', (
   assert.equal(a.score, b.score);
 });
 
+// public/local-cost-model.js: in Spokane, a City of Spokane connection uses the city's published
+// GFCs; a provider with no sourced fee keeps the generic connection range from public-utilities.js.
 test('the Spokane cost model swaps its well and septic lines the same way', () => {
   const off = render(baseLast(undefined, { county: 'Spokane' }));
   const on = render(baseLast({ water: SERVED('City of Spokane'), sewer: SERVED('City of Spokane') }, { county: 'Spokane' }));
-  assert.match(off.spokane.components.septic.basis, /SRHD residential OSS permit fee/);
-  assert.deepEqual([on.spokane.components.well.label, on.spokane.components.well.low], ['Water connection', 3000]);
-  assert.deepEqual([on.spokane.components.septic.label, on.spokane.components.septic.high], ['Sewer connection', 20000]);
+  const other = render(baseLast({ water: SERVED('Whitworth Water District #2'), sewer: NONE }, { county: 'Spokane' }));
+  assert.match(off.spokane.components.septic.basis, /Exact SRHD fees \$1,890/);
+  assert.deepEqual([on.spokane.components.well.label, on.spokane.components.well.low], ['Water connection (City of Spokane)', 3475 + 1000]);
+  assert.deepEqual([on.spokane.components.septic.label, on.spokane.components.septic.low], ['Sewer connection (City of Spokane)', 4887 + 1500]);
+  assert.deepEqual([other.spokane.components.well.label, other.spokane.components.well.low, other.spokane.components.well.high], ['Water connection', 3000, 15000]);
+  assert.match(other.spokane.components.well.basis, /Generic connection range: no published fee sourced for Whitworth Water District #2/);
   assert.ok(on.spokane.high < off.spokane.high);
 });
 
