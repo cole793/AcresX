@@ -46,10 +46,11 @@ can test with confidence. Today's state is in `src/config/county-coverage.js`:
 
 | County | Level | Gaps |
 |---|---|---|
-| Spokane, WA | 3 (reference) | tax partial |
-| Yellowstone, MT | 3 (reference) | utilities unvalidated, tax partial |
-| Kootenai, ID | 3 (reference) | utilities unvalidated, assessment partial, tax not configured |
-| Gallatin, MT | 2 | most layers unvalidated, zoning partial, zoning rules not configured |
+| Kootenai, ID | 3 (reference, 2026-11-11) | zoning rules partial (Coeur d'Alene city zones), tax not configured |
+| Yellowstone, MT | 3 (reference, 2026-11-11) | zoning rules partial (unzoned county land), tax not configured |
+| Spokane, WA | 2 (level 3 pending one more clean daily run) | zoning rules partial, tax not configured |
+| Stevens, WA | 2 | terrain partial, tax not configured |
+| Gallatin, MT | 2 | zoning rules not configured, tax not configured |
 
 New counties (the `priority2` list in `county-coverage.js`) come after these are solid.
 

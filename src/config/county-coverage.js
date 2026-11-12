@@ -28,7 +28,9 @@ const statewideBase = {
 //
 // Every capability below comes from live validation runs, 12 parcels per county, never from older
 // hand-set values: 2026-11-03 (started 23:25Z, after PR #30's terrain fix deployed; Spokane ran on
-// the WA validation tool from PR #36) for every county except Stevens, which was re-run 2026-11-07.
+// the WA validation tool from PR #36) for Spokane and Gallatin; Stevens was re-run 2026-11-07;
+// Kootenai and Yellowstone were re-derived from the latest published daily run (2026-11-10, run
+// 42895735135, `latest/<county>.json` on the validation-results branch).
 //   validated      ok on at least 10 of 12 parcels and no mismatch
 //   partial        answered for some parcels, had a mismatch, or answered without usable data
 //   not_configured unavailable on every parcel because nothing is set up for it
@@ -45,21 +47,21 @@ const overrides = {
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Yellowstone': {
-    level: 2,
+    level: 3,
     priority: 1,
-    lastValidated: '2026-11-03',
+    lastValidated: '2026-11-11',
     checklistScore: 80,
     checklistScoreDate: '2026-11-03',
-    notes: 'Validation run 2026-11-03T23:25Z had 1 terrain error and 1 power timeout; zoning rules are missing for 4 of 12 parcels (all unzoned county land).',
+    notes: 'Level 3 (checklist section 7): clean live validation runs (0 parcels with an error or mismatch) on 2026-11-09 (run 42716955430), 2026-11-10 (run 42895735135) and 2026-11-11 (run 43094606201, clean in the job log; not published because of the artifact outage fixed by PR #53). Owner signed off on 2026-11-12 after comparing 03103233201230000 (N3 City of Billings, assessed $857,700, flood X) and 03072527101010000 (Special Zoning District 16, assessed $16,479, flood D) with the county and state sources. Zoning rules are missing for 4 of 12 parcels (all unzoned county land); no tax amount.',
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'ID:Kootenai': {
-    level: 2,
+    level: 3,
     priority: 1,
-    lastValidated: '2026-11-03',
+    lastValidated: '2026-11-11',
     checklistScore: 87,
     checklistScoreDate: '2026-11-03',
-    notes: 'First clean validation run 2026-11-03T23:25Z (after the terrain fix); level 3 needs a second consecutive clean run plus owner sign-off. Zoning rules are missing for 3 of 12 parcels (Coeur d\'Alene R-12 twice, county Restricted Residential).',
+    notes: 'Level 3 (checklist section 7): clean live validation runs (0 parcels with an error or mismatch) on 2026-11-09 (run 42716955430, plus the lead\'s manual run after PR #46 deployed), 2026-11-10 (run 42895735135) and 2026-11-11 (run 43094606201, clean in the job log; not published because of the artifact outage fixed by PR #53). Owner signed off on 2026-11-12 after comparing 0L8210010030 (Rural, assessed $372,460, class 515, flood X), and earlier C72150030040 (Coeur d\'Alene R-12), with the county sources. Zoning rules are missing for 3 of 12 parcels (Coeur d\'Alene R-12 twice, county Restricted Residential); no tax amount.',
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Gallatin': {
