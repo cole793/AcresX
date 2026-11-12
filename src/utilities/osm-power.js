@@ -1,9 +1,44 @@
 import { upstreamJson } from '../shared/upstream.js';
+import { openValueCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 
+// Public Overpass instances, checked 2026-11-12:
+// - overpass-api.de: the main instance.
+// - overpass.private.coffee: "free and unlimited", commercial use allowed; its terms ask users to
+//   limit simultaneous requests and to give notice above 10 requests/s or 10 concurrent requests
+//   (we send at most one per parcel lookup). overpass.kumi.systems now serves the same
+//   Private.coffee instance, so it adds no redundancy and is not listed separately.
+// - overpass.openstreetmap.fr answers 403 "only available to white-listed usages": not usable.
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter'
 ];
+
+// Successful Overpass answers are cached per ~1 km grid cell (0.01 degree) for 30 days: power
+// lines rarely move, and repeat lookups in the same area were the main source of 429s. The query
+// is centred on the cell and its radius covers SEARCH_RADIUS_M from any point in the cell, so a
+// cached cell answers every parcel inside it. Answers Overpass marks as incomplete (a `remark`
+// about a timeout or error) are used but not cached.
+export const OSM_POWER_CACHE_PREFIX = 'https://acresx.internal/cache/osm-power/v1/';
+export const OSM_POWER_CACHE_TTL_SECONDS = 30 * 86400;
+export const OSM_CELL_DEG = 0.01;
+const SEARCH_RADIUS_M = 5000;
+const CELL_MARGIN_M = 800; // half the diagonal of a 0.01 degree cell is under 800 m at these latitudes
+
+export function osmCell(lat, lon) {
+  const cellLat = Math.floor(lat / OSM_CELL_DEG), cellLon = Math.floor(lon / OSM_CELL_DEG);
+  return { key: `${cellLat}:${cellLon}`, lat: Number(((cellLat + 0.5) * OSM_CELL_DEG).toFixed(4)), lon: Number(((cellLon + 0.5) * OSM_CELL_DEG).toFixed(4)) };
+}
+
+// Only the fields the distance and confidence code reads.
+function slimElement(e) {
+  const tags = e.tags ? { power: e.tags.power, location: e.tags.location, operator: e.tags.operator, voltage: e.tags.voltage } : undefined;
+  const out = { type: e.type, id: e.id, tags };
+  if (Number.isFinite(e.lat) && Number.isFinite(e.lon)) { out.lat = e.lat; out.lon = e.lon; }
+  if (Array.isArray(e.geometry)) out.geometry = e.geometry.map(p => ({ lat: p.lat, lon: p.lon }));
+  if (e.center) out.center = { lat: e.center.lat, lon: e.center.lon };
+  return out;
+}
+const incomplete = data => /timed out|error|out of memory/i.test(String(data?.remark || ''));
 
 function toRadians(value) {
   return value * Math.PI / 180;
@@ -116,18 +151,33 @@ function confidenceFor({ nearest, poles, lines, transformers, providerKnown }) {
   return { score: Math.min(score, 100), confidence };
 }
 
-export async function getOsmPowerProximity({ lat, lon, geometry, provider, deadline = Date.now() + OVERPASS_BUDGET_MS, signal }) {
+// The cell's Overpass elements: from the edge cache when present, else one query (cached when complete).
+async function cellElements(cell, { deadline, signal, ctx }) {
+  const slot = await openValueCache(OSM_POWER_CACHE_PREFIX, { cell: cell.key });
+  const hit = await readCachedJson(slot);
+  if (hit && Array.isArray(hit.elements)) return { elements: hit.elements, cached: true };
+  const r = SEARCH_RADIUS_M + CELL_MARGIN_M;
+  const serverTimeoutS = Math.max(1, Math.round((deadline - Date.now()) / 1000));
+  const query = `[out:json][timeout:${serverTimeoutS}];(node["power"="pole"](around:${r},${cell.lat},${cell.lon});node["power"="transformer"](around:${r},${cell.lat},${cell.lon});way["power"="minor_line"](around:${r},${cell.lat},${cell.lon});way["power"="cable"](around:${r},${cell.lat},${cell.lon}););out tags geom center;`;
+  const data = await overpassQuery(query, { deadline, signal });
+  const elements = (data.elements || []).map(slimElement);
+  if (!incomplete(data)) await writeCachedJson(slot, { elements, fetchedAt: new Date().toISOString() }, OSM_POWER_CACHE_TTL_SECONDS, ctx);
+  return { elements, cached: false };
+}
+
+export async function getOsmPowerProximity({ lat, lon, geometry, provider, deadline = Date.now() + OVERPASS_BUDGET_MS, signal, ctx }) {
   const center = { lat: Number(lat), lon: Number(lon) };
   if (!Number.isFinite(center.lat) || !Number.isFinite(center.lon)) {
     return { available: false, status: 'invalid_location', confidence: 'low' };
   }
 
-  const radiusM = 5000;
-  const serverTimeoutS = Math.max(1, Math.round((deadline - Date.now()) / 1000));
-  const query = `[out:json][timeout:${serverTimeoutS}];(node["power"="pole"](around:${radiusM},${center.lat},${center.lon});node["power"="transformer"](around:${radiusM},${center.lat},${center.lon});way["power"="minor_line"](around:${radiusM},${center.lat},${center.lon});way["power"="cable"](around:${radiusM},${center.lat},${center.lon}););out tags geom center;`;
+  const radiusM = SEARCH_RADIUS_M;
+  const cell = osmCell(center.lat, center.lon);
 
   try {
-    const data = await overpassQuery(query, { deadline, signal });
+    const { elements, cached } = await cellElements(cell, { deadline, signal, ctx });
+    // The cell query reaches a little past radiusM from this parcel; keep the original radius.
+    const data = { elements: elements.filter(e => elementPoints(e).some(p => distanceFeet(center, p) <= radiusM * 3.28084)) };
     const features = (data.elements || []).map(element => {
       const points = elementPoints(element);
       if (!points.length) return null;
@@ -178,6 +228,8 @@ export async function getOsmPowerProximity({ lat, lon, geometry, provider, deadl
       },
       nearby: distributionFeatures.slice(0, 8),
       source: 'OpenStreetMap / Overpass API',
+      cached,
+      cacheCell: cell.key,
       sourceUrl: 'https://www.openstreetmap.org',
       note: nearest
         ? 'Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified.'
