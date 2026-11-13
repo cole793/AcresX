@@ -391,11 +391,12 @@ test('the printable report shows the same lines with sources and dates', () => {
   h.context.__acresxLast = data;
   h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
   const html = h.opened.at(-1);
-  assert.match(html, /Power \(Avista line extension\) · get a quote/);
-  assert.match(html, /Sources: Avista Utilities, Washington Schedule 51 \(Tariff WN U-28\) \(as of 2026-05-15\)/);
+  assert.match(html, /<strong>Power \(Avista line extension\)<\/strong><sup class="ref">\[\d+(, \d+)*\]<\/sup><\/td><td><span class="tag fee">Published fee<\/span>/);
+  assert.match(html, /<li value="\d+">Avista Utilities, Washington Schedule 51 \(Tariff WN U-28\), as of 2026-05-15/);
   assert.match(html, /Permits \(building \+ approach\)/);
   assert.match(html, /Local prices for Spokane County, WA/);
-  assert.match(html, /\[unverified\]/);
+  assert.match(html, /AcresX planning allowance \(no official source\) \(unverified\)/);
+  assert.match(html, /Estimate — get a quote/);
 });
 
 // ---- /api/cost-context

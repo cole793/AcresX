@@ -161,7 +161,7 @@ test('the printable report shows public water/sewer and keeps the private well d
   assert.match(html, /Public water: likely available — City of Coeur d(&#39;|')Alene/);
   assert.match(html, /If a private well were needed/);
   assert.match(html, /Water connection/);
-  assert.match(html, /Septic &amp; Soils|Septic & Soils/, 'sewer not found keeps the septic finding');
+  assert.match(html, /<h3>Septic \/ soil/, 'sewer not found keeps the septic card');
 });
 
 test('findPublicUtilities posts state, county, point and outline; a failure answers unavailable', async () => {

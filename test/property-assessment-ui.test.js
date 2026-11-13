@@ -132,20 +132,25 @@ test('overview: class text formatting', () => {
   assert.equal(A.classText({}), '');
 });
 
-test('report: Kootenai shows the assessor class next to zoning, labeled as a tax category', () => {
+// The redesigned report (2026-11-13) shows each assessor value once, in the page-2 assessor record,
+// with the property class labeled as a tax category, not zoning.
+const once = (html, text) => html.split(text).length - 1;
+
+test('report: Kootenai shows the assessor class as a tax category and the land-only value once', () => {
   const { report } = page();
   const html = report({ parcel, propertyAssessment: kootenai, zoningPermits: { zoning: { code: 'AGRICULTURE' } } });
-  assert.match(html, /<div class="identity has-assessor-class">/);
-  assert.match(html, /<span>Zoning<\/span><strong>AGRICULTURE<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>512 – Rural residential tract<\/strong><small>Tax category, not zoning<\/small><\/div><div><span>Assessor Value<\/span><strong>\$99,654<\/strong>/);
-  assert.match(html, /<span>Assessed Value<\/span><strong>\$99,654<\/strong><\/div><div><span>Land Value<\/span><strong>\$99,654<\/strong><\/div><div><span>Assessment Year<\/span><strong>2026<\/strong>/);
+  assert.match(html, /<div class="zone-code">AGRICULTURE<\/div>/);
+  assert.match(html, /<span>Tax category<\/span><strong>512 – Rural residential tract<\/strong><small>Tax category, not zoning<\/small>/);
+  assert.match(html, /<span>Assessed value \(2026\)<\/span><strong>\$99,654<\/strong><small>Land only; no assessed improvements<\/small>/);
+  assert.equal(once(html, '$99,654'), 1, 'land equal to the total is not repeated');
 });
 
-test('report: other counties keep the four-column identity row with no assessor class', () => {
+test('report: a county with no assessor class says so instead of leaving it blank', () => {
   const { report } = page();
   const html = report({ parcel, propertyAssessment: spokane });
-  assert.match(html, /<div class="identity">/);
-  assert.ok(!html.includes('Assessor Class'));
-  assert.match(html, /<span>Assessed Value<\/span><strong>\$120,000<\/strong>/);
+  assert.match(html, /<span>Tax category<\/span><strong>Not available<\/strong>/);
+  assert.match(html, /<span>Assessed value \(2026\)<\/span><strong>\$120,000<\/strong>/);
+  assert.doesNotMatch(html, /undefined|NaN/);
 });
 
 // ---- Stevens County WA (src/counties/stevens-assessor.js): same countyRecords shape as Kootenai.
@@ -226,8 +231,10 @@ test('overview: the shown link is rebuilt from cid, year and prop_id only', () =
 test('report: Stevens shows the assessor class next to zoning and the assessed value', () => {
   const { report } = page();
   const html = report({ parcel: { type: 'Feature', properties: { ORIG_PARCEL_ID: '2342700' }, geometry: null }, propertyAssessment: stevens, zoningPermits: { zoning: { code: 'AR-10' } } });
-  assert.match(html, /<span>Zoning<\/span><strong>AR-10<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>88 – Designated forest land under chapter 84.33 RCW<\/strong><small>Tax category, not zoning<\/small>/);
-  assert.match(html, /<span>Assessed Value<\/span><strong>\$26,794<\/strong><\/div><div><span>Land Value<\/span><strong>\$12,794<\/strong>/);
+  assert.match(html, /<div class="zone-code">AR-10<\/div>/);
+  assert.match(html, /<span>Tax category<\/span><strong>88 – Designated forest land under chapter 84.33 RCW<\/strong><small>Tax category, not zoning<\/small>/);
+  assert.match(html, /<span>Assessed value \(2026\)<\/span><strong>\$26,794<\/strong><\/div><div><span>Land<\/span><strong>\$12,794<\/strong><\/div><div><span>Improvements<\/span><strong>\$14,000<\/strong>/);
+  assert.match(html, /<span>Assessor acres<\/span><strong>280\.00 ac<\/strong>/);
 });
 
 // ---- Spokane County WA (src/counties/spokane-assessor.js): countyRecords like Stevens, plus the
@@ -301,6 +308,8 @@ test('overview: the page checks the SCOUT link again; another host, path, PID or
 test('report: Spokane shows the assessor class next to zoning and the assessed value', () => {
   const { report } = page();
   const html = report({ parcel: { type: 'Feature', properties: { ORIG_PARCEL_ID: '35234.0602' }, geometry: null }, propertyAssessment: spokaneCounty(spokaneRecord), zoningPermits: { zoning: { code: 'R-3' } } });
-  assert.match(html, /<span>Zoning<\/span><strong>R-3<\/strong><\/div><div class="assessor-class"><span>Assessor Class<\/span><strong>11 – Single Unit<\/strong><small>Tax category, not zoning<\/small>/);
-  assert.match(html, /<span>Assessed Value<\/span><strong>\$589,000<\/strong><\/div><div><span>Land Value<\/span><strong>\$110,000<\/strong>/);
+  assert.match(html, /<div class="zone-code">R-3<\/div>/);
+  assert.match(html, /<span>Tax category<\/span><strong>11 – Single Unit<\/strong><small>Tax category, not zoning<\/small>/);
+  assert.match(html, /<span>Assessed value \(2027\)<\/span><strong>\$589,000<\/strong><\/div><div><span>Land<\/span><strong>\$110,000<\/strong><\/div><div><span>Improvements<\/span><strong>\$479,000<\/strong>/);
+  assert.equal(once(html, '$589,000'), 1);
 });
