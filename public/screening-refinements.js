@@ -121,13 +121,22 @@
     }
   }
 
-  function renderScore() {
+  // The buildability score: 7 factors (0-100) weighted by WEIGHTS, shown /10.
+  function calculateScore() {
     const factors = scoreFactors();
     let weighted = 0;
     Object.entries(factors).forEach(([key, factor]) => { weighted += factor.score * WEIGHTS[key] / 100; });
     const score = weighted / 10;
     const rating = score >= 8.5 ? 'Excellent' : score >= 7 ? 'Good' : score >= 5.5 ? 'Moderate' : 'Challenging';
     const constraint = Object.values(factors).sort((a, b) => a.score - b.score)[0];
+    return { score, rating, factors, constraint, weights: { ...WEIGHTS } };
+  }
+  // The same score and factors for the printable report (property-report-v2.js), so its score and
+  // its "top drivers" come from the inputs the dashboard card uses.
+  window.AcresXScore = { calculate: calculateScore, wellStats, WEIGHTS };
+
+  function renderScore() {
+    const { score, rating, factors, constraint } = calculateScore();
 
     const metric = document.getElementById('scoreMetric');
     const note = document.getElementById('scoreNote');
