@@ -27,6 +27,8 @@
   const usd = n => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
   const usd0 = n => `$${round(n).toLocaleString('en-US')}`;
   const money = n => `$${Math.round(Number(n || 0) / 1000)}k`;
+  // Whole dollars, as the printable report prints the same total (property-report-v2.js).
+  const usdRange = (lo, hi) => (round(lo) === round(hi) ? usd0(lo) : `${usd0(lo)}–${usd0(hi)}`);
   const current = l => (l !== undefined ? l : typeof last !== 'undefined' ? last : root.__acresxLast);
   const tables = () => root.AcresXCostTables;
   const STATE_OF = { spokane: 'WA', stevens: 'WA', kootenai: 'ID', gallatin: 'MT', yellowstone: 'MT' };
@@ -446,7 +448,12 @@
     if (!l?.parcel) return;
     const card = document.getElementById('developmentCostCard');
     if (!card) return;
-    if (root.AcresXSections && !root.AcresXSections.ready('cost')) return; // progressive-loading.js shows "Updating…"
+    // Wait while a cost input is still loading (progressive-loading.js shows "Updating…"). Not
+    // ready('cost'): progressive-loading.js wraps renderSummary last and clears its "dirty" flag only
+    // after this render, so ready() is false here even when every input has settled, and the card
+    // kept the generic estimate ($41k-$101k for Spokane 23123.9051 instead of $45k-$90k).
+    const S = root.AcresXSections;
+    if (S && (typeof S.waitingFor === 'function' ? S.waitingFor('cost').length : !S.ready('cost'))) return;
     addStyles();
     if (!profile(l)) {
       // Generic counties: the card from score-cost.js / screening-refinements.js, plus the label.
@@ -454,7 +461,7 @@
       return;
     }
     const e = estimate(l);
-    card.innerHTML = `<div class="cost-icon">$</div><div><div class="cost-kicker">Preliminary development estimate</div><div class="cost-value">${money(e.low)}–${money(e.high)}</div><div class="cost-note">Midpoint ${money(e.midpoint)} · ${esc(e.confidence)} confidence. ${esc(e.coverageNote)} Uses this parcel's power distance, public utilities, wells, soils, terrain and road access. ${SCREENING}</div><div class="cost-pill">View sources and assumptions →</div></div>`;
+    card.innerHTML = `<div class="cost-icon">$</div><div><div class="cost-kicker">Preliminary development estimate</div><div class="cost-value">${usdRange(e.low, e.high)}</div><div class="cost-note">Midpoint ${money(e.midpoint)} · ${esc(e.confidence)} confidence. ${esc(e.coverageNote)} Uses this parcel's power distance, public utilities, wells, soils, terrain and road access. ${SCREENING}</div><div class="cost-pill">View sources and assumptions →</div></div>`;
     card.onclick = showDetails;
     card.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault?.(); showDetails(); } };
   }

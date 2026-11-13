@@ -368,6 +368,45 @@ test('the score does not read the cost estimate; listing claims change neither',
 
 // ---- Display
 
+// The dashboard card and the report show the same estimate (owner, 2026-11-13: the card showed
+// the generic $41k-$101k for Spokane 23123.9051 while the report's lines summed to $45k-$90k).
+// progressive-loading.js wraps renderSummary last (on DOMContentLoaded), so while this module's
+// render runs, its "dirty" flag is still set from the data that just arrived: ready('cost') is
+// false although nothing is pending. The card must follow the pending inputs, not that flag.
+function pageWithSections(last, waiting) {
+  const clock = makeClock();
+  const p = makeContext({ body: PAGE, clock, fetch: async () => { throw new Error('no network in tests'); } });
+  p.ctx.__last = last;
+  p.ctx.__waiting = waiting;
+  p.run('var last = __last; var activeTab = "wells"; function renderSummary() {} function renderResults() {}', 'index-inline.js');
+  p.run('window.AcresXSections = { ready: () => false, waitingFor: () => __waiting, claim: () => false, settle() {}, isCurrent: () => true, placeholder: () => null };', 'sections-stub.js');
+  for (const f of ['score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js']) p.run(readPublic(f), f);
+  p.run('renderSummary(last.parcel)');
+  // The model rewrites the card's innerHTML (stored as text by the fake DOM); the generic module
+  // writes into the existing .cost-value element.
+  const card = p.document.getElementById('developmentCostCard');
+  const value = /class="cost-value">([^<]*)</.exec(card.innerHTML)?.[1] ?? card.querySelector('.cost-value')?.textContent;
+  return { value, est: p.run('window.AcresXCostModel.estimate()') };
+}
+const usdText = n => `$${n.toLocaleString('en-US')}`;
+
+test('dashboard card: a local county shows the model estimate once its inputs settled, in the report format', () => {
+  const r = pageWithSections(facts({ county: 'Spokane', provider: 'Avista Utilities', distanceFt: 500, road: ROAD(250) }), []);
+  assert.equal(r.value, `${usdText(r.est.low)}–${usdText(r.est.high)}`);
+  assert.equal(r.est.low, Object.values(r.est.components).reduce((a, x) => a + x.low, 0));
+  assert.equal(r.est.high, Object.values(r.est.components).reduce((a, x) => a + x.high, 0));
+  // Inputs still loading: the card is left to progressive-loading.js ("Updating…"), not repainted.
+  const waiting = pageWithSections(facts({ county: 'Spokane', provider: 'Avista Utilities', distanceFt: 500 }), ['road access']);
+  assert.notEqual(waiting.value, `${usdText(waiting.est.low)}–${usdText(waiting.est.high)}`);
+});
+
+test('dashboard card: a county without local prices keeps the generic estimate', () => {
+  const r = pageWithSections(facts({ county: 'Gallatin', provider: 'NorthWestern Energy' }), []);
+  assert.equal(r.est.local, false);
+  assert.equal(r.value, `$${Math.round(r.est.low / 1000)}k–$${Math.round(r.est.high / 1000)}k`);
+});
+
+
 test('cost details show each line with basis, as-of date, source link, unverified marks and quote badges', () => {
   const p = page(facts({ county: 'Kootenai', provider: 'Avista Utilities', distanceFt: 500, road: ROAD(250) }));
   const card = p.$('developmentCostCard');
@@ -391,11 +430,12 @@ test('the printable report shows the same lines with sources and dates', () => {
   h.context.__acresxLast = data;
   h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
   const html = h.opened.at(-1);
-  assert.match(html, /Power \(Avista line extension\) · get a quote/);
-  assert.match(html, /Sources: Avista Utilities, Washington Schedule 51 \(Tariff WN U-28\) \(as of 2026-05-15\)/);
+  assert.match(html, /<strong>Power \(Avista line extension\)<\/strong><sup class="ref">\[\d+(, \d+)*\]<\/sup><\/td><td><span class="tag fee">Published fee<\/span>/);
+  assert.match(html, /<li value="\d+">Avista Utilities, Washington Schedule 51 \(Tariff WN U-28\), as of 2026-05-15/);
   assert.match(html, /Permits \(building \+ approach\)/);
   assert.match(html, /Local prices for Spokane County, WA/);
-  assert.match(html, /\[unverified\]/);
+  assert.match(html, /AcresX planning allowance \(no official source\) \(unverified\)/);
+  assert.match(html, /Estimate — get a quote/);
 });
 
 // ---- /api/cost-context

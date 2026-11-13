@@ -40,7 +40,7 @@ test('overview: Montana cadastral TotalAcres counts as assessor acreage', () => 
   assert.equal(result.detail, '20.00 ac (assessor) · 19.90 ac mapped');
 });
 
-const parcelSize = html => /<span>Parcel Size<\/span><strong>([^<]*)<\/strong>(?:<small class="acreage-note">([^<]*)<\/small>)?/.exec(html).slice(1);
+const parcelSize = html => /<span>Parcel size<\/span><strong>([^<]*)<\/strong>(?:<small class="acreage-note">([^<]*)<\/small>)?/.exec(html).slice(1);
 const densityNote = html => /Parcel area is ([^,]*), while the screening references/.exec(html)?.[1] ?? null;
 const report = (c, density = '') => renderReport({ data: { parcel: c.parcel, wells: [], utility: [], zoningDevelopmentPotential: density ? { density } : undefined }, mappedSqm: c.mappedSqm });
 

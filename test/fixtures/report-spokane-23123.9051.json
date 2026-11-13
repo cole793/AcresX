@@ -1,0 +1,643 @@
+{
+ "parcel": {
+  "type": "Feature",
+  "geometry": {
+   "type": "Polygon",
+   "coordinates": [
+    [
+     [
+      -117.44535193045881,
+      47.493248579783085
+     ],
+     [
+      -117.44548323234089,
+      47.49332106030593
+     ],
+     [
+      -117.44561298581503,
+      47.49339480999705
+     ],
+     [
+      -117.44574116339066,
+      47.49346981432016
+     ],
+     [
+      -117.4458677415311,
+      47.4935460572238
+     ],
+     [
+      -117.44599269278707,
+      47.49362352351976
+     ],
+     [
+      -117.4461159892911,
+      47.493702197027325
+     ],
+     [
+      -117.4498190722567,
+      47.49609892515416
+     ],
+     [
+      -117.45010396322004,
+      47.4959578042503
+     ],
+     [
+      -117.45087920692092,
+      47.49526956021815
+     ],
+     [
+      -117.4508793017936,
+      47.49526951698366
+     ],
+     [
+      -117.45144274867359,
+      47.49476924639486
+     ],
+     [
+      -117.45193438320456,
+      47.494437040673816
+     ],
+     [
+      -117.45193441461551,
+      47.494436556485155
+     ],
+     [
+      -117.45193442174377,
+      47.494436446605285
+     ],
+     [
+      -117.45193642190559,
+      47.49437277356504
+     ],
+     [
+      -117.45196506184391,
+      47.49346157170724
+     ],
+     [
+      -117.45196604989177,
+      47.49343012815641
+     ],
+     [
+      -117.45111337767007,
+      47.49340421493358
+     ],
+     [
+      -117.45109019641028,
+      47.493403516797294
+     ],
+     [
+      -117.44970391530236,
+      47.493361764114304
+     ],
+     [
+      -117.44968559241194,
+      47.49336081069961
+     ],
+     [
+      -117.44968532336252,
+      47.49336080463696
+     ],
+     [
+      -117.44708002538708,
+      47.49330427789427
+     ],
+     [
+      -117.44535193045881,
+      47.493248579783085
+     ]
+    ]
+   ]
+  },
+  "properties": {
+   "FIPS_NR": "063",
+   "COUNTY_NM": "Spokane",
+   "ORIG_PARCEL_ID": "23123.9051",
+   "PARCEL_ID_NR": "063-23123.9051",
+   "_countyDisplay": "Spokane",
+   "_stateCode": "WA",
+   "_stateDisplay": "Washington",
+   "SITUS_ADDRESS": "",
+   "SITUS_CITY_NM": "CHENEY",
+   "SITUS_ZIP_NR": "99004",
+   "DATA_LINK": "https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=23123.9051",
+   "ACRES": 20.48,
+   "_source": {
+    "name": "Spokane County GIS (Assessor/Parcels layer)",
+    "url": "https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/Parcels/MapServer/0"
+   }
+  }
+ },
+ "wells": [
+  {
+   "type": "Feature",
+   "properties": {
+    "CompletedDepth": "100.0",
+    "_distance": 0.05305591814573129
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "CompletedDepth": "100.0",
+    "_distance": 0.05305591814573129
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "CompletedDepth": "100.0",
+    "_distance": 0.058907691043788186
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "CompletedDepth": "215.0",
+    "_distance": 0.130071097230531
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "CompletedDepth": "240.0",
+    "_distance": 0.130071097230531
+   }
+  }
+ ],
+ "utility": [
+  "INLAND POWER & LIGHT COMPANY",
+  "AVISTA CORP"
+ ],
+ "evidence": {
+  "status": "none",
+  "matches": [],
+  "claims": []
+ },
+ "flood": {
+  "available": true,
+  "intersects": true,
+  "high": true,
+  "zones": [
+   "A",
+   "X"
+  ],
+  "zoneDetails": [
+   {
+    "zone": "A",
+    "subtype": null,
+    "sfha": true
+   },
+   {
+    "zone": "X",
+    "subtype": "AREA OF MINIMAL FLOOD HAZARD",
+    "sfha": false
+   }
+  ],
+  "category": "high",
+  "source": {
+   "provider": "FEMA NFHL",
+   "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28"
+  }
+ },
+ "wetlands": {
+  "available": true,
+  "intersects": true,
+  "count": 1,
+  "types": [
+   "Freshwater Emergent Wetland"
+  ],
+  "coveragePct": 5.140898629173607,
+  "wetlandAcres": 1.063075250534921,
+  "parcelAcres": 20.678782586806403,
+  "coverageMethod": "NWI polygons clipped to parcel",
+  "coverageEstimated": false,
+  "category": "present",
+  "overlapAcres": 1.063075250534921,
+  "nearby": false,
+  "overlapCount": 1
+ },
+ "zoningPermits": {
+  "available": true,
+  "county": "Spokane",
+  "parcelId": "23123.9051",
+  "address": "CHENEY, 99004",
+  "jurisdiction": "Spokane County",
+  "countyStatus": "official_adapter",
+  "source": "Spokane County SCOUT / Building & Planning GIS",
+  "sourceUrl": "https://cp.spokanecounty.org/scout/propertyinformation/",
+  "zoning": {
+   "status": "gis_match",
+   "code": "RT",
+   "name": "Rural Traditional",
+   "label": "Official mapped zoning",
+   "note": "Mapped directly from Spokane County SCOUT zoning. Verify allowed uses, density, setbacks and overlays with Spokane County or the applicable city.",
+   "url": "https://cp.spokanecounty.org/scout/propertyinformation/",
+   "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3",
+   "sourceField": "ZONECLASS",
+   "zoneFileNumber": "72 69",
+   "developmentAgreement": "",
+   "developmentAgreementUrl": ""
+  },
+  "comprehensivePlan": {
+   "available": true,
+   "code": "RT",
+   "name": "Rural Traditional",
+   "developmentAgreement": "",
+   "developmentAgreementUrl": "",
+   "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/4"
+  },
+  "urbanGrowthArea": {
+   "intersects": false,
+   "name": "",
+   "type": "",
+   "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/2"
+  },
+  "permitJurisdiction": {
+   "name": "Spokane County",
+   "attributes": {
+    "NAME": "Spokane County",
+    "MUNITYP": "Other"
+   },
+   "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+  },
+  "zoningMatch": {
+   "method": "parcel area (sampled)",
+   "jurisdictionShare": 1,
+   "otherJurisdictions": []
+  },
+  "overlays": [
+   {
+    "type": "aquifer_recharge",
+    "name": "Critical aquifer recharge area: moderate susceptibility",
+    "source": "Spokane County Critical Aquifer Recharge Areas (Building & Planning critical areas map)",
+    "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/CriticalAreasBPPublic/MapServer/3",
+    "share": 1,
+    "detail": "Septic, stormwater and some land uses can have added standards here."
+   },
+   {
+    "type": "wetland",
+    "name": "County-mapped wetland: permanent marsh",
+    "source": "Spokane County Wetland layer (Building & Planning critical areas map)",
+    "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/CriticalAreasBPPublic/MapServer/5",
+    "share": 0.085,
+    "detail": "Wetland buffers and a delineation may be required before building."
+   },
+   {
+    "type": "wetland_buffer",
+    "name": "Mapped wetland buffer: 190 foot buffer",
+    "source": "Spokane County Wetland Buffer 190ft (Building & Planning critical areas map)",
+    "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/CriticalAreasBPPublic/MapServer/6",
+    "share": 0.311,
+    "detail": "Mapped distance from a county wetland; the buffer that applies depends on the wetland rating from a delineation."
+   },
+   {
+    "type": "wetland_buffer",
+    "name": "Mapped wetland buffer: 250 foot buffer",
+    "source": "Spokane County Wetland Buffer 250ft (Building & Planning critical areas map)",
+    "sourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/BPPublic/CriticalAreasBPPublic/MapServer/7",
+    "share": 0.415,
+    "detail": "Mapped distance from a county wetland; the buffer that applies depends on the wetland rating from a delineation."
+   }
+  ],
+  "overlaysUnavailable": [],
+  "overlayNote": "Overlays are mapped by Spokane County and are screening information only. Verify with Spokane County Building & Planning before design.",
+  "permitHistoryStatus": "none"
+ },
+ "land": {
+  "available": true,
+  "soil": {
+   "available": true,
+   "mapUnit": "Stutler-Springdale complex, 3 to 15 percent slopes",
+   "component": "Stutler",
+   "componentPct": 55,
+   "drainage": "Well drained",
+   "hydrologicGroup": "B",
+   "soilSlopePct": 4,
+   "feasibility": "favorable",
+   "source": "USDA NRCS Soil Data Access"
+  },
+  "terrain": {
+   "available": true,
+   "gradePct": 0.29734494931113503,
+   "maxGradePct": 1.5088526228529318,
+   "minFt": 2331.6134555352933,
+   "maxFt": 2339.4582997370385,
+   "centerFt": 2331.6134555352933,
+   "reliefFt": 7.844844201745218,
+   "sampleCount": 9,
+   "source": "USGS 3DEP elevation (AWS Terrain Tiles copy)",
+   "elevationSources": [
+    "terrain-tiles"
+   ]
+  },
+  "landCover": {
+   "available": true,
+   "year": 2025,
+   "woodedPct": 11,
+   "openPct": 89,
+   "otherPct": 0,
+   "sampleCount": 29,
+   "requestedSamples": 29,
+   "topClasses": [],
+   "source": "USDA Forest Service NLCD Tree Canopy Cover",
+   "note": "Preliminary 30 m satellite tree-canopy estimate; not a tree survey or clearing plan."
+  }
+ },
+ "publicUtilities": {
+  "available": true,
+  "state": "WA",
+  "county": "Spokane",
+  "water": {
+   "status": "not_found",
+   "provider": null,
+   "basis": "No public water service area, district or main found near the parcel (checked: WA DOH Drinking Water Service Areas; Spokane County Water Districts; Spokane County jurisdictions (city limits); City of Spokane water mains; City of Cheney water lines).",
+   "source": {
+    "name": "WA DOH Drinking Water Service Areas",
+    "url": "https://services8.arcgis.com/rGGrs6HCnw87OFOT/arcgis/rest/services/Drinking_Water_Service_Areas/FeatureServer/0"
+   }
+  },
+  "sewer": {
+   "status": "not_found",
+   "provider": null,
+   "basis": "No public sewer service area, district or main found near the parcel (checked: Spokane County jurisdictions (city limits); City of Spokane sewer mains; City of Cheney sewer mains; Spokane County sewer mains (2021-10-12 map)).",
+   "source": {
+    "name": "Spokane County jurisdictions (city limits)",
+    "url": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0"
+   }
+  },
+  "sources": [
+   {
+    "id": "wa-doh-water",
+    "name": "WA DOH Drinking Water Service Areas",
+    "url": "https://services8.arcgis.com/rGGrs6HCnw87OFOT/arcgis/rest/services/Drinking_Water_Service_Areas/FeatureServer/0",
+    "services": [
+     "water"
+    ],
+    "ok": true
+   },
+   {
+    "id": "spokane-water-districts",
+    "name": "Spokane County Water Districts",
+    "url": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/DistrictLookup/MapServer/6",
+    "services": [
+     "water"
+    ],
+    "ok": true
+   },
+   {
+    "id": "spokane-jurisdiction",
+    "name": "Spokane County jurisdictions (city limits)",
+    "url": "https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/PermittingLookup/MapServer/0",
+    "services": [
+     "water",
+     "sewer"
+    ],
+    "ok": true
+   },
+   {
+    "id": "spokane-city-water-mains",
+    "name": "City of Spokane water mains",
+    "url": "https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Water_Main/FeatureServer/2",
+    "services": [
+     "water"
+    ],
+    "ok": true
+   },
+   {
+    "id": "spokane-city-sewer-mains",
+    "name": "City of Spokane sewer mains",
+    "url": "https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Sewer_Gravity_Main/FeatureServer/1",
+    "services": [
+     "sewer"
+    ],
+    "ok": true
+   },
+   {
+    "id": "cheney-water-lines",
+    "name": "City of Cheney water lines",
+    "url": "https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney_WA_All_Utilities_2026/FeatureServer/52",
+    "services": [
+     "water"
+    ],
+    "ok": true
+   },
+   {
+    "id": "cheney-sewer-mains",
+    "name": "City of Cheney sewer mains",
+    "url": "https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney_WA_All_Utilities_2026/FeatureServer/36",
+    "services": [
+     "sewer"
+    ],
+    "ok": true
+   },
+   {
+    "id": "spokane-county-sewer-mains",
+    "name": "Spokane County sewer mains (2021-10-12 map)",
+    "url": "https://services1.arcgis.com/ozNll27nt9ZtPWOn/arcgis/rest/services/SewerViewer_WFL1/FeatureServer/13",
+    "services": [
+     "sewer"
+    ],
+    "ok": true
+   }
+  ],
+  "note": "Public water/sewer screening from official service-area, district and main maps. Public water/sewer likely available where shown — verify availability, capacity and connection fees with the city or district.",
+  "checkedAt": "2026-11-13T22:04:03.999Z"
+ },
+ "propertyAssessment": {
+  "available": true,
+  "state": "WA",
+  "county": "Spokane",
+  "parcelId": "23123.9051",
+  "source": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+  "countySource": "Spokane County Assessor (assessor parcel table, Spokane County GIS)",
+  "countySourceUrl": "https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0",
+  "records": [
+   {
+    "PID_NUM": "23123.9051",
+    "tax_year": 2026,
+    "asmt_year": 2027,
+    "land_value": 203360,
+    "exmp_amt": null,
+    "asmt_year_exmp_amt": null,
+    "acreage": 20.48,
+    "site_address": "Unassigned Address",
+    "prop_use_desc": "Vacant Land"
+   }
+  ],
+  "countyRecords": [
+   {
+    "parcelNumber": "23123.9051",
+    "propertySearchUrl": "https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=23123.9051",
+    "propertySearchLabel": "View on Spokane County SCOUT",
+    "landValue": 203360,
+    "improvementValue": 0,
+    "improvementValueNote": "Assessed total minus land value",
+    "totalValue": 203360,
+    "taxableValue": 203360,
+    "netValue": 203360,
+    "marketLandValue": 203360,
+    "marketValue": 203360,
+    "exemption": null,
+    "taxYear": 2027,
+    "taxAmount": null,
+    "taxAmountNote": "Not published in the county GIS. The SCOUT page lists the tax bill.",
+    "assessorAcres": 20.48,
+    "taxCodeArea": "2360",
+    "segStatus": "Active-Complete",
+    "propertyClass": "91",
+    "propertyClassDescription": "Vacant Land",
+    "propertyClassNote": "Tax category, not zoning",
+    "currentUse": {
+     "status": "not_classified",
+     "program": null
+    }
+   }
+  ]
+ },
+ "existingWell": {
+  "available": true,
+  "status": "possible_match",
+  "label": "Possible well association",
+  "confidence": "Low",
+  "score": 30,
+  "match": {
+   "completedDepth": "100.0",
+   "evidence": {
+    "parcelMatch": false,
+    "insideParcel": false,
+    "nearParcel": true,
+    "distanceToParcelFt": 280,
+    "ownerMatch": false,
+    "partialOwnerMatch": false,
+    "addressMatch": false,
+    "ownerSimilarity": 0
+   }
+  }
+ },
+ "costContext": {
+  "roadAccess": {
+   "available": true,
+   "status": "found",
+   "distanceFt": 578,
+   "road": {
+    "name": "Blasted Ln",
+    "kind": "private road",
+    "public": false
+   },
+   "nearestPublic": {
+    "distanceFt": 1296,
+    "road": {
+     "name": "Aspen Meadows Dr",
+     "kind": "county road",
+     "public": true
+    }
+   },
+   "searchedFt": 1320,
+   "method": "Straight line from the parcel interior point (assumed homesite) to the nearest mapped road centerline (public or private). Not a surveyed driveway route.",
+   "source": {
+    "name": "Spokane County GIS road centerlines (Engineering Streets, Public Safety Streets)",
+    "url": "https://gismo.spokanecounty.org/arcgis/rest/services/OpenData/Transportation/MapServer"
+   },
+   "county": "Spokane",
+   "state": "WA"
+  },
+  "watershed": {
+   "available": true,
+   "number": 56,
+   "name": "Hangman",
+   "source": {
+    "name": "WA Department of Ecology, Water Resource Inventory Areas (WRIA)",
+    "url": "https://services.arcgis.com/6lCKYNJLvwTXqrmp/arcgis/rest/services/ECY/FeatureServer/11"
+   }
+  }
+ },
+ "resoListings": {
+  "available": true,
+  "configured": true,
+  "best": null
+ },
+ "zoningDevelopmentPotential": {
+  "available": true,
+  "county": "Spokane",
+  "code": "RT",
+  "name": "Rural Traditional",
+  "family": "Rural",
+  "density": "Maximum 1 dwelling unit per 10 acres",
+  "uses": [
+   {
+    "label": "Single-family dwelling",
+    "status": "permitted",
+    "note": ""
+   },
+   {
+    "label": "Manufactured home",
+    "status": "permitted",
+    "note": "Manufactured/mobile homes are treated as single-family dwellings under the Spokane County Zoning Code and must meet the residential and manufactured-home standards of the zone."
+   },
+   {
+    "label": "Duplex",
+    "status": "permitted",
+    "note": ""
+   },
+   {
+    "label": "Attached ADU",
+    "status": "limited",
+    "note": ""
+   },
+   {
+    "label": "Detached ADU",
+    "status": "limited",
+    "note": ""
+   },
+   {
+    "label": "Manufactured home park",
+    "status": "not_permitted",
+    "note": ""
+   },
+   {
+    "label": "Rural cluster development",
+    "status": "limited",
+    "note": ""
+   },
+   {
+    "label": "General agriculture / grazing / crops",
+    "status": "permitted",
+    "note": ""
+   },
+   {
+    "label": "Home industry",
+    "status": "conditional",
+    "note": ""
+   },
+   {
+    "label": "Home profession",
+    "status": "limited",
+    "note": ""
+   }
+  ],
+  "uga": false,
+  "developmentAgreement": "",
+  "source": "Spokane County Zoning Code, 2025 Printing",
+  "sourceChapter": "14.618",
+  "sourceUrl": "https://www.spokanecounty.gov/DocumentCenter/View/47247",
+  "disclaimer": "Screening summary only. Overlay zones, development agreements, critical areas, subdivision standards, utilities, access, public-health requirements and project-specific review can change what may actually be approved.",
+  "_cacheKey": "Spokane|Spokane County|RT"
+ },
+ "powerIntelligence": {
+  "available": true,
+  "adapter": "inland-power-v1",
+  "provider": "INLAND POWER & LIGHT COMPANY",
+  "territory": {
+   "confirmed": false,
+   "confidence": "low",
+   "basis": "INLAND POWER & LIGHT COMPANY is more likely: Avista's published distribution map shows no Avista line within 1,320 ft of the parcel point (Washington has no nearest-line statute; 1,320 ft (the Idaho Code 61-332C distance) is used as a screening distance). Avista also has mapped territory here — confirm with both."
+  },
+  "distribution": {
+   "status": "no_verified_distance",
+   "estimatedDistanceFt": null,
+   "confidence": "low",
+   "infrastructure": "unknown",
+   "note": "Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route."
+  }
+ }
+}
