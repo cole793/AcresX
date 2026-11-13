@@ -365,6 +365,9 @@ export const interpret = {
       code: z.code || null, jurisdiction: data.jurisdiction || data.permitJurisdiction?.name || null,
       countyStatus: data.countyStatus || null, zoningStatus: z.status || null,
       allowedBuildings: data.allowedBuildings?.status || null, permitHistoryStatus: data.permitHistoryStatus || null,
+      // 'backup' when the zone came from a city's older backup copy (its own server was down;
+      // src/counties/spokane-cities.js backupLayer), else 'primary'. A backup zone is still ok.
+      source: z.source === 'backup' ? 'backup' : 'primary', sourceAsOf: z.sourceAsOf || null,
       // Overlays (Spokane, src/counties/spokane-overlays.js): names and types found, and the overlay
       // layers that did not answer. null when the county answer has no overlay fields. Additive:
       // an overlay layer failing does not change the zoning status.
@@ -372,7 +375,8 @@ export const interpret = {
     };
     const overlayText = overlayDetail(values);
     if (!data.available || !z.code) return unavailable(`${text(z.label || z.note) || 'no zoning result'}${overlayText}`, values);
-    return ok(`${z.code} (${values.jurisdiction || 'jurisdiction n/a'})${overlayText}`, values);
+    const backupText = values.source === 'backup' ? ` [backup: older copy${values.sourceAsOf ? ` as of ${values.sourceAsOf}` : ''}]` : '';
+    return ok(`${z.code} (${values.jurisdiction || 'jurisdiction n/a'})${backupText}${overlayText}`, values);
   },
   zoningRules(data) {
     if (!data.available) return unavailable(text(data.status) || 'zoning rules not available', { status: data.status || null });
