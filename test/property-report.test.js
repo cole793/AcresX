@@ -30,10 +30,10 @@ const dollars = s => Number(String(s).replace(/[$,]/g, ''));
 const amounts = s => { const [lo, hi = lo] = String(s).split('–'); return [dollars(lo), dollars(hi)]; };
 const count = (hay, needle) => hay.split(needle).length - 1;
 
-test('three Letter pages with a numbered footer on every page', () => {
+test('three Letter pages plus the cost-assumptions appendix, with "Page N of 4" on every page', () => {
   const { html, pages } = generate(fixture());
-  assert.equal(pages.length, 3);
-  pages.forEach((p, i) => assert.match(p, new RegExp(`AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${i + 1} of 3`)));
+  assert.equal(pages.length, 4);
+  pages.forEach((p, i) => assert.match(p, new RegExp(`AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${i + 1} of 4`)));
   assert.match(html, /@page\{size:letter;margin:0\}/);
   assert.match(html, /break-inside:avoid/);
   assert.match(html, /print-color-adjust:exact/, 'backgrounds print, so the score is not faded');
@@ -53,6 +53,32 @@ test('cost total: page 1 = page 3 total = sum of the lines = AcresXCostModel.est
   const e = h.context.AcresXCostModel.estimate(data);
   assert.deepEqual(amounts(total), [e.low, e.high]);
   assert.equal(total, '$45,437–$89,566');
+});
+
+test('appendix page 4: the assumptions of each cost line, with the same source numbers as page 3', () => {
+  const { pages } = generate(fixture());
+  const [p3, p4] = [pages[2], pages[3]];
+  assert.match(p3, /<p class="pointer">How each line was estimated: appendix, page 4\.<\/p>/);
+  assert.doesNotMatch(p3, /Cost assumptions|Exact SRHD fees/, 'the long basis text left page 3');
+  assert.match(p3, /<ol class="sources">/);
+  assert.match(p3, /Preliminary screening only\./);
+  assert.match(p4, /Appendix: cost assumptions/);
+  const rowRefs = [...p3.split('<tfoot>')[0].matchAll(/<strong>([^<]+)<\/strong>(<sup class="ref">\[[^\]]*\]<\/sup>)<\/td>/g)].map(m => [m[1], m[2]]);
+  const noteRefs = [...p4.matchAll(/<li><strong>([^<]+)<\/strong>(<sup class="ref">\[[^\]]*\]<\/sup>)/g)].map(m => [m[1], m[2]]);
+  assert.equal(noteRefs.length, 6);
+  assert.deepEqual(noteRefs, rowRefs);
+  const sourceCount = (p3.match(/<li value="/g) || []).length;
+  for (const [, sup] of noteRefs) for (const n of sup.match(/\d+/g)) assert.ok(Number(n) <= sourceCount, `source [${n}] is listed on page 3`);
+  assert.match(p4, /Exact SRHD fees \$1,890/);
+  assert.match(p4, /<span class="amt-note">\$2,136<\/span>/);
+});
+
+test('no cost estimate: no appendix, "Page N of 3"', () => {
+  const data = { parcel: { type: 'Feature', geometry: null, properties: { ORIG_PARCEL_ID: 'X1', _countyDisplay: 'Spokane', _stateCode: 'WA' } }, wells: [], utility: [] };
+  const { pages } = generate(data, { modules: ['acreage.js', 'property-report-v2.js'] });
+  assert.equal(pages.length, 3);
+  assert.match(pages[2], /Page 3 of 3/);
+  assert.doesNotMatch(pages[2], /appendix/);
 });
 
 test('a range whose low equals high prints one number', () => {
@@ -178,9 +204,9 @@ function county(props, extra = {}) {
   return { parcel: { type: 'Feature', geometry: square, properties: props }, wells: [{ properties: { CompletedDepth: 300 } }], utility: ['NORTHWESTERN ENERGY'], land: { soil: { available: true, feasibility: 'moderate', mapUnit: 'Loam' }, terrain: { available: true, gradePct: 6, reliefFt: 20 } }, flood: { available: true, intersects: false, zones: [] }, wetlands: { available: true, intersects: false, category: 'none' }, ...extra };
 }
 
-test('Idaho (Kootenai, local prices) and Montana (Gallatin, generic ranges) render all three pages', () => {
+test('Idaho (Kootenai, local prices) and Montana (Gallatin, generic ranges) render every page', () => {
   const id = generate(county({ ORIG_PARCEL_ID: 'C1', _countyDisplay: 'Kootenai', _stateCode: 'ID', SITUS_ADDRESS: '5811 N CHRISTOPHER DR', SITUS_CITY_NM: 'COEUR D ALENE' }, { utility: ['KOOTENAI ELECTRIC COOPERATIVE', 'AVISTA CORP'] }));
-  assert.equal(id.pages.length, 3);
+  assert.equal(id.pages.length, 4);
   assert.match(id.pages[0], /<h1>5811 N Christopher Dr<\/h1>/);
   assert.match(id.pages[0], /Kootenai County, Idaho/);
   assert.match(id.html, /Local prices for Kootenai County, ID/);
@@ -188,7 +214,7 @@ test('Idaho (Kootenai, local prices) and Montana (Gallatin, generic ranges) rend
   assert.match(id.html, /Kootenai Electric Cooperative · also listed: Avista Corp/);
 
   const mt = generate(county({ ORIG_PARCEL_ID: 'M1', _countyDisplay: 'Gallatin', _stateCode: 'MT' }));
-  assert.equal(mt.pages.length, 3);
+  assert.equal(mt.pages.length, 4, 'generic lines carry a basis too');
   assert.match(mt.pages[0], /<h1>No situs address<\/h1>/);
   assert.match(mt.html, /Montana Bureau of Mines and Geology GWIC well records/);
   assert.match(mt.html, /Generic regional ranges; local prices not yet sourced for this county\./);

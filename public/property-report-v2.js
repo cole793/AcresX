@@ -1,4 +1,5 @@
-// Printable property report (owner redesign 2026-11-13: "too crowded" -> 3 US Letter pages).
+// Printable property report (owner redesign 2026-11-13: "too crowded" -> 3 US Letter pages, plus
+// an appendix page with the cost assumptions when the cost lines carry them).
 //
 //   Page 1  Summary: header (address, parcel, county/state, acres, date), parcel map with scale bar,
 //           north arrow and location inset, buildability score with its top 3 drivers, the cost
@@ -8,6 +9,8 @@
 //           and a listing only when one matched.
 //   Page 3  Costs & next steps: cost table (line, range, confidence tag) with a total equal to the
 //           page-1 range, a "before you buy" checklist, numbered sources with dates.
+//   Page 4  Appendix: how each cost line was estimated (the cost model's basis text), with the
+//           same source numbers as page 3.
 //
 // One source per number:
 // - Score: the dashboard's (#scoreMetric, painted by screening-refinements.js); drivers from the
@@ -345,7 +348,7 @@
   const eyebrow = t => `<div class="eyebrow">${esc(t)}</div>`;
   const chip = (level, text) => `<span class="chip ${level}">${esc(text)}</span>`;
   const pageHead = (title, f) => `<header class="mini-head"><img class="logo-sm" src="/assets/acresx-logo.png" alt="AcresX"><div class="mini-title">${eyebrow(title)}<span>${esc(f.address || 'No situs address')} · Parcel ${esc(f.pid || NA)}</span></div></header>`;
-  const footer = n => `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of 3</span></footer>`;
+  const footer = (n, total) => `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`;
 
   // ---- Page 1
 
@@ -376,7 +379,7 @@ ${parcelMap(parcel)}
 </div>
 <section class="block">${eyebrow('Key findings')}${flags}</section>
 <p class="disclaimer">Screening information from public records. Verify material findings with the responsible agency, utility or licensed professional before relying on them.</p>
-</div>${footer(1)}</section>`;
+</div>${footer(1, f.pages)}</section>`;
   }
 
   // ---- Page 2
@@ -518,7 +521,7 @@ ${parcelMap(parcel)}
 <section class="block">${eyebrow('Site conditions')}${siteCards(data, f, S)}</section>
 <section class="block">${eyebrow('Assessor record')}${assessorBlock(f, S)}</section>
 ${listingBlock(data)}
-</div>${footer(2)}</section>`;
+</div>${footer(2, f.pages)}</section>`;
   }
 
   // ---- Page 3
@@ -529,11 +532,11 @@ ${listingBlock(data)}
     const rows = c.lines.map((l, i) => {
       const tag = costTag(l);
       const refs = (l.sources || []).filter(s => s.name).map(s => S.add(s.name, { url: s.url, date: !s.asOf ? '' : /^undated$/i.test(s.asOf) ? 'undated' : `as of ${s.asOf}`, verified: s.verified }));
-      if (l.basis) notes.push(`<li><strong>${esc(String(l.label).replace(/\s*\(.*\)$/, ''))}.</strong> ${esc(l.basis)}</li>`);
+      if (l.basis) notes.push(`<li><strong>${esc(l.label)}</strong>${S.mark(refs)}<span class="amt-note">${esc(range(l.low, l.high))}</span><p>${esc(l.basis)}</p></li>`);
       return `<tr><td><strong>${esc(l.label)}</strong>${S.mark(refs)}</td><td><span class="tag ${tag.cls}">${esc(tag.text)}</span></td><td class="amt">${esc(range(l.low, l.high))}</td></tr>`;
     }).join('');
     return `<table class="costs"><thead><tr><th>Line</th><th>Confidence</th><th class="amt">Range</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2">Total (matches page 1)</td><td class="amt">${esc(range(c.low, c.high))}</td></tr></tfoot></table>
-<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>`;
+<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.pages > 3 ? `<p class="pointer">How each line was estimated: appendix, page ${f.pages}.</p>` : ''}`;
   }
 
   function checklist(data, f) {
@@ -553,17 +556,24 @@ ${listingBlock(data)}
     return `<ol class="checklist">${items.slice(0, 7).map(([h, t]) => `<li><p><strong>${esc(h)}.</strong> ${esc(t)}</p></li>`).join('')}</ol>`;
   }
 
-  function page3(data, f, S) {
-    const notes = [];
+  function page3(data, f, S, notes) {
     const costs = costBlock(f, S, notes);
     const host = u => { try { return new URL(u).host; } catch { return ''; } };
     const sources = S.list.map((s, i) => `<li value="${i + 1}">${esc(s.name)}${s.date ? `, ${esc(s.date)}` : ''}${s.verified === false ? ' (unverified)' : ''}${host(s.url) ? ` <span class="url">${esc(host(s.url))}</span>` : ''}</li>`).join('');
     return `<section class="page p3"><div class="page-body">${pageHead('Costs & next steps', f)}
 <section class="block">${eyebrow('Site development cost')}${costs}</section>
 <section class="block">${eyebrow('Before you buy')}${checklist(data, f)}</section>
-<section class="small">${eyebrow('Sources')}<p class="muted src-note">Map and record layers were read when this report was generated (${esc(today())}); cost sources show their effective date.</p>${sources ? `<ol class="sources">${sources}</ol>` : '<p class="muted">No sources recorded.</p>'}${notes.length ? `<div class="eyebrow sub">Cost assumptions</div><ul class="notes">${notes.join('')}</ul>` : ''}
+<section class="small">${eyebrow('Sources')}<p class="muted src-note">Map and record layers were read when this report was generated (${esc(today())}); cost sources show their effective date.</p>${sources ? `<ol class="sources">${sources}</ol>` : '<p class="muted">No sources recorded.</p>'}
 <p class="limits"><strong>Preliminary screening only.</strong> AcresX compiles public records and third-party data. It is not a survey, appraisal, title report, wetland delineation, septic design, utility availability confirmation, zoning determination or engineering analysis, and does not guarantee development approval. Parcel boundaries and mapped features are approximate. Cost estimates are planning ranges, not bids. Verify material findings with the responsible agency, utility, licensed professional and title provider.</p></section>
-</div>${footer(3)}</section>`;
+</div>${footer(3, f.pages)}</section>`;
+  }
+
+  // ---- Page 4 (appendix): how each cost line was estimated. Source numbers match page 3.
+  function appendix(f, notes) {
+    return `<section class="page p4"><div class="page-body">${pageHead('Appendix: cost assumptions', f)}
+<section>${eyebrow('How each cost line was estimated')}<p class="muted">The formula, inputs and assumptions behind each line of the cost table on page 3. Bracketed numbers refer to the sources on page 3. Screening estimate, not a quote.</p></section>
+<ol class="notes">${notes.join('')}</ol>
+</div>${footer(4, f.pages)}</section>`;
   }
 
   // ---- Document
@@ -656,13 +666,15 @@ table{border-collapse:collapse;width:100%}
 .checklist{margin:0;padding:0;list-style:none;counter-reset:c;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
 .checklist li{counter-increment:c;display:flex;gap:8px;font-size:8pt;line-height:1.33;break-inside:avoid;color:#33443a}.checklist li:before{content:counter(c);flex:none;width:17px;height:17px;border-radius:4px;border:1.5px solid var(--g);color:var(--g);font-weight:800;font-size:7.5pt;display:grid;place-items:center}
 .checklist strong{color:var(--g)}
-.small .sources,.small .notes{margin:0;padding-left:16px;font-size:6.3pt;line-height:1.3;color:#3d4c43;columns:2;column-gap:18px}.src-note{font-size:6.5pt;margin-bottom:3px}
-.sources li,.notes li{break-inside:avoid;margin-bottom:1px}.sources .url{color:var(--mut);white-space:nowrap}
-.notes{padding-left:12px}
+.small .sources{margin:0;padding-left:16px;font-size:6.6pt;line-height:1.32;color:#3d4c43;columns:2;column-gap:18px}.src-note{font-size:6.5pt;margin-bottom:3px}
+.sources li{break-inside:avoid;margin-bottom:1px}
+.pointer{font-size:8pt;font-weight:700;color:var(--g);margin-top:4px}
+.notes{margin:0;padding:0;list-style:none}.notes li{break-inside:avoid;border-bottom:1px solid var(--line);padding:8px 0}
+.notes li strong{font-size:9.5pt;color:var(--g)}.notes .amt-note{float:right;font-weight:800;color:var(--g)}.notes p{font-size:8pt;line-height:1.45;color:#33443a;margin-top:3px}.sources .url{color:var(--mut);white-space:nowrap}
 .limits{font-size:6.5pt;color:var(--mut);margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
-.d1 .page-body{gap:9px}.d1 .checklist li{font-size:7.6pt}.d1 .costs td{padding:4px 6px 4px 0}.d1 .site p,.d1 .uses td{font-size:7.4pt}.d1 .small .sources,.d1 .small .notes{font-size:6.2pt}
-.d2 .page-body{gap:7px}.d2 .checklist li{font-size:7.3pt}.d2 .checklist{gap:4px 14px}.d2 .site{padding:5px 8px}.d2 .uses td{padding:2px 6px 2px 0}.d2 .small .sources,.d2 .small .notes{font-size:5.9pt}.d2 .flag{padding:6px 9px}
-.d3 .site p,.d3 .uses td,.d3 .overlays li{font-size:7pt}.d3 .small .sources,.d3 .small .notes{font-size:5.6pt}.d3 .costs td{padding:4px 6px 4px 0}
+.d1 .page-body{gap:9px}.d1 .checklist li{font-size:7.6pt}.d1 .costs td{padding:4px 6px 4px 0}.d1 .site p,.d1 .uses td{font-size:7.4pt}.d1 .small .sources{font-size:6.3pt}.d1 .notes p{font-size:7.6pt}
+.d2 .page-body{gap:7px}.d2 .checklist li{font-size:7.3pt}.d2 .checklist{gap:4px 14px}.d2 .site{padding:5px 8px}.d2 .uses td{padding:2px 6px 2px 0}.d2 .small .sources{font-size:6pt}.d2 .notes p{font-size:7.2pt}.d2 .notes li{padding:6px 0}.d2 .flag{padding:6px 9px}
+.d3 .site p,.d3 .uses td,.d3 .overlays li{font-size:7pt}.d3 .small .sources{font-size:5.7pt}.d3 .notes p{font-size:6.8pt}.d3 .costs td{padding:4px 6px 4px 0}
 @media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none}}
 `;
   // Pages have a fixed Letter height; a page whose content would overflow is tightened in steps
@@ -672,16 +684,21 @@ table{border-collapse:collapse;width:100%}
   function makeReport(name) {
     const data = reportState() || {};
     const f = gatherFacts(data);
+    // A fourth page (appendix) when the cost lines carry their assumptions; every footer says "of N".
+    f.pages = f.cost?.lines.some(l => l.basis) ? 4 : 3;
     const S = sourceList();
     const score = scoreInfo(data, f);
     const p1 = page1(data, f, score, name);
     const p2 = page2(data, f, S);
-    const p3 = page3(data, f, S);
+    const notes = [];
+    const p3 = page3(data, f, S, notes);
+    const p4 = f.pages > 3 ? appendix(f, notes) : '';
     const docTitle = `${f.address || `Parcel ${f.pid}`} — AcresX Property Report`;
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div>
 ${p1}
 ${p2}
 ${p3}
+${p4}
 <script>${FIT}</script></body></html>`;
     const w = window.open('', '_blank');
     if (!w) { alert('Allow pop-ups to generate the report.'); return; }
