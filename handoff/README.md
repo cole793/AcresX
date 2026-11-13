@@ -29,7 +29,7 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/level-3-kootenai-yellowstone` | see git | (none yet) | Kootenai + Yellowstone to level 3; awaiting verifier |
+| `claude/stevens-level-3` | see git | (none yet) | Stevens to level 3; delete public/spokane-cost-model.js; awaiting verifier |
 
 Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
 HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
@@ -44,11 +44,16 @@ zoning adapter (city layers, LAMIRD/UGA).
 Merged 2026-11-09 to 11-11 (owner-approved, all deploys succeeded): #46, #48, #49, #50, #51,
 #52.
 
+Merged 2026-11-12 to 11-13 (owner-approved, all deploys succeeded): #53 validation results
+publish resilience, #54 Kootenai + Yellowstone to level 3, #55 local Spokane/Kootenai
+development-cost model, #56 Spokane Valley backup zoning source.
+
 ## County report card (checklist score)
 
 Kootenai 87 and Yellowstone 80: **level 3** (lastValidated 2026-11-11; clean daily runs
-2026-11-09, 11-10 and 11-11, owner sign-off 2026-11-12; on `claude/level-3-kootenai-yellowstone`,
-not merged yet). Gallatin 75 (level 2, 2026-11-03); Stevens 78 (level 2, 2026-11-07); Spokane
+2026-11-09, 11-10 and 11-11, owner sign-off 2026-11-12; merged in #54). Stevens 78: **level 3**
+(lastValidated 2026-11-12; clean daily runs 2026-11-11 and 11-12, owner sign-off 2026-11-13; on
+`claude/stevens-level-3`, not merged yet). Gallatin 75 (level 2, 2026-11-03); Spokane
 about 90 (2026-11-11), level 2; level 3 pending one more consecutive clean daily run.
 City of Spokane and Spokane Valley zoning rules are blocked: their code sites block automated
 fetches, and the owner was asked for the code pages.
@@ -62,7 +67,7 @@ artifact upload failed (fixed on `claude/validation-publish-resilience`).
 
 - USDA soil (SDA) timed out on large parcels on 2026-11-03; give soil a fallback/longer window.
 - Stevens: cite the UGA code section (the county site blocks automated fetches); zoning rules
-  for Crossroads and Resort; owner sign-off.
+  for Crossroads and Resort.
 - terrain: USGS still exceeds the 17 s budget at times (3/12 Stevens parcels on 2026-11-07); fix
   in progress.
 - Spokane: assessor property class not read; statewide WA parcel lookup sometimes 5-25 s.
@@ -99,6 +104,9 @@ Each entry: date, the exact action approved.
   Kootenai C72150030040 = R-12 (1 of 2 Kootenai sign-off parcels).
 - 2026-11-12: owner signed off Kootenai (0L8210010030, plus C72150030040 earlier) and Yellowstone
   (03103233201230000, 03072527101010000) after comparing with county/state sources.
+- 2026-11-12 to 11-13: merges #53, #54, #55 and #56, each owner-approved; all deploys succeeded.
+- 2026-11-13: owner signed off Stevens (0231200, 2342700)
+- 2026-11-13: owner approved deleting public/spokane-cost-model.js
 
 ## Next steps (offered, not approved)
 
