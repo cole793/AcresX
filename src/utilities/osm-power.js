@@ -12,6 +12,10 @@ const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.private.coffee/api/interpreter'
 ];
+// Sent to the Overpass hosts only, as Private.coffee's terms ask ("Use a meaningful User-Agent
+// header ... your project name and a means to contact you"). Owner decision 2026-11-13: exactly
+// this string, no email address.
+export const OVERPASS_USER_AGENT = 'AcresX (https://acresx.info)';
 
 // Successful Overpass answers are cached per ~1 km grid cell (0.01 degree) for 30 days: power
 // lines rarely move, and repeat lookups in the same area were the main source of 429s. The query
@@ -125,7 +129,7 @@ async function overpassQuery(query, { deadline = Date.now() + OVERPASS_BUDGET_MS
       // One attempt per endpoint (the second endpoint is the retry).
       return await upstreamJson(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'User-Agent': OVERPASS_USER_AGENT },
         body: `data=${encodeURIComponent(query)}`,
         timeoutMs, queueTimeoutMs: Math.min(timeoutMs, 2000), retries: 0, signal, label: 'overpass-power', agency: 'Overpass'
       });

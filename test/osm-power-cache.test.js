@@ -6,7 +6,8 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { configureUpstream } from '../src/shared/upstream.js';
-import { getOsmPowerProximity, osmCell, OSM_POWER_CACHE_TTL_SECONDS } from '../src/utilities/osm-power.js';
+import { getOsmPowerProximity, osmCell, OSM_POWER_CACHE_TTL_SECONDS, OVERPASS_USER_AGENT } from '../src/utilities/osm-power.js';
+import { handlePowerIntelligence } from '../src/services/power-intelligence.js';
 
 const realFetch = globalThis.fetch;
 const realCaches = globalThis.caches;
@@ -77,6 +78,32 @@ test('a 429 from overpass-api.de falls through to private.coffee within the budg
   store.clear(); puts = [];
   const down = await getOsmPowerProximity({ lat: LAT, lon: LON });
   assert.deepEqual([down.available, down.status, puts.length], [false, 'source_unavailable', 0]);
+});
+
+// Owner decision 2026-11-13: identify AcresX to the Overpass hosts, and only to them.
+test('User-Agent "AcresX (https://acresx.info)" goes to both Overpass endpoints and to no other host', async () => {
+  assert.equal(OVERPASS_USER_AGENT, 'AcresX (https://acresx.info)');
+  const seen = [];
+  globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
+    seen.push({ host: url.hostname, ua: headers.get('User-Agent') });
+    if (url.hostname === 'overpass-api.de') return new Response('rate limited', { status: 429 }); // forces the second endpoint
+    if (url.hostname === 'overpass.private.coffee') return answer();
+    return new Response(JSON.stringify({ features: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  // Through the route, for an Avista parcel: Avista's ArcGIS line layer is asked too.
+  const res = await handlePowerIntelligence(new Request('https://acresx.test/api/power-intelligence', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: 'WA', lat: LAT, lon: LON, providers: ['Avista Corp'] })
+  }));
+  assert.equal(res.status, 200);
+  const overpass = seen.filter(s => /overpass/.test(s.host));
+  assert.deepEqual(overpass.map(s => s.host), ['overpass-api.de', 'overpass.private.coffee']);
+  for (const s of overpass) assert.equal(s.ua, 'AcresX (https://acresx.info)', s.host);
+  const others = seen.filter(s => !/overpass/.test(s.host));
+  assert.ok(others.length > 0, 'another host was asked');
+  for (const s of others) assert.notEqual(s.ua, OVERPASS_USER_AGENT, s.host);
 });
 
 test('points far apart fall in different cells', () => {
