@@ -30,6 +30,25 @@
 //   ("Official Zoning Ordinance 20-009") was also last edited 2024-05-30. ViewerV3 is the newest.
 //   Zoning_Desg is sometimes another zone's text ('I' polygons labelled '... (R-3)'), so it is used
 //   as the name only when its parenthesised code matches Zoning.
+//   Backup (`backupLayer`, used only when the city's own server fails; owner decision 2026-11-13,
+//   after arcgis.spokanevalley.org answered HTTP 500 "Application Error" on every path on
+//   2026-11-12 and 11-13, CommunityDevelopment/Zoning/MapServer/1 included, so that layer is no
+//   backup): https://services2.arcgis.com/hYnqO6a7TkujNqEg/arcgis/rest/services/City_of_Spokane_Valley___Zoning_Map_WFL1/FeatureServer/0
+//   Checked read-only (`?f=json`) on 2026-11-13. ArcGIS Online item 50c7914786654c1781d0c9d9ac876d89
+//   "City of Spokane Valley - Zoning (Hosted)", owner GIS_SpokaneValley1 ("GIS Admin for City of
+//   Spokane Valley"; the same account owns the city's ViewerV3 and Spokane Valley Viewer items),
+//   public. Snippet: "Spokane Valley Zoning - Hosted. This data is current as of May 22nd 2024 and
+//   reflects the 24-008 CPA." License: "This data is current as of May 22nd 2024. If additional
+//   CPA's occur after this date, this data should not be used as the latest/greatest zoning data."
+//   Layer 0 "Zoning": editingInfo lastEditDate 1716396747104 (2024-05-22); 31,869 features; fields
+//   include Zoning ('R-3'), Zoning_Desg ('Single-Family Residential (R-3)'), Zoning_Desc,
+//   Zoning_Ordinance_no (same Zoning / Zoning_Desg as the primary). Point check 2026-11-13 for
+//   parcel 35234.0602: .../FeatureServer/0/query?f=json&geometry=-117.331913769,47.642932533&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=Zoning,Zoning_Desg&returnGeometry=false
+//   -> Zoning 'R-3', Zoning_Desg 'Single-Family Residential (R-3)' (the primary's answer before the
+//   outage). Not used: the viewer's own hosted copy, LandUse_Testing4/FeatureServer/3 (item
+//   e9d11533dfc04906b67ce59c80675f96 "Land Use - EVV - Hosted", last edit 2024-05-30, also R-3
+//   there), because its license says "This service is not for use directly referencing the Feature
+//   Layer." A backup answer is labelled "older copy (2024), verify with the city" and never cached.
 // - City of Cheney: https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/4
 //   "Zoning 2026". The city republished the service around 2026-11-10 and renumbered its layers:
 //   0 Building Footprints 2026, 1 Cheney Parcels 2026, 2 Central Cheney Historic District,
@@ -118,7 +137,13 @@ const CITIES = {
       agency: 'City of Spokane Valley GIS', label: 'spokane-valley-zoning', sourceField: 'Zoning', layerName: /^\s*zoning\s*$/i,
       outFields: 'Zoning,Zoning_Desg',
       code: a => text(a.Zoning),
-      name: (a, code) => valleyName(a, code)
+      name: (a, code) => valleyName(a, code),
+      // Older ArcGIS Online copy, asked only when the layer above fails (see the top of this file).
+      backupLayer: {
+        url: 'https://services2.arcgis.com/hYnqO6a7TkujNqEg/arcgis/rest/services/City_of_Spokane_Valley___Zoning_Map_WFL1/FeatureServer/0',
+        agency: 'City of Spokane Valley GIS (ArcGIS Online copy)', label: 'spokane-valley-zoning-backup',
+        asOf: '2024-05-22', asOfLabel: '2024'
+      }
     }
   },
   CHENEY: {
@@ -184,8 +209,8 @@ export function spokaneCityInfo(nameValue, munityp = '') {
 
 // Spatial query of one layer for the parcel; the answer is reduced to coverage shares
 // ([{ key, share, attributes }], largest first) so only small, outline-free data is cached.
-export async function layerShares(url, where, samples, { outFields, keyOf, agency, label }) {
-  const features = await arcgisQuery(url, { ...spatialParams(where), outFields }, { agency, label });
+export async function layerShares(url, where, samples, { outFields, keyOf, agency, label, ...queryOptions }) {
+  const features = await arcgisQuery(url, { ...spatialParams(where), outFields }, { ...queryOptions, agency, label });
   return coverageShares(samples, withoutPersonalFields(features), keyOf).map(s => ({
     key: s.key, share: round3(s.share),
     attributes: s.attributes ? Object.fromEntries(Object.entries(s.attributes).filter(([k]) => !/^shape/i.test(k))) : null
@@ -222,14 +247,50 @@ export function decideJurisdiction(shares) {
 
 const recovery = layer => ({ namePattern: layer.layerName, fields: layer.outFields.split(','), agency: layer.agency, label: layer.label });
 
+// Backup layer queries are short (one 8 s attempt): the primary has already spent its own time.
+const BACKUP_QUERY = { timeoutMs: 8000, retries: 0 };
+// Quiet under `node --test` (as in src/shared/upstream.js); tests that check the lines pass a logger.
+const quietTests = (() => { try { return Boolean(globalThis.process?.env?.NODE_TEST_CONTEXT); } catch { return false; } })();
+let logLine = quietTests ? () => {} : line => console.log(line);
+// Tests only: capture the backup log lines. Returns a restore function.
+export function configureCityZoningLog(logger) {
+  const previous = logLine;
+  logLine = logger;
+  return () => { logLine = previous; };
+}
+
 // The city zoning answer: { layerUrl, shares }. layerUrl is the layer that answered (the new URL
 // after a moved-layer recovery).
+// When the city layer fails (5xx, timeout, network or ArcGIS error, or a moved-layer recovery that
+// found nothing) and the city config has a `backupLayer` ({ url, agency, label, asOf, asOfLabel };
+// outFields, code and name default to the primary's), the backup is asked once. A backup that
+// names a zone answers { layerUrl: backup url, shares, source: 'backup', sourceAsOf, primaryError };
+// a failing or empty backup rethrows the primary's error, so the answer is today's "unavailable".
 export async function queryCityZoningShares(city, where, samples) {
   const z = city.zoning;
-  const { layerUrl, value } = await queryWithLayerRecovery(
-    z.url, url => layerShares(url, where, samples, { outFields: z.outFields, keyOf: a => z.code(a), agency: z.agency, label: z.label }), recovery(z)
-  );
-  return { layerUrl, shares: value };
+  try {
+    const { layerUrl, value } = await queryWithLayerRecovery(
+      z.url, url => layerShares(url, where, samples, { outFields: z.outFields, keyOf: a => z.code(a), agency: z.agency, label: z.label }), recovery(z)
+    );
+    return { layerUrl, shares: value };
+  } catch (error) {
+    const b = z.backupLayer;
+    if (!b || error?.kind === 'cancelled') throw error;
+    const primaryError = String(error?.message || 'request failed');
+    let shares;
+    try {
+      shares = await layerShares(b.url, where, samples, { ...BACKUP_QUERY, outFields: b.outFields || z.outFields, keyOf: a => (b.code || z.code)(a), agency: b.agency || z.agency, label: b.label || `${z.label}-backup` });
+    } catch (backupError) {
+      logLine(JSON.stringify({ evt: 'zoning-backup-failed', label: b.label, primaryError: primaryError.slice(0, 200), backupError: String(backupError?.message || '').slice(0, 200) }));
+      throw error;
+    }
+    if (!shares.some(s => s.key)) {
+      logLine(JSON.stringify({ evt: 'zoning-backup-empty', label: b.label, primaryError: primaryError.slice(0, 200) }));
+      throw error;
+    }
+    logLine(JSON.stringify({ evt: 'zoning-backup-used', label: b.label, layer: b.url, asOf: b.asOf, primaryError: primaryError.slice(0, 200) }));
+    return { layerUrl: b.url, shares, source: 'backup', sourceAsOf: b.asOf || null, primaryError };
+  }
 }
 
 // One overlay layer of a city (CITIES[...].overlays): { layerUrl, shares: [{ key, share }] }.
@@ -346,11 +407,21 @@ export function cityZoning(city, zoningR, samples, decision) {
   const others = covered.slice(1).filter(s => s.share >= 0.05);
   const uncovered = 1 - covered.reduce((t, s) => t + s.share, 0);
   const shareNote = samples.length > 1 ? coverageNote(top, others, uncovered, 'city zone') : '';
+  // From the city's backup layer (queryCityZoningShares): same zone fields, labelled as an older copy.
+  const backup = zoningR.value?.source === 'backup' ? z.backupLayer || {} : null;
+  const older = backup ? `older copy${backup.asOfLabel ? ` (${backup.asOfLabel})` : ''}` : '';
+  const nameOf = backup?.name || z.name;
   return {
-    status: 'gis_match', code: top.key, name: z.name(top.attributes || {}, top.key), jurisdictionType: 'city',
-    label: `${city.name} zoning`,
-    note: `Mapped from the ${city.name} official zoning map. City zoning applies inside city limits, not Spokane County zoning. ${verify}${shareNote}${note}`,
-    sourceUrl: layerUrl, sourceField: z.sourceField, ...links(city),
+    status: 'gis_match', code: top.key, name: nameOf(top.attributes || {}, top.key), jurisdictionType: 'city',
+    label: backup ? `${city.name} zoning – ${older}, verify with the city` : `${city.name} zoning`,
+    note: backup
+      ? `${city.name}'s zoning server did not answer; this zone comes from an ${older}. Verify with the city. City zoning applies inside city limits, not Spokane County zoning. ${verify}${shareNote}${note}`
+      : `Mapped from the ${city.name} official zoning map. City zoning applies inside city limits, not Spokane County zoning. ${verify}${shareNote}${note}`,
+    ...(backup ? {
+      source: 'backup', sourceAsOf: zoningR.value.sourceAsOf || backup.asOf || null, sourceNote: `${older}, verify with the city`,
+      primarySourceUrl: currentLayerUrl(z.url), primaryError: zoningR.value.primaryError || 'request failed'
+    } : {}),
+    sourceUrl: layerUrl, sourceField: backup?.sourceField || z.sourceField, ...links(city),
     ...(city.codeUrl ? { codeUrl: city.codeUrl } : {}),
     ...(z.extra ? z.extra(top.attributes || {}) : {}),
     ...(others.length ? { otherZones: others.map(s => ({ code: s.key, share: s.share })) } : {}),

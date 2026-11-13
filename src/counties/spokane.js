@@ -211,7 +211,9 @@ export async function getSpokaneCountyIntelligence(body, profile) {
   };
   const layers = await cachedJson(
     SPOKANE_CACHE_PREFIX, { lat, lon, geometry }, CACHE_TTL_SECONDS, queryLayers,
-    { isValid: answer => Object.values(answer).flat().every(r => r === null || r.status === 'fulfilled') }
+    // A city zone from a backup layer (the city's server was down) is never cached, so the next
+    // request asks the city's own layer again.
+    { isValid: answer => Object.values(answer).flat().every(r => r === null || (r.status === 'fulfilled' && r.value?.source !== 'backup')) }
   );
   const { jurisdiction: jurisdictionR, countyZoning: zoningR, cityZoning: cityZoningR, comp: compR, uga: ugaR, permits: permitsR, overlays: overlaysR, cityOverlays: cityOverlaysR } = layers;
 
