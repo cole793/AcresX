@@ -48,8 +48,9 @@
   const SCORE_INPUTS = ['wells', 'utility', 'flood', 'wetlands', 'zoningPermits', 'land', 'publicUtilities'];
   // Follow-up requests whose answers feed the score or the cost estimate.
   const SCORE_FOLLOWUPS = ['powerIntelligence'];
-  const COST_FOLLOWUPS = ['existingWell'];
-  const FOLLOWUP_LABELS = { powerIntelligence: 'power proximity', existingWell: 'well records' };
+  // costContext: public/local-cost-model.js (road access + watershed, Spokane and Kootenai only).
+  const COST_FOLLOWUPS = ['existingWell', 'costContext'];
+  const FOLLOWUP_LABELS = { powerIntelligence: 'power proximity', existingWell: 'well records', costContext: 'road access' };
 
   // Where each section shows on the dashboard: snapshot cards (value + status line) and
   // overview facts. Flood and wetlands have no snapshot card; their overview facts are the section.

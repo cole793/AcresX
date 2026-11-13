@@ -7,7 +7,7 @@
 //   status: served | likely | not_found | unavailable
 //
 // window.AcresXUtilities is the single source of truth for what that answer changes. The score
-// and cost modules (score-cost.js, screening-refinements.js, spokane-cost-model.js, index.html
+// and cost modules (score-cost.js, screening-refinements.js, local-cost-model.js, index.html
 // renderSummary, property-report-v2.js through the cost calculators) call it at render time and
 // keep their old behaviour when it has not loaded.
 // - Water served or likely: the water factor scores SCORE.served (92) or SCORE.likely (85), and the

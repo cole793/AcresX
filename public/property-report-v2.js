@@ -15,17 +15,21 @@ function one(a,text){text=text||`${a>=100?a.toFixed(1):a.toFixed(2)} acres`;retu
 function assessment(data){const d=data?.propertyAssessment||{};if(!d.available)return{};if((d.state==='ID'||d.state==='WA')&&Array.isArray(d.countyRecords)&&d.countyRecords.length){const r=d.countyRecords[0]||{},code=String(r.propertyClass||'').trim(),descr=String(r.propertyClassDescription||'').trim();return{total:money(r.totalValue)||money(r.landValue),land:money(r.landValue),year:r.taxYear||'',propertyClass:code&&descr?`${code} – ${descr}`:code||descr}}if(d.state==='WA'){const r=d.records?.[0]||{};const land=Number(r.land_value);return{total:money(land),land:money(land),year:r.tax_year||r.asmt_year||''}}if(d.state==='MT'){const r=d.statewideRecords?.[0]||{};return{total:money(r.TotalValue),land:money(r.TotalLandValue),year:r.TaxYear||''}}if(d.state==='ID'){const r=d.statewideRecords?.[0]||{};return{total:money(r.VAL_TOTAL)||money(r.VAL_LAND),land:money(r.VAL_LAND),year:r.UPDATED?new Date(Number(r.UPDATED)).getFullYear():''}}return{}}
 function detailText(id){const el=$(id);if(!el)return'';return clean(el.querySelector('.notice,.cost-note,.snapshot-note,.metric-note,p')?.textContent)||clean(el.textContent)?.slice(0,220)||''}
 function costRows(){
-  // Read the same calculation that powers the dashboard, without requiring the
-  // expandable details panel to be opened or even mounted in the DOM.
+  // The same estimate the dashboard card shows (public/local-cost-model.js, window.AcresXCostModel),
+  // without requiring the details panel to be opened. Local counties carry sources and dates.
   const data=reportState()||{};
-  const county=String(data.parcel?.properties?._countyDisplay||data.parcel?.properties?.COUNTY_NM||document.getElementById('county')?.value||'').replace(/\\s+County$/i,'').trim();
-  const calculator=/^spokane$/i.test(county)?window.__acresxSpokaneCostEstimate:window.__acresxGeneralCostEstimate;
   let estimate=null;
-  try{estimate=typeof calculator==='function'?calculator():null;}catch(e){console.warn('Report cost calculation unavailable',e);}
+  try{
+    const M=window.AcresXCostModel;
+    if(M&&typeof M.estimate==='function')estimate=M.estimate(data);
+    else{const county=String(data.parcel?.properties?._countyDisplay||data.parcel?.properties?.COUNTY_NM||document.getElementById('county')?.value||'').replace(/\s+County$/i,'').trim();const calculator=/^spokane$/i.test(county)?window.__acresxSpokaneCostEstimate:window.__acresxGeneralCostEstimate;estimate=typeof calculator==='function'?calculator():null;}
+  }catch(e){console.warn('Report cost calculation unavailable',e);}
   const components=estimate?.components;
   if(components&&Object.keys(components).length){
-    const labels={well:'Well / water',septic:'Septic',electric:'Power',power:'Power',driveway:'Driveway / access',sitework:'Site work',permits:'Permits / testing'};
-    return Object.entries(components).slice(0,6).map(([key,item])=>`<div class="cost-row"><div><span>${esc(item.label||labels[key]||key)}</span>${item.basis?`<small>${esc(item.basis)}</small>`:''}</div><strong>${esc(money(item.low)||'—')}–${esc(money(item.high)||'—')}</strong></div>`).join('');
+    const labels={well:'Well / water',septic:'Septic',electric:'Power',power:'Power',driveway:'Driveway / access',sitework:'Site work',permits:'Permits'};
+    const srcText=item=>(item.sources||[]).filter(s=>s.name).map(s=>`${s.name}${s.asOf?` (as of ${s.asOf})`:''}${s.verified?'':' [unverified]'}`).join('; ');
+    const rows=Object.entries(components).slice(0,6).map(([key,item])=>{const src=srcText(item);return `<div class="cost-row"><div><span>${esc(item.label||labels[key]||key)}${item.quoteRecommended?' · get a quote':''}</span>${item.basis?`<small>${esc(item.basis)}</small>`:''}${src?`<small>Sources: ${esc(src)}</small>`:''}</div><strong>${esc(money(item.low)||'—')}–${esc(money(item.high)||'—')}</strong></div>`}).join('');
+    return rows+(estimate.coverageNote?`<div class="cost-row"><div><small>${esc(estimate.coverageNote)} Screening estimate, not a quote.</small></div></div>`:'');
   }
   // Backward compatibility for an older report page that already has a detail panel.
   const panel=$('spokaneCostDetail')||$('detailCard');

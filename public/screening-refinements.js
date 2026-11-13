@@ -199,6 +199,9 @@
     };
   }
 
+  // The estimate this card shows, for public/local-cost-model.js (generic counties) and the report.
+  window.__acresxScreeningCostEstimate = () => costEstimate();
+
   function showCosts() {
     const estimate = costEstimate();
     const root = document.getElementById('results');
@@ -207,7 +210,7 @@
     if (!root || !title || !detail) return;
     const labels = { well: 'Well', septic: 'Septic', power: 'Power', driveway: 'Driveway', sitework: 'Site work' };
     title.textContent = 'Preliminary Development Cost';
-    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
+    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>${window.AcresXCostModel ? `${window.AcresXCostModel.GENERIC_NOTE} ` : ''}Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
     detail.classList.add('show');
     detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
