@@ -1,5 +1,5 @@
-// Local development-cost model (owner request 2026-11-12). Replaces the partial
-// public/spokane-cost-model.js. Prices: public/cost-tables.js (window.AcresXCostTables).
+// Local development-cost model (owner request 2026-11-12). Replaces the earlier partial
+// Spokane-only cost model (removed 2026-11-13). Prices: public/cost-tables.js (window.AcresXCostTables).
 //
 // window.AcresXCostModel.estimate(last) is the one cost estimate the dashboard card, the cost
 // details and the printable report (property-report-v2.js) read.
