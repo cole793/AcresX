@@ -17,7 +17,8 @@
   const src = (name, url) => Object.freeze({ name, url });
 
   const AVISTA_WA = src('Avista Utilities, Washington Schedule 51 (Tariff WN U-28)', 'https://www.myavista.com/-/media/myavista/content-documents/our-rates-and-tariffs/wa/wa_051.pdf');
-  const AVISTA_ID = src('Avista Utilities, Idaho Schedule 51 (I.P.U.C. No. 28), approved by IPUC Order No. 37042', 'https://www.myavista.com/-/media/myavista/content-documents/our-rates-and-tariffs/id/rate-requests/id-schedule-51.pdf');
+  const AVISTA_ID = src('Avista Utilities, Idaho Schedule 51 (I.P.U.C. No. 28) as filed in case AVU-E-26-02; effective 2026-05-15', 'https://www.myavista.com/-/media/myavista/content-documents/our-rates-and-tariffs/id/rate-requests/id-schedule-51.pdf');
+  const IPUC_ORDER = src('Idaho PUC Final Order No. 37042 (case AVU-E-26-02): Schedule 51 tariff approved as filed, effective 2026-05-15', 'https://puc.idaho.gov/Fileroom/PublicFiles/ELEC/AVU/AVUE2602/OrdNotc/20260515Final_Order_No_37042.pdf');
   const KEC = src('Kootenai Electric Cooperative, New Construction', 'https://www.kec.com/account-services/start-stop-transfer-service/new-construction/');
   const SPOKANE_GFC = src('City of Spokane, General Facilities Charges (2026)', 'https://my.spokanecity.org/publicworks/general-facilities-charges/');
   const CDA_WATER_CAP = src("City of Coeur d'Alene, Water Capitalization Fee Schedule (Aug 4, 2026)", 'https://www.cdaid.org/media/k2bdf1rd/water-cap-fee-schedule-august-4-2026.pdf');
@@ -28,7 +29,10 @@
   const SRHD = src('Spokane Regional Health District, Proposed 2026 Fee Schedule (lists 2025 approved fees)', 'https://assets.srhd.org/assets/media/documents/2025.09.25-07B1-Proposed-2026-Fee-Schedule.pdf');
   const RCW_WELL = src('RCW 18.104.055 (Washington well construction fees, Dept. of Ecology)', 'https://app.leg.wa.gov/RCW/default.aspx?cite=18.104.055');
   const IDWR = src('Idaho Code 42-235 (IDWR well drilling permit)', 'https://legislature.idaho.gov/statutesrules/idstat/Title42/T42CH2/SECT42-235/');
-  const KC_FEES = src('Kootenai County Resolution No. 2026-62, Community Development Fee Schedule (June 2026)', 'https://www.kcgov.us/DocumentCenter/View/24018/Resolution-Number-2024-55-Community-Development-Fee-Schedule-PDF');
+  // The county's Community Development page links this document as "Fee Schedule (PDF)"; the
+  // document itself is Resolution No. 2026-62 (re-read 2026-11-13). Its old URL slug said 2024-55,
+  // so the ID-only link is cited.
+  const KC_FEES = src('Kootenai County Resolution No. 2026-62, Community Development Fee Schedule (June 2026)', 'https://www.kcgov.us/DocumentCenter/View/24018');
   const SPOKANE_PERMIT_2025 = src('City of Spokane, 2025 Building Permit Fee Table for New Single-Family Residences', 'https://static.spokanecity.org/documents/business/resources/permit-fees/building-permit-fee-schedule-new-homes-2025-01-21.pdf');
   const SPOKANE_DEV_2026 = src('City of Spokane, Development Fee Schedule 2026', 'https://static.spokanecity.org/documents/smc/attachments/development-fee-schedule-2026.pdf');
   const SPOKANE_COUNTY_BP04P = src('Spokane County Building & Planning, 2026 Land Use Fee Schedule (BP-04P rev. 08/26; owner-provided copy)', 'https://www.spokanecounty.org/194/Building-Planning');
@@ -48,7 +52,14 @@
     ohTransformer: { value: 5222, unit: 'per customer', asOf: '2026-05-15', source, verified: true },
     padTransformer: { value: 9134, unit: 'per customer', asOf: '2026-05-15', source, verified: true },
     ohServicePerFt: { value: 5.56, unit: 'per ft', asOf: '2026-05-15', source, verified: true },
-    ugServicePerFt: { value: 10.78, unit: 'per ft', asOf: '2026-05-15', source, verified: true }
+    ugServicePerFt: { value: 10.78, unit: 'per ft', asOf: '2026-05-15', source, verified: true },
+    // Secondary circuit (sheet 51I in WA, 51N in ID): only where Avista's design runs one between
+    // the transformer and the service, so it is added to the high end of the range only.
+    ohSecondaryFixed: { value: 2466, unit: 'per customer', asOf: '2026-05-15', source, verified: true },
+    ugSecondaryFixed: { value: 688, unit: 'per customer', asOf: '2026-05-15', source, verified: true },
+    ugSecondaryPerFt: { value: 13.18, unit: 'per ft', asOf: '2026-05-15', source, verified: true },
+    // "(one) Design Fee of $150 (if paid)" is subtracted from the extension cost.
+    designFeeCredit: { value: 150, unit: 'credited if paid', asOf: '2026-05-15', source, verified: true }
   });
 
   // AcresX allowances shared by both local counties. Not from any official source; always labeled.
@@ -60,6 +71,7 @@
     // Distances used when the line distance is unknown.
     unknownLineFt: { low: 100, high: 1320 },
     serviceDropFt: 100,
+    secondaryFt: 100, // assumed underground secondary run, high end of the Avista range only
     // Private water service line and side sewer from the main to the house.
     waterServiceLine: { low: 1000, high: 4000, unit: 'per connection', source: ACRESX, verified: false },
     sideSewer: { low: 1500, high: 6000, unit: 'per connection', source: ACRESX, verified: false },
@@ -96,7 +108,7 @@
       power: {
         avista: {
           ...avistaRates(AVISTA_WA),
-          allowance: { value: 7210, unit: 'per individual residence', asOf: '2025-05-15', source: AVISTA_WA, verified: true, note: 'Sheet 51A; the March 2026 rate filing did not change the allowance. Needs at least 4,800 kWh/yr of new load.' }
+          allowance: { value: 7210, unit: 'per individual residence', asOf: '2025-05-15', source: AVISTA_WA, verified: true, note: 'Sheet 51A; the March 2026 rate filing did not change the allowance. Needs at least 4,800 kWh/yr of new load.', condition: 'at least 4,800 kWh a year of new load' }
         },
         // Inland Power publishes no tariff; its online estimator (JavaScript, public, no login or
         // bot check; robots.txt allows it) was driven in headless Chromium on 2026-11-12 and its
@@ -184,8 +196,8 @@
             processing: 138.29, planReview: 89.70, inspectionPerSf: 0.23, inspectionMin: 936.88, stateSurcharge: 6.50,
             asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true
           },
-          plumbing: { label: 'Plumbing permit (county example, 17 fixtures)', value: 139.23, asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true, note: '$27.12 processing + $11.38/fixture (min $81.35) - $81.35 new-home credit' },
-          mechanical: { label: 'Mechanical permit (county example)', value: 192.53, asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true, note: '$27.12 processing + per-item fees - $81.35 new-home credit' },
+          plumbing: { label: 'Plumbing permit, county worked example (typical home, 17 fixtures)', value: 139.23, asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true, note: '$27.12 processing + $11.38/fixture (min $81.35) - $81.35 new-home credit' },
+          mechanical: { label: 'Mechanical permit, county worked example (typical home)', value: 192.53, asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true, note: '$27.12 processing + per-item fees - $81.35 new-home credit' },
           septicReviewProcessing: { label: 'Septic review processing (BP-04)', value: 56.57, asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true },
           manufactured: { label: 'Manufactured home (no basement): processing $104.16 + inspection $378.74', value: 482.90, asOf: 'undated', source: SPOKANE_COUNTY_BP04, verified: true },
           planningUga: { label: 'Residential permit planning review (UGA)', value: 246.81, asOf: '2026-08-21', source: SPOKANE_COUNTY_BP04P, verified: true },
@@ -208,7 +220,8 @@
       power: {
         avista: {
           ...avistaRates(AVISTA_ID),
-          allowance: { value: 2755, unit: 'per individual residence', asOf: '2026-05-15', source: AVISTA_ID, verified: true, note: 'Sheet 51B. Needs at least 2,500 kWh/yr of new load.' }
+          allowance: { value: 2755, unit: 'per individual residence', asOf: '2026-05-15', source: AVISTA_ID, verified: true, note: 'Sheet 51B. No immediate allowance for a load under 2,500 kWh/yr.', condition: 'at least 2,500 kWh a year of new load' },
+          order: { asOf: '2026-05-15', source: IPUC_ORDER, verified: true }
         },
         kec: {
           engineeringFee: { value: 750, unit: 'one time, applied toward the project', asOf: '2026-11-12', source: KEC, verified: true }

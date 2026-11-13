@@ -88,14 +88,21 @@
   // ---- Power
 
   // Avista Schedule 51, one single-phase home: primary (fixed + per ft), transformer and a service
-  // circuit. No secondary circuit: for one customer the service runs from the transformer.
-  // Extension cost = max(0, basic - allowance) (the allowance is the lesser of the cost and the cap).
-  function avistaCost(T, d, s) {
+  // circuit. A secondary circuit is used only when Avista's design runs one between the transformer
+  // and the service, so it is in the high end only (overhead: fixed; underground: fixed + per ft
+  // over an assumed run). Extension cost = max(0, basic - allowance) (the allowance is the lesser
+  // of the cost and the cap); a $150 design fee, if one was paid, is credited on top.
+  function avistaCost(T, d, s, sec = 0) {
     const oh = T.ohPrimaryFixed.value + T.ohPrimaryPerFt.value * d + T.ohTransformer.value + T.ohServicePerFt.value * s;
     const ug = T.ugPrimaryFixed.value + T.ugPrimaryPerFt.value * d + T.padTransformer.value + T.ugServicePerFt.value * s;
+    const ohSec = oh + (T.ohSecondaryFixed?.value || 0);
+    const ugSec = ug + (T.ugSecondaryFixed?.value || 0) + (T.ugSecondaryPerFt?.value || 0) * sec;
     const a = T.allowance.value;
-    return { oh: { basic: oh, cost: Math.max(0, oh - a) }, ug: { basic: ug, cost: Math.max(0, ug - a) }, allowance: a };
+    const cost = basic => ({ basic, cost: Math.max(0, basic - a) });
+    return { oh: cost(oh), ug: cost(ug), ohSec: cost(ohSec), ugSec: cost(ugSec), allowance: a };
   }
+  const avistaLow = c => Math.min(c.oh.cost, c.ug.cost);
+  const avistaHigh = c => Math.max(c.oh.cost, c.ug.cost, c.ohSec.cost, c.ugSec.cost);
   // Inland Power estimator outputs recorded at a few distances (cost-tables.js power.inland.points):
   // at each recorded distance, the cheapest and dearest design it offered (the envelope); between
   // recorded distances, linear interpolation of that envelope; outside them, the nearest one.
@@ -125,20 +132,20 @@
     const f = powerFacts(l);
     const name = f.provider || 'the serving utility';
     if (/\bavista\b/i.test(f.provider) && C.power.avista) {
-      const T = C.power.avista, s = P.serviceDropFt;
+      const T = C.power.avista, s = P.serviceDropFt, sec = P.secondaryFt;
       const stateName = C.state === 'WA' ? 'Washington' : 'Idaho';
-      const src = [ref(T.ohPrimaryFixed), ref(T.allowance)];
-      const tail = `Excludes exceptional costs (rock, easements, boring), a share of a primary line built in the last 5 years, and any trench or conduit you supply. Allowance ${usd0(T.allowance.value)} (effective ${T.allowance.asOf}). Avista confirms the route and price.`;
+      const src = [ref(T.ohPrimaryFixed), ref(T.allowance), ...(T.order ? [ref(T.order)] : [])];
+      const secText = `The high end adds a secondary circuit, used only if Avista's design needs one (overhead ${usd0(T.ohSecondaryFixed.value)}; underground ${usd0(T.ugSecondaryFixed.value)} + $${T.ugSecondaryPerFt.value}/ft over an assumed ${sec} ft).`;
+      const tail = `Allowance ${usd0(T.allowance.value)} (effective ${T.allowance.asOf}) applies to homes meeting Avista's usage conditions (${T.allowance.condition}). A $${T.designFeeCredit.value} design fee, if Avista charged one up front, is credited against this cost. Excludes exceptional costs (rock, easements, boring), a share of a primary line built in the last 5 years, and any trench or conduit you supply. Avista confirms the route and price.`;
       if (f.distanceFt != null) {
-        const c = avistaCost(T, f.distanceFt, s);
-        const lo = Math.min(c.oh.cost, c.ug.cost), hi = Math.max(c.oh.cost, c.ug.cost);
-        return line('electric', lo, hi, 'Power (Avista line extension)',
-          `Avista ${stateName} Schedule 51 (rates effective ${T.ohPrimaryFixed.asOf}): ${f.distanceFt.toLocaleString('en-US')} ft of new primary (distance from ${f.from} to the parcel) plus an assumed ${s} ft service. Overhead ${usd0(c.oh.basic)} - allowance = ${usd0(c.oh.cost)}; underground ${usd0(c.ug.basic)} - allowance = ${usd0(c.ug.cost)}. ${tail}`,
+        const c = avistaCost(T, f.distanceFt, s, sec);
+        return line('electric', avistaLow(c), avistaHigh(c), 'Power (Avista line extension)',
+          `Avista ${stateName} Schedule 51 (rates effective ${T.ohPrimaryFixed.asOf}): ${f.distanceFt.toLocaleString('en-US')} ft of new primary (distance from ${f.from} to the parcel) plus an assumed ${s} ft service. Overhead ${usd0(c.oh.basic)} - allowance = ${usd0(c.oh.cost)}; underground ${usd0(c.ug.basic)} - allowance = ${usd0(c.ug.cost)}. ${secText} ${tail}`,
           src, { confidence: 'Moderate', formula: 'avista', allowance: c.allowance });
       }
-      const a = avistaCost(T, P.unknownLineFt.low, s), b = avistaCost(T, P.unknownLineFt.high, s);
-      return line('electric', Math.min(a.oh.cost, a.ug.cost), Math.max(b.oh.cost, b.ug.cost), 'Power (Avista line extension)',
-        `Distance to Avista's line not mapped: Avista ${stateName} Schedule 51 for ${P.unknownLineFt.low}-${P.unknownLineFt.high.toLocaleString('en-US')} ft of new primary plus an assumed ${s} ft service, overhead to underground, minus the allowance. ${tail}`,
+      const a = avistaCost(T, P.unknownLineFt.low, s, sec), b = avistaCost(T, P.unknownLineFt.high, s, sec);
+      return line('electric', avistaLow(a), avistaHigh(b), 'Power (Avista line extension)',
+        `Distance to Avista's line not mapped: Avista ${stateName} Schedule 51 for ${P.unknownLineFt.low}-${P.unknownLineFt.high.toLocaleString('en-US')} ft of new primary plus an assumed ${s} ft service, overhead to underground, minus the allowance. ${secText} ${tail}`,
         src, { confidence: 'Low', formula: 'avista', allowance: T.allowance.value });
     }
     if (/inland power/i.test(f.provider) && C.power.inland) {

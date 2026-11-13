@@ -70,38 +70,50 @@ const estimate = (opts, o) => page(facts(opts), o).est();
 // Avista Schedule 51 (2026-05-15), one home, assumed 100 ft service:
 //   overhead basic    = 5,952 + 12.04 d + 5,222 + 5.56 x 100 = 11,730 + 12.04 d
 //   underground basic = 2,754 + 14.31 d + 9,134 + 10.78 x 100 = 12,966 + 14.31 d
+//   secondary circuit, high end only: overhead + 2,466; underground + 688 + 13.18 x 100 = + 2,006
 //   cost = max(0, basic - allowance); WA allowance $7,210, ID $2,755.
+// Low = the cheaper of overhead and underground without a secondary; high = the dearest of the four.
 const OH = d => 11730 + 12.04 * d, UG = d => 12966 + 14.31 * d;
+const OH2 = d => OH(d) + 2466, UG2 = d => UG(d) + 688 + 13.18 * 100;
 for (const [county, provider, allowance] of [['Spokane', 'Avista Utilities', 7210], ['Kootenai', 'Avista Corp', 2755]]) {
-  test(`Avista ${STATE[county]} power: Schedule 51 overhead-to-underground range minus the $${allowance} allowance`, () => {
+  test(`Avista ${STATE[county]} power: Schedule 51 range minus the $${allowance} allowance, secondary in the high end`, () => {
     for (const d of [0, 500, 1320, 2640]) {
       const e = estimate({ county, provider, distanceFt: d }).components.electric;
-      const costs = [OH(d) - allowance, UG(d) - allowance].map(Math.round);
-      assert.deepEqual([e.low, e.high], [Math.min(...costs), Math.max(...costs)], `${county} at ${d} ft`);
+      const lows = [OH(d), UG(d)].map(x => Math.round(x - allowance));
+      const highs = [OH(d), UG(d), OH2(d), UG2(d)].map(x => Math.round(x - allowance));
+      assert.deepEqual([e.low, e.high], [Math.min(...lows), Math.max(...highs)], `${county} at ${d} ft`);
       assert.equal(e.quoteRecommended, true);
       assert.match(e.basis, new RegExp(`Avista ${STATE[county] === 'WA' ? 'Washington' : 'Idaho'} Schedule 51`));
       assert.match(e.basis, new RegExp(`${d.toLocaleString('en-US')} ft of new primary`));
+      assert.match(e.basis, /secondary circuit, used only if Avista's design needs one \(overhead \$2,466; underground \$688 \+ \$13\.18\/ft over an assumed 100 ft\)/);
+      assert.match(e.basis, /applies to homes meeting Avista's usage conditions \(at least (4,800|2,500) kWh a year of new load\)/);
+      assert.match(e.basis, /A \$150 design fee, if Avista charged one up front, is credited/);
       assert.ok(e.sources.some(s => s.asOf === '2026-05-15' && s.verified), 'rate sheet date');
     }
   });
 }
 
-test('Avista hand-checked values: WA 500 ft $10,540-$12,911; ID 500 ft $14,995-$17,366 (price sheet example)', () => {
+test('Avista hand-checked values at 500 ft: WA $10,540-$14,917; ID $14,995-$19,372', () => {
+  // WA: 11,730 + 6,020 - 7,210 = 10,540; 12,966 + 7,155 + 2,006 - 7,210 = 14,917. ID: the same - 2,755.
   const wa = estimate({ county: 'Spokane', provider: 'Avista Utilities', distanceFt: 500 }).components.electric;
   const id = estimate({ county: 'Kootenai', provider: 'Avista Utilities', distanceFt: 500 }).components.electric;
-  assert.deepEqual([wa.low, wa.high], [10540, 12911]);
-  assert.deepEqual([id.low, id.high], [14995, 17366]);
+  assert.deepEqual([wa.low, wa.high], [10540, 14917]);
+  assert.deepEqual([id.low, id.high], [14995, 19372]);
   assert.equal(id.allowance, 2755);
   assert.equal(wa.allowance, 7210);
+  // Idaho cites the filed tariff and the IPUC order that approved it as filed.
+  assert.ok(id.sources.some(s => /Order No\. 37042/.test(s.name) && /Final_Order_No_37042\.pdf$/.test(s.url)));
+  assert.ok(id.sources.some(s => /as filed in case AVU-E-26-02; effective 2026-05-15/.test(s.name)));
+  assert.ok(!wa.sources.some(s => /37042/.test(s.name)));
 });
 
 test('Avista with the distance unknown: a labeled 100-1,320 ft range', () => {
   const wa = estimate({ county: 'Spokane', provider: 'Avista Utilities' }).components.electric;
-  assert.deepEqual([wa.low, wa.high], [Math.round(OH(100) - 7210), Math.round(UG(1320) - 7210)]);
+  assert.deepEqual([wa.low, wa.high], [Math.round(OH(100) - 7210), Math.round(UG2(1320) - 7210)]);
   assert.match(wa.basis, /Distance to Avista's line not mapped/);
   assert.equal(wa.confidence, 'Low');
   const id = estimate({ county: 'Kootenai', provider: 'Avista Utilities' }).components.electric;
-  assert.deepEqual([id.low, id.high], [Math.round(OH(100) - 2755), Math.round(UG(1320) - 2755)]);
+  assert.deepEqual([id.low, id.high], [Math.round(OH(100) - 2755), Math.round(UG2(1320) - 2755)]);
 });
 
 test('Kootenai Electric: $750 engineering fee plus a labeled generic range', () => {
@@ -241,6 +253,7 @@ test('permits: Kootenai County 2026 formula, City of Spokane 2025 table, Spokane
   assert.deepEqual([k.low, k.high], [Math.round(4025.835 + 250), Math.round(4025.835 + 187 + 250)]);
   assert.match(k.basis, /Assumes a 2,000 sf home with a 500 sf attached garage \(an assumption/);
   assert.match(k.basis, /placeholder/);
+  assert.ok(k.sources.some(s => /Resolution No\. 2026-62/.test(s.name) && s.url === 'https://www.kcgov.us/DocumentCenter/View/24018'));
   // City of Spokane: $3,560.05-$4,703.80 by valuation + $32.10 residential approach.
   const c = estimate({ county: 'Spokane', jurisdiction: 'City of Spokane' }).components.permits;
   assert.deepEqual([c.low, c.high], [Math.round(3560.05 + 32.10), Math.round(4703.80 + 32.10)]);
@@ -250,6 +263,8 @@ test('permits: Kootenai County 2026 formula, City of Spokane 2025 table, Spokane
   const r = estimate({ county: 'Spokane', jurisdiction: 'Spokane County' }).components.permits;
   assert.deepEqual([r.low, r.high], [2136, 2136]);
   assert.match(r.basis, /building permit \$1,171.37/);
+  assert.match(r.basis, /Plumbing permit, county worked example \(typical home, 17 fixtures\) \$139.23/);
+  assert.match(r.basis, /Mechanical permit, county worked example \(typical home\) \$192.53/);
   assert.match(r.basis, /Outside the mapped Urban Growth Area/);
   // UGA with public sewer: planning $246.81, no septic review: 1,171.37 + 139.23 + 192.53 + 246.81 = 1,749.94.
   const u = estimate({ county: 'Spokane', jurisdiction: 'Spokane County', uga: true, sewer: SERVED('Spokane County Utilities') }).components.permits;
