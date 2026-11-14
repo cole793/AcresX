@@ -105,7 +105,7 @@
       .coverage-badge span{flex:1 1 260px;min-width:0}
       .coverage-structure-note{margin:10px 0 2px;padding:9px 12px;border-radius:10px;background:#fff3dc;border:1px solid #ead29e;border-left:4px solid #d39a2a;font:600 12.5px/1.4 "DM Sans",sans-serif;color:#5e4210}
       .coverage-structure-note strong{display:block;font-weight:800;color:#68430b}
-      .coverage-score-flag{margin-top:6px;font:800 11px/1.3 "DM Sans",sans-serif;color:#8a5b13}
+      .coverage-score-flag{margin-top:6px;font:800 11px/1.3 "DM Sans",sans-serif;color:#f3cf86}
     `;
     document.head.appendChild(style);
   }
@@ -159,9 +159,8 @@
       const m = /^(Excellent|Good|Moderate|Challenging)\b/.exec(text.trim());
       if (m) note.textContent = `${m[1]} buildability · limited data`;
     }
-    const host = card.querySelector(':scope > div:last-child') || card;
     let flag = card.querySelector('.coverage-score-flag');
-    if (isLimited && !flag) { flag = document.createElement('div'); flag.className = 'coverage-score-flag'; host.appendChild(flag); }
+    if (isLimited && !flag) { flag = document.createElement('div'); flag.className = 'coverage-score-flag'; card.appendChild(flag); }
     if (flag) {
       const want = isLimited ? 'County not validated: statewide sources only' : '';
       if (flag.textContent !== want) flag.textContent = want;
