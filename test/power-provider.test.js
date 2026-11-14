@@ -100,7 +100,7 @@ function setup(key, territoryRoute = territoryOk) {
   document.getElementById('parcel').value = parcel.properties.ORIG_PARCEL_ID;
   run(INLINE, 'index-inline.js');
   // Injection order (src/index.js maybeInjectUiPolish); progressive-loading.js wraps last.
-  for (const f of ['flood-status.js', 'wetlands-status.js', 'acreage.js', 'ui-polish.js', 'parcel-preview.js', 'screening-refinements.js', 'progressive-loading.js']) run(readPublic(f), f);
+  for (const f of ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'ui-polish.js', 'parcel-preview.js', 'screening-refinements.js', 'progressive-loading.js']) run(readPublic(f), f);
   const text = id => document.getElementById(id).textContent;
   async function search() {
     await ctx.AcresXProgress.search();

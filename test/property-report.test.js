@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { makeLazyContext, readPublic } from './ui-harness.js';
 
 const fixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
-const MODULES = ['flood-status.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js'];
+const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js'];
 
 function generate(data, { modules = MODULES, scoreMetric = '', name } = {}) {
   const h = makeLazyContext({ mappedSqm: 20.63 * 4046.8564224, last: data });

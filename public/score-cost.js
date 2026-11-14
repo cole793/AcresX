@@ -40,11 +40,12 @@
     return `$${Math.round(n / 1000)}k`;
   }
 
+  // The one nearby-well-depth definition (screening-inputs.js); `average` kept as this file's name
+  // for it, but it is the median of the residential-comparable wells among the closest five.
   function avgWellDepth() {
-    if (typeof last === 'undefined' || !Array.isArray(last?.wells)) return null;
-    const values = last.wells.slice(0, 5).map(w => Number(w?.properties?.CompletedDepth)).filter(v => Number.isFinite(v) && v > 0);
-    if (!values.length) return null;
-    return { average: values.reduce((a, b) => a + b, 0) / values.length, count: values.length };
+    if (typeof last === 'undefined' || !window.AcresXWellDepth) return null;
+    const s = window.AcresXWellDepth.stats(last);
+    return s?.depth == null ? null : { average: s.depth, count: s.count };
   }
 
   function scoreFactors() {
@@ -59,7 +60,7 @@
     // Public water / sewer (public-utilities.js) replace the well and septic inputs when served or likely.
     const PU = window.AcresXUtilities;
     const wellWater = wells ? (wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
-    const soilSeptic = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
+    const soilSeptic = window.AcresXSeptic ? window.AcresXSeptic.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
     const water = PU ? PU.waterScore(wellWater, last) : wellWater;
     const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
     const terrainScore = !terrain.available ? 50 : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
@@ -101,9 +102,9 @@
 
     let well;
     if (!wells) well = { low: 20000, high: 40000, basis: 'No nearby reported well depths; broad planning allowance' };
-    else if (wells.average <= 200) well = { low: 14000, high: 24000, basis: `${Math.round(wells.average)} ft average nearby well depth` };
-    else if (wells.average <= 400) well = { low: 20000, high: 35000, basis: `${Math.round(wells.average)} ft average nearby well depth` };
-    else well = { low: 30000, high: 50000, basis: `${Math.round(wells.average)} ft average nearby well depth` };
+    else if (wells.average <= 200) well = { low: 14000, high: 24000, basis: `${Math.round(wells.average)} ft median nearby well depth` };
+    else if (wells.average <= 400) well = { low: 20000, high: 35000, basis: `${Math.round(wells.average)} ft median nearby well depth` };
+    else well = { low: 30000, high: 50000, basis: `${Math.round(wells.average)} ft median nearby well depth` };
 
     let septic;
     if (!soil.available) septic = { low: 18000, high: 32000, basis: 'Soil screening unavailable; broad planning allowance' };

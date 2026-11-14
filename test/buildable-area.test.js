@@ -339,7 +339,7 @@ test('dashboard: waits while flood, wetlands, zoning or terrain is pending; a fa
 // ---- Report page 1
 
 const reportFixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
-const MODULES = ['flood-status.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'buildable-area.js', 'property-report-v2.js'];
+const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'buildable-area.js', 'property-report-v2.js'];
 function report(data) {
   const h = makeLazyContext({ mappedSqm: 20.63 * SQM_PER_ACRE, last: data });
   for (const f of MODULES) h.run(readPublic(f));
@@ -374,5 +374,5 @@ test('report page 1 without an estimate: "Not measured", no shading, same score'
   assert.doesNotMatch(p1, /<path class="keep"/);
   const withB = reportFixture(); withB.buildableArea = SAMPLE;
   const score = html => /<div class="score-num">([^<]*)/.exec(html)[1];
-  assert.equal(score(report(withB)[0]), score(p1), 'buildable acres never change the score');
+  assert.equal(score(report(withB)[0]), score(p1), 'ample buildable area (6.6 ac) adds no penalty, so the score is the same');
 });

@@ -93,14 +93,8 @@
 
   function polishSummary() {
     if (typeof last === 'undefined') return;
-    const wells = Array.isArray(last.wells) ? last.wells : [];
-    const depthCount = wells.slice(0, 5).map(w => Number(w?.properties?.CompletedDepth)).filter(Number.isFinite).length;
-    if (depthCount) {
-      const waterStatus = document.getElementById('waterStatus');
-      const wellNote = document.getElementById('wellNote');
-      if (waterStatus) waterStatus.textContent = `Average reported well depth · ${depthCount} nearby well log${depthCount === 1 ? '' : 's'}`;
-      if (wellNote) wellNote.textContent = 'Washington Ecology well records';
-    }
+    // The well card's depth, status and note are screening-refinements.js's (one definition:
+    // window.AcresXWellDepth in screening-inputs.js).
 
     const soil = last?.land?.soil || {};
     if (soil.available) {
