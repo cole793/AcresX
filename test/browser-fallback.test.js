@@ -163,7 +163,9 @@ test('browser fallback: a hint never chooses the URL, and must match the route',
   // URL-looking input is ignored: the query goes to the hard-coded FEMA layer only.
   const recovered = await fb.recover('/api/hazards', hinted('fema-flood', { geometry, url: 'https://evil.example/x', layer: 'https://evil.example/y' }));
   assert.equal(recovered.status, 200);
-  assert.deepEqual(rec.calls.map(c => c.base), [FEMA]);
+  // The zone query, then the zone-share query for the AE outline (src/services/flood-share.js).
+  assert.deepEqual(rec.calls.map(c => c.base), [FEMA, FEMA]);
+  assert.equal(rec.calls[1].params.get('where'), "FLD_ZONE NOT IN ('X','C')");
   assertSafe(rec.calls);
 });
 
@@ -521,6 +523,23 @@ for (const [i, rows] of floodRows.entries()) {
   }
 }
 
+// Zone shares (src/services/flood-share.js and its copy here): the recorded zone A outline of
+// Spokane 23123.9051 gives the same floodZones / sfhaSharePct on both sides.
+test('fema-flood parity, zone shares: the browser measures the same shares as the Worker', async () => {
+  const parcel = fixture('report-spokane-23123.9051.json').parcel.geometry;
+  const outlines = fixture('fema-flood-share-23123.9051.json');
+  const zones = { features: [{ attributes: { FLD_ZONE: 'A', ZONE_SUBTY: null, SFHA_TF: 'T' } }, { attributes: { FLD_ZONE: 'X', ZONE_SUBTY: 'AREA OF MINIMAL FLOOD HAZARD', SFHA_TF: 'F' } }] };
+  const answer = ({ params }) => (params.get('returnGeometry') === 'true' ? outlines : zones);
+  const w = recorder(answer);
+  const expected = await apiJson('/api/hazards', { kind: 'flood', geometry: parcel }, w.fetch);
+  assert.equal(expected.body.sfhaSharePct, 67.1);
+  const b = recorder(answer);
+  const { api: fb } = browser(b.fetch);
+  assert.deepEqual(plain(await fb.run('fema-flood', { geometry: parcel })), expected.body);
+  for (const name of ['where', 'outFields', 'geometry', 'returnGeometry', 'outSR', 'maxAllowableOffset', 'geometryPrecision']) assert.equal(b.calls[1].params.get(name), w.calls[1].params.get(name), name);
+  assertSafe(b.calls);
+});
+
 // Stevens County, WA: FEMA has no panels, so both sides ask the county's digitized FIRM
 // (src/counties/stevens-flood.js; recorded answers in fixtures/stevens-flood.json).
 const STEVENS_FLOOD = 'https://gis.stevenscountywa.gov/server/rest/services/Hydrology/MapServer/19/query';
@@ -628,7 +647,9 @@ test('end to end: the page\'s own fetch calls are recovered transparently', asyn
   assert.equal(body.source.provider, 'FEMA NFHL');
   assert.equal(body.category, 'high');
   assert.equal('fallback' in body, false);
-  assert.deepEqual(b.calls.map(c => c.base), [FEMA]);
+  // The zone query, then the zone-share query (the stub returns no outlines: share unmeasured).
+  assert.deepEqual(b.calls.map(c => c.base), [FEMA, FEMA]);
+  assert.equal(body.floodShare.status, 'unavailable');
 });
 
 // ---- Labels

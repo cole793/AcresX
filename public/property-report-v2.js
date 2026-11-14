@@ -250,6 +250,8 @@
     const zoneName = titleCase(zdp.name || zp.zoning?.name || '');
     const PU = window.AcresXUtilities;
     const flood = floodGrade(data.flood), wet = wetlandGrade(data.wetlands);
+    // "Zone A on 12% of parcel (2.4 ac); rest zone X" (public/flood-status.js; '' when unmeasured).
+    flood.share = window.AcresXFlood?.shareText ? window.AcresXFlood.shareText(data.flood) : '';
     const ra = data.costContext?.roadAccess;
     const sfd = (Array.isArray(zdp.uses) ? zdp.uses : []).find(u => /single[- ]family|dwelling, single|^residence$/i.test(u.label || ''));
     const f = {
@@ -268,8 +270,8 @@
   function findings(data, f) {
     const red = [], amber = [], green = [];
     const overlays = Array.isArray(f.zp.overlays) ? f.zp.overlays : [];
-    if (f.flood.category === 'high') red.push({ title: 'High-risk flood zone on the parcel', detail: f.flood.detail });
-    else if (['moderate', 'undetermined', 'not_mapped', 'limited'].includes(f.flood.category)) amber.push({ title: `Flood: ${f.flood.label.toLowerCase()}`, detail: f.flood.detail });
+    if (f.flood.category === 'high') red.push({ title: 'High-risk flood zone on the parcel', detail: f.flood.share || f.flood.detail });
+    else if (['moderate', 'undetermined', 'not_mapped', 'limited'].includes(f.flood.category)) amber.push({ title: `Flood: ${f.flood.label.toLowerCase()}`, detail: f.flood.share || f.flood.detail });
     if (f.wet.category === 'present' || f.wet.category === 'unmeasured') red.push({ title: 'Mapped wetland on the parcel', detail: f.wet.detail });
     else if (overlays.some(o => o.type === 'wetland')) red.push({ title: 'County-mapped wetland on the parcel', detail: overlays.find(o => o.type === 'wetland').name });
     if (f.road?.available && f.road.status === 'found' && f.road.road?.public === false) amber.push({ title: 'Access is by a private road', detail: `Nearest road ${f.road.road.name || ''} is private; confirm a recorded easement.` });
@@ -466,7 +468,7 @@ ${parcelMap(parcel)}
     const share = num(fl.sharePct) ?? (num(fl.share) != null ? num(fl.share) * 100 : null);
     card('Flood', chipOf(f.flood.cls), f.flood.label, [
       f.flood.detail,
-      share != null ? `Flood zone covers about ${share.toFixed(share < 10 ? 1 : 0)}% of the parcel` : fOverlay ? `County overlay: ${fOverlay.name}${num(fOverlay.share) != null ? ` on ${Math.round(fOverlay.share * 100)}% of the parcel` : ''}` : f.flood.category === 'high' ? 'Mapped share of the parcel not measured; check where the zone falls relative to a homesite' : ''
+      f.flood.share ? `${f.flood.share}. Map estimate; a floodplain determination confirms where the line falls` : share != null ? `Flood zone covers about ${share.toFixed(share < 10 ? 1 : 0)}% of the parcel` : fOverlay ? `County overlay: ${fOverlay.name}${num(fOverlay.share) != null ? ` on ${Math.round(fOverlay.share * 100)}% of the parcel` : ''}` : f.flood.category === 'high' ? 'Mapped share of the parcel not measured; check where the zone falls relative to a homesite' : ''
     ], [fl.available ? S.add(fl.source?.label || fl.source?.provider || 'FEMA National Flood Hazard Layer', { url: fl.source?.url, date: '' }) : null]);
     // Wetlands
     const w = data.wetlands || {};

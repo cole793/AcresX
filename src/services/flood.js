@@ -10,8 +10,9 @@
 // On failure of every source: HTTP 502 with
 //   { available: false, intersects: false, high: false, zones: [], error, source: null }
 //
-// Request plan (at most 3 upstream requests per call, worst case 22.5 s; a parcel a county flood
-// layer covers can add one or two more, see step 4):
+// Request plan (at most 3 upstream requests per call for the zones, worst case 22.5 s; a parcel a
+// county flood layer covers can add one or two more, see step 4; zone shares add up to two
+// parallel requests, see "Zone shares" below):
 //   1. FEMA NFHL layer 28 (Flood Hazard Zones). Any answer it gives, including no features, is
 //      authoritative and cacheable.
 //   2. One FEMA retry if (1) failed with 5xx / network error / timeout. FEMA is intermittently
@@ -38,9 +39,15 @@
 // user's browser. The hint is never cached. It is also added when FEMA answered not_mapped and
 // the county layer failed the same way (the browser asks FEMA, then the county layer), and it is
 // dropped when the county layer answered.
+// Zone shares (src/services/flood-share.js): a FEMA or Esri answer with a mapped zone (not
+// not_mapped, not the empty Esri answer) also gets floodZones, sfhaSharePct, sfhaAcres,
+// parcelAcres and floodShare, from at most two more queries to the same layer within what is
+// left of a 25 s budget. If they fail, only floodShare { status: 'unavailable' } is added and the
+// answer is not cached. County-layer answers keep their own share (source.floodZoneShare).
 import { fetchWithTimeout, json } from '../shared/http.js';
 import { FALLBACK_KINDS, fallbackHint, hintGeometry, isFallbackEligible } from '../shared/fallback.js';
 import { stevensFlood } from '../counties/stevens-flood.js';
+import { floodShares } from './flood-share.js';
 
 export const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
 
@@ -72,7 +79,10 @@ const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 // v4: answers gained zoneDetails and category, and 'AREA NOT INCLUDED' is no longer high.
 // v5: Stevens County parcels: v4 entries hold FEMA not_mapped answers made before the county
 // layer was asked.
-export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v5/';
+// v6: answers gained zone shares (floodZones, sfhaSharePct, floodShare).
+export const CACHE_KEY_PREFIX = 'https://acresx.internal/cache/flood/v6/';
+// Zone lookup plus zone shares stay inside this (the client and validator wait 30 s).
+export const FLOOD_TOTAL_BUDGET_MS = 25000;
 const COORD_DECIMALS = 6;
 
 // browserFallback: a failure a browser might get past (network, timeout, 403/429/5xx).
@@ -219,6 +229,11 @@ function zoneDetails(rows) {
   return [...seen.values()];
 }
 
+// One row as flood-share.js needs it: { zone (upper case), subtype, sfha, category }.
+export function describeFloodRow(row, options = {}) {
+  return { zone: zoneOf(row), subtype: String(field(row, 'ZONE_SUBTY') ?? '').trim() || null, sfha: isSfha(row), category: rowCategory(row, options) };
+}
+
 // options.backup: rows come from the Esri fallback (see rowCategory).
 export function summarizeFloodRows(rows, options = {}) {
   const zones = [...new Set(rows.map(r => field(r, 'FLD_ZONE')).filter(Boolean).map(z => String(z).trim()).filter(Boolean))];
@@ -310,6 +325,7 @@ const withCountyStatus = (body, county, result) => ({ ...body, source: { ...(bod
 // request's county name, if it sent one (picks the county layer instead of the bbox).
 export async function floodScreening(geometry, ctx, options = {}) {
   const esriFallback = options.esriFallback ?? ESRI_FALLBACK_ENABLED;
+  const started = Date.now();
   try { esriPolygon(geometry); } catch (error) {
     return { status: 400, body: unavailableBody(error.message) };
   }
@@ -323,15 +339,27 @@ export async function floodScreening(geometry, ctx, options = {}) {
   if (cached) return { status: 200, body: cached };
 
   const answer = async (body, cacheable) => {
-    if (cacheable && key) await writeCache(cache, key, body, ctx);
+    if (cacheable && key && body.floodShare?.status !== 'unavailable') await writeCache(cache, key, body, ctx);
     return { status: 200, body };
+  };
+  // A zone answer plus its zone shares (nothing to measure for not_mapped or no zones).
+  const withShares = async (body, rows, source) => {
+    if (!body.intersects || body.category === 'not_mapped' || body.category === 'limited') return body;
+    const backup = source.provider === ESRI_PROVIDER;
+    const shares = await floodShares(geometry, {
+      layerUrl: source.url, provider: source.provider, agency: source.provider, rows, backup,
+      describe: row => describeFloodRow(row, { backup }), coverage: backup ? ESRI_COVERAGE : undefined,
+      timeoutMs: FLOOD_TOTAL_BUDGET_MS - (Date.now() - started)
+    });
+    return { ...body, ...shares };
   };
 
   const failures = [];
   let fallback = null;
-  let femaBody = null;
+  let femaBody = null, femaRows = [];
   try {
     const rows = await fromFema(geometry);
+    femaRows = rows;
     femaBody = { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
   } catch (error) {
     failures.push(`${FEMA_PROVIDER} ${error?.message || 'failed'}`);
@@ -339,7 +367,7 @@ export async function floodScreening(geometry, ctx, options = {}) {
     if (error?.browserFallback) fallback = { fallback: fallbackHint(FALLBACK_KINDS.femaFlood, { geometry: hintGeometry(geometry) }) };
   }
   if (femaBody) {
-    if (!county || femaBody.category !== 'not_mapped') return await answer(femaBody, true);
+    if (!county || femaBody.category !== 'not_mapped') return await answer(await withShares(femaBody, femaRows, femaBody.source), true);
     const result = await fromCounty(county, geometry, false);
     if (result.body) return await answer(result.body, true);
     if (result.none) return await answer(withCountyStatus(femaBody, county, result), true);
@@ -364,7 +392,7 @@ export async function floodScreening(geometry, ctx, options = {}) {
         if (result.body) return await answer(result.body, true);
         return await withHint(answer(withCountyStatus(limited, county, result), false));
       }
-      return await withHint(answer({ ...summarizeFloodRows(rows, { backup: true }), source }, true));
+      return await withHint(answer(await withShares({ ...summarizeFloodRows(rows, { backup: true }), source }, rows, source), true));
     } catch (error) {
       failures.push(`${ESRI_PROVIDER} ${error?.message || 'failed'}`);
       console.warn(`Flood source failed: ${ESRI_PROVIDER}`, error?.message);
@@ -390,6 +418,6 @@ export async function handleFlood(request, env, ctx) {
   const { status, body: result } = await floodScreening(body?.geometry, ctx, { county: typeof body?.county === 'string' ? body.county : undefined });
   // emptyResult answers are partial-coverage, and an answer whose county layer failed is degraded:
   // don't let the browser or edge hold on to them.
-  if (status === 200 && (result.source?.emptyResult || result.source?.countyLayer?.status === 'unavailable')) return json(result, 200, 'no-store');
+  if (status === 200 && (result.source?.emptyResult || result.source?.countyLayer?.status === 'unavailable' || result.floodShare?.status === 'unavailable')) return json(result, 200, 'no-store');
   return status === 200 ? json(result) : json(result, status, 'no-store');
 }

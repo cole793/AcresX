@@ -114,3 +114,99 @@ export function coverageNote(top, others, uncovered, what) {
   if (uncovered >= 0.05) parts.push(`about ${pct(uncovered)} has no mapped ${what}`);
   return ` ${parts.join('; ')}.`;
 }
+
+// ---- Area overlap by horizontal strips (no geometry engine, no clipping).
+//
+// stripAreas(parcelRings, groups) measures how much of the parcel each group of polygons covers.
+// The parcel's bounding box is cut into `strips` horizontal strips. On each strip's centre line
+// the parcel and every polygon become sets of x-intervals (even-odd rule, so holes and multi-part
+// shapes work); a group's intervals are the union over its polygons, so overlapping polygons are
+// counted once. Interval lengths are exact along each line, so the error comes only from the
+// strip height: with 400 strips it is a fraction of a percent of the parcel, much finer than the
+// ~200-point grid above, and a zone sliver along one edge still registers. Area uses a spherical
+// Earth (lon/lat degrees scaled by cos(latitude) on each strip), good to about 0.5% for a parcel.
+//   parcelRings: rings from ringsFromGeometry(); groups: { name: [rings, rings, ...] }.
+// Returns { parcelSqM, groups: { name: sqM inside the parcel } }.
+
+const EARTH_RADIUS_M = 6371008.8;
+const DEG = Math.PI / 180;
+export const SQM_PER_ACRE = 4046.8564224;
+export const DEFAULT_STRIPS = 400;
+
+// For each strip, the sorted x crossings of one polygon's edges with the strip's centre line.
+// Edges are bucketed by the strips they span, so a long river polygon costs its edge count, not
+// edges x strips. Same half-open rule as pointInRings: a line at y crosses edge (y1, y2) when
+// y1 <= y < y2 (either order).
+function stripCrossings(rings, minY, dy, count) {
+  const lines = [];
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [x1, y1] = ring[j], [x2, y2] = ring[i];
+      if (y1 === y2) continue;
+      const lo = Math.min(y1, y2), hi = Math.max(y1, y2);
+      const first = Math.max(0, Math.ceil((lo - minY) / dy - 0.5));
+      const last = Math.min(count - 1, Math.ceil((hi - minY) / dy - 0.5));
+      for (let s = first; s <= last; s++) {
+        const y = minY + (s + 0.5) * dy;
+        if (y < lo || y >= hi) continue;
+        (lines[s] ||= []).push(x1 + (y - y1) * (x2 - x1) / (y2 - y1));
+      }
+    }
+  }
+  for (const line of lines) if (line) line.sort((a, b) => a - b);
+  return lines;
+}
+
+// Sorted crossings -> [[x0, x1], [x2, x3], ...] (even-odd).
+function intervalsOf(crossings) {
+  const out = [];
+  if (!crossings) return out;
+  for (let i = 0; i + 1 < crossings.length; i += 2) if (crossings[i + 1] > crossings[i]) out.push([crossings[i], crossings[i + 1]]);
+  return out;
+}
+
+function unionIntervals(lists) {
+  const all = lists.flat().sort((a, b) => a[0] - b[0]);
+  const out = [];
+  for (const [a, b] of all) {
+    const top = out[out.length - 1];
+    if (top && a <= top[1]) top[1] = Math.max(top[1], b);
+    else out.push([a, b]);
+  }
+  return out;
+}
+
+function overlapLength(a, b) {
+  let total = 0, i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    const lo = Math.max(a[i][0], b[j][0]), hi = Math.min(a[i][1], b[j][1]);
+    if (hi > lo) total += hi - lo;
+    if (a[i][1] < b[j][1]) i++; else j++;
+  }
+  return total;
+}
+
+export function stripAreas(parcelRings, groups = {}, { strips = DEFAULT_STRIPS } = {}) {
+  let minY = Infinity, maxY = -Infinity;
+  for (const ring of parcelRings || []) for (const [, y] of ring) { minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+  const names = Object.keys(groups);
+  const result = { parcelSqM: 0, groups: Object.fromEntries(names.map(n => [n, 0])) };
+  if (!(maxY > minY)) return result;
+  const count = Math.max(1, Math.round(strips));
+  const dy = (maxY - minY) / count;
+  const parcelLines = stripCrossings(parcelRings, minY, dy, count);
+  const groupLines = names.map(name => (groups[name] || []).filter(Boolean).map(rings => stripCrossings(rings, minY, dy, count)));
+  for (let s = 0; s < count; s++) {
+    const parcel = intervalsOf(parcelLines[s]);
+    if (!parcel.length) continue;
+    const y = minY + (s + 0.5) * dy;
+    // Square metres per (degree of longitude x strip height) on this line.
+    const scale = (EARTH_RADIUS_M * DEG) * Math.cos(y * DEG) * (EARTH_RADIUS_M * DEG) * dy;
+    result.parcelSqM += parcel.reduce((sum, [a, b]) => sum + (b - a), 0) * scale;
+    names.forEach((name, g) => {
+      const covered = unionIntervals(groupLines[g].map(lines => intervalsOf(lines[s])));
+      if (covered.length) result.groups[name] += overlapLength(parcel, covered) * scale;
+    });
+  }
+  return result;
+}

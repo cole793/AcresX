@@ -310,11 +310,12 @@ function interpret(raw, { agency, arcgis, arcgisMessage, validate, fields }) {
 //   retryOn (fn(error) -> bool, or kinds like ['timeout', 'network', '5xx', 'json', 'arcgis']),
 //   label (log name), agency (error-message prefix), signal (caller cancel), arcgis (treat
 //   {error} bodies as errors), arcgisMessage, validate (fn(data) throws to reject), maxPerHost,
-//   maxGetUrlLength, meta (an object that receives { status, attempts } on success).
+//   maxGetUrlLength, meta (an object that receives { status, attempts } on success), maxBytes
+//   (fail with kind 'too_large', never retried, once the body passes it).
 export async function upstreamJson(url, opts = {}) {
   const {
     timeoutMs = settings.timeoutMs, retries = settings.retries, retryTimeoutMs = timeoutMs, backoffMs = settings.backoffMs,
-    retryOn, signal, arcgis = false, arcgisMessage, validate, maxPerHost = settings.maxPerHost, queueTimeoutMs
+    retryOn, signal, arcgis = false, arcgisMessage, validate, maxPerHost = settings.maxPerHost, queueTimeoutMs, maxBytes
   } = opts;
   const request = buildUpstreamRequest(url, opts);
   const host = hostOf(request.url);
@@ -325,7 +326,7 @@ export async function upstreamJson(url, opts = {}) {
     const fields = { host, label, attempt };
     let status = null;
     try {
-      const raw = await attemptOnce(request.url, request.init, { host, label, agency, timeoutMs: attempt === 1 ? timeoutMs : retryTimeoutMs, queueTimeoutMs, signal, maxPerHost, attempt });
+      const raw = await attemptOnce(request.url, request.init, { host, label, agency, timeoutMs: attempt === 1 ? timeoutMs : retryTimeoutMs, queueTimeoutMs, signal, maxPerHost, attempt, maxBytes });
       status = raw.status;
       const data = interpret(raw, { agency, arcgis, arcgisMessage, validate, fields });
       logAttempt({ host, label, status, started, ok: true, attempt });
