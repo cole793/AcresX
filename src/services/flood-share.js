@@ -32,12 +32,23 @@
 //   is "outside mapped high- and moderate-risk areas" (restZone null, coverage noted).
 // Area: src/shared/polygon-coverage.js stripAreas (exact along 400 strips; zone A on 23123.9051
 // measured 67.12% at 400 strips and 67.13% at 10,000).
+// Backup outlines: when the FEMA share queries fail (any error) and the caller passes
+// `fallback` (the Esri USA Flood Hazard Areas copy of FEMA's layer), the outlines are taken from
+// one 1=1 query to that layer instead, keeping only rows whose zone the FEMA zone answer listed
+// (minimal X excluded), and the rest of the parcel still goes to FEMA's minimal zone (restZone).
+// If the backup fails or has no outline for one of those zones, the share stays unmeasured
+// (floodShare as without a backup: FEMA's error). floodShare
+// then says source 'Esri USA Flood Hazard Areas' and gains fallbackFrom { provider, error }.
+// User-Agent: FEMA's firewall answers HTTP 403 to any request without a User-Agent header
+// (checked 2026-11-14: the same query gets 403 with no header and 200 with any value), and a
+// Cloudflare Worker's fetch sends none. Every flood request sends FLOOD_REQUEST_HEADERS.
 // Requests: the shared upstream client, f=json, outSR 4326, maxAllowableOffset 0.00001 (~1 m),
 // geometryPrecision 6, at most 100 features, a 3 MB body cap, one attempt of at most 6 s (less
 // when the zone lookup already used most of the 25 s budget).
 import { arcgisQuery } from '../shared/upstream.js';
 import { ringsFromGeometry, stripAreas, SQM_PER_ACRE } from '../shared/polygon-coverage.js';
 
+export const FLOOD_REQUEST_HEADERS = Object.freeze({ 'User-Agent': 'AcresX/0.5.2' });
 export const FLOOD_SHARE_TIMEOUT_MS = 6000;
 export const FLOOD_SHARE_MIN_TIMEOUT_MS = 2000;
 export const FLOOD_SHARE_MAX_BYTES = 3_000_000;
@@ -46,7 +57,7 @@ export const MINIMAL_SUBTYPE = 'AREA OF MINIMAL FLOOD HAZARD';
 export const WHERE_NOT_X = "FLD_ZONE NOT IN ('X','C')";
 export const WHERE_SHADED = `ZONE_SUBTY <> '${MINIMAL_SUBTYPE}'`;
 const OUT_FIELDS = 'FLD_ZONE,ZONE_SUBTY,SFHA_TF';
-const BACKUP_OUT_FIELDS = 'FLD_ZONE,ZONE_SUBTY,SFHA_TF,esri_symbology';
+export const BACKUP_OUT_FIELDS = 'FLD_ZONE,ZONE_SUBTY,SFHA_TF,esri_symbology';
 
 // Tests only: { enabled: false } turns shares off, for tests of the zone lookup alone (its
 // request counts and exact bodies). test/flood-share.test.js runs with shares on. Returns a
@@ -130,22 +141,57 @@ export function measureFloodShares(geometry, features, { describe, restZone = nu
 
 // The fields to add to a zone answer, or {} when there is nothing to measure. Never throws.
 // options: { layerUrl, provider, agency, rows (the zone answer's attribute rows), describe,
-//            backup, coverage, timeoutMs }
+//            backup, coverage, timeoutMs,
+//            fallback?: { layerUrl, provider, describe } (backup outlines, see above) }
 export async function floodShares(geometry, options = {}) {
-  const { layerUrl, provider, agency, rows, describe, backup = false, coverage, timeoutMs = FLOOD_SHARE_TIMEOUT_MS } = options;
+  const { layerUrl, provider, agency, rows, describe, backup = false, coverage, timeoutMs = FLOOD_SHARE_TIMEOUT_MS, fallback } = options;
   if (!settings.enabled) return {};
+  const deadline = Date.now() + timeoutMs;
+  let plan;
   try {
-    const plan = floodSharePlan(rows, { describe, backup });
+    plan = floodSharePlan(rows, { describe, backup });
     if (!plan.queries.length && !plan.restZone) return {};
     if (plan.queries.length && timeoutMs < FLOOD_SHARE_MIN_TIMEOUT_MS) throw new Error('no time left after the zone lookup');
     const answers = await Promise.all(plan.queries.map(q => arcgisQuery(layerUrl, floodShareParams(geometry, q.where, backup ? BACKUP_OUT_FIELDS : OUT_FIELDS), {
-      agency, label: 'flood-share', timeoutMs: Math.min(FLOOD_SHARE_TIMEOUT_MS, timeoutMs), retries: 0, maxBytes: FLOOD_SHARE_MAX_BYTES
+      agency, label: 'flood-share', timeoutMs: Math.min(FLOOD_SHARE_TIMEOUT_MS, timeoutMs), retries: 0, maxBytes: FLOOD_SHARE_MAX_BYTES, headers: FLOOD_REQUEST_HEADERS
     }).then(features => features.filter(f => q.keep(describe(f?.attributes || {}))))));
     const fields = measureFloodShares(geometry, answers.flat(), { describe, restZone: plan.restZone, provider, coverage });
     if (!plan.queries.length) fields.floodShare.method = 'single-zone';
     return fields;
   } catch (error) {
     console.warn('Flood share not measured', error?.message);
-    return { floodShare: { status: 'unavailable', source: provider || null, error: String(error?.message || 'failed') } };
+    const primaryError = String(error?.message || 'failed');
+    if (fallback && !backup && plan?.queries.length) {
+      try {
+        return await backupShares(geometry, { rows, describe, plan, fallback, timeoutMs: deadline - Date.now(), primary: { provider: provider || null, error: primaryError } });
+      } catch (backupError) {
+        // Logged only: the answer stays the plain FEMA failure (the browser fallback gives the same).
+        console.warn('Flood share not measured from the backup layer', backupError?.message);
+      }
+    }
+    return { floodShare: { status: 'unavailable', source: provider || null, error: primaryError } };
   }
+}
+
+// The zones (upper-case codes) whose outlines the zone answer needs, minimal ones excluded.
+function zonesToMeasure(rows, describe) {
+  return new Set((rows || []).map(row => describe(row)).filter(d => d.zone && d.category !== 'minimal').map(d => d.zone));
+}
+
+// Shares from the backup layer's outlines for a FEMA zone answer (see "Backup outlines"). Throws.
+async function backupShares(geometry, { rows, describe, plan, fallback, timeoutMs, primary }) {
+  if (timeoutMs < FLOOD_SHARE_MIN_TIMEOUT_MS) throw new Error('no time left for the backup layer');
+  const wanted = zonesToMeasure(rows, describe);
+  const features = (await arcgisQuery(fallback.layerUrl, floodShareParams(geometry, '1=1', BACKUP_OUT_FIELDS), {
+    agency: fallback.provider, label: 'flood-share-backup', timeoutMs: Math.min(FLOOD_SHARE_TIMEOUT_MS, timeoutMs), retries: 0, maxBytes: FLOOD_SHARE_MAX_BYTES, headers: FLOOD_REQUEST_HEADERS
+  })).filter(f => {
+    const d = fallback.describe(f?.attributes || {});
+    return wanted.has(d.zone) && d.category !== 'minimal';
+  });
+  const found = new Set(features.map(f => fallback.describe(f?.attributes || {}).zone));
+  const missing = [...wanted].filter(zone => !found.has(zone));
+  if (missing.length) throw new Error(`has no outline for zone ${missing.join(', ')}`);
+  const fields = measureFloodShares(geometry, features, { describe: fallback.describe, restZone: plan.restZone, provider: fallback.provider });
+  fields.floodShare.fallbackFrom = primary;
+  return fields;
 }

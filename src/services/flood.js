@@ -42,12 +42,14 @@
 // Zone shares (src/services/flood-share.js): a FEMA or Esri answer with a mapped zone (not
 // not_mapped, not the empty Esri answer) also gets floodZones, sfhaSharePct, sfhaAcres,
 // parcelAcres and floodShare, from at most two more queries to the same layer within what is
-// left of a 25 s budget. If they fail, only floodShare { status: 'unavailable' } is added and the
+// left of a 25 s budget. If FEMA's outline queries fail, the outlines come from the Esri backup
+// (one more query; floodShare.source then names Esri and floodShare.fallbackFrom says why). If
+// they fail, only floodShare { status: 'unavailable' } is added and the
 // answer is not cached. County-layer answers keep their own share (source.floodZoneShare).
 import { fetchWithTimeout, json } from '../shared/http.js';
 import { FALLBACK_KINDS, fallbackHint, hintGeometry, isFallbackEligible } from '../shared/fallback.js';
 import { stevensFlood } from '../counties/stevens-flood.js';
-import { floodShares } from './flood-share.js';
+import { floodShares, FLOOD_REQUEST_HEADERS } from './flood-share.js';
 
 export const FEMA_NFHL_FLOOD_LAYER = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28';
 
@@ -108,7 +110,7 @@ export function buildQueryRequest(layerUrl, geometry, outFields) {
     f: 'json', where: '1=1', geometry: JSON.stringify(esriPolygon(geometry)), geometryType: 'esriGeometryPolygon',
     inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields, returnGeometry: 'false', resultRecordCount: '100'
   });
-  const headers = { 'User-Agent': 'AcresX/0.5.2' };
+  const headers = { ...FLOOD_REQUEST_HEADERS };
   const getUrl = `${layerUrl}/query?${params}`;
   if (getUrl.length <= MAX_GET_URL_LENGTH) {
     return { url: getUrl, init: { method: 'GET', headers } };
@@ -349,7 +351,9 @@ export async function floodScreening(geometry, ctx, options = {}) {
     const shares = await floodShares(geometry, {
       layerUrl: source.url, provider: source.provider, agency: source.provider, rows, backup,
       describe: row => describeFloodRow(row, { backup }), coverage: backup ? ESRI_COVERAGE : undefined,
-      timeoutMs: FLOOD_TOTAL_BUDGET_MS - (Date.now() - started)
+      timeoutMs: FLOOD_TOTAL_BUDGET_MS - (Date.now() - started),
+      // FEMA outlines failed: measure from the Esri copy (flood-share.js, "Backup outlines").
+      fallback: !backup && esriFallback ? { layerUrl: ESRI_USA_FLOOD_HAZARD_LAYER, provider: ESRI_PROVIDER, describe: r => describeFloodRow(r, { backup: true }) } : undefined
     });
     return { ...body, ...shares };
   };

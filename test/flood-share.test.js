@@ -227,7 +227,8 @@ test('upstream failure: the zone answer stands, floodShare says unavailable, no-
   assert.equal('floodZones' in body, false);
   assert.equal('sfhaSharePct' in body, false);
   assert.deepEqual(body.floodShare, { status: 'unavailable', source: 'FEMA NFHL', error: 'FEMA NFHL returned 503' });
-  assert.equal(calls.length, 2, 'one attempt, no retry');
+  assert.equal(calls.length, 3, 'one FEMA attempt, no retry, then the Esri backup once');
+  assert.equal(calls[2].base, ESRI, 'the backup layer was asked');
   assert.equal(store.size, 0);
 });
 
@@ -277,6 +278,86 @@ test('recorded: Spokane 23123.9051 measures zone A on about 67% (13.8 ac), the r
   assert.deepEqual(body.floodZones.map(z => [z.zone, z.sharePct, z.acres]), [['A', 67.1, 13.85], ['X', 32.9, 6.78]]);
   assert.equal(body.sfhaSharePct, 67.1);
   assert.equal(body.parcelAcres, 20.63);
+});
+
+// ---- FEMA outlines blocked (production 2026-11-14: FEMA answers 403 to a request without a
+// User-Agent, which is what a Cloudflare Worker's fetch sends unless told otherwise)
+
+const userAgent = init => (init?.headers instanceof Headers ? init.headers.get('User-Agent') : Object.entries(init?.headers || {}).find(([k]) => k.toLowerCase() === 'user-agent')?.[1]) || null;
+// FEMA: zone query answers `zones`; share queries answer `outlines`, or 403 when `blocked` (or
+// when the request has no User-Agent, like FEMA's firewall). Esri: `esriOutlines`, or 403.
+function femaAndEsri({ zones, outlines = [], blocked = false, esriOutlines }) {
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    const params = new URLSearchParams(url.search);
+    if (init.body) new URLSearchParams(String(init.body)).forEach((v, k) => params.set(k, v));
+    const call = { base: url.origin + url.pathname, where: params.get('where'), returnGeometry: params.get('returnGeometry'), ua: userAgent(init), n: calls.length + 1 };
+    calls.push(call);
+    if (call.base === FEMA) {
+      if (!call.ua) return new Response('Forbidden', { status: 403 });
+      if (call.returnGeometry !== 'true') return jsonResponse({ features: zones.map(attributes => ({ attributes })) });
+      return blocked ? new Response('Forbidden', { status: 403 }) : jsonResponse({ features: outlines });
+    }
+    if (call.base === ESRI) return esriOutlines ? jsonResponse({ features: esriOutlines }) : new Response('Forbidden', { status: 403 });
+    throw new TypeError(`network disabled: ${call.base}`);
+  };
+}
+
+test('User-Agent: every FEMA request sends one (FEMA answers 403 without it), so shares are measured from FEMA', async () => {
+  femaAndEsri({ zones: [A, X_MIN], outlines: [feature(A, esriPolygon(W - 1, S - 1, W + 0.0025, N + 1))] });
+  const { body } = await floodCall();
+  assert.equal(body.floodShare.status, 'measured');
+  assert.equal(body.floodShare.source, 'FEMA NFHL');
+  assert.deepEqual(body.floodZones.map(z => [z.zone, z.sharePct]), [['X', 75], ['A', 25]]);
+  assert.ok(calls.every(c => c.ua === 'AcresX/0.5.2'), 'zone and share queries both carry the User-Agent');
+  assert.equal(calls.some(c => c.base === ESRI), false, 'no backup needed');
+});
+
+test('FEMA outlines 403: shares come from the Esri backup copy, the rest stays FEMA zone X, cached', async () => {
+  const store = fakeCache();
+  femaAndEsri({
+    zones: [A, X_MIN], blocked: true,
+    esriOutlines: [
+      feature({ ...A, esri_symbology: '1% Annual Chance Flood Hazard' }, esriPolygon(W - 1, S - 1, W + 0.0025, N + 1)),
+      // Not in FEMA's zone answer for this parcel: dropped, FEMA's zone list is the authority.
+      feature({ ...X_02, esri_symbology: '0.2% Annual Chance Flood Hazard' }, esriPolygon(E - 0.001, S - 1, E + 1, N + 1))
+    ]
+  });
+  const { response, body } = await floodCall();
+  assert.equal(response.status, 200);
+  assert.equal(body.source.provider, 'FEMA NFHL', 'the zone answer is still FEMA\'s');
+  assert.deepEqual(body.zones, ['A', 'X']);
+  assert.deepEqual(body.floodZones.map(z => [z.zone, z.sharePct, Boolean(z.remainder)]), [['X', 75, true], ['A', 25, false]]);
+  assert.equal(body.sfhaSharePct, 25);
+  assert.deepEqual(body.floodShare, {
+    status: 'measured', method: 'strip-integration', source: 'Esri USA Flood Hazard Areas', restSharePct: 75, restZone: 'X',
+    fallbackFrom: { provider: 'FEMA NFHL', error: 'FEMA NFHL returned 403' }
+  });
+  assert.equal(calls.filter(c => c.base === ESRI).length, 1);
+  assert.equal(calls.find(c => c.base === ESRI).where, '1=1');
+  assert.equal(store.size, 1, 'a measured answer is cached');
+});
+
+test('FEMA outlines 403 and the backup lacks the zone (or fails): unmeasured, FEMA\'s error, not cached', async () => {
+  for (const esriOutlines of [[], undefined]) {
+    calls = [];
+    const store = fakeCache();
+    femaAndEsri({ zones: [A, X_MIN], blocked: true, esriOutlines });
+    const { response, body } = await floodCall();
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.deepEqual(body.floodShare, { status: 'unavailable', source: 'FEMA NFHL', error: 'FEMA NFHL returned 403' });
+    assert.equal('floodZones' in body, false);
+    assert.equal(store.size, 0);
+  }
+});
+
+test('recorded: Spokane 23123.9051 with FEMA outlines blocked measures zone A 67.1% from the Esri copy', async () => {
+  const parcel = fixture('report-spokane-23123.9051.json').parcel.geometry;
+  const zoneA = fixture('fema-flood-share-23123.9051.json').features.map(f => ({ ...f, attributes: { ...f.attributes, esri_symbology: '1% Annual Chance Flood Hazard' } }));
+  femaAndEsri({ zones: [A, X_MIN], blocked: true, esriOutlines: zoneA });
+  const { body } = await floodCall(parcel);
+  assert.deepEqual(body.floodZones.map(z => [z.zone, z.sharePct, z.acres]), [['A', 67.1, 13.85], ['X', 32.9, 6.78]]);
+  assert.equal(body.floodShare.source, 'Esri USA Flood Hazard Areas');
 });
 
 // ---- The page
