@@ -48,7 +48,7 @@
   const SCORE_INPUTS = ['wells', 'utility', 'flood', 'wetlands', 'zoningPermits', 'land', 'publicUtilities'];
   // Follow-up requests whose answers feed the score or the cost estimate.
   const SCORE_FOLLOWUPS = ['powerIntelligence'];
-  // costContext: public/local-cost-model.js (road access + watershed, Spokane and Kootenai only).
+  // costContext: public/local-cost-model.js (road access + watershed, counties with local prices only).
   const COST_FOLLOWUPS = ['existingWell', 'costContext'];
   const FOLLOWUP_LABELS = { powerIntelligence: 'power proximity', existingWell: 'well records', costContext: 'road access' };
 

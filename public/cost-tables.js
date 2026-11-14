@@ -1,5 +1,6 @@
 // Local development-cost price tables (owner request 2026-11-12: "tighter, based on local county
-// data", starting with Spokane, WA and Kootenai, ID). Read by public/local-cost-model.js
+// data", starting with Spokane, WA and Kootenai, ID; Yellowstone and Gallatin, MT added
+// 2026-11-14). Read by public/local-cost-model.js
 // (window.AcresXCostModel), which holds the formulas.
 //
 // Why a static browser file and not an /api route: the estimate is computed in the browser from
@@ -10,7 +11,7 @@
 //
 // Each priced entry: { value | low/high, unit, asOf (effective date), source: { name, url },
 // verified, note? }. verified: true means the number was read in the primary document named
-// (re-read 2026-11-12). verified: false means AcresX planning allowance or an unconfirmed
+// (re-read 2026-11-12; Montana 2026-11-14). verified: false means AcresX planning allowance or an unconfirmed
 // figure, always labeled as such in the UI. Search-snippet figures are left out entirely.
 // Listing/MLS data never feeds these tables or the estimate.
 (function (root) {
@@ -42,6 +43,30 @@
   const WSDOT_25Z012 = src('WSDOT bid tabulation 25Z012, SR 395 Stevens Co. (bids opened May 2025)', 'https://wsdot.wa.gov/sites/default/files/2025-05/Contracts-bidtabulation-25Z012.pdf');
   const ITD = src('ITD Average Unit Price History (low bids, 2025-2026 lettings)', 'https://apps.itd.idaho.gov/Apps/Estimating/Avg_Unit_Price.xlsx');
   const ACRESX = src('AcresX planning allowance (no official source)', '');
+
+  // Montana (researched 2026-11-14; every figure re-read in the downloaded primary document).
+  const DLI_BP_FAQ = src('Montana DLI Building Codes Bureau, Building Permit FAQ', 'https://bsd.dli.mt.gov/Building-Codes-Permits/permit-applications/building-permits/building-permit-faq');
+  const DLI_ELEC = src('Montana DLI, Application for Residential Electrical Permit (ARM 24.301.431, Rev. 11/25)', 'https://bsd.dli.mt.gov/_docs/building-codes-permits/ApplicationResidentialElectrical.pdf');
+  const DLI_PLUMB = src('Montana DLI, Application for Plumbing Permit (BCP-1, Rev. 11/25)', 'https://bsd.dli.mt.gov/_docs/building-codes-permits/ApplicationPlumbingPermit.pdf');
+  const DNRC_602I = src('Montana DNRC Form 602I, Notice of Intent to Appropriate Groundwater (effective 01/2026)', 'https://dnrc.mt.gov/_docs/water/Water-Rights-Forms/602I.pdf');
+  const DNRC_602 = src('Montana DNRC Form 602, Notice of Completion of Groundwater Development (revised 01/2026)', 'https://dnrc.mt.gov/_docs/water/Water-Rights-Forms/602.pdf');
+  const NWE_RULE6 = src('NorthWestern Energy Montana Electric Tariff Rule No. 6, Line Extensions (sheet R-6.1, effective 2020-03-01)', 'https://northwesternenergy.com/docs/default-source/default-document-library/billing-and-payment/rates-and-tariffs/montana/rules/electric/rule_6_et.pdf');
+  const YC_PW = src('Yellowstone County Public Works, Permits', 'https://www.yellowstonecountymt.gov/publicworks/permits.asp');
+  // The document is headed "Subdivision Fee Schedule - YCO FY21-22-23"; its zoning section is
+  // headed "Zoning Fee Schedule - YCO FY21-22" with one FY21 column. Latest published figures.
+  const YC_PLANNING = src('Yellowstone County Planning Fee Schedule (headed YCO FY21-22-23)', 'https://www.billingsmt.gov/DocumentCenter/View/54699');
+  const RSH = src('RiverStone Health, Subdivision Review Fee Calculation Checklist (revised 08/22/2024)', 'https://riverstonehealth.org/wp-content/uploads/Local-Fees-2024.8.22.pdf');
+  const YVEC_LINE = src('Yellowstone Valley Electric Cooperative, Line Extensions', 'https://www.yvec.com/your-account/request-service/line-extensions/');
+  const YVEC_NEW = src('Yellowstone Valley Electric Cooperative, New Construction', 'https://www.yvec.com/new-construction/');
+  const MYEC_104 = src('Mid-Yellowstone Electric Cooperative Policy 104, Line Extensions and Temporary Services (revised 05/25/2021)', 'https://myec.coop/sites/default/files/Policy%20104%20Line%20Extensions%20and%20Temporary%20Services.pdf');
+  const MDT_2026 = src('MDT Tabulation of Bids 2026 (lettings Jan 15 - Oct 22, 2026)', 'https://mdt.mt.gov/other/webdata/external/contractplans/contract/archives/Bid_tabs/2026.pdf');
+  const MDT_2025 = src('MDT Tabulation of Bids 2025', 'https://mdt.mt.gov/other/webdata/external/contractplans/contract/archives/Bid_tabs/2025.pdf');
+  const GAL_PLANNING = src('Gallatin County Planning & Community Development, Schedule of Fees (September 21, 2026)', 'https://www.gallatinmt.gov/DocumentCenter/View/1301/Fee-Schedule-');
+  const GAL_ROAD = src('Gallatin County Road and Bridge Department, Application for an Access Permit', 'https://www.gallatinmt.gov/DocumentCenter/View/168/Road-Access-Permit-Application');
+  const GCCHD = src('Gallatin City-County Health Department, Appendix 2 Environmental Health Services Fee Schedule (effective October 27, 2018)', 'https://www.healthygallatin.org/wp-content/uploads/2018/10/HC-1-Fee-schedule-only.pdf');
+  const PARK_NEW = src('Park Electric Cooperative, New Services', 'https://www.parkelectric.coop/electrical-projects');
+  const PARK_AID = src('Park Electric Cooperative, Construction Aid', 'https://www.parkelectric.coop/construction-aid');
+  const FALL_RIVER = src('Fall River Electric, New Service Requirements', 'https://www.fallriverelectric.com/new-service-requirements');
 
   // Avista Schedule 51: identical 2026 rates in both states, different residential allowance.
   const avistaRates = (source) => Object.freeze({
@@ -100,6 +125,32 @@
     driveway: { widthFt: 12, baseDepthFt: 0.5, excavationDepthFt: 0.5, tonsPerCy: 1.5, unknownLengthFt: { low: 100, high: 500 }, minFt: 50, longFt: 1000, maxFt: 1500 },
     // Building-pad earthwork by slope tier (cy), on a 60 x 80 ft pad (4,800 sf).
     padCy: { flat: { low: 89, high: 178 }, rolling: { low: 178, high: 356 }, steep: { low: 356, high: 622 }, verySteep: { low: 622, high: 1067 } }
+  });
+
+  // Montana, both counties. Neither county issues building permits outside city limits and neither
+  // is a DLI-certified county program, so on county land the state (DLI) issues the electrical and
+  // plumbing permits and no building permit is needed for a single-family home.
+  const MT_STATE = Object.freeze({
+    noBuildingPermit: { label: 'Building permit: none required for a single-family home outside a city that issues its own', value: 0, asOf: 'undated', source: DLI_BP_FAQ, verified: true },
+    electrical: { label: 'DLI electrical permit, single-family dwelling (up to 200 A $200; 201-400 A $380)', low: 200, high: 380, asOf: '2025-11', source: DLI_ELEC, verified: true, note: 'The homeowner permit for an owner who wires their own home lists the same amounts.' },
+    // Itemized for the same assumed home as the Spokane County worked example (17 fixtures/traps).
+    plumbing: { label: 'DLI plumbing permit, itemized (17 fixtures/traps x $10 + water supply connection $20 + building drain connection $20 + water heater $25 + 2 hose bibbs x $6)', value: 247, asOf: '2025-11', source: DLI_PLUMB, verified: true, note: 'not needed when the owner does the plumbing on a home for their own use, not for resale or rent, per DLI' },
+    well: {
+      start: { label: 'DNRC Notice of Intent (Form 602I)', value: 400, asOf: '2026-01-01', source: DNRC_602I, verified: true },
+      also: [{ label: 'DNRC Notice of Completion (Form 602)', value: 250, asOf: '2026-01-01', source: DNRC_602, verified: true }]
+    },
+    northwestern: {
+      allowance: { value: 400, unit: 'per residential service', asOf: '2020-03-01', source: NWE_RULE6, verified: true, note: 'the service drop, up to 150 ft overhead or 100 ft underground, plus the transformer and meter are allowed on top of it' }
+    }
+  });
+  // State DOT bid prices per cubic yard (MDT bids crushed aggregate course by the CY, not the ton).
+  // Low = median low-bidder unit price of the 2025-2026 lines of 1,000 CY or more in the district;
+  // high = median low-bidder unit price of all the district's lines (small quantities included),
+  // so the high end leans toward small-job prices. Low-bidder prices only; unbalanced bids included.
+  const mdtDriveway = (district, agg, exc) => ({
+    bidLabel: `MDT ${district} District`,
+    aggregatePerCy: { low: agg[0], high: agg[1], asOf: '2026-11-04', sources: [MDT_2026, MDT_2025], verified: true, note: `Crushed aggregate course, ${district} District low bids` },
+    excavationPerCy: { low: exc[0], high: exc[1], asOf: '2026-11-04', sources: [MDT_2026, MDT_2025], verified: true, note: `Excavation-unclassified, ${district} District low bids` }
   });
 
   const COUNTIES = {
@@ -269,6 +320,87 @@
         aggregatePerTon: { low: 29, high: 34.20, asOf: '2026-10-20', sources: [ITD], verified: true, note: '3/4" aggregate type B for base, low-bid medians (District 1 / statewide)' },
         excavationPerCy: { low: 21, high: 24, asOf: '2026-10-20', sources: [ITD], verified: true, note: 'Excavation, low-bid medians (statewide / District 1)' }
       }
+    },
+    'MT:yellowstone': {
+      key: 'MT:yellowstone', state: 'MT', county: 'Yellowstone', label: 'Yellowstone County, MT', researched: '2026-11-14',
+      power: {
+        northwestern: MT_STATE.northwestern,
+        // Co-ops publish no per-foot rate or allowance; only deposits and payment rules.
+        coops: [
+          { match: /yellowstone valley/i, name: 'Yellowstone Valley Electric Cooperative', short: 'YVEC',
+            fee: { label: 'construction deposit (non-refundable, credited toward construction charges)', value: 150, credited: true, asOf: 'undated', source: YVEC_NEW, verified: true },
+            policy: { text: 'final cost is the actual construction expense; prepay 50% of the estimate up to $2,000 and 100% above $2,000', asOf: 'undated', source: YVEC_LINE, verified: true } },
+          { match: /mid[- ]?yellowstone/i, name: 'Mid-Yellowstone Electric Cooperative', short: 'MYEC',
+            policy: { text: 'construction costs are paid in full before line construction starts; MYEC may, but is not required to, contribute up to $1,000', asOf: '2021-05-25', source: MYEC_104, verified: true } }
+        ]
+      },
+      connections: [],
+      septicPermits: {
+        agency: 'RiverStone Health',
+        items: [
+          { label: 'Individual water supply system', value: 110, asOf: '2024-08-22', source: RSH, verified: true },
+          { label: 'New gravity system (1 drainfield)', value: 120, asOf: '2024-08-22', source: RSH, verified: true },
+          { label: 'Nondegradation review, individual (1 drainfield)', value: 70, asOf: '2024-08-22', source: RSH, verified: true },
+          { label: 'Inspection before backfilling (1 drainfield)', value: 300, asOf: '2024-08-22', source: RSH, verified: true }
+        ],
+        highItems: [
+          { label: 'dosed/mound system design', value: 180, asOf: '2024-08-22', source: RSH, verified: true },
+          { label: 'subdivision lot or COS tract fee (not charged for unplatted land)', value: 160, asOf: '2024-08-22', source: RSH, verified: true }
+        ],
+        note: 'RiverStone Health says an engineer or land use consultant typically prepares the application; that fee is not sourced and not included.'
+      },
+      wellPermit: MT_STATE.well,
+      permits: [
+        {
+          match: /^yellowstone county$/i, jurisdiction: 'Yellowstone County (outside city limits)', kind: 'mt-county',
+          noBuildingPermit: { ...MT_STATE.noBuildingPermit, source: YC_PW, note: 'Yellowstone County does not issue building permits outside the city limits of Billings' },
+          electrical: MT_STATE.electrical, plumbing: MT_STATE.plumbing,
+          zoning: { kind: 'flat', label: 'Zoning compliance permit (residential)', value: 77, asOf: 'FY21-22', source: YC_PLANNING, verified: true, where: 'a county zoning district', dated: 'from a fee schedule headed FY21-22-23; the latest published figure, possibly out of date' },
+          approach: { label: 'Residential road approach permit (county road)', value: 75, asOf: 'undated', source: YC_PW, verified: true }
+        }
+      ],
+      cityPermitNote: 'Billings, Laurel and Broadview issue their own building permits; those fee schedules are not sourced here.',
+      driveway: mdtDriveway('Billings', [50, 65], [16.53, 22])
+    },
+    'MT:gallatin': {
+      key: 'MT:gallatin', state: 'MT', county: 'Gallatin', label: 'Gallatin County, MT', researched: '2026-11-14',
+      power: {
+        northwestern: MT_STATE.northwestern,
+        coops: [
+          { match: /park electric/i, name: 'Park Electric Cooperative', short: 'Park Electric',
+            fee: { label: 'site visit fee (credited toward the aid of construction)', value: 500, credited: true, asOf: 'undated', source: PARK_NEW, verified: true },
+            policy: { text: 'aid of construction is estimated from Park Electric\'s historical average costs and paid in full before the job is scheduled', asOf: 'undated', source: PARK_AID, verified: true } },
+          { match: /fall river/i, name: 'Fall River Electric', short: 'Fall River',
+            fee: { label: 'estimate fee (charged for every estimate)', value: 250, credited: false, asOf: 'undated', source: FALL_RIVER, verified: true },
+            policy: { text: 'in Montana the member pays the estimated aid to construction', asOf: 'undated', source: FALL_RIVER, verified: true } },
+          { match: /vigilante/i, name: 'Vigilante Electric Cooperative', short: 'Vigilante',
+            policy: { text: 'no published line-extension terms found (its website blocks automated reads)' } }
+        ]
+      },
+      connections: [],
+      septicPermits: {
+        agency: 'Gallatin City-County Health Department',
+        items: [
+          { label: 'Wastewater system permit, new', value: 375, asOf: '2018-10-27', source: GCCHD, verified: true },
+          { label: 'Review fee, lot requiring site evaluation', value: 275, asOf: '2018-10-27', source: GCCHD, verified: true }
+        ],
+        note: 'The review fee is $140 instead for a lot not requiring site evaluation (one with a COSA). The site evaluation must be done by a Gallatin County Registered Site Evaluator or a Montana PE; that fee is not sourced and not included.'
+      },
+      wellPermit: MT_STATE.well,
+      permits: [
+        {
+          match: /^gallatin county$/i, jurisdiction: 'Gallatin County (outside city limits)', kind: 'mt-county',
+          noBuildingPermit: { ...MT_STATE.noBuildingPermit, note: 'Gallatin County is not a DLI-certified building code program; Bozeman, Belgrade, Manhattan and West Yellowstone are certified for their own limits' },
+          electrical: MT_STATE.electrical, plumbing: MT_STATE.plumbing,
+          // "The greater of $430 or 1/4 of one percent (0.0025) of the market value of construction,
+          // excluding land cost. Maximum fee is $5,400"; market value at least $200/sf finished and
+          // $100/sf unfinished (the garage is counted as unfinished).
+          zoning: { kind: 'lup', label: 'Land Use Permit (standard, residential)', min: 430, pct: 0.0025, max: 5400, finishedPerSf: 200, unfinishedPerSf: 100, asOf: '2026-09-21', source: GAL_PLANNING, verified: true, where: 'a county zoning district' },
+          approach: { label: 'Access permit application (county road)', value: 125, asOf: '2020-10-27', source: GAL_ROAD, verified: true }
+        }
+      ],
+      cityPermitNote: 'Bozeman, Belgrade, Manhattan and West Yellowstone issue their own building permits; those fee schedules are not sourced here.',
+      driveway: mdtDriveway('Butte', [68, 75], [20, 24])
     }
   };
 
