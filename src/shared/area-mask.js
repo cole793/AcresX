@@ -11,11 +11,15 @@
 // options.setbackM > 0 adds a group named 'setback': every point within that distance of the
 // parcel line (each edge swept by a disc, measured in a local metre frame).
 //
-// maskAreas() -> { parcelSqM, removedSqM, groups: { name: sqM in parcel }, added: { name: sqM
-//   not already removed by an earlier group } }.
+// options.flag names a group that is measured but not removed (Spokane's mapped wetland buffers):
+// it is left out of the union, and flaggedSqM / `flagged` rectangles are its part outside the
+// removed area, so buildable + removed = parcel and the flagged part sits inside buildable.
+//
+// maskAreas() -> { parcelSqM, removedSqM, flaggedSqM, groups: { name: sqM in parcel }, added:
+//   { name: sqM not already removed by an earlier group } }.
 // maskGeometry() -> { buildable: MultiPolygon coordinates, removed: MultiPolygon coordinates,
-//   strips, rects }: one rectangle per run of strips whose interval stays put (within ~0.75 m),
-//   so a rectangular parcel is one rectangle and a diagonal edge is a fine staircase. Capped at
+//   flagged: MultiPolygon coordinates, strips, rects }: one rectangle per run of strips whose
+//   interval stays put (within ~0.75 m), so a rectangular parcel is one rectangle and a diagonal edge is a fine staircase. Capped at
 //   maxRects rectangles (fewer strips when over).
 import { stripCrossings, intervalsOf, unionIntervals, DEFAULT_STRIPS } from './polygon-coverage.js';
 
@@ -136,19 +140,22 @@ function scan(parcelRings, groups, { strips, setbackM = 0 }, visit) {
   return setback ? [...names, SETBACK_GROUP] : names;
 }
 
-export function maskAreas(parcelRings, groups = {}, { strips = DEFAULT_STRIPS, setbackM = 0 } = {}) {
+export function maskAreas(parcelRings, groups = {}, { strips = DEFAULT_STRIPS, setbackM = 0, flag = null } = {}) {
   const names = [...Object.keys(groups), ...(setbackM > 0 ? [SETBACK_GROUP] : [])];
-  const result = { parcelSqM: 0, removedSqM: 0, groups: Object.fromEntries(names.map(n => [n, 0])), added: Object.fromEntries(names.map(n => [n, 0])) };
+  const result = { parcelSqM: 0, removedSqM: 0, flaggedSqM: 0, groups: Object.fromEntries(names.map(n => [n, 0])), added: Object.fromEntries(names.map(n => [n, 0])) };
   scan(parcelRings, groups, { strips, setbackM }, ({ y, dy, parcel, covered }) => {
     const scale = M_PER_DEG * Math.cos(y * DEG) * M_PER_DEG * dy;
     result.parcelSqM += length(parcel) * scale;
     let sofar = [];
     covered.forEach((list, g) => {
       result.groups[names[g]] += length(list) * scale;
+      if (names[g] === flag) return;
       result.added[names[g]] += length(subtractIntervals(list, sofar)) * scale;
       sofar = unionIntervals([sofar, list]);
     });
     result.removedSqM += length(sofar) * scale;
+    const f = names.indexOf(flag);
+    if (f >= 0) result.flaggedSqM += length(subtractIntervals(covered[f], sofar)) * scale;
   });
   return result;
 }
@@ -175,21 +182,25 @@ function rectangles() {
   };
 }
 
-export function maskGeometry(parcelRings, groups = {}, { setbackM = 0, stripM = 1.5, minStrips = 30, maxStrips = 150, maxRects = MAX_GEOMETRY_RECTS } = {}) {
+export function maskGeometry(parcelRings, groups = {}, { setbackM = 0, flag = null, stripM = 1.5, minStrips = 30, maxStrips = 150, maxRects = MAX_GEOMETRY_RECTS } = {}) {
   const b = boundsOf(parcelRings);
   const heightM = (b.maxY - b.minY) * M_PER_DEG;
   const tol = 0.75 / (M_PER_DEG * Math.cos(((b.minY + b.maxY) / 2) * DEG) || 1);
   let strips = Math.max(minStrips, Math.min(maxStrips, Math.ceil(heightM / stripM)));
   for (;;) {
-    const keep = rectangles(), cut = rectangles();
+    const keep = rectangles(), cut = rectangles(), mark = rectangles();
+    const f = Object.keys(groups).indexOf(flag);
     scan(parcelRings, groups, { strips, setbackM }, ({ y0, y1, parcel, covered }) => {
-      const removed = unionIntervals(covered);
-      keep.add(subtractIntervals(parcel, removed), y0, y1, tol);
+      const removed = unionIntervals(covered.filter((_, g) => g !== f));
+      const left = subtractIntervals(parcel, removed);
+      keep.add(left, y0, y1, tol);
       cut.add(removed, y0, y1, tol);
+      if (f >= 0) mark.add(intersectIntervals(covered[f], left), y0, y1, tol);
     });
-    const buildable = keep.finish(), removed = cut.finish();
-    if (buildable.length + removed.length <= maxRects || strips <= 10) {
-      return { buildable: buildable.map(rectRing), removed: removed.map(rectRing), strips, rects: buildable.length + removed.length };
+    const buildable = keep.finish(), removed = cut.finish(), flagged = mark.finish();
+    const rects = buildable.length + removed.length + flagged.length;
+    if (rects <= maxRects || strips <= 10) {
+      return { buildable: buildable.map(rectRing), removed: removed.map(rectRing), flagged: flagged.map(rectRing), strips, rects };
     }
     strips = Math.max(10, Math.floor(strips / 2));
   }

@@ -63,6 +63,19 @@ test('partial removal and overlap union: overlaps are removed once, per-group ar
   near(x1, E, 1e-5, 'and runs to the east line');
 });
 
+test('a flagged group (wetland buffers) is measured outside the removed area, not removed', () => {
+  const groups = { flood: [box(W, S, W + 0.006, N)], buffer: [box(W + 0.004, S, W + 0.008, N)] };
+  const a = maskAreas(parcel, groups, { flag: 'buffer' });
+  near(a.removedSqM / a.parcelSqM, 0.6, 0.002, 'only flood removed');
+  near(a.flaggedSqM / a.parcelSqM, 0.2, 0.002, 'buffer beyond flood');
+  const g = maskGeometry(parcel, groups, { flag: 'buffer' });
+  assert.equal(g.flagged.length, 1);
+  const [[[x0], [x1]]] = g.flagged[0];
+  near(x0, W + 0.006, 1e-5, 'buffer drawn from the flood edge');
+  near(x1, W + 0.008, 1e-5, 'to its own edge');
+  assert.equal(g.buildable.length, 1, 'buildable still includes the buffer part');
+});
+
 test('a uniform setback removes the band along every parcel line', () => {
   // About 100 m x 100 m; a 10 m setback leaves the inner 80 m x 80 m (64%).
   const dLon = 100 / (6371008.8 * Math.PI / 180 * Math.cos(47.7 * Math.PI / 180)), dLat = 100 / (6371008.8 * Math.PI / 180);
@@ -160,7 +173,7 @@ async function post(body) {
 beforeEach(() => { calls = []; console.warn = () => {}; console.log = () => {}; restoreUpstream = configureUpstream({ backoffMs: 0, log: () => {} }); });
 afterEach(() => { globalThis.fetch = realFetch; console.warn = realWarn; console.log = realLog; restoreUpstream(); });
 
-test('Spokane: flood zone A, NWI and county buffer unioned; slope unavailable -> partial', async () => {
+test('Spokane: flood zone A and NWI unioned, county buffer shown not subtracted; slope unavailable -> partial', async () => {
   const nwi = esri(W + 0.004, S, W + 0.006, S + 0.002);
   stub({
     [`${FEMA_NFHL_FLOOD_LAYER}/query`]: femaRoute([A, X_MIN], [{ attributes: A, geometry: esri(W, S, W + 0.005, N) }]),
@@ -176,14 +189,19 @@ test('Spokane: flood zone A, NWI and county buffer unioned; slope unavailable ->
   assert.equal(body.status, 'partial');
   near(body.removed.find(r => r.key === 'flood').pct, 50, 0.2, 'flood');
   near(body.removed.find(r => r.key === 'wetland').pct, 4, 0.2, 'wetland own area');
-  near(body.removed.find(r => r.key === 'buffer').pct, 10, 0.2, 'buffer');
-  near(body.removedPct, 62, 0.3, 'union, overlap once');
-  near(body.buildablePct, 38, 0.3, 'buildable');
+  assert.equal(body.removed.find(r => r.key === 'buffer'), undefined, 'buffers are not subtracted');
+  near(body.mayAlsoRestrict[0].pct, 10, 0.2, 'buffer outside the removed area');
+  assert.match(body.mayAlsoRestrict[0].note, /depends on a wetland delineation/);
+  assert.equal(body.layers.find(l => l.key === 'buffer').status, 'shown');
+  assert.equal(body.bufferGeometry.type, 'MultiPolygon');
+  near(body.removedPct, 52, 0.3, 'union, overlap once');
+  near(body.buildablePct, 48, 0.3, 'buildable');
   near(body.overlapAcres / body.parcelAcres * 100, 2, 0.2, 'overlap');
+  assert.equal(body.removed.find(r => r.key === 'wetland').reason, 'Mapped wetlands (NWI)', 'says which wetland layers');
   near(body.buildableAcres + body.removedAcres, body.parcelAcres, 0.02, 'adds up');
   assert.equal(body.layers.find(l => l.key === 'slope').status, 'unavailable');
   assert.match(body.removed.find(r => r.key === 'flood').reason, /zone A/);
-  assert.ok(body.notes.some(n => /190 ft and 250 ft/.test(n)));
+  assert.ok(body.notes.some(n => /190 ft and 250 ft wetland buffers; they are shown but not subtracted/.test(n)));
   assert.ok(body.notes.some(n => /setbacks were not subtracted/i.test(n)));
   assert.equal(body.geometry.type, 'MultiPolygon');
   assert.equal(body.removedGeometry.type, 'MultiPolygon');
@@ -241,12 +259,13 @@ const SAMPLE = {
   status: 'measured', parcelAcres: 20.63, buildableAcres: 6.62, buildablePct: 32.1, removedAcres: 14.01, removedPct: 67.9, overlapAcres: 10.49,
   removed: [
     { key: 'flood', reason: 'FEMA high-risk flood zone A', acres: 13.85, pct: 67.1, source: 'FEMA NFHL' },
-    { key: 'wetland', reason: 'Mapped wetlands', acres: 2.41, pct: 11.7, source: 'USFWS National Wetlands Inventory' },
-    { key: 'buffer', reason: 'Mapped wetland buffers (190/250 ft, Spokane County)', acres: 8.24, pct: 39.9, source: 'Spokane County' }
+    { key: 'wetland', reason: 'Mapped wetlands (NWI + Spokane County)', acres: 2.41, pct: 11.7, source: 'USFWS National Wetlands Inventory' },
   ],
-  layers: [{ key: 'flood', status: 'counted' }, { key: 'wetland', status: 'counted' }, { key: 'buffer', status: 'counted' }, { key: 'slope', label: 'Slopes over 30%', status: 'unavailable' }],
+  mayAlsoRestrict: [{ key: 'buffer', reason: 'Mapped wetland buffers (190/250 ft, Spokane County)', acres: 1.2, pct: 5.8, source: 'Spokane County', note: 'The buffer that applies depends on a wetland delineation.' }],
+  layers: [{ key: 'flood', status: 'counted' }, { key: 'wetland', status: 'counted' }, { key: 'buffer', status: 'shown' }, { key: 'slope', label: 'Slopes over 30%', status: 'unavailable' }],
   notes: ['Elevation samples were not available, so steep slopes were not subtracted.'], disclaimer: DISCLAIMER,
-  geometry: { type: 'MultiPolygon', coordinates: [box(W + 0.006, S, E, N)] }, removedGeometry: { type: 'MultiPolygon', coordinates: [box(W, S, W + 0.006, N)] }
+  geometry: { type: 'MultiPolygon', coordinates: [box(W + 0.006, S, E, N)] }, removedGeometry: { type: 'MultiPolygon', coordinates: [box(W, S, W + 0.006, N)] },
+  bufferGeometry: { type: 'MultiPolygon', coordinates: [box(W + 0.006, S, W + 0.007, N)] }
 };
 
 test('dashboard: one request after the sections settle, then the card and the map shading', async () => {
@@ -273,8 +292,10 @@ test('dashboard: one request after the sections settle, then the card and the ma
   assert.match(card, /Not counted:<\/strong> Slopes over 30%/);
   assert.match(card, /Screening estimate, not a survey/);
   assert.match(card, /Verify with the responsible agency/);
-  assert.equal(shaded.length, 2, 'buildable and removed layers');
-  assert.equal(shaded[0].o.style.fillColor, '#2f8a58');
+  assert.match(card, /May also be restricted:<\/b> mapped wetland buffers \(190\/250 ft, Spokane County\) 1\.2 ac \(5\.8%\) — the buffer that applies depends on a wetland delineation/);
+  assert.match(card, /Mapped wetlands \(NWI \+ Spokane County\)/);
+  assert.equal(shaded.length, 3, 'buildable, removed and buffer layers');
+  assert.deepEqual(shaded.map(x => x.o.style.fillColor), ['#2f8a58', '#c0392b', '#d39a2a'], 'buffers in amber, not red');
 });
 
 test('dashboard: waits while flood, wetlands, zoning or terrain is pending; a failed request says not measured', async () => {
@@ -314,7 +335,11 @@ test('report page 1: the buildable estimate, its breakdown and the shaded map', 
   data.buildableArea = SAMPLE;
   const [p1, p2] = report(data);
   assert.match(p1, /About 6\.6 of 20\.6 acres buildable/);
-  assert.match(p1, /Removed: FEMA high-risk flood zone A <b>13\.8 ac<\/b> \(67\.1%\)/);
+  assert.match(p1, /Removed: FEMA high-risk flood zone A <b>13\.8 ac<\/b> \(67\.1%\) · Mapped wetlands \(NWI \+ Spokane County\) <b>2\.4 ac<\/b>/);
+  assert.match(p1, /May also be restricted:<\/b> mapped wetland buffers \(190\/250 ft, Spokane County\) 1\.2 ac \(5\.8%\) — the buffer that applies depends on a wetland delineation\./);
+  assert.match(p1, /<path class="buf" d="M[^"]+" fill="url\(#bufHatch\)"/);
+  assert.match(p1, /wetland buffer \(not removed\)/);
+  assert.match(p1, /1 mapped wetland feature · 5\.1% of parcel/, 'the key finding keeps its NWI-only source');
   assert.match(p1, /overlaps counted once \(10\.5 ac\)/);
   assert.match(p1, /Not counted: Slopes over 30%/);
   assert.match(p1, /Screening estimate, not a survey\. Wetland buffers depend on a delineation; setbacks and easements not included\./);

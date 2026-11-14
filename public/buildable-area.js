@@ -1,5 +1,6 @@
 // Buildable-acres screening estimate on the dashboard: a card above the Improvement Snapshot and
-// shading on the interactive map (green: buildable, hatched red: removed). Information only: it
+// shading on the interactive map (green: buildable, hatched red: removed, hatched amber: mapped
+// wetland buffers, shown but not subtracted, owner decision 2026-11-14). Information only: it
 // is not a score input and never touches calculateScore.
 //
 // Data: POST /api/buildable-area (src/services/buildable-area.js), one request per search, sent
@@ -20,6 +21,11 @@
 
   // 14.2 / 0.26 / 274.1. ref: the parcel acres, so every number on a parcel uses the same decimals.
   function fmtAcres(a, ref = a) { a = num(a); if (a == null) return ''; return (num(ref) ?? a) >= 10 ? a.toFixed(1) : a.toFixed(2); }
+  // "Mapped wetland buffers (190/250 ft, Spokane County) 8.2 ac (39.9%)": shown, not subtracted.
+  function mayAlso(b) {
+    if (!measured(b)) return [];
+    return (b.mayAlsoRestrict || []).map(r => `${r.reason} ${fmtAcres(r.acres, b.parcelAcres)} ac (${num(r.pct) ?? 0}%)`);
+  }
   const measured = b => b && (b.status === 'measured' || b.status === 'partial') && num(b.buildableAcres) != null;
 
   function headline(b) {
@@ -104,10 +110,12 @@
       .buildable-legend{display:flex;gap:14px;font-size:11px;color:var(--muted)}.buildable-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
       .buildable-list{list-style:none;margin:0;padding:0}.buildable-list li{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line)}
       .buildable-list li b{white-space:nowrap;color:var(--red)}.buildable-list li.none{color:var(--muted)}
+      .buildable-maybe{margin-top:8px;background:var(--amber-bg);border-left:3px solid #d39a2a;border-radius:6px;padding:7px 10px;font-size:12px;color:var(--ink);line-height:1.4}.buildable-maybe b{color:var(--amber)}
       .buildable-notes{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.45}.buildable-notes strong{color:var(--amber)}
       .buildable-disclaimer{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
       @media(max-width:860px){.buildable-card{grid-template-columns:1fr}}
       .legend-buildable{display:inline-block;width:14px;height:10px;border-radius:2px;background:rgba(47,138,88,.45);border:1px solid #2f8a58}
+      .legend-buffer{display:inline-block;width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,#d39a2a 0 3px,rgba(240,190,90,.3) 3px 6px)}
       .legend-removed{display:inline-block;width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,#c0392b 0 3px,rgba(192,57,43,.25) 3px 6px)}
     `;
     document.head?.appendChild(s);
@@ -116,7 +124,7 @@
   function cardHtml(b) {
     const S = root.AcresXSections;
     if (!b) {
-      return `<div><div class="buildable-kicker">Buildable area · screening estimate</div><div class="buildable-value">${esc(S?.status?.('buildableArea') === 'pending' ? 'Measuring buildable area…' : 'Waiting for flood, wetland, zoning and slope data…')}</div><div class="buildable-sub">Parcel minus mapped flood zones, wetlands, wetland buffers and steep slopes.</div></div><div></div>`;
+      return `<div><div class="buildable-kicker">Buildable area · screening estimate</div><div class="buildable-value">${esc(S?.status?.('buildableArea') === 'pending' ? 'Measuring buildable area…' : 'Waiting for flood, wetland, zoning and slope data…')}</div><div class="buildable-sub">Parcel minus mapped flood zones, wetlands and steep slopes; mapped wetland buffers are shown separately.</div></div><div></div>`;
     }
     if (!measured(b)) {
       return `<div><div class="buildable-kicker">Buildable area · screening estimate</div><div class="buildable-value">Buildable area not measured</div><div class="buildable-sub">${esc((b.notes || [])[0] || 'The constraint layers did not answer.')}</div></div><div></div>`;
@@ -133,9 +141,14 @@
       <div class="buildable-legend"><span><i style="background:#2f8a58"></i>Buildable ${esc(fmtAcres(b.buildableAcres, b.parcelAcres))} ac</span><span><i style="background:#c0392b"></i>Removed ${esc(fmtAcres(b.removedAcres, b.parcelAcres))} ac</span></div>
       <div class="buildable-disclaimer">${esc(b.disclaimer || '')} Verify with the responsible agency before design.</div>
     </div><div>
-      <ul class="buildable-list">${removed || '<li class="none"><span>No mapped flood zone, wetland, buffer or steep slope removed</span><span>0 ac</span></li>'}${overlap}</ul>
+      <ul class="buildable-list">${removed || '<li class="none"><span>No mapped flood zone, wetland or steep slope removed</span><span>0 ac</span></li>'}${overlap}</ul>
+      ${mayAlsoHtml(b)}
       <div class="buildable-notes">${missing.length ? `<strong>Not counted:</strong> ${esc(missing.join(', '))}. ` : ''}${esc((b.notes || []).join(' '))}</div>
     </div>`;
+  }
+
+  function mayAlsoHtml(b) {
+    return (b.mayAlsoRestrict || []).map(r => `<div class="buildable-maybe"><b>May also be restricted:</b> ${esc(String(r.reason).replace(/^Mapped/, 'mapped'))} ${esc(fmtAcres(r.acres, b.parcelAcres))} ac (${esc(num(r.pct) ?? 0)}%) — the buffer that applies depends on a wetland delineation. Included in the buildable acres above.</div>`).join('');
   }
 
   function ensureCard() {
@@ -163,6 +176,7 @@
       if (!svg || svg.querySelector('#buildableHatch')) return Boolean(svg);
       let defs = svg.querySelector('defs');
       if (!defs) { defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); svg.insertBefore(defs, svg.firstChild); }
+      defs.innerHTML += '<pattern id="bufferHatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><rect width="8" height="8" fill="rgba(240,190,90,.22)"/><rect width="2.5" height="8" fill="rgba(211,154,42,.85)"/></pattern>';
       defs.innerHTML += '<pattern id="buildableHatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><rect width="8" height="8" fill="rgba(192,57,43,.18)"/><rect width="3" height="8" fill="rgba(192,57,43,.75)"/></pattern>';
       return true;
     } catch (_) { return false; }
@@ -173,10 +187,12 @@
     if (shownFor !== l.parcel) { layer.clearLayers(); shownFor = null; }
     if (!measured(b) || shownFor === l.parcel) { syncLayer(); return; }
     if (b.geometry) L.geoJSON(b.geometry, { interactive: false, style: { stroke: false, fillColor: '#2f8a58', fillOpacity: 0.42 } }).addTo(layer);
-    if (b.removedGeometry) {
-      const removed = L.geoJSON(b.removedGeometry, { interactive: false, style: { stroke: false, fillColor: '#c0392b', fillOpacity: 0.5 } }).addTo(layer);
+    const hatched = [];
+    if (b.removedGeometry) hatched.push([L.geoJSON(b.removedGeometry, { interactive: false, style: { stroke: false, fillColor: '#c0392b', fillOpacity: 0.5 } }).addTo(layer), 'buildableHatch']);
+    if (b.bufferGeometry) hatched.push([L.geoJSON(b.bufferGeometry, { interactive: false, style: { stroke: false, fillColor: '#d39a2a', fillOpacity: 0.35 } }).addTo(layer), 'bufferHatch']);
+    if (hatched.length) {
       layer.addTo(map);
-      if (hatchPattern()) removed.eachLayer(p => { try { p._path?.setAttribute('fill', 'url(#buildableHatch)'); p._path?.setAttribute('fill-opacity', '1'); } catch (_) {} });
+      if (hatchPattern()) hatched.forEach(([g, id]) => g.eachLayer(p => { try { p._path?.setAttribute('fill', `url(#${id})`); p._path?.setAttribute('fill-opacity', '1'); } catch (_) {} }));
     }
     shownFor = l.parcel;
     addMapControls();
@@ -204,7 +220,7 @@
     }
     const legend = document.querySelector('.map-legend');
     if (legend && !legend.querySelector('.legend-buildable')) {
-      legend.insertAdjacentHTML('beforeend', '<div class="legend-row"><span class="legend-buildable"></span>Buildable (estimate)</div><div class="legend-row"><span class="legend-removed"></span>Removed: flood, wetland, buffer, slope</div>');
+      legend.insertAdjacentHTML('beforeend', '<div class="legend-row"><span class="legend-buildable"></span>Buildable (estimate)</div><div class="legend-row"><span class="legend-removed"></span>Removed: flood, wetland, steep slope</div><div class="legend-row"><span class="legend-buffer"></span>Mapped wetland buffer (not removed)</div>');
     }
   }
 
@@ -218,7 +234,7 @@
     try { renderMap(l.buildableArea, l); } catch (error) { console.warn('AcresX buildable map shading failed', error); }
   }
 
-  root.AcresXBuildable = { headline, breakdown, notCounted, fmtAcres, measured, claim, load, render };
+  root.AcresXBuildable = { headline, breakdown, mayAlso, notCounted, fmtAcres, measured, claim, load, render };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;

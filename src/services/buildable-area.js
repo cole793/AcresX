@@ -7,8 +7,12 @@
 //   { status: 'measured' | 'partial' | 'unavailable', parcelAcres, buildableAcres, buildablePct,
 //     removedAcres, removedPct, overlapAcres,
 //     removed: [{ key, reason, acres, pct, source }]   (only constraints that remove area)
-//     layers:  [{ key, label, status: 'counted' | 'none' | 'not_mapped' | 'unavailable' |
-//                'not_applied', acres?, note? }]     (every constraint, whether counted or not)
+//     mayAlsoRestrict: [{ key, reason, acres, pct, source, note }]  shown, not subtracted: mapped
+//                wetland buffers; acres/pct are the part outside the removed area, so it sits
+//                inside buildableAcres
+//     bufferGeometry: GeoJSON MultiPolygon of that part (or null)
+//     layers:  [{ key, label, status: 'counted' | 'shown' | 'none' | 'not_mapped' | 'unavailable',
+//                acres?, note? }]   'shown': mapped and listed, not subtracted (buffers)     (every constraint, whether counted or not)
 //     notes: [string], disclaimer, method,
 //     geometry: GeoJSON MultiPolygon of the buildable part (or null),
 //     removedGeometry: GeoJSON MultiPolygon of what was removed (or null) }
@@ -26,7 +30,9 @@
 //            an unmeasured share is reported as not counted.
 //   wetland  USFWS NWI polygons (wetlandsScreening() first, outlines only when it intersects),
 //            plus the county wetland layer where one is configured (COUNTY_WETLAND_SOURCES).
-//   buffer   county-mapped wetland buffers (Spokane County's 190 ft and 250 ft layers). No
+//   (shown, not removed) county-mapped wetland buffers (Spokane County's 190 ft and 250 ft
+//            layers): owner decision 2026-11-14, the buffer that applies depends on a wetland
+//            delineation, so they are listed under mayAlsoRestrict and drawn separately. No
 //            county elsewhere publishes one we use: the note says buffers are not mapped; none
 //            is invented.
 //   slope    slope-grid cells (src/services/slope-grid.js, called in-process so its cache is
@@ -66,7 +72,7 @@ export const COUNTY_WETLAND_SOURCES = Object.freeze({
     buffer: SPOKANE_WETLAND_LAYERS.filter(l => l.type === 'wetland_buffer'),
     bufferLabel: 'Mapped wetland buffers (190/250 ft, Spokane County)',
     bufferSource: 'Spokane County Wetland Buffer 190ft and 250ft layers',
-    bufferNote: 'Spokane County maps 190 ft and 250 ft wetland buffers; both are removed, but the buffer that applies depends on the wetland rating from a delineation.'
+    bufferNote: 'Spokane County maps 190 ft and 250 ft wetland buffers; they are shown but not subtracted, because the buffer that applies depends on a wetland delineation.'
   }
 });
 
@@ -149,7 +155,7 @@ async function countyWetlandLayer(source, geometry, kind) {
     return { status: rings.length ? 'counted' : 'none', source: sourceName, rings };
   } catch (error) {
     console.warn(`Buildable area: ${source.county} ${kind} layers failed`, error?.message);
-    return { status: 'unavailable', source: sourceName, note: `${source.county} ${kind === 'buffer' ? 'wetland buffer' : 'wetland'} layers did not answer, so they were not subtracted.` };
+    return { status: 'unavailable', source: sourceName, note: kind === 'buffer' ? `${source.county} wetland buffer layers did not answer, so mapped buffers are not shown.` : `${source.county} wetland layers did not answer, so they were not subtracted.` };
   }
 }
 
@@ -182,45 +188,53 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
   const notes = [];
   const groups = {};
   const meta = {};
+  let flag = null;
   for (const layer of layers) {
-    if (layer.status === 'counted' && layer.rings?.length) { groups[layer.key] = layer.rings; meta[layer.key] = layer; }
+    if (layer.status === 'counted' && layer.rings?.length) {
+      groups[layer.key] = layer.rings; meta[layer.key] = layer;
+      if (layer.shownOnly) flag = layer.key;
+    }
     if (layer.note) notes.push(layer.note);
   }
   const setbackM = setbackFt > 0 ? setbackFt / FT_PER_M : 0;
   if (setbackNote) notes.push(setbackNote);
   notes.push(...countyNotes);
-  const areas = maskAreas(parcel, groups, { setbackM });
+  const areas = maskAreas(parcel, groups, { setbackM, flag });
   const total = areas.parcelSqM;
-  const counted = layers.filter(l => ['counted', 'none', 'not_mapped'].includes(l.status));
+  const counted = layers.filter(l => !l.shownOnly && ['counted', 'none', 'not_mapped'].includes(l.status));
   const anyCheck = counted.length > 0 || setbackM > 0;
-  const missing = layers.filter(l => l.status === 'unavailable' || l.partial);
+  const missing = layers.filter(l => !l.shownOnly && (l.status === 'unavailable' || l.partial));
   const toAcres = sqm => round2(sqm / SQM_PER_ACRE);
   const toPct = sqm => (total > 0 ? round1(Math.min(1, sqm / total) * 100) : 0);
   const parcelAcres = toAcres(total);
-  const layerList = layers.map(l => ({ key: l.key, label: l.label, status: l.status, ...(groups[l.key] ? { acres: toAcres(areas.groups[l.key]) } : {}), ...(l.source ? { source: l.source } : {}), ...(l.note ? { note: l.note } : {}) }));
+  const layerList = layers.map(l => ({ key: l.key, label: l.label, status: l.shownOnly && l.status === 'counted' ? 'shown' : l.status, ...(groups[l.key] ? { acres: toAcres(l.key === flag ? areas.flaggedSqM : areas.groups[l.key]) } : {}), ...(l.source ? { source: l.source } : {}), ...(l.note ? { note: l.note } : {}) }));
   if (setbackM > 0) layerList.push({ key: SETBACK_GROUP, label: `Zoning setback (${setbackFt} ft from the parcel line)`, status: 'counted', acres: toAcres(areas.groups[SETBACK_GROUP]), source: 'County zoning rules table' });
   if (!(total > 0) || !anyCheck) {
     return {
       status: 'unavailable', parcelAcres: total > 0 ? parcelAcres : null, buildableAcres: null, buildablePct: null, removedAcres: null, removedPct: null, overlapAcres: null,
-      removed: [], layers: layerList, notes: notes.length ? notes : ['No constraint layer could be checked.'], disclaimer: DISCLAIMER, method: METHOD, geometry: null, removedGeometry: null
+      removed: [], mayAlsoRestrict: [], layers: layerList, notes: notes.length ? notes : ['No constraint layer could be checked.'], disclaimer: DISCLAIMER, method: METHOD, geometry: null, removedGeometry: null, bufferGeometry: null
     };
   }
-  const removed = Object.keys(areas.groups).filter(k => areas.groups[k] > 0).map(k => k === SETBACK_GROUP
+  const removed = Object.keys(areas.groups).filter(k => k !== flag && areas.groups[k] > 0).map(k => k === SETBACK_GROUP
     ? { key: k, reason: `Zoning setback (${setbackFt} ft from the parcel line)`, acres: toAcres(areas.groups[k]), pct: toPct(areas.groups[k]), source: 'County zoning rules table' }
     : { key: k, reason: meta[k].label, acres: toAcres(areas.groups[k]), pct: toPct(areas.groups[k]), source: meta[k].source || '' })
     .filter(r => r.acres > 0 || r.pct > 0);
-  const ownSum = Object.values(areas.groups).reduce((a, b) => a + b, 0);
+  const mayAlsoRestrict = flag && areas.flaggedSqM > 0 && toAcres(areas.flaggedSqM) > 0
+    ? [{ key: flag, reason: meta[flag].label, acres: toAcres(areas.flaggedSqM), pct: toPct(areas.flaggedSqM), source: meta[flag].source || '', note: 'The buffer that applies depends on a wetland delineation.' }]
+    : [];
+  const ownSum = Object.entries(areas.groups).filter(([k]) => k !== flag).reduce((a, [, v]) => a + v, 0);
   const overlap = Math.max(0, ownSum - areas.removedSqM);
   const buildableSqM = Math.max(0, total - areas.removedSqM);
-  const shape = maskGeometry(parcel, groups, { setbackM });
+  const shape = maskGeometry(parcel, groups, { setbackM, flag });
   return {
     status: missing.length ? 'partial' : 'measured',
     parcelAcres, buildableAcres: toAcres(buildableSqM), buildablePct: toPct(buildableSqM),
     removedAcres: toAcres(areas.removedSqM), removedPct: toPct(areas.removedSqM), overlapAcres: toAcres(overlap),
-    removed, layers: layerList, notes,
+    removed, mayAlsoRestrict, layers: layerList, notes,
     disclaimer: setbackM > 0 ? DISCLAIMER_WITH_SETBACK : DISCLAIMER, method: METHOD,
     geometry: shape.buildable.length ? { type: 'MultiPolygon', coordinates: shape.buildable } : null,
-    removedGeometry: shape.removed.length ? { type: 'MultiPolygon', coordinates: shape.removed } : null
+    removedGeometry: shape.removed.length ? { type: 'MultiPolygon', coordinates: shape.removed } : null,
+    bufferGeometry: shape.flagged.length ? { type: 'MultiPolygon', coordinates: shape.flagged } : null
   };
 }
 
@@ -237,7 +251,7 @@ export async function buildableArea(body, env, ctx) {
     settle(floodLayer(geometry, ctx, county || undefined), { what: 'Flood', label: 'FEMA high-risk flood zone (SFHA)', note: 'Flood map did not answer, so flood areas were not subtracted.' }).then(l => ({ key: 'flood', ...l })),
     settle(nwiLayer(geometry, ctx), { what: 'Wetlands', source: NWI_SOURCE, note: 'National Wetlands Inventory did not answer, so NWI wetlands were not subtracted.' }).then(l => ({ key: 'wetland', label: 'Mapped wetlands', ...l })),
     source ? settle(countyWetlandLayer(source, geometry, 'wetland'), { what: `${source.county} wetlands`, note: `${source.county} wetland layer did not answer, so it was not subtracted.` }).then(l => ({ key: 'countyWetland', label: `County-mapped wetlands (${source.county})`, ...l })) : null,
-    source ? settle(countyWetlandLayer(source, geometry, 'buffer'), { what: `${source.county} wetland buffers`, note: `${source.county} wetland buffer layers did not answer, so they were not subtracted.` }).then(l => ({ key: 'buffer', label: source.bufferLabel, ...l })) : null,
+    source ? settle(countyWetlandLayer(source, geometry, 'buffer'), { what: `${source.county} wetland buffers`, note: `${source.county} wetland buffer layers did not answer, so mapped buffers are not shown.` }).then(l => ({ key: 'buffer', label: source.bufferLabel, shownOnly: true, ...l })) : null,
     settle(slopeLayer(geometry, env, ctx), { what: 'Slope', label: `Slopes over ${STEEP_SLOPE_PCT}%`, note: 'Elevation samples were not available, so steep slopes were not subtracted.' }).then(l => ({ key: 'slope', ...l }))
   ].filter(Boolean);
   const layers = await Promise.all(jobs);
@@ -251,10 +265,15 @@ export async function buildableArea(body, env, ctx) {
     nwi.rings = both.flatMap(l => l.rings);
     nwi.source = [nwi, cw].filter(l => l.status !== 'unavailable').map(l => l.source).filter(Boolean).join('; ');
     nwi.status = both.length ? 'counted' : down.length ? 'unavailable' : 'none';
+    // Says which layers it is: the page's wetland finding is NWI only, so the numbers differ.
+    const names = both.map(l => (l === nwi ? 'NWI' : source.county));
+    nwi.label = names.length ? `Mapped wetlands (${names.join(' + ')})` : 'Mapped wetlands';
     if (both.length && down.length) nwi.partial = true;
     nwi.note = [nwi.note, cw.note].filter(Boolean).join(' ') || undefined;
     layers.splice(layers.indexOf(cw), 1);
   }
+
+  if (!cw && nwi.status === 'counted') nwi.label = 'Mapped wetlands (NWI)';
 
   const countyNotes = [];
   if (!source) countyNotes.push(`Wetland buffers are not mapped for ${countyName}; only the mapped wetlands themselves were removed.`);

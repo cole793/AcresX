@@ -3,7 +3,7 @@
 //
 //   Page 1  Summary: header (address, parcel, county/state, acres, date), parcel map with scale bar,
 //           north arrow and location inset (buildable area shaded green, removed area hatched
-//           red), the buildable-acres screening estimate, buildability score with its top 3
+//           red, mapped wetland buffers hatched amber: shown, not removed), the buildable-acres screening estimate, buildability score with its top 3
 //           drivers, the cost range, and 4-6 color-coded key findings.
 //   Page 2  Site & zoning: zoning in plain words + permitted uses, overlays, site cards (water,
 //           septic, public water/sewer, power, access, flood, wetlands, terrain), assessor values,
@@ -340,7 +340,8 @@
     const shaded = buildableMeasured(buildable);
     const keepPath = shaded && buildable.geometry ? geoPath(buildable.geometry, toXY) : '';
     const cutPath = shaded && buildable.removedGeometry ? geoPath(buildable.removedGeometry, toXY) : '';
-    const shading = keepPath || cutPath ? `<defs><pattern id="cutHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)"><rect width="9" height="9" fill="rgba(192,57,43,.22)"/><rect width="3.5" height="9" fill="rgba(192,57,43,.85)"/></pattern></defs>${keepPath ? `<path class="keep" d="${keepPath}" fill="rgba(47,138,88,.5)"/>` : ''}${cutPath ? `<path class="cut" d="${cutPath}" fill="url(#cutHatch)"/>` : ''}` : '';
+    const bufPath = shaded && buildable.bufferGeometry ? geoPath(buildable.bufferGeometry, toXY) : '';
+    const shading = keepPath || cutPath ? `<defs><pattern id="cutHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)"><rect width="9" height="9" fill="rgba(192,57,43,.22)"/><rect width="3.5" height="9" fill="rgba(192,57,43,.85)"/></pattern><pattern id="bufHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(-45)"><rect width="9" height="9" fill="rgba(240,190,90,.2)"/><rect width="3" height="9" fill="rgba(211,154,42,.9)"/></pattern></defs>${keepPath ? `<path class="keep" d="${keepPath}" fill="rgba(47,138,88,.5)"/>` : ''}${cutPath ? `<path class="cut" d="${cutPath}" fill="url(#cutHatch)"/>` : ''}${bufPath ? `<path class="buf" d="${bufPath}" fill="url(#bufHatch)"/>` : ''}` : '';
     const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${b.join(',')}&bboxSR=4326&imageSR=4326&size=1000,${Math.round(1000 * H / W)}&format=jpg&f=image`;
     const ftPerPx = bw * 364000 / W; // 1 degree of latitude is about 364,000 ft
     const s = niceScale(ftPerPx, 150);
@@ -353,7 +354,7 @@
 <g transform="translate(36,38)"><circle r="21" fill="#fff" fill-opacity=".92"/><path d="M0,-16 L6,2 L0,-1 L-6,2 Z" fill="#17231c"/><text y="15" text-anchor="middle" font-size="10" font-weight="800" fill="#17231c">N</text></g>
 <g transform="translate(18,${H - 30})"><rect x="-6" y="-9" width="${(s.px + 60).toFixed(0)}" height="22" rx="5" fill="#fff" fill-opacity=".92"/><rect x="0" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#17231c"/><rect x="${(s.px / 2).toFixed(1)}" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#fff" stroke="#17231c" stroke-width="1"/><text x="${(s.px + 6).toFixed(1)}" y="6" font-size="12" font-weight="700" fill="#17231c">${esc(s.label)}</text></g>
 </svg>
-<div class="map-tag">Parcel boundary approximate${keepPath || cutPath ? ' · <i class="k"></i>buildable estimate <i class="c"></i>removed' : ''}</div>
+<div class="map-tag">Parcel boundary approximate${keepPath || cutPath ? ` · <i class="k"></i>buildable estimate <i class="c"></i>removed${bufPath ? ' <i class="b"></i>wetland buffer (not removed)' : ''}` : ''}</div>
 <div class="inset"><img src="${insetUrl}" alt="Location map" onerror="this.parentElement.classList.add('img-error')"><span class="inset-dot"></span><span class="inset-label">Location</span></div>
 <figcaption class="map-credit">Imagery © Esri and contributors · Inset © Esri, OpenStreetMap contributors</figcaption>
 <div class="map-error">Aerial imagery could not be loaded</div></figure>`;
@@ -382,7 +383,8 @@
     const missing = (b.layers || []).filter(l => l.status === 'unavailable' || l.status === 'not_mapped').map(l => l.label || l.key);
     const head = `About ${fa(b.buildableAcres, b.parcelAcres)} of ${fa(b.parcelAcres)} acres buildable`;
     return `<section class="buildable block">${eyebrow('Buildable area · screening estimate')}<div class="b-row"><strong class="b-num">${esc(head)}</strong><div class="b-bar"><span class="k" style="width:${keep}%"></span><span class="c" style="width:${100 - keep}%"></span></div><span class="b-pct">${esc(keep)}%</span></div>
-<p class="b-list">${removed.length ? `Removed: ${removed.join(' · ')}.` : 'No mapped flood zone, wetland, wetland buffer or steep slope removed.'}${missing.length ? ` Not counted: ${esc(missing.join(', '))}.` : ''}${(b.layers || []).some(l => l.key === 'buffer') ? '' : ' Wetland buffers not mapped here.'}</p>
+<p class="b-list">${removed.length ? `Removed: ${removed.join(' · ')}.` : 'No mapped flood zone, wetland or steep slope removed.'}${missing.length ? ` Not counted: ${esc(missing.join(', '))}.` : ''}${(b.layers || []).some(l => l.key === 'buffer') ? '' : ' Wetland buffers not mapped here.'}</p>
+${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restricted:</b> ${esc(String(r.reason).replace(/^Mapped/, 'mapped'))} ${esc(fa(r.acres, b.parcelAcres))} ac (${esc(num(r.pct) ?? 0)}%) — the buffer that applies depends on a wetland delineation.</p>`).join('')}
 <p class="b-note">${esc(b.disclaimer || '')} Verify with the responsible agency.</p></section>`;
   }
 
@@ -644,7 +646,8 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .map-svg,.map-deco{position:absolute;inset:0;width:100%;height:100%}
 .map-svg polygon{fill:rgba(229,168,35,.16);stroke:var(--gold);stroke-width:3.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}
-.map-tag i{display:inline-block;width:9px;height:7px;border-radius:2px;margin:0 3px 0 6px;vertical-align:0}.map-tag i.k{background:rgba(47,138,88,.7)}.map-tag i.c{background:repeating-linear-gradient(135deg,#c0392b 0 2px,#f0c2bd 2px 4px)}
+.map-tag i{display:inline-block;width:9px;height:7px;border-radius:2px;margin:0 3px 0 6px;vertical-align:0}.map-tag i.k{background:rgba(47,138,88,.7)}.map-tag i.c{background:repeating-linear-gradient(135deg,#c0392b 0 2px,#f0c2bd 2px 4px)}.map-tag i.b{background:repeating-linear-gradient(45deg,#d39a2a 0 2px,#f6dfb0 2px 4px)}
+.b-maybe{font-size:7.6pt;color:#33443a;margin-top:2px;line-height:1.35}.b-maybe b{color:var(--amber)}
 .buildable{border:1px solid var(--line);border-left:4px solid var(--g2);border-radius:8px;padding:7px 11px}.buildable .eyebrow{margin-bottom:3px}
 .b-row{display:flex;align-items:center;gap:10px}.b-num{font-size:12pt;font-weight:900;color:var(--g);white-space:nowrap}
 .b-bar{flex:1;display:flex;height:8px;border-radius:999px;overflow:hidden;background:#eef2ef}.b-bar .k{background:#2f8a58}.b-bar .c{background:repeating-linear-gradient(135deg,#c0392b 0 3px,#e8a59e 3px 6px)}
