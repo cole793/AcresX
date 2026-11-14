@@ -3,7 +3,8 @@
 //
 // window.AcresXCostModel.estimate(last) is the one cost estimate the dashboard card, the cost
 // details and the printable report (property-report-v2.js) read.
-// - Spokane, WA and Kootenai, ID ("local" counties): one formula per line from this parcel's facts
+// - Spokane, WA, Kootenai, ID, Yellowstone and Gallatin, MT ("local" counties): one formula per
+//   line from this parcel's facts
 //   and the county's sourced prices. Every line is
 //     { low, high, label, basis, sources: [{ name, url, asOf, verified }], quoteRecommended, confidence }
 // - Every other county: the existing generic estimate (screening-refinements.js, unchanged),
@@ -12,12 +13,16 @@
 // Lines (local counties):
 // - electric: Avista Schedule 51 (WA or ID) from the mapped line distance, overhead vs underground,
 //   minus the residential allowance; Kootenai Electric: $750 engineering fee + generic range;
-//   other providers: generic range, "no published tariff found".
+//   NorthWestern Energy (MT): Rule 6, generic range minus the $400 residential allowance; Montana
+//   co-ops: their published deposit/fee + generic range; other providers: generic range,
+//   "no published tariff found".
 // - well: a water connection fee when public water is served/likely and the provider publishes
 //   one; else the generic connection range (public-utilities.js); else a private well (depth
 //   range + exact start-card/permit fee).
 // - septic: the same for sewer; else a private septic system (soil range + exact permit fees).
-// - permits: the building permit for an assumed 2,000 sf home with a 500 sf attached garage.
+// - permits: the building permit for an assumed 2,000 sf home with a 500 sf attached garage. Montana
+//   county land: no building permit; DLI electrical + plumbing, the county approach permit and the
+//   county zoning permit (only inside a mapped county zoning district).
 // - driveway: road-access length (/api/cost-context) x local $/ft from state DOT low bids.
 // - sitework: slope tiers as pad earthwork volume x local excavation $/cy + a base allowance.
 // The buildability score never reads this estimate. Listing/MLS data never feeds it.
@@ -166,6 +171,23 @@
         [{ name: I.source.name, url: I.source.url, asOf: I.recorded, verified: true }], { confidence: known ? 'Moderate' : 'Low', formula: 'inland' });
     }
     const g = genericPower(P, f.distanceFt);
+    if (/northwestern/i.test(f.provider) && C.power.northwestern) {
+      const a = C.power.northwestern.allowance;
+      return line('electric', Math.max(0, g.low - a.value), Math.max(0, g.high - a.value), 'Power (NorthWestern Energy line extension)',
+        `NorthWestern Energy Rule No. 6 (effective ${a.asOf}): the applicant advances the actual construction cost minus a ${usd0(a.value)} residential allowance (${a.note}), plus a surcharge whose rate the rule does not state; part may be refunded if others connect within 120 months. NWE publishes no per-foot rate, so the range is a generic AcresX allowance minus ${usd0(a.value)}: ${g.text}. NWE does one cost estimate a year free; get an NWE estimate.`,
+        [ref(a), planningRef()], { confidence: 'Low', formula: 'nwe-rule6', allowance: a.value });
+    }
+    const coop = (C.power.coops || []).find(c => c.match.test(f.provider));
+    if (coop) {
+      const fee = coop.fee;
+      const low = fee ? (fee.credited ? Math.max(fee.value, g.low) : g.low + fee.value) : g.low;
+      const high = fee ? (fee.credited ? Math.max(fee.value, g.high) : g.high + fee.value) : g.high;
+      const feeText = fee ? ` Published: ${usd0(fee.value)} ${fee.label}${fee.credited ? '' : ', added to the range'}.` : '';
+      const policyText = coop.policy ? ` ${coop.policy.text.charAt(0).toUpperCase()}${coop.policy.text.slice(1)}.` : '';
+      return line('electric', low, high, `Power (${coop.name})`,
+        `${coop.short} prices each job and publishes no per-foot rate; get a ${coop.short} estimate.${feeText}${policyText} The range is a generic AcresX allowance, not a ${coop.short} number: ${g.text}.`,
+        [...(fee ? [ref(fee)] : []), ...(coop.policy?.source ? [ref(coop.policy)] : []), planningRef()], { confidence: 'Low', formula: 'coop' });
+    }
     if (/kootenai electric/i.test(f.provider) && C.power.kec) {
       const fee = C.power.kec.engineeringFee;
       return line('electric', Math.max(fee.value, g.low), Math.max(fee.value, g.high), 'Power (Kootenai Electric)',
@@ -208,8 +230,10 @@
 
   function well(l, C, P) {
     const ex = l?.existingWell || {};
-    const start = C.wellPermit.start, extra = C.wellPermit.extra;
-    const fees = `${start.label} ${usd(start.value)}${extra ? `; ${extra.label} ${usd(extra.value)}` : ''}`;
+    const start = C.wellPermit.start, extra = C.wellPermit.extra, also = C.wellPermit.also || [];
+    const both = [start, ...also];
+    const fixed = both.reduce((a, x) => a + x.value, 0);
+    const fees = `${both.map(x => `${x.label} ${usd(x.value)}`).join(' + ')}${extra ? `; ${extra.label} ${usd(extra.value)}` : ''}`;
     if (ex.available && ex.match && Number(ex.score || 0) >= 55) {
       const a = P.existingWellDueDiligence;
       return line('well', a.low, a.high, 'Existing well (due diligence)',
@@ -225,21 +249,24 @@
     const wLow = w ? w.surcharge.value + w.certificate.low : 0, wHigh = w ? w.surcharge.value + w.certificate.high : 0;
     const wText = w ? ` WRIA ${ws.number} (${ws.name}): ${w.surcharge.label} ${usd0(w.surcharge.value)} + ${w.certificate.label} (the county schedule does not say which package applies).`
       : C.wellPermit.wria && ws && !ws.available ? ' Watershed (WRIA) not checked: the Ecology layer did not answer; parcels in WRIA 55 add a $500 surcharge and a $3,000-$5,000 mitigation certificate.' : '';
-    return line('well', drill.low + start.value + wLow, drill.high + start.value + (extra ? extra.value : 0) + wHigh, 'Well',
+    return line('well', drill.low + fixed + wLow, drill.high + fixed + (extra ? extra.value : 0) + wHigh, 'Well',
       `Exact fees: ${fees}${extra ? ' (high end only)' : ''}.${wText} Drilling: ${drill.text} (AcresX planning rate, no official source; driller quote recommended).`,
-      [ref(start), ...(extra ? [ref(extra)] : []), ...(w ? [ref(w.surcharge), { name: ws.source?.name || 'WA Ecology WRIA', url: ws.source?.url || '', asOf: '', verified: true }] : []), planningRef()], { confidence: d && d.count >= 3 ? 'Moderate' : 'Low', wria: ws?.number ?? null });
+      [...both.map(x => ref(x)), ...(extra ? [ref(extra)] : []), ...(w ? [ref(w.surcharge), { name: ws.source?.name || 'WA Ecology WRIA', url: ws.source?.url || '', asOf: '', verified: true }] : []), planningRef()], { confidence: d && d.count >= 3 ? 'Moderate' : 'Low', wria: ws?.number ?? null });
   }
 
   function septic(l, C, P) {
     const band = soilBand(l);
     const s = P.septicInstall[band];
     const sp = C.septicPermits;
+    const highItems = sp.highItems || [];
     const fee = sp.items.reduce((a, i) => a + i.value, 0);
-    const feeText = sp.items.length ? `Exact ${sp.agency} fees ${usd0(fee)} (${sp.items.map(i => `${i.label} ${usd0(i.value)}`).join(' + ')}); ${sp.note}` : sp.note;
+    const feeHigh = fee + highItems.reduce((a, i) => a + i.value, 0);
+    const highText = highItems.length ? ` The high end adds ${highItems.map(i => `${i.label} ${usd0(i.value)}`).join(' and ')} (${usd0(feeHigh)}).` : '';
+    const feeText = sp.items.length ? `Exact ${sp.agency} fees ${usd0(fee)} (${sp.items.map(i => `${i.label} ${usd0(i.value)}`).join(' + ')}).${highText} ${sp.note}` : sp.note;
     const soilText = band === 'unknown' ? 'soil suitability not resolved' : `${band} USDA soil screening`;
-    return line('septic', s.low + fee, s.high + fee, 'Septic',
+    return line('septic', s.low + fee, s.high + feeHigh, 'Septic',
       `${feeText} Installed system: ${usd0(s.low)}-${usd0(s.high)} for ${soilText} (no official installed-cost source; get installer quotes).`,
-      [...sp.items.map(i => ref(i)), planningRef()], { confidence: band === 'unknown' ? 'Low' : 'Moderate', septicPermitFees: fee });
+      [...sp.items.map(i => ref(i)), ...highItems.map(i => ref(i)), planningRef()], { confidence: band === 'unknown' ? 'Low' : 'Moderate', septicPermitFees: fee });
   }
 
   // ---- Permits
@@ -251,6 +278,34 @@
     const total = permit * (1 + rule.planReviewPct) + rule.applicationFee + rule.zoningReview;
     return { valuation, permit, total };
   }
+  // Gallatin County Land Use Permit: the greater of the minimum or pct x market value of
+  // construction (at least $/sf finished and unfinished; the garage counts as unfinished), capped.
+  // Low: that minimum market value; high: the assumed high valuation if it is larger.
+  function gallatinLup(z, home) {
+    const minValue = z.finishedPerSf * home.livingSf + z.unfinishedPerSf * home.garageSf;
+    const fee = v => Math.min(z.max, Math.max(z.min, z.pct * v));
+    return { minValue, low: fee(minValue), high: fee(Math.max(minValue, home.valuationHigh)), highValue: Math.max(minValue, home.valuationHigh) };
+  }
+  function montanaCountyPermit(l, rule, home) {
+    const zp = l?.zoningPermits || {};
+    const status = String(zp.zoning?.status || '');
+    const zoned = status === 'gis_match';
+    const z = rule.zoning;
+    const zfee = z.kind === 'lup' ? gallatinLup(z, home) : { low: z.value, high: z.value };
+    const zText = z.kind === 'lup'
+      ? `${z.label}: the greater of ${usd0(z.min)} or ${z.pct * 100}% of the market value of construction (at least $${z.finishedPerSf}/sf finished, $${z.unfinishedPerSf}/sf unfinished; garage counted as unfinished), capped at ${usd0(z.max)}: ${usd0(zfee.low)} at ${usd0(zfee.minValue)}${zfee.high !== zfee.low ? ` to ${usd0(zfee.high)} at ${usd0(zfee.highValue)}` : ''} (effective ${z.asOf})`
+      : `${z.label} ${usd0(z.value)}${z.dated ? ` (${z.dated})` : ''}`;
+    const zoneName = zp.zoning?.code ? ` (${zp.zoning.code})` : '';
+    const zoningText = zoned ? `Inside ${z.where}${zoneName}: ${zText}.`
+      : status === 'unzoned' ? `Mapped unzoned, so no county zoning permit is added. If county zoning did apply: ${zText}.`
+        : `County zoning not resolved for this parcel; not added. Inside ${z.where}: ${zText}.`;
+    const e = rule.electrical, pl = rule.plumbing, a = rule.approach, nb = rule.noBuildingPermit;
+    const low = e.low + pl.value + a.value + (zoned ? zfee.low : 0);
+    const high = e.high + pl.value + a.value + (zoned ? zfee.high : 0);
+    return { low, high, conf: 'Moderate', label: 'Permits (state electrical, plumbing + approach)',
+      text: `${rule.jurisdiction}: ${nb.label} (${nb.note}). ${e.label}. ${pl.label} = ${usd0(pl.value)} (${pl.note}). ${zoningText} ${a.label}: ${usd0(a.value)}, if the driveway meets a county road (a state highway approach is an MDT permit, not sourced).`,
+      src: [ref(nb), ref(e), ref(pl), ref(z), ref(a)] };
+  }
   function permits(l, C, P, privateSeptic) {
     const juris = jurisdiction(l);
     const home = P.home;
@@ -259,7 +314,9 @@
     const impact = (C.impactFees || []).find(r => r.match.test(juris));
     const impactLine = impact ? { low: impact.value, high: impact.value, text: ` Plus ${impact.label}: ${usd0(impact.value)}.`, src: [ref(impact)] } : { low: 0, high: 0, text: '', src: [] };
     let out;
-    if (rule?.kind === 'kootenai-ubc') {
+    if (rule?.kind === 'mt-county') {
+      out = montanaCountyPermit(l, rule, home);
+    } else if (rule?.kind === 'kootenai-ubc') {
       const k = kootenaiPermit(rule, home);
       const a = rule.approach;
       out = { low: k.total + a.value, high: k.total + rule.siteDisturbance + a.value, conf: 'Moderate',
@@ -287,27 +344,32 @@
         src: [ref(b), ref(plan)] };
     } else {
       out = { low: P.permitGeneric.low, high: P.permitGeneric.high, conf: 'Low',
-        text: `${juris || 'Permit jurisdiction not resolved'}: building permit fee schedule not sourced. Generic range ${usd0(P.permitGeneric.low)}-${usd0(P.permitGeneric.high)} (spans the sourced City of Spokane and Kootenai County schedules). Approach permit fee not sourced.`,
+        text: `${juris || 'Permit jurisdiction not resolved'}: building permit fee schedule not sourced. Generic range ${usd0(P.permitGeneric.low)}-${usd0(P.permitGeneric.high)} (spans the sourced City of Spokane and Kootenai County schedules). Approach permit fee not sourced.${C.cityPermitNote ? ` ${C.cityPermitNote}` : ''}`,
         src: [planningRef()] };
     }
-    return line('permits', out.low + impactLine.low, out.high + impactLine.high, 'Permits (building + approach)', `${homeText} ${out.text}${impactLine.text}`, [...out.src, ...impactLine.src], { confidence: out.conf, jurisdiction: juris });
+    return line('permits', out.low + impactLine.low, out.high + impactLine.high, out.label || 'Permits (building + approach)', `${homeText} ${out.text}${impactLine.text}`, [...out.src, ...impactLine.src], { confidence: out.conf, jurisdiction: juris });
   }
 
   // ---- Driveway and site work
 
+  // Crushed base is priced per ton (WSDOT, ITD) or per cubic yard (MDT, aggregatePerCy).
+  const aggregate = D => (D.aggregatePerCy ? { ...D.aggregatePerCy, unit: 'cy' } : { ...D.aggregatePerTon, unit: 'ton' });
+  const bidLabel = (C, short) => C.driveway.bidLabel || (C.state === 'WA' ? (short ? 'WSDOT' : 'WSDOT Eastern Region') : 'ITD');
   function drivewayRate(C, P) {
-    const d = P.driveway, D = C.driveway;
-    const tonsPerFt = d.widthFt * d.baseDepthFt / 27 * d.tonsPerCy;
+    const d = P.driveway, D = C.driveway, g = aggregate(D);
+    const baseCyPerFt = d.widthFt * d.baseDepthFt / 27;
+    const perFt = g.unit === 'cy' ? baseCyPerFt : baseCyPerFt * d.tonsPerCy;
     const cyPerFt = d.widthFt * d.excavationDepthFt / 27;
-    return { low: tonsPerFt * D.aggregatePerTon.low + cyPerFt * D.excavationPerCy.low, high: tonsPerFt * D.aggregatePerTon.high + cyPerFt * D.excavationPerCy.high };
+    return { low: perFt * g.low + cyPerFt * D.excavationPerCy.low, high: perFt * g.high + cyPerFt * D.excavationPerCy.high };
   }
   function driveway(l, C, P) {
     const D = C.driveway, d = P.driveway;
     const r = drivewayRate(C, P);
     const ra = l?.costContext?.roadAccess;
-    const rate = `$${r.low.toFixed(2)}-$${r.high.toFixed(2)}/ft (${d.widthFt} ft wide, 6 in crushed base at $${D.aggregatePerTon.low}-$${D.aggregatePerTon.high}/ton, 6 in excavation at $${D.excavationPerCy.low}-$${D.excavationPerCy.high}/cy; ${C.state === 'WA' ? 'WSDOT Eastern Region' : 'ITD'} low bids)`;
+    const g = aggregate(D);
+    const rate = `$${r.low.toFixed(2)}-$${r.high.toFixed(2)}/ft (${d.widthFt} ft wide, 6 in crushed base at $${g.low}-$${g.high}/${g.unit}, 6 in excavation at $${D.excavationPerCy.low}-$${D.excavationPerCy.high}/cy; ${bidLabel(C)} low bids)`;
     const tail = 'Materials at highway-bid prices; small jobs cost more. Culvert not included (not inferable from mapped data).';
-    const srcs = [...refs(D.aggregatePerTon), ...refs(D.excavationPerCy)];
+    const srcs = [...refs(g), ...refs(D.excavationPerCy)];
     const fmt = n => Number(n).toLocaleString('en-US');
     const PRIVATE = 'a private road or easement likely serves this parcel; verify access';
     const roadSrc = { name: ra?.source?.name || 'County road centerlines', url: ra?.source?.url || '', asOf: '', verified: true };
@@ -333,7 +395,7 @@
       return range(d.unknownLengthFt.low, d.maxFt, `No mapped road within ${fmt(ra.searchedFt || 0)} ft of the parcel interior point: ${PRIVATE}. Range ${fmt(d.unknownLengthFt.low)} ft to ${fmt(d.maxFt)} ft (cap)`, 'Low', null);
     }
     const U = d.unknownLengthFt;
-    const why = ra?.status === 'source_unavailable' ? 'The county road map did not answer' : 'Driveway length not measured';
+    const why = ra?.status === 'source_unavailable' ? 'The county road map did not answer' : ra?.status === 'not_configured' ? 'Driveway length not measured (no county road map is connected for this county yet)' : 'Driveway length not measured';
     return line('driveway', U.low * r.low, U.high * r.high, 'Driveway',
       `${why}; range for a ${U.low}-${U.high} ft driveway x ${rate}. ${tail}`, srcs, { confidence: 'Low', lengthFt: null, lengthRangeFt: [U.low, U.high] });
   }
@@ -344,7 +406,7 @@
     const low = P.siteBase.low + v.low * e.low, high = P.siteBase.high + v.high * e.high;
     const gradeText = grade == null ? 'Terrain not resolved (flat-to-steep range)' : `${grade.toFixed(1)}% mapped average grade (${band === 'verySteep' ? 'very steep' : band})`;
     return line('sitework', low, high, 'Site work',
-      `${gradeText}: assumed ${v.low}-${v.high} cy of cut/fill on a 60 x 80 ft building pad x $${e.low}-$${e.high}/cy local excavation (${C.state === 'WA' ? 'WSDOT' : 'ITD'} low bids), plus ${usd0(P.siteBase.low)}-${usd0(P.siteBase.high)} clearing and erosion control (AcresX allowance). Highway-bid prices; small jobs cost more.`,
+      `${gradeText}: assumed ${v.low}-${v.high} cy of cut/fill on a 60 x 80 ft building pad x $${e.low}-$${e.high}/cy local excavation (${bidLabel(C, true)} low bids), plus ${usd0(P.siteBase.low)}-${usd0(P.siteBase.high)} clearing and erosion control (AcresX allowance). Highway-bid prices; small jobs cost more.`,
       [...refs(e), planningRef()], { confidence: grade == null ? 'Low' : 'Moderate' });
   }
 
@@ -373,7 +435,8 @@
     return base ? { ...base, local: false, coverageNote: GENERIC_NOTE } : null;
   }
 
-  // ---- Cost context: road access + watershed (/api/cost-context follow-up, local counties only)
+  // ---- Cost context: road access + watershed (/api/cost-context follow-up, local counties only;
+  // Montana has no road layer connected yet, so its road access answers not_configured)
 
   let contextRequestId = 0;
   function parcelPoint(parcel) {

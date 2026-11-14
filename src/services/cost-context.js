@@ -1,5 +1,6 @@
 // POST /api/cost-context: parcel facts the development-cost estimate needs that no other route
-// returns (public/local-cost-model.js; Spokane and Kootenai only).
+// returns (public/local-cost-model.js; the counties with local prices: Spokane, Kootenai,
+// Yellowstone and Gallatin. Montana has no road layer yet, so roadAccess is not_configured there).
 //   Request: { state, county, lat, lon }  (the parcel interior point)
 //   Answer:  { roadAccess: <src/services/road-access.js answer>,
 //              watershed: <src/states/washington/wria.js answer> (Washington only) }

@@ -22,7 +22,7 @@ const STATE = { Spokane: 'WA', Stevens: 'WA', Kootenai: 'ID', Gallatin: 'MT', Ye
 
 // A parcel's facts. Defaults: no wells, limited soil, 4% grade, no public utilities, no power data.
 function facts({ county = 'Spokane', provider = '', distanceFt, distStatus = 'utility_published_proximity', water, sewer, soil = 'limited', grade = 4,
-  jurisdiction, uga = false, overlays = [], road, wria, wells = [], existingWell, terrainAvailable = true } = {}) {
+  jurisdiction, uga = false, overlays = [], road, wria, wells = [], existingWell, terrainAvailable = true, zoning = { status: 'gis_match', code: 'R' } } = {}) {
   const ctx = {};
   if (road !== undefined) ctx.roadAccess = road;
   if (wria !== undefined) ctx.watershed = wria;
@@ -30,7 +30,7 @@ function facts({ county = 'Spokane', provider = '', distanceFt, distStatus = 'ut
     parcel: { type: 'Feature', geometry: square, properties: { ORIG_PARCEL_ID: 'TEST-1', _countyDisplay: county, _stateCode: STATE[county] === 'WA' ? undefined : STATE[county] } },
     wells, utility: provider ? [provider] : [],
     flood: { available: true, intersects: false, zones: [] }, wetlands: { available: true, intersects: false, count: 0 },
-    zoningPermits: { zoning: { status: 'gis_match', code: 'R' }, permitJurisdiction: { name: jurisdiction ?? (county === 'Kootenai' ? 'Kootenai County' : `${county} County`) }, urbanGrowthArea: { intersects: uga }, overlays },
+    zoningPermits: { zoning, permitJurisdiction: { name: jurisdiction ?? (county === 'Kootenai' ? 'Kootenai County' : `${county} County`) }, urbanGrowthArea: { intersects: uga }, overlays },
     evidence: { status: 'none' },
     land: { soil: { available: true, feasibility: soil }, terrain: { available: terrainAvailable, gradePct: grade, reliefFt: 10 } },
     ...(provider ? { powerIntelligence: { provider, distribution: { status: distanceFt == null ? 'no_published_line_nearby' : distStatus, estimatedDistanceFt: distanceFt ?? null } } } : {}),
@@ -339,10 +339,142 @@ test('site work: slope tiers as pad earthwork x local excavation $/cy + allowanc
   assert.match(steep.basis, /very steep/);
 });
 
+// ---- Montana: Yellowstone and Gallatin (sources re-read 2026-11-14; cost-tables.js MT_STATE)
+
+const NWE = 'NORTHWESTERN ENERGY LLC - (MT)', YVEC = 'YELLOWSTONE VALLEY ELEC CO-OP';
+const UNZONED = { status: 'unzoned', code: 'UNZONED' };
+
+test('Montana is priced locally: Yellowstone and Gallatin profiles, coverage note', () => {
+  for (const [county, label] of [['Yellowstone', 'Yellowstone County, MT'], ['Gallatin', 'Gallatin County, MT']]) {
+    const e = estimate({ county, provider: NWE });
+    assert.equal(e.local, true, county);
+    assert.equal(e.coverageNote, `Local prices for ${label} (sourced 2026-11-14).`);
+    assert.deepEqual(Object.keys(e.components).sort(), ['driveway', 'electric', 'permits', 'septic', 'sitework', 'well']);
+  }
+});
+
+test('Montana power: NorthWestern Rule 6 is the generic range minus the $400 allowance; co-ops add or credit their published fee', () => {
+  // Generic: $3,500-$6,000 + $14-$22/ft (distance known), else $5,000-$25,000.
+  const n = estimate({ county: 'Gallatin', provider: NWE, distanceFt: 400, distStatus: 'osm_mapped_proximity' }).components.electric;
+  assert.deepEqual([n.low, n.high], [3500 + 400 * 14 - 400, 6000 + 400 * 22 - 400]);
+  assert.equal(n.formula, 'nwe-rule6');
+  assert.match(n.basis, /NorthWestern Energy Rule No\. 6 \(effective 2020-03-01\)/);
+  assert.match(n.basis, /actual construction cost minus a \$400 residential allowance/);
+  assert.match(n.basis, /surcharge whose rate the rule does not state/);
+  assert.ok(n.sources.some(s => /Rule No\. 6/.test(s.name) && /rule_6_et\.pdf$/.test(s.url) && s.verified && s.asOf === '2020-03-01'));
+  assert.ok(n.sources.some(s => !s.verified), 'the generic part stays an unverified estimate');
+  const nu = estimate({ county: 'Yellowstone', provider: NWE }).components.electric;
+  assert.deepEqual([nu.low, nu.high], [4600, 24600]);
+  // YVEC: $150 deposit credited toward construction, so it only sets a floor.
+  const y = estimate({ county: 'Yellowstone', provider: YVEC }).components.electric;
+  assert.deepEqual([y.label, y.low, y.high], ['Power (Yellowstone Valley Electric Cooperative)', 5000, 25000]);
+  assert.match(y.basis, /\$150 construction deposit \(non-refundable, credited toward construction charges\)/);
+  assert.match(y.basis, /prepay 50% of the estimate up to \$2,000 and 100% above \$2,000/);
+  assert.ok(y.sources.some(s => s.url === 'https://www.yvec.com/new-construction/' && s.verified));
+  const m = estimate({ county: 'Yellowstone', provider: 'MID-YELLOWSTONE ELEC COOP, INC' }).components.electric;
+  assert.deepEqual([m.label, m.low, m.high], ['Power (Mid-Yellowstone Electric Cooperative)', 5000, 25000]);
+  assert.match(m.basis, /may, but is not required to, contribute up to \$1,000/);
+  // Park Electric: $500 site visit fee, credited. Fall River: $250 estimate fee, added.
+  const park = estimate({ county: 'Gallatin', provider: 'PARK ELECTRIC COOP INC', distanceFt: 0, distStatus: 'osm_mapped_proximity' }).components.electric;
+  assert.deepEqual([park.low, park.high], [3500 + 50 * 14, 6000 + 50 * 22]);
+  assert.match(park.basis, /\$500 site visit fee/);
+  const fr = estimate({ county: 'Gallatin', provider: 'FALL RIVER RURAL ELEC COOP INC' }).components.electric;
+  assert.deepEqual([fr.low, fr.high], [5250, 25250]);
+  assert.match(fr.basis, /\$250 estimate fee \(charged for every estimate\), added to the range/);
+  const v = estimate({ county: 'Gallatin', provider: 'VIGILANTE ELECTRIC COOP INC' }).components.electric;
+  assert.deepEqual([v.low, v.high], [5000, 25000]);
+  assert.match(v.basis, /No published line-extension terms found/);
+  for (const e of [n, y, m, park, fr, v]) assert.equal(e.quoteRecommended, true);
+});
+
+test('Montana well: DNRC $400 Notice of Intent + $250 Notice of Completion on both ends; no WRIA charge', () => {
+  const wells = [210, 190, 200].map(d => ({ properties: { CompletedDepth: d } }));
+  for (const county of ['Yellowstone', 'Gallatin']) {
+    const w = estimate({ county, wells, wria: { available: true, number: 55, name: 'x' } }).components.well;
+    assert.deepEqual([w.low, w.high], [200 * 42 + 3500 + 650, 200 * 60 + 5500 + 650], county);
+    assert.match(w.basis, /DNRC Notice of Intent \(Form 602I\) \$400 \+ DNRC Notice of Completion \(Form 602\) \$250/);
+    assert.doesNotMatch(w.basis, /WRIA/);
+    assert.ok(w.sources.some(s => /602I\.pdf$/.test(s.url) && s.asOf === '2026-01-01' && s.verified));
+    assert.ok(w.sources.some(s => /602\.pdf$/.test(s.url) && s.verified));
+  }
+});
+
+test('Montana septic: RiverStone Health $600 (dosed design and lot fee in the high end); Gallatin health dept $650', () => {
+  // RiverStone: water supply 110 + gravity drainfield 120 + nondegradation 70 + inspection 300 = 600;
+  // high adds dosed design 180 + lot/COS tract 160 = 940.
+  const y = estimate({ county: 'Yellowstone', soil: 'moderate' }).components.septic;
+  assert.deepEqual([y.low, y.high], [10500 + 600, 15500 + 940]);
+  assert.equal(y.septicPermitFees, 600);
+  assert.match(y.basis, /engineer or land use consultant typically prepares the application/);
+  assert.ok(y.sources.some(s => /Local-Fees-2024\.8\.22\.pdf$/.test(s.url) && s.asOf === '2024-08-22' && s.verified));
+  // GCCHD: $375 permit + $275 review (site evaluation lot).
+  const g = estimate({ county: 'Gallatin', soil: 'favorable' }).components.septic;
+  assert.deepEqual([g.low, g.high], [7500 + 650, 11500 + 650]);
+  assert.match(g.basis, /\$140 instead for a lot not requiring site evaluation/);
+  assert.match(g.basis, /Registered Site Evaluator/);
+  assert.ok(g.sources.some(s => /HC-1-Fee-schedule-only\.pdf$/.test(s.url) && s.asOf === '2018-10-27'));
+});
+
+test('Montana permits: no county building permit; DLI electrical + plumbing + county approach, zoning permit only in a county district', () => {
+  // DLI electrical $200 (<=200 A) - $380 (201-400 A); plumbing 17 x 10 + 20 + 20 + 25 + 2 x 6 = 247.
+  // Yellowstone, rural unzoned: 200 + 247 + 75 = 522; 380 + 247 + 75 = 702.
+  const yr = estimate({ county: 'Yellowstone', jurisdiction: 'Yellowstone County', zoning: UNZONED }).components.permits;
+  assert.deepEqual([yr.low, yr.high], [522, 702]);
+  assert.equal(yr.label, 'Permits (state electrical, plumbing + approach)');
+  assert.match(yr.basis, /does not issue building permits outside the city limits of Billings/);
+  assert.match(yr.basis, /= \$247 \(not needed when the owner does the plumbing/);
+  assert.match(yr.basis, /Mapped unzoned, so no county zoning permit is added/);
+  assert.ok(yr.sources.every(s => s.verified), 'every permit figure is from a published schedule');
+  // Yellowstone, Special Zoning District 16: + $77 zoning compliance (dated schedule).
+  const yz = estimate({ county: 'Yellowstone', jurisdiction: 'Yellowstone County', zoning: { status: 'gis_match', code: 'D16' } }).components.permits;
+  assert.deepEqual([yz.low, yz.high], [599, 779]);
+  assert.match(yz.basis, /Inside a county zoning district \(D16\): Zoning compliance permit \(residential\) \$77 \(from a fee schedule headed FY21-22-23; the latest published figure, possibly out of date\)/);
+  // Gallatin, zoned (RR-10): LUP = max(430, 0.25% x value), value >= 2,000 x 200 + 500 x 100 = 450,000 -> 1,125;
+  // at the assumed $500k high valuation 1,250. 200 + 247 + 125 + 1,125 = 1,697; 380 + 247 + 125 + 1,250 = 2,002.
+  const gz = estimate({ county: 'Gallatin', jurisdiction: 'Gallatin County', zoning: { status: 'gis_match', code: 'RR-10' } }).components.permits;
+  assert.deepEqual([gz.low, gz.high], [1697, 2002]);
+  assert.match(gz.basis, /Land Use Permit \(standard, residential\): the greater of \$430 or 0\.25% .* capped at \$5,400: \$1,125 at \$450,000 to \$1,250 at \$500,000 \(effective 2026-09-21\)/);
+  assert.ok(gz.sources.some(s => /View\/1301/.test(s.url) && s.asOf === '2026-09-21'));
+  assert.ok(gz.sources.some(s => /View\/168/.test(s.url)), 'Road & Bridge access permit');
+  // Gallatin unzoned or a gap in the zoning map: the LUP is listed as conditional, not added.
+  const gu = estimate({ county: 'Gallatin', jurisdiction: 'Gallatin County', zoning: UNZONED }).components.permits;
+  assert.deepEqual([gu.low, gu.high], [572, 752]);
+  const gap = estimate({ county: 'Gallatin', jurisdiction: 'Gallatin County', zoning: { status: 'no_mapped_result' } }).components.permits;
+  assert.deepEqual([gap.low, gap.high], [572, 752]);
+  assert.match(gap.basis, /County zoning not resolved for this parcel; not added\. Inside a county zoning district: Land Use Permit/);
+  // City parcels: the city's building permit is not sourced -> generic, with the note.
+  const billings = estimate({ county: 'Yellowstone', jurisdiction: 'City of Billings' }).components.permits;
+  assert.deepEqual([billings.low, billings.high], [3000, 6000]);
+  assert.match(billings.basis, /City of Billings: building permit fee schedule not sourced/);
+  assert.match(billings.basis, /Billings, Laurel and Broadview issue their own building permits/);
+  assert.ok(billings.sources.some(s => !s.verified));
+  const bozeman = estimate({ county: 'Gallatin', jurisdiction: 'City of Bozeman' }).components.permits;
+  assert.deepEqual([bozeman.low, bozeman.high], [3000, 6000]);
+  assert.match(bozeman.basis, /Bozeman, Belgrade, Manhattan and West Yellowstone issue their own building permits/);
+});
+
+test('Montana driveway and site work: MDT district bid prices per cubic yard', () => {
+  // 12 ft x 0.5 ft / 27 = 2/9 cy/ft of crushed base and 2/9 cy/ft of excavation.
+  const mt = (agg, exc) => (agg + exc) * 2 / 9;
+  // No county road map in Montana yet: /api/cost-context answers not_configured -> 100-500 ft.
+  const y = estimate({ county: 'Yellowstone', road: { available: false, status: 'not_configured' } }).components.driveway;
+  assert.deepEqual([y.low, y.high], [Math.round(100 * mt(50, 16.53)), Math.round(500 * mt(65, 22))]);
+  assert.match(y.basis, /no county road map is connected for this county yet/);
+  assert.match(y.basis, /6 in crushed base at \$50-\$65\/cy, 6 in excavation at \$16\.53-\$22\/cy; MDT Billings District low bids/);
+  assert.match(y.basis, /Materials at highway-bid prices; small jobs cost more/);
+  assert.ok(y.sources.length && y.sources.every(s => s.verified && /mdt\.mt\.gov/.test(s.url)));
+  const g = estimate({ county: 'Gallatin', road: ROAD(300) }).components.driveway;
+  assert.deepEqual([g.low, g.high], [Math.round(300 * mt(68, 20)), Math.round(300 * mt(75, 24))]);
+  assert.match(g.basis, /MDT Butte District low bids/);
+  const s = estimate({ county: 'Gallatin', grade: 4 }).components.sitework;
+  assert.deepEqual([s.low, s.high], [1500 + 89 * 20, 3000 + 178 * 24]);
+  assert.match(s.basis, /\(MDT Butte District low bids\)/);
+});
+
 // ---- Other counties, score, listings
 
 test('other counties keep the generic estimate, labeled "local prices not yet sourced"', () => {
-  for (const county of ['Stevens', 'Gallatin', 'Yellowstone']) {
+  for (const county of ['Stevens']) {
     const p = page(facts({ county, provider: 'Avista Utilities', distanceFt: 500 }));
     const generic = p.run('window.__acresxScreeningCostEstimate()');
     const e = p.est();
@@ -357,8 +489,8 @@ test('other counties keep the generic estimate, labeled "local prices not yet so
 });
 
 test('the score does not read the cost estimate; listing claims change neither', () => {
-  for (const county of ['Spokane', 'Kootenai', 'Stevens']) {
-    const opts = { county, provider: 'Avista Utilities', distanceFt: 2000 };
+  for (const [county, provider] of [['Spokane', 'Avista Utilities'], ['Kootenai', 'Avista Utilities'], ['Stevens', 'Avista Utilities'], ['Gallatin', 'NORTHWESTERN ENERGY LLC - (MT)'], ['Yellowstone', 'YELLOWSTONE VALLEY ELEC CO-OP']]) {
+    const opts = { county, provider, distanceFt: 2000 };
     assert.equal(page(facts(opts)).score(), page(facts(opts), { withModel: false }).score(), county);
     const a = facts(opts), b = facts(opts);
     a.evidence = { status: 'found', claims: [{ label: 'Power at the road' }, { label: 'Septic approved' }] };
@@ -401,7 +533,7 @@ test('dashboard card: a local county shows the model estimate once its inputs se
 });
 
 test('dashboard card: a county without local prices keeps the generic estimate', () => {
-  const r = pageWithSections(facts({ county: 'Gallatin', provider: 'NorthWestern Energy' }), []);
+  const r = pageWithSections(facts({ county: 'Stevens', provider: 'Avista Utilities' }), []);
   assert.equal(r.est.local, false);
   assert.equal(r.value, `$${Math.round(r.est.low / 1000)}k–$${Math.round(r.est.high / 1000)}k`);
 });

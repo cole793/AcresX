@@ -204,7 +204,7 @@ function county(props, extra = {}) {
   return { parcel: { type: 'Feature', geometry: square, properties: props }, wells: [{ properties: { CompletedDepth: 300 } }], utility: ['NORTHWESTERN ENERGY'], land: { soil: { available: true, feasibility: 'moderate', mapUnit: 'Loam' }, terrain: { available: true, gradePct: 6, reliefFt: 20 } }, flood: { available: true, intersects: false, zones: [] }, wetlands: { available: true, intersects: false, category: 'none' }, ...extra };
 }
 
-test('Idaho (Kootenai, local prices) and Montana (Gallatin, generic ranges) render every page', () => {
+test('Idaho (Kootenai, local prices), Montana (Gallatin, local prices) and Stevens (generic ranges) render every page', () => {
   const id = generate(county({ ORIG_PARCEL_ID: 'C1', _countyDisplay: 'Kootenai', _stateCode: 'ID', SITUS_ADDRESS: '5811 N CHRISTOPHER DR', SITUS_CITY_NM: 'COEUR D ALENE' }, { utility: ['KOOTENAI ELECTRIC COOPERATIVE', 'AVISTA CORP'] }));
   assert.equal(id.pages.length, 4);
   assert.match(id.pages[0], /<h1>5811 N Christopher Dr<\/h1>/);
@@ -213,17 +213,32 @@ test('Idaho (Kootenai, local prices) and Montana (Gallatin, generic ranges) rend
   assert.match(id.html, /Idaho Department of Water Resources \(IDWR\) well records/);
   assert.match(id.html, /Kootenai Electric Cooperative · also listed: Avista Corp/);
 
-  const mt = generate(county({ ORIG_PARCEL_ID: 'M1', _countyDisplay: 'Gallatin', _stateCode: 'MT' }));
-  assert.equal(mt.pages.length, 4, 'generic lines carry a basis too');
+  // Gallatin, inside a county zoning district: local prices. The permit line is all published
+  // fees (DLI, Land Use Permit, Road & Bridge); the driveway is MDT bid prices; the rest carry an
+  // AcresX planning allowance.
+  const mt = generate(county({ ORIG_PARCEL_ID: 'M1', _countyDisplay: 'Gallatin', _stateCode: 'MT' }, { zoningPermits: { zoning: { status: 'gis_match', code: 'RR-10' }, permitJurisdiction: { name: 'Gallatin County' } } }));
+  assert.equal(mt.pages.length, 4);
   assert.match(mt.pages[0], /<h1>No situs address<\/h1>/);
   assert.match(mt.html, /Montana Bureau of Mines and Geology GWIC well records/);
-  assert.match(mt.html, /Generic regional ranges; local prices not yet sourced for this county\./);
-  const page1 = /<div class="cost-num">([^<]+)<\/div>/.exec(mt.pages[0])[1];
-  const lines = [...mt.pages[2].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
+  assert.match(mt.html, /Local prices for Gallatin County, MT/);
+  const tagOf = (html, label) => new RegExp(`<strong>${label}[^<]*<\\/strong>(?:<sup class="ref">[^<]*<\\/sup>)?<\\/td><td><span class="tag (\\w+)">`).exec(html)?.[1];
+  assert.equal(tagOf(mt.pages[2], 'Permits'), 'fee', 'permits: Published fee');
+  assert.equal(tagOf(mt.pages[2], 'Driveway'), 'local', 'driveway: Local price');
+  for (const label of ['Well', 'Septic', 'Power', 'Site work']) assert.equal(tagOf(mt.pages[2], label), 'estimate', label);
+  assert.match(mt.html, /Land Use Permit/);
+  const mtLines = [...mt.pages[2].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
+  assert.equal(mtLines.length, 6);
+  assert.deepEqual(amounts(/<div class="cost-num">([^<]+)<\/div>/.exec(mt.pages[0])[1]), mtLines.reduce((a, [lo, hi]) => [a[0] + lo, a[1] + hi], [0, 0]));
+
+  const wa = generate(county({ ORIG_PARCEL_ID: 'S1', _countyDisplay: 'Stevens', _stateCode: 'WA' }, { utility: ['AVISTA CORP'] }));
+  assert.equal(wa.pages.length, 4, 'generic lines carry a basis too');
+  assert.match(wa.html, /Generic regional ranges; local prices not yet sourced for this county\./);
+  const page1 = /<div class="cost-num">([^<]+)<\/div>/.exec(wa.pages[0])[1];
+  const lines = [...wa.pages[2].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
   assert.equal(lines.length, 5);
   assert.deepEqual(amounts(page1), lines.reduce((a, [lo, hi]) => [a[0] + lo, a[1] + hi], [0, 0]));
-  assert.equal([...mt.pages[2].matchAll(/class="tag estimate">Estimate — get a quote/g)].length, 5, 'generic lines are estimates');
-  for (const r of [id, mt]) assert.doesNotMatch(text(r.html), /undefined|NaN/);
+  assert.equal([...wa.pages[2].matchAll(/class="tag estimate">Estimate — get a quote/g)].length, 5, 'generic lines are estimates');
+  for (const r of [id, mt, wa]) assert.doesNotMatch(text(r.html), /undefined|NaN/);
 });
 
 test('a county without the local cost model uses its generic estimate on both pages', () => {
