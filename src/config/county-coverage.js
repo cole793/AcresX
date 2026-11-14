@@ -43,7 +43,7 @@ const overrides = {
     lastValidated: '2026-11-14',
     checklistScore: 79,
     checklistScoreDate: '2026-11-03',
-    notes: 'Level 3 (checklist section 7): two consecutive clean live validation runs (0 parcels with an error or mismatch) on 2026-11-13 (run 43502221467) and 2026-11-14 (run 43628378292; 165 ok, 15 unavailable: listing on 12 parcels, zoning rules on 3). Owner signed off after checking Spokane demo parcels against the county sources. Zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1); no tax amount.',
+    notes: 'Level 3 (checklist section 7): two consecutive clean live validation runs (0 parcels with an error or mismatch) on 2026-11-13 (run 43502221467) and 2026-11-14 (run 43628378292; 165 ok, 15 unavailable: listing on 12 parcels, zoning rules on 3). Owner signed off on 2026-11-11 after comparing 35204.2729 and 57344.0125 with the county sources. Zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1); no tax amount.',
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Yellowstone': {

@@ -80,7 +80,9 @@ test('Spokane notes record the two clean runs and the owner sign-off', () => {
   assert.match(notes, /^Level 3 \(checklist section 7\)/);
   assert.match(notes, /2026-11-13 \(run 43502221467\)/);
   assert.match(notes, /2026-11-14 \(run 43628378292/);
-  assert.match(notes, /Owner signed off/);
+  assert.match(notes, /Owner signed off on 2026-11-11/);
+  assert.match(notes, /35204.2729/);
+  assert.match(notes, /57344.0125/);
 });
 
 test('Stevens notes record the clean runs and the owner sign-off', () => {
