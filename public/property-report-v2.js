@@ -2,8 +2,9 @@
 // an appendix page with the cost assumptions when the cost lines carry them).
 //
 //   Page 1  Summary: header (address, parcel, county/state, acres, date), parcel map with scale bar,
-//           north arrow and location inset, buildability score with its top 3 drivers, the cost
-//           range, and 4-6 color-coded key findings.
+//           north arrow and location inset (buildable area shaded green, removed area hatched
+//           red, mapped wetland buffers hatched amber: shown, not removed), the buildable-acres screening estimate, buildability score with its top 3
+//           drivers, the cost range, and 4-6 color-coded key findings.
 //   Page 2  Site & zoning: zoning in plain words + permitted uses, overlays, site cards (water,
 //           septic, public water/sewer, power, access, flood, wetlands, terrain), assessor values,
 //           and a listing only when one matched.
@@ -18,6 +19,8 @@
 // - Costs: window.AcresXCostModel.estimate() (local-cost-model.js; generic counties get their generic
 //   estimate through it). Both pages show the sum of the lines the table lists.
 // - Flood / wetlands / public utilities: window.AcresXFlood, AcresXWetlands, AcresXUtilities.
+// - Buildable acres: data.buildableArea (/api/buildable-area via public/buildable-area.js);
+//   information only, never a score input.
 // Listing data is shown only when a listing matched, as unverified context; it never feeds the score.
 // No owner names are read or shown.
 (() => {
@@ -314,10 +317,16 @@
     for (const o of opts) if (o / ftPerPx <= targetPx) best = o;
     return { ft: best, px: best / ftPerPx, label: best >= 2640 ? `${best / 5280} mi` : `${best.toLocaleString('en-US')} ft` };
   }
-  function parcelMap(parcel) {
+  // SVG path for a GeoJSON (Multi)Polygon in the map's frame.
+  function geoPath(geometry, toXY) {
+    const polys = geometry?.type === 'Polygon' ? [geometry.coordinates] : geometry?.type === 'MultiPolygon' ? geometry.coordinates : [];
+    return polys.map(poly => (poly || []).map(r => (r || []).map((p, i) => `${i ? 'L' : 'M'}${toXY(p)}`).join('') + 'Z').join('')).join('');
+  }
+  function parcelMap(parcel, buildable) {
     const r = ring(parcel);
     if (!r) return `<div class="map map-missing">Parcel outline not available for a map</div>`;
-    const W = 800, H = 400;
+    // 800 x 330 (was 800 x 400) since the buildable-area strip sits under the map, so page 1 still fits.
+    const W = 800, H = 330;
     const xs = r.map(p => +p[0]), ys = r.map(p => +p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, k = Math.cos(cy * Math.PI / 180) || 1;
@@ -326,20 +335,26 @@
     let bw = Math.max((maxX - minX) * k * 1.4, 0.0032), bh = Math.max((maxY - minY) * 1.4, 0.0016);
     if (bw / bh < W / H) bw = bh * W / H; else bh = bw * H / W;
     const b = [cx - bw / k / 2, cy - bh / 2, cx + bw / k / 2, cy + bh / 2];
-    const pts = r.map(p => `${((p[0] - b[0]) / (b[2] - b[0]) * W).toFixed(1)},${((b[3] - p[1]) / (b[3] - b[1]) * H).toFixed(1)}`).join(' ');
-    const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${b.join(',')}&bboxSR=4326&imageSR=4326&size=1000,500&format=jpg&f=image`;
+    const toXY = p => `${((p[0] - b[0]) / (b[2] - b[0]) * W).toFixed(1)},${((b[3] - p[1]) / (b[3] - b[1]) * H).toFixed(1)}`;
+    const pts = r.map(toXY).join(' ');
+    const shaded = buildableMeasured(buildable);
+    const keepPath = shaded && buildable.geometry ? geoPath(buildable.geometry, toXY) : '';
+    const cutPath = shaded && buildable.removedGeometry ? geoPath(buildable.removedGeometry, toXY) : '';
+    const bufPath = shaded && buildable.bufferGeometry ? geoPath(buildable.bufferGeometry, toXY) : '';
+    const shading = keepPath || cutPath ? `<defs><pattern id="cutHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)"><rect width="9" height="9" fill="rgba(192,57,43,.22)"/><rect width="3.5" height="9" fill="rgba(192,57,43,.85)"/></pattern><pattern id="bufHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(-45)"><rect width="9" height="9" fill="rgba(240,190,90,.2)"/><rect width="3" height="9" fill="rgba(211,154,42,.9)"/></pattern></defs>${keepPath ? `<path class="keep" d="${keepPath}" fill="rgba(47,138,88,.5)"/>` : ''}${cutPath ? `<path class="cut" d="${cutPath}" fill="url(#cutHatch)"/>` : ''}${bufPath ? `<path class="buf" d="${bufPath}" fill="url(#bufHatch)"/>` : ''}` : '';
+    const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${b.join(',')}&bboxSR=4326&imageSR=4326&size=1000,${Math.round(1000 * H / W)}&format=jpg&f=image`;
     const ftPerPx = bw * 364000 / W; // 1 degree of latitude is about 364,000 ft
     const s = niceScale(ftPerPx, 150);
     const insetW = 0.36, insetH = insetW * 120 / 160; // degrees of latitude, about 25 x 19 miles
     const ib = [cx - insetW / k / 2, cy - insetH / 2, cx + insetW / k / 2, cy + insetH / 2];
     const insetUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/export?bbox=${ib.join(',')}&bboxSR=4326&imageSR=4326&size=320,240&format=png&f=image`;
     return `<figure class="map"><img class="map-img" src="${url}" alt="Satellite image of the parcel" onerror="this.closest('.map').classList.add('img-error')">
-<svg class="map-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polygon points="${pts}"/></svg>
+<svg class="map-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${shading}<polygon points="${pts}"/></svg>
 <svg class="map-deco" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
 <g transform="translate(36,38)"><circle r="21" fill="#fff" fill-opacity=".92"/><path d="M0,-16 L6,2 L0,-1 L-6,2 Z" fill="#17231c"/><text y="15" text-anchor="middle" font-size="10" font-weight="800" fill="#17231c">N</text></g>
 <g transform="translate(18,${H - 30})"><rect x="-6" y="-9" width="${(s.px + 60).toFixed(0)}" height="22" rx="5" fill="#fff" fill-opacity=".92"/><rect x="0" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#17231c"/><rect x="${(s.px / 2).toFixed(1)}" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#fff" stroke="#17231c" stroke-width="1"/><text x="${(s.px + 6).toFixed(1)}" y="6" font-size="12" font-weight="700" fill="#17231c">${esc(s.label)}</text></g>
 </svg>
-<div class="map-tag">Parcel boundary approximate</div>
+<div class="map-tag">Parcel boundary approximate${keepPath || cutPath ? ` · <i class="k"></i>buildable estimate <i class="c"></i>removed${bufPath ? ' <i class="b"></i>wetland buffer (not removed)' : ''}` : ''}</div>
 <div class="inset"><img src="${insetUrl}" alt="Location map" onerror="this.parentElement.classList.add('img-error')"><span class="inset-dot"></span><span class="inset-label">Location</span></div>
 <figcaption class="map-credit">Imagery © Esri and contributors · Inset © Esri, OpenStreetMap contributors</figcaption>
 <div class="map-error">Aerial imagery could not be loaded</div></figure>`;
@@ -351,6 +366,27 @@
   const chip = (level, text) => `<span class="chip ${level}">${esc(text)}</span>`;
   const pageHead = (title, f) => `<header class="mini-head"><img class="logo-sm" src="/assets/acresx-logo.png" alt="AcresX"><div class="mini-title">${eyebrow(title)}<span>${esc(f.address || 'No situs address')} · Parcel ${esc(f.pid || NA)}</span></div></header>`;
   const footer = (n, total) => `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`;
+
+  // ---- Page 1: buildable acres (screening estimate; never a score input)
+
+  const buildableMeasured = b => Boolean(b) && (b.status === 'measured' || b.status === 'partial') && num(b.buildableAcres) != null;
+  function buildableBlock(b) {
+    const B = window.AcresXBuildable;
+    const fa = (a, ref) => (B ? B.fmtAcres(a, ref) : (num(ref ?? a) >= 10 ? Number(a).toFixed(1) : Number(a).toFixed(2)));
+    if (!buildableMeasured(b)) {
+      const why = !b ? 'The buildable-area estimate had not loaded when this report was generated.' : ((b.notes || [])[0] || 'The constraint layers did not answer.');
+      return `<section class="buildable block">${eyebrow('Buildable area · screening estimate')}<div class="b-row"><strong class="b-num">Not measured</strong><p class="b-list">${esc(why)}</p></div></section>`;
+    }
+    const keep = Math.max(0, Math.min(100, num(b.buildablePct) ?? 0));
+    const removed = (b.removed || []).map(r => `${esc(r.reason)} <b>${esc(fa(r.acres, b.parcelAcres))} ac</b> (${esc(num(r.pct) ?? 0)}%)`);
+    if (num(b.overlapAcres) >= 0.01) removed.push(`overlaps counted once (${esc(fa(b.overlapAcres, b.parcelAcres))} ac)`);
+    const missing = (b.layers || []).filter(l => l.status === 'unavailable' || l.status === 'not_mapped').map(l => l.label || l.key);
+    const head = `About ${fa(b.buildableAcres, b.parcelAcres)} of ${fa(b.parcelAcres)} acres buildable`;
+    return `<section class="buildable block">${eyebrow('Buildable area · screening estimate')}<div class="b-row"><strong class="b-num">${esc(head)}</strong><div class="b-bar"><span class="k" style="width:${keep}%"></span><span class="c" style="width:${100 - keep}%"></span></div><span class="b-pct">${esc(keep)}%</span></div>
+<p class="b-list">${removed.length ? `Removed: ${removed.join(' · ')}.` : 'No mapped flood zone, wetland or steep slope removed.'}${missing.length ? ` Not counted: ${esc(missing.join(', '))}.` : ''}${(b.layers || []).some(l => l.key === 'buffer') ? '' : ' Wetland buffers not mapped here.'}</p>
+${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restricted:</b> ${esc(String(r.reason).replace(/^Mapped/, 'mapped'))} ${esc(fa(r.acres, b.parcelAcres))} ac (${esc(num(r.pct) ?? 0)}%) — the buffer that applies depends on a wetland delineation.</p>`).join('')}
+<p class="b-note">${esc(b.disclaimer || '')} Verify with the responsible agency.</p></section>`;
+  }
 
   // ---- Page 1
 
@@ -374,7 +410,8 @@
 <div class="fact-size"><span>Parcel size</span><strong>${esc(f.acreage.text || NA)}</strong>${f.acreage.note ? `<small class="acreage-note">${esc(f.acreage.note)}</small>` : ''}</div>
 ${refName ? `<div><span>Reference</span><strong>${esc(refName)}</strong></div>` : ''}
 </div></div>
-${parcelMap(parcel)}
+${parcelMap(parcel, data.buildableArea)}
+${buildableBlock(data.buildableArea)}
 <div class="hero">
 <article class="score-card band-${score.band}">${eyebrow('Buildability score')}<div class="score-row"><div class="score-num">${esc(score.value || '—')}<small>${score.value ? '/10' : ''}</small></div><div class="score-rating">${esc(score.rating || NA)}</div></div>${drivers}</article>
 <article class="cost-card">${eyebrow('Site development cost')}<div class="cost-num">${cost ? esc(range(cost.low, cost.high)) : NA}</div><p>${cost ? `Midpoint about ${esc(kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2))}. Sum of ${cost.lines.length} lines: ${esc(cost.lines.map(l => String(l.label).replace(/\s*\(.*\)$/, '').toLowerCase()).join(', '))} (page 3). ${cost.local ? 'Local prices where sourced.' : 'Generic regional ranges.'} ` : 'Cost inputs were not available when this report was generated. '}Screening estimate, not a quote.</p></article>
@@ -605,10 +642,17 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .facts span,.assessor span{display:block;font-size:6.5pt;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
 .facts strong{display:block;font-size:10pt;margin-top:2px}.facts small,.assessor small{display:block;font-size:7pt;color:var(--mut);margin-top:1px}
 .facts .acreage-note{color:var(--amber)}
-.map{position:relative;margin:0;width:100%;aspect-ratio:2/1;border-radius:10px;overflow:hidden;background:#dfe7e1;border:1px solid var(--line);flex:none}
+.map{position:relative;margin:0;width:100%;aspect-ratio:800/330;border-radius:10px;overflow:hidden;background:#dfe7e1;border:1px solid var(--line);flex:none}
 .map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .map-svg,.map-deco{position:absolute;inset:0;width:100%;height:100%}
 .map-svg polygon{fill:rgba(229,168,35,.16);stroke:var(--gold);stroke-width:3.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.map-tag i{display:inline-block;width:9px;height:7px;border-radius:2px;margin:0 3px 0 6px;vertical-align:0}.map-tag i.k{background:rgba(47,138,88,.7)}.map-tag i.c{background:repeating-linear-gradient(135deg,#c0392b 0 2px,#f0c2bd 2px 4px)}.map-tag i.b{background:repeating-linear-gradient(45deg,#d39a2a 0 2px,#f6dfb0 2px 4px)}
+.b-maybe{font-size:7.6pt;color:#33443a;margin-top:2px;line-height:1.35}.b-maybe b{color:var(--amber)}
+.buildable{border:1px solid var(--line);border-left:4px solid var(--g2);border-radius:8px;padding:7px 11px}.buildable .eyebrow{margin-bottom:3px}
+.b-row{display:flex;align-items:center;gap:10px}.b-num{font-size:12pt;font-weight:900;color:var(--g);white-space:nowrap}
+.b-bar{flex:1;display:flex;height:8px;border-radius:999px;overflow:hidden;background:#eef2ef}.b-bar .k{background:#2f8a58}.b-bar .c{background:repeating-linear-gradient(135deg,#c0392b 0 3px,#e8a59e 3px 6px)}
+.b-pct{font-size:8pt;font-weight:800;color:var(--g2)}
+.b-list{font-size:7.6pt;color:#33443a;margin-top:3px;line-height:1.35}.b-list b{color:var(--red)}.b-note{font-size:6.8pt;color:var(--mut);margin-top:2px}
 .map-tag{position:absolute;left:70px;top:12px;background:#ffffffeb;border-radius:6px;padding:4px 7px;font-size:6.5pt;font-weight:800;color:var(--ink)}
 .inset{position:absolute;right:10px;top:10px;width:1.55in;height:1.16in;border:2px solid #fff;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px #0004;background:#eef2ee}
 .inset img{width:100%;height:100%;object-fit:cover;display:block}.inset-dot{position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#d0362b;border:2px solid #fff;box-shadow:0 0 0 1px #0005}

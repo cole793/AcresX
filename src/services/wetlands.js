@@ -198,6 +198,12 @@ async function intersectWithParcel(nwiGeometries, geometry) {
   return data.geometries;
 }
 
+// NWI polygons (Esri rings, outSR 4326) that intersect the parcel, unclipped; same request and
+// retry as the screening above. For src/services/buildable-area.js, which clips them itself.
+export async function nwiOutlines(geometry) {
+  return queryNwi(geometry);
+}
+
 // The category for a measured overlap (acres and percent of the parcel).
 export function wetlandCategory({ intersects, overlapAcres, coveragePct }) {
   if (!intersects) return 'none';
