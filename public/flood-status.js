@@ -21,6 +21,11 @@
 // source (source.label) and says FEMA has no digital map there, and the overview says so briefly.
 // A high answer whose A/AE zone covers only part of the parcel adds source.edgeNote (the share
 // and the map's edge accuracy).
+// Zone shares (src/services/flood-share.js: floodZones, sfhaSharePct, floodShare): shareText()
+// says how much of the parcel each zone covers ("Zone A on 12% of parcel (2.4 ac); rest zone X"),
+// and says plainly when the high-risk zone only touches the parcel's edge; overviewShare() is the
+// short form for the overview fact. Both are '' when the share was not measured. They never
+// change the category or the score.
 (function (root) {
   const BACKUP_PROVIDER = 'Esri USA Flood Hazard Areas';
   const LIMITED_LABEL = 'Limited flood data';
@@ -142,12 +147,74 @@
     return { category: cat, score: g.score, label: g.label, cls: g.cls, overview: `${g.overview}${suffix}`, overviewCls: g.overviewCls, detail: detail(flood, cat) };
   }
 
+  // ---- Zone shares
+
+  const measured = flood => flood?.available === true && flood?.floodShare?.status === 'measured' && Array.isArray(flood?.floodZones) && flood.floodZones.length > 0;
+  const finite = v => (v === null || v === undefined || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+  // 67 -> "67%", 2.44 -> "2.4%", 0.3 -> "under 1%".
+  function pctText(value) {
+    const n = finite(value) ?? 0;
+    if (n >= 99.95) return 'all';
+    if (n < 1) return 'under 1%';
+    return `${n >= 10 ? Math.round(n) : n.toFixed(1)}%`;
+  }
+  const acresText = value => { const n = finite(value) ?? 0; return `${n >= 1 ? n.toFixed(1) : n.toFixed(2)} ac`; };
+  function zoneName(entry) {
+    const subtype = String(entry?.subtype || '');
+    const zone = String(entry?.zone || '').trim();
+    if (/FLOODWAY/i.test(subtype)) return `Zone ${zone} floodway`;
+    if (isPointTwo(subtype)) return `Zone ${zone} (0.2% annual chance)`;
+    return `Zone ${zone}`;
+  }
+  const onParcel = entry => (pctText(entry.sharePct) === 'all' ? `${zoneName(entry)} on all of the parcel (${acresText(entry.acres)})` : `${zoneName(entry)} on ${pctText(entry.sharePct)} of parcel (${acresText(entry.acres)})`);
+
+  // "Zone A on 67% of parcel (13.8 ac); rest zone X (6.8 ac)", or '' when not measured.
+  function shareText(flood) {
+    if (!measured(flood)) return '';
+    const zones = flood.floodZones.filter(z => z && z.zone);
+    const rest = zones.find(z => z.remainder);
+    const listed = zones.filter(z => !z.remainder);
+    const sfha = listed.filter(z => z.sfha === true);
+    const others = listed.filter(z => z.sfha !== true && !(finite(z.sharePct) < 1 && z.edgeOnly));
+    const sfhaShare = finite(flood.sfhaSharePct) ?? 0;
+    const parts = [];
+    if (sfha.length && sfhaShare < 1) {
+      const names = [...new Set(sfha.map(z => zoneName(z)))].join(', ');
+      parts.push(`${names} only touches the edge of the parcel (${sfhaShare > 0 ? 'under 1%' : 'no measurable area'})`);
+    } else {
+      parts.push(...sfha.filter(z => !z.edgeOnly).map(onParcel));
+    }
+    parts.push(...others.map(onParcel));
+    if (rest) parts.push(parts.length ? `rest zone ${rest.zone} (${acresText(rest.acres)})` : onParcel(rest));
+    else {
+      const restPct = finite(flood.floodShare?.restSharePct) ?? 0;
+      if (restPct >= 1 && parts.length) {
+        parts.push(isBackup(flood) || flood.floodShare?.coverage ? `rest outside mapped high- and moderate-risk areas (${pctText(restPct)})` : `${pctText(restPct)} has no mapped zone`);
+      }
+    }
+    return parts.join('; ');
+  }
+
+  // Short form for the overview fact: "67% of parcel", "edge only", or ''. Only for high,
+  // moderate and undetermined answers (a minimal or not-mapped answer needs no share).
+  function overviewShare(flood) {
+    if (!measured(flood)) return '';
+    const cat = category(flood);
+    if (cat === 'high') {
+      const share = finite(flood.sfhaSharePct) ?? 0;
+      return share < 1 ? 'edge only' : `${pctText(share) === 'all' ? 'whole parcel' : `${pctText(share)} of parcel`}`;
+    }
+    if (cat !== 'moderate' && cat !== 'undetermined') return '';
+    const share = flood.floodZones.filter(z => !z.remainder && z.category === cat).reduce((sum, z) => sum + (finite(z.sharePct) ?? 0), 0);
+    return share < 1 ? 'edge only' : `${pctText(Math.min(100, share)) === 'all' ? 'whole parcel' : `${pctText(Math.min(100, share))} of parcel`}`;
+  }
+
   // The flood factor (0-100) for the buildability score. The second argument is ignored; it was
   // each consumer's own scale before every consumer shared these scores.
   const score = flood => grade(flood).score;
 
   root.AcresXFlood = {
     BACKUP_PROVIDER, BACKUP_NOTE, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, PAPER_MAP_NOTE, PAPER_MAP_SUFFIX, CATEGORIES, GRADES,
-    isLimited, isBackup, isPaperMap, backupSuffix, rowCategory, category, detail, grade, score
+    isLimited, isBackup, isPaperMap, backupSuffix, rowCategory, category, detail, grade, score, shareText, overviewShare
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -4,6 +4,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
+import { configureFloodShares } from '../src/services/flood-share.js';
 import {
   FEMA_NFHL_FLOOD_LAYER, ESRI_USA_FLOOD_HAZARD_LAYER, FEMA_PROVIDER, ESRI_PROVIDER, ESRI_FALLBACK_ENABLED, ESRI_COVERAGE,
   FEMA_TIMEOUT_MS, FEMA_RETRY_TIMEOUT_MS, FEMA_RETRY_BACKOFF_MS, FALLBACK_TIMEOUT_MS, MAX_GET_URL_LENGTH,
@@ -56,8 +57,12 @@ function fakeCache() {
   return store;
 }
 
-beforeEach(() => { calls = []; delete globalThis.caches; });
+// These tests cover the zone lookup alone; zone shares (more requests, more fields) are covered
+// end to end in test/flood-share.test.js.
+let restoreShares;
+beforeEach(() => { calls = []; delete globalThis.caches; restoreShares = configureFloodShares({ enabled: false }); });
 afterEach(() => {
+  restoreShares();
   globalThis.fetch = realFetch;
   if (realCaches === undefined) delete globalThis.caches; else globalThis.caches = realCaches;
 });
@@ -285,11 +290,11 @@ test('flood: zoneDetails are deduped and keep zone, subtype and SFHA flag', () =
   assert.equal(summary.category, 'high');
 });
 
-test('flood: FEMA requests ask for FLD_ZONE, ZONE_SUBTY and SFHA_TF; cache key is v5', async () => {
+test('flood: FEMA requests ask for FLD_ZONE, ZONE_SUBTY and SFHA_TF; cache key is v6', async () => {
   stubFetch(() => jsonResponse(femaSample));
   await floodCall();
   assert.equal(new URL(calls[0].url).searchParams.get('outFields'), 'FLD_ZONE,ZONE_SUBTY,SFHA_TF');
-  assert.equal(CACHE_KEY_PREFIX, 'https://acresx.internal/cache/flood/v5/');
+  assert.equal(CACHE_KEY_PREFIX, 'https://acresx.internal/cache/flood/v6/');
 });
 
 test('flood: FEMA 4xx skips the retry and goes to Esri', async () => {
@@ -391,7 +396,7 @@ test('flood: caches.default stores successes and serves repeat calls', async () 
   const first = await floodCall(undefined, ctx);
   await Promise.all(pending);
   assert.equal(store.size, 1);
-  assert.match([...store.keys()][0], /^https:\/\/acresx\.internal\/cache\/flood\/v5\/[0-9a-f]{64}$/);
+  assert.match([...store.keys()][0], /^https:\/\/acresx\.internal\/cache\/flood\/v6\/[0-9a-f]{64}$/);
   // Tiny coordinate noise below the rounding precision hits the same key.
   const jittered = { type: 'Polygon', coordinates: [geometry.coordinates[0].map(([x, y]) => [x + 1e-9, y])] };
   const second = await floodCall({ kind: 'flood', geometry: jittered }, ctx);

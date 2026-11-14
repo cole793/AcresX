@@ -65,7 +65,9 @@
         return { text: 'No mapped flood hazard', cls: 'good' };
       }
       const grade = FX.grade(result);
-      return { text: grade.overview, cls: grade.overviewCls };
+      // "High-risk flood zone · 12% of parcel" when the zone share was measured.
+      const share = typeof FX.overviewShare === 'function' ? FX.overviewShare(result) : '';
+      return { text: share ? `${grade.overview} · ${share}` : grade.overview, cls: grade.overviewCls };
     }
     const WX = window.AcresXWetlands;
     if (WX) {

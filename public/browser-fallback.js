@@ -56,7 +56,7 @@
   // GET while the URL is at most maxGet characters, else a form POST (a CORS "simple" request:
   // no preflight). Errors read like the Worker's: "<agency> returned 503", ArcGIS {error} bodies
   // throw with arcgisError: true.
-  async function request(base, params, { agency, maxGet = 3500, signal, arcgisMessage } = {}) {
+  async function request(base, params, { agency, maxGet = 3500, signal, arcgisMessage, maxBytes } = {}) {
     if (!baseFetch) throw new Error('fetch unavailable');
     const target = assertAllowed(base);
     const form = new URLSearchParams();
@@ -84,6 +84,7 @@
       if (signal) signal.removeEventListener('abort', onCancel);
     }
     if (response.status < 200 || response.status > 299) throw new Error(`${agency} returned ${response.status}`);
+    if (maxBytes && text.length > maxBytes) throw new Error(`${agency} answer is larger than ${maxBytes} bytes`);
     let data;
     try { data = JSON.parse(text); } catch { throw new Error(`${agency} returned invalid JSON`); }
     if (data && typeof data === 'object' && data.error) {
@@ -195,6 +196,77 @@
     if (others.length) parts.push(`also partly ${others.map(s => `${s.key} (about ${pct(s.share)})`).join(', ')}`);
     if (uncovered >= 0.05) parts.push(`about ${pct(uncovered)} has no mapped ${what}`);
     return ` ${parts.join('; ')}.`;
+  }
+  // Area overlap by horizontal strips (copy of stripAreas in src/shared/polygon-coverage.js).
+  const EARTH_RADIUS_M = 6371008.8;
+  const DEG = Math.PI / 180;
+  const SQM_PER_ACRE = 4046.8564224;
+  function stripCrossings(rings, minY, dy, count) {
+    const lines = [];
+    for (const ring of rings) {
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [x1, y1] = ring[j], [x2, y2] = ring[i];
+        if (y1 === y2) continue;
+        const lo = Math.min(y1, y2), hi = Math.max(y1, y2);
+        const first = Math.max(0, Math.ceil((lo - minY) / dy - 0.5));
+        const last = Math.min(count - 1, Math.ceil((hi - minY) / dy - 0.5));
+        for (let s = first; s <= last; s++) {
+          const y = minY + (s + 0.5) * dy;
+          if (y < lo || y >= hi) continue;
+          (lines[s] ||= []).push(x1 + (y - y1) * (x2 - x1) / (y2 - y1));
+        }
+      }
+    }
+    for (const line of lines) if (line) line.sort((a, b) => a - b);
+    return lines;
+  }
+  function intervalsOf(crossings) {
+    const out = [];
+    if (!crossings) return out;
+    for (let i = 0; i + 1 < crossings.length; i += 2) if (crossings[i + 1] > crossings[i]) out.push([crossings[i], crossings[i + 1]]);
+    return out;
+  }
+  function unionIntervals(lists) {
+    const all = lists.flat().sort((a, b) => a[0] - b[0]);
+    const out = [];
+    for (const [a, b] of all) {
+      const top = out[out.length - 1];
+      if (top && a <= top[1]) top[1] = Math.max(top[1], b);
+      else out.push([a, b]);
+    }
+    return out;
+  }
+  function overlapLength(a, b) {
+    let total = 0, i = 0, j = 0;
+    while (i < a.length && j < b.length) {
+      const lo = Math.max(a[i][0], b[j][0]), hi = Math.min(a[i][1], b[j][1]);
+      if (hi > lo) total += hi - lo;
+      if (a[i][1] < b[j][1]) i++; else j++;
+    }
+    return total;
+  }
+  function stripAreas(parcelRings, groups = {}, { strips = 400 } = {}) {
+    let minY = Infinity, maxY = -Infinity;
+    for (const ring of parcelRings || []) for (const [, y] of ring) { minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+    const names = Object.keys(groups);
+    const result = { parcelSqM: 0, groups: Object.fromEntries(names.map(n => [n, 0])) };
+    if (!(maxY > minY)) return result;
+    const count = Math.max(1, Math.round(strips));
+    const dy = (maxY - minY) / count;
+    const parcelLines = stripCrossings(parcelRings, minY, dy, count);
+    const groupLines = names.map(name => (groups[name] || []).filter(Boolean).map(rings => stripCrossings(rings, minY, dy, count)));
+    for (let s = 0; s < count; s++) {
+      const parcel = intervalsOf(parcelLines[s]);
+      if (!parcel.length) continue;
+      const y = minY + (s + 0.5) * dy;
+      const scale = (EARTH_RADIUS_M * DEG) * Math.cos(y * DEG) * (EARTH_RADIUS_M * DEG) * dy;
+      result.parcelSqM += parcel.reduce((sum, [a, b]) => sum + (b - a), 0) * scale;
+      names.forEach((name, g) => {
+        const covered = unionIntervals(groupLines[g].map(lines => intervalsOf(lines[s])));
+        if (covered.length) result.groups[name] += overlapLength(parcel, covered) * scale;
+      });
+    }
+    return result;
   }
   // Copy of src/shared/arcgis.js spatialParams.
   function spatialParams({ rings, lon, lat }) {
@@ -888,6 +960,81 @@
     return { available: true, intersects: rows.length > 0, high: rows.some(isSfha), zones, zoneDetails: zoneDetails(rows), category: floodCategory(rows) };
   }
 
+  // Zone shares (copy of src/services/flood-share.js, FEMA path: floodSharePlan without backup,
+  // measureFloodShares, floodShares). Same queries, same 3 MB cap; one attempt each (12 s).
+  const MINIMAL_SUBTYPE = 'AREA OF MINIMAL FLOOD HAZARD';
+  const WHERE_NOT_X = "FLD_ZONE NOT IN ('X','C')";
+  const WHERE_SHADED = `ZONE_SUBTY <> '${MINIMAL_SUBTYPE}'`;
+  const FLOOD_SHARE_MAX_BYTES = 3000000;
+  const round1 = n => Math.round(n * 10) / 10;
+  const round2 = n => Math.round(n * 100) / 100;
+  const describeFloodRow = row => ({ zone: zoneOf(row), subtype: String(field(row, 'ZONE_SUBTY') ?? '').trim() || null, sfha: isSfha(row), category: rowCategory(row) });
+  function floodSharePlan(rows) {
+    const described = rows.map(describeFloodRow).filter(d => d.zone);
+    const minimal = described.filter(d => d.category === 'minimal');
+    const restZone = minimal.length ? (minimal.find(d => d.zone === 'X') || minimal[0]).zone : null;
+    const queries = [];
+    if (described.some(d => d.zone !== 'X' && d.zone !== 'C')) queries.push({ where: WHERE_NOT_X, keep: () => true });
+    if (described.some(d => d.zone === 'X' && d.category !== 'minimal')) queries.push({ where: WHERE_SHADED, keep: d => d.zone === 'X' });
+    return { queries, restZone };
+  }
+  function measureFloodShares(geometry, features, restZone) {
+    const parcel = ringsFromGeometry(geometry);
+    if (!parcel) throw new Error('parcel outline missing');
+    const groups = { sfha: [], any: [] };
+    const entries = new Map();
+    for (const feature of features) {
+      const rings = ringsFromGeometry(feature?.geometry);
+      if (!rings) throw new Error('a flood zone came back without its outline');
+      const d = describeFloodRow(feature?.attributes || {});
+      if (!d.zone) continue;
+      const key = `${d.zone}|${d.subtype || ''}`;
+      if (!entries.has(key)) { entries.set(key, d); groups[`zone:${key}`] = []; }
+      groups[`zone:${key}`].push(rings);
+      if (d.sfha) groups.sfha.push(rings);
+      groups.any.push(rings);
+    }
+    const areas = stripAreas(parcel, groups);
+    const total = areas.parcelSqM;
+    if (!(total > 0)) throw new Error('parcel area could not be measured');
+    const share = sqm => Math.min(1, Math.max(0, sqm / total));
+    const zones = [...entries.entries()].map(([key, d]) => {
+      const s = share(areas.groups[`zone:${key}`]);
+      return { zone: d.zone, subtype: d.subtype || null, sfha: d.sfha, category: d.category, sharePct: round1(s * 100), acres: round2(s * total / SQM_PER_ACRE), ...(s === 0 ? { edgeOnly: true } : {}) };
+    });
+    const rest = 1 - share(areas.groups.any);
+    if (restZone && rest > 0.0005) {
+      zones.push({ zone: restZone, subtype: restZone === 'X' ? MINIMAL_SUBTYPE : null, sfha: false, category: 'minimal', sharePct: round1(rest * 100), acres: round2(rest * total / SQM_PER_ACRE), remainder: true });
+    }
+    zones.sort((a, b) => b.sharePct - a.sharePct || Number(b.sfha) - Number(a.sfha));
+    const sfha = share(areas.groups.sfha);
+    return {
+      floodZones: zones,
+      sfhaSharePct: round1(sfha * 100), sfhaAcres: round2(sfha * total / SQM_PER_ACRE),
+      parcelAcres: round2(total / SQM_PER_ACRE),
+      floodShare: { status: 'measured', method: 'strip-integration', source: FEMA_PROVIDER, restSharePct: round1(Math.max(0, rest) * 100), restZone }
+    };
+  }
+  // The fields to add to a FEMA zone answer ({} when there is nothing to measure). Never throws.
+  async function femaShares(geometry, rings, rows, body, signal) {
+    if (!body.intersects || body.category === 'not_mapped') return {};
+    try {
+      const plan = floodSharePlan(rows);
+      if (!plan.queries.length && !plan.restZone) return {};
+      const answers = await Promise.all(plan.queries.map(q => arcgisFeatures(FEMA_NFHL_FLOOD_LAYER, {
+        where: q.where, geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
+        inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields: 'FLD_ZONE,ZONE_SUBTY,SFHA_TF', returnGeometry: 'true', outSR: '4326',
+        maxAllowableOffset: '0.00001', geometryPrecision: '6', resultRecordCount: '100'
+      }, { agency: FEMA_PROVIDER, signal, maxBytes: FLOOD_SHARE_MAX_BYTES }).then(features => features.filter(f => q.keep(describeFloodRow(f?.attributes || {}))))));
+      const fields = measureFloodShares(geometry, answers.flat(), plan.restZone);
+      if (!plan.queries.length) fields.floodShare.method = 'single-zone';
+      return fields;
+    } catch (error) {
+      if (signal?.aborted) return {}; // run() reports the cancel
+      return { floodShare: { status: 'unavailable', source: FEMA_PROVIDER, error: String(error?.message || 'failed') } };
+    }
+  }
+
   // Stevens County, WA digitized FEMA FIRM (copy of src/counties/stevens-flood.js). The county
   // server sends CORS headers. Asked, like the Worker does, when FEMA has no mapped zone for a
   // parcel in the bbox or FEMA failed in the browser too.
@@ -953,7 +1100,7 @@
   async function femaFlood(input, signal) {
     const geometry = geometryOf(input, true);
     const rings = geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat();
-    let fema = null, femaError = null;
+    let fema = null, femaError = null, femaRows = [];
     try {
       const data = await request(`${FEMA_NFHL_FLOOD_LAYER}/query`, {
         f: 'json', where: '1=1', geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: 'esriGeometryPolygon',
@@ -961,9 +1108,10 @@
       }, { agency: FEMA_PROVIDER, signal });
       const rows = (data?.features || []).map(f => f?.attributes || {});
       fema = { ...summarizeFloodRows(rows), source: { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER } };
+      femaRows = rows;
     } catch (error) { femaError = error; }
     if (!inStevensBbox(rings) || (fema && fema.category !== 'not_mapped')) {
-      if (fema) return fema;
+      if (fema) return { ...fema, ...(await femaShares(geometry, rings, femaRows, fema, signal)) };
       throw femaError;
     }
     let county = null;
