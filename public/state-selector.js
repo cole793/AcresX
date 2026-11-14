@@ -35,7 +35,19 @@
     updateHeroLabel();
   }
 
-  function populateCounties() {
+  // Supported counties (coverage level >= 2, from /api/county-coverage via public/coverage-trust.js)
+  // are listed first; every other county stays searchable under "Other counties (limited coverage)".
+  // Until the registry answers (or if it fails) the list is flat, as before.
+  function addCounties(counties) {
+    const supported = window.AcresXCoverage?.supportedCounties?.(stateEl.value) || [];
+    const top = counties.filter(c => supported.includes(c));
+    if (!top.length) { counties.forEach(county => countyEl.add(new Option(county, county))); return; }
+    const group = (label, list) => { const g = document.createElement('optgroup'); g.label = label; list.forEach(county => g.appendChild(new Option(county, county))); countyEl.appendChild(g); };
+    group('Supported counties', top);
+    group('Other counties (limited coverage)', counties.filter(c => !top.includes(c)));
+  }
+
+  function fillCounties(keep) {
     const state = stateEl.value;
     countyEl.innerHTML = '';
     if (!state) {
@@ -44,14 +56,18 @@
     } else if (state === 'MT' || state === 'ID') {
       countyEl.disabled = false;
       countyEl.add(new Option('Select a county', ''));
-      const counties = state === 'MT' ? MT_COUNTIES : ID_COUNTIES;
-      counties.forEach(county => countyEl.add(new Option(county, county)));
-      countyEl.value = '';
+      addCounties(state === 'MT' ? MT_COUNTIES : ID_COUNTIES);
+      countyEl.value = keep || '';
     } else {
       countyEl.disabled = false;
-      WA_COUNTIES.forEach(county => countyEl.add(new Option(county, county)));
-      countyEl.value = WA_COUNTIES.includes('Spokane') ? 'Spokane' : WA_COUNTIES[0] || '';
+      addCounties(WA_COUNTIES);
+      countyEl.value = keep || (WA_COUNTIES.includes('Spokane') ? 'Spokane' : WA_COUNTIES[0] || '');
     }
+  }
+
+  function populateCounties() {
+    const state = stateEl.value;
+    fillCounties('');
 
     const parcel = document.getElementById('parcel');
     if (parcel) {
@@ -66,6 +82,8 @@
 
   stateEl.addEventListener('change', populateCounties);
   populateCounties();
+  // The registry arrives after first paint: regroup the list, keeping the chosen county.
+  window.addEventListener?.('acresx:coverage', () => { if (stateEl.value) fillCounties(countyEl.value); });
 
   form.addEventListener('submit', event => {
     if (!stateEl.value || ((stateEl.value === 'MT' || stateEl.value === 'ID') && !countyEl.value)) {
