@@ -26,8 +26,10 @@
 //            an A/V zone code, see describeFloodRow in flood.js). The zone answer comes from
 //            floodScreening() (edge-cached, so normally no new request); outlines are only
 //            fetched when it measured an SFHA share > 0, from the same layer (FEMA NFHL or the
-//            Esri backup), with flood-share.js's query. A county-layer flood answer (Stevens) or
-//            an unmeasured share is reported as not counted.
+//            Esri backup), with flood-share.js's query; when the share was measured from the
+//            Esri copy (FEMA outlines failed), or FEMA fails here, from the Esri copy. A
+//            county-layer flood answer (Stevens) or an unmeasured share is reported as not
+//            counted.
 //   wetland  USFWS NWI polygons (wetlandsScreening() first, outlines only when it intersects),
 //            plus the county wetland layer where one is configured (COUNTY_WETLAND_SOURCES).
 //   (shown, not removed) county-mapped wetland buffers (Spokane County's 190 ft and 250 ft
@@ -48,7 +50,7 @@ import { arcgisQuery as polygonQuery, spatialParams } from '../shared/arcgis.js'
 import { arcgisQuery } from '../shared/upstream.js';
 import { maskAreas, maskGeometry, SETBACK_GROUP } from '../shared/area-mask.js';
 import { floodScreening, describeFloodRow, FEMA_PROVIDER, ESRI_PROVIDER, FEMA_NFHL_FLOOD_LAYER, ESRI_USA_FLOOD_HAZARD_LAYER } from './flood.js';
-import { floodShareParams, WHERE_NOT_X, FLOOD_SHARE_MAX_BYTES } from './flood-share.js';
+import { floodShareParams, WHERE_NOT_X, FLOOD_SHARE_MAX_BYTES, FLOOD_REQUEST_HEADERS, BACKUP_OUT_FIELDS } from './flood-share.js';
 import { wetlandsScreening, nwiOutlines } from './wetlands.js';
 import { handleSlopeGrid } from './slope-grid.js';
 import { SPOKANE_WETLAND_LAYERS } from '../counties/spokane-overlays.js';
@@ -111,21 +113,29 @@ async function floodLayer(geometry, ctx, county) {
   }
   if (body.floodShare?.status !== 'measured') return { status: 'unavailable', label, source: provider, note: 'The flood zone share could not be measured, so flood areas were not subtracted.' };
   if (!(Number(body.sfhaAcres) > 0)) return { status: 'none', label, source: provider, rings: [], note: 'The high-risk flood zone only touches the parcel line.' };
-  const backup = provider === ESRI_PROVIDER;
-  const layerUrl = backup ? ESRI_USA_FLOOD_HAZARD_LAYER : FEMA_NFHL_FLOOD_LAYER;
-  try {
-    const features = await arcgisQuery(layerUrl, floodShareParams(geometry, backup ? '1=1' : WHERE_NOT_X, backup ? 'FLD_ZONE,ZONE_SUBTY,SFHA_TF,esri_symbology' : 'FLD_ZONE,ZONE_SUBTY,SFHA_TF'), {
-      agency: provider, label: 'buildable-flood', timeoutMs: FLOOD_OUTLINE_TIMEOUT_MS, retries: 0, maxBytes: FLOOD_SHARE_MAX_BYTES
-    });
-    const sfha = features.filter(f => describeFloodRow(f?.attributes || {}, { backup }).sfha);
-    const zones = [...new Set(sfha.map(f => describeFloodRow(f.attributes || {}, { backup }).zone))];
-    const rings = sfha.map(f => ringsFromGeometry(f.geometry)).filter(Boolean);
-    if (!rings.length) throw new Error('no SFHA outline came back');
-    return { status: 'counted', label: zones.length ? `FEMA high-risk flood zone ${zones.join(', ')}` : label, source: provider, rings };
-  } catch (error) {
-    console.warn('Buildable area: flood outlines failed', error?.message);
-    return { status: 'unavailable', label, source: provider, note: 'Flood zone outlines could not be fetched, so flood areas were not subtracted.' };
+  // Outlines from the layer the share was measured on (floodShare.source: Esri when FEMA's
+  // outline queries failed), and from the Esri backup if FEMA fails here.
+  const esri = { provider: ESRI_PROVIDER, url: ESRI_USA_FLOOD_HAZARD_LAYER, backup: true };
+  const fema = { provider: FEMA_PROVIDER, url: FEMA_NFHL_FLOOD_LAYER, backup: false };
+  const layersToTry = provider === ESRI_PROVIDER || body.floodShare?.source === ESRI_PROVIDER ? [esri] : [fema, esri];
+  const errors = [];
+  for (const layer of layersToTry) {
+    try {
+      const { backup } = layer;
+      const features = await arcgisQuery(layer.url, floodShareParams(geometry, backup ? '1=1' : WHERE_NOT_X, backup ? BACKUP_OUT_FIELDS : 'FLD_ZONE,ZONE_SUBTY,SFHA_TF'), {
+        agency: layer.provider, label: 'buildable-flood', timeoutMs: FLOOD_OUTLINE_TIMEOUT_MS, retries: 0, maxBytes: FLOOD_SHARE_MAX_BYTES, headers: FLOOD_REQUEST_HEADERS
+      });
+      const sfha = features.filter(f => describeFloodRow(f?.attributes || {}, { backup }).sfha);
+      const zones = [...new Set(sfha.map(f => describeFloodRow(f.attributes || {}, { backup }).zone))];
+      const rings = sfha.map(f => ringsFromGeometry(f.geometry)).filter(Boolean);
+      if (!rings.length) throw new Error('no SFHA outline came back');
+      return { status: 'counted', label: zones.length ? `FEMA high-risk flood zone ${zones.join(', ')}` : label, source: layer.provider === provider ? provider : `${layer.provider} (copy of ${provider})`, rings };
+    } catch (error) {
+      errors.push(`${layer.provider}: ${error?.message}`);
+    }
   }
+  console.warn('Buildable area: flood outlines failed', errors.join('; '));
+  return { status: 'unavailable', label, source: provider, note: 'Flood zone outlines could not be fetched, so flood areas were not subtracted.' };
 }
 
 async function nwiLayer(geometry, ctx) {

@@ -236,6 +236,24 @@ test('flood map down everywhere: flood is not subtracted, the rest still measure
   assert.ok(body.notes.some(n => /flood areas were not subtracted/.test(n)));
 });
 
+test('FEMA outlines blocked (403): flood is subtracted from the Esri backup outlines', async () => {
+  const outline = { attributes: { ...A, esri_symbology: '1% Annual Chance Flood Hazard' }, geometry: esri(W, S, W + 0.005, N) };
+  stub({
+    // Zone query answers; every outline query is refused, as hazards.fema.gov did in production.
+    [`${FEMA_NFHL_FLOOD_LAYER}/query`]: c => (c.returnGeometry === 'true' ? new Response('Forbidden', { status: 403 }) : { features: [A, X_MIN].map(attributes => ({ attributes })) }),
+    [`${ESRI_USA_FLOOD_HAZARD_LAYER}/query`]: () => ({ features: [outline] }),
+    [`${NWI_LAYER}/query`]: () => ({ features: [] })
+  });
+  const { body } = await post({ state: 'WA', county: 'Lincoln', geometry });
+  const flood = body.layers.find(l => l.key === 'flood');
+  assert.equal(flood.status, 'counted');
+  assert.equal(flood.source, 'Esri USA Flood Hazard Areas (copy of FEMA NFHL)');
+  near(body.removed.find(r => r.key === 'flood').pct, 50, 0.2, 'flood');
+  near(body.buildablePct, 50, 0.3, 'buildable');
+  assert.equal(body.notes.some(n => /flood zone share could not be measured/.test(n)), false);
+  assert.equal(calls.filter(c => c.startsWith(FEMA_NFHL_FLOOD_LAYER)).length, 2, 'FEMA zone + one share try; outlines go straight to the backup');
+});
+
 test('zone D is noted, not subtracted', async () => {
   stub({
     [`${FEMA_NFHL_FLOOD_LAYER}/query`]: femaRoute([{ FLD_ZONE: 'D', ZONE_SUBTY: null, SFHA_TF: 'F' }], []),
