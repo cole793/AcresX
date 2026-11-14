@@ -1,7 +1,7 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-13T20:37:44.617Z
+- Run: 2026-11-14T18:52:46.837Z
 - Parcels: 12, with an error or mismatch: 0
 - Layer results: ok 165, unavailable 15, error 0, mismatch 0, skipped 0
 
@@ -91,7 +91,7 @@ Why: Small unincorporated lot with a FEMA high-risk zone and mapped NWI wetlands
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
 - **Soil**: ok. favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes) [feasibility=favorable, mapUnit=Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=8]
 - **Terrain**: ok. avg grade 10.1%, max 18% [gradePct=10.1, maxGradePct=18, reliefFt=43, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 24.1% [cellCount=16, avgSlopePct=24.1, maxSlopePct=58, partial=false]
+- **Slope grid**: ok. 16 cells, avg 16.2% [cellCount=16, avgSlopePct=16.2, maxSlopePct=25.4, partial=false]
 - **Flood**: ok. high-risk zone (AE, X) (via FEMA NFHL) [high=true, intersects=true, zones=AE; X, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=14]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION]
@@ -111,7 +111,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Existing well**: ok. Possible well association [status=possible_match, confidence=Low, score=45]
 - **Soil**: ok. moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Glenrose ashy silt loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
 - **Terrain**: ok. avg grade 2%, max 4.5% [gradePct=2, maxGradePct=4.5, reliefFt=13, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.6% [cellCount=16, avgSlopePct=5.6, maxSlopePct=11.1, partial=false]
+- **Slope grid**: ok. 16 cells, avg 3.3% [cellCount=16, avgSlopePct=3.3, maxSlopePct=6.6, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=7]
 - **Utility**: ok. AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -131,7 +131,7 @@ Why: Unincorporated 1-5 ac parcel (picked by discovery 2026-11-02, seed 42; its 
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
 - **Soil**: ok. moderate (Lenz-Spokane complex, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Lenz-Spokane complex, 3 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=9]
 - **Terrain**: ok. avg grade 6.1%, max 9.3% [gradePct=6.1, maxGradePct=9.3, reliefFt=29, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15.8% [cellCount=16, avgSlopePct=15.8, maxSlopePct=26.2, partial=false]
+- **Slope grid**: ok. 16 cells, avg 10.8% [cellCount=16, avgSlopePct=10.8, maxSlopePct=19.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -151,7 +151,7 @@ Why: Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [feasibility=favorable, mapUnit=Scrabblers ashy fine sandy loam, 3 to 8 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=5]
 - **Terrain**: ok. avg grade 3.9%, max 11.1% [gradePct=3.9, maxGradePct=11.1, reliefFt=55, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 6.9% [cellCount=16, avgSlopePct=6.9, maxSlopePct=17.7, partial=false]
+- **Slope grid**: ok. 16 cells, avg 6.8% [cellCount=16, avgSlopePct=6.8, maxSlopePct=17.6, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION]
@@ -171,7 +171,7 @@ Why: Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 202
 - **Existing well**: ok. Likely existing well [status=strong_match, confidence=High, score=100]
 - **Soil**: ok. limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes) [feasibility=limited, mapUnit=Quinnamose-Micapeak complex, 30 to 55 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=42]
 - **Terrain**: ok. avg grade 9.2%, max 16.9% [gradePct=9.2, maxGradePct=16.9, reliefFt=135, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22% [cellCount=16, avgSlopePct=22, maxSlopePct=32.5, partial=false]
+- **Slope grid**: ok. 16 cells, avg 17.9% [cellCount=16, avgSlopePct=17.9, maxSlopePct=28.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.8]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -191,7 +191,7 @@ Why: 5-40 ac parcel with a SPOKANE situs city that is outside city limits (count
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4]
 - **Terrain**: ok. avg grade 0.8%, max 4.5% [gradePct=0.8, maxGradePct=4.5, reliefFt=22, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.6% [cellCount=16, avgSlopePct=1.6, maxSlopePct=8.8, partial=false]
+- **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=8.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -210,7 +210,7 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Wells**: ok. 49 well record(s), 5 of nearest 5 report depth [wellCount=49, nearestDepthsCount=5, nearestMi=0.49, medianDepthFt=400]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Keeler-Kruse complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Keeler-Kruse complex, 15 to 30 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=23]
-- **Terrain**: ok. avg grade 12.1%, max 28.7% [gradePct=12.1, maxGradePct=28.7, reliefFt=604, sampleCount=9]
+- **Terrain**: ok. avg grade 11.7%, max 27.2% [gradePct=11.7, maxGradePct=27.2, reliefFt=588, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=40.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=0.6]
@@ -250,7 +250,7 @@ Why: Unincorporated 40+ ac farm parcel (picked by discovery 2026-11-02, seed 42;
 - **Wells**: ok. 26 well record(s), 5 of nearest 5 report depth [wellCount=26, nearestDepthsCount=5, nearestMi=1.13, medianDepthFt=200]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. moderate (Naff-Thatuna complex, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Naff-Thatuna complex, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
-- **Terrain**: ok. avg grade 1%, max 1.8% [gradePct=1, maxGradePct=1.8, reliefFt=30, sampleCount=9]
+- **Terrain**: ok. avg grade 0.9%, max 1.8% [gradePct=0.9, maxGradePct=1.8, reliefFt=27, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 3.4% [cellCount=16, avgSlopePct=3.4, maxSlopePct=5.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=1.2]
