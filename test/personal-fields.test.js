@@ -124,6 +124,7 @@ const CASES = [
     [`public-utilities ${county}`, post('/api/public-utilities', { state, county, ...parcel }), b => { assert.equal(b.available, true); assert.ok(b.sources.length > 0); }]),
   ...[['WA', 'Spokane'], ['ID', 'Kootenai']].map(([state, county]) =>
     [`cost-context ${county}`, post('/api/cost-context', { state, county, ...point }), b => assert.equal(b.roadAccess.available, true)]),
+  ['buildable-area', post('/api/buildable-area', { state: 'WA', county: 'Spokane', ...parcel })],
   ['land-analysis', post('/api/land-analysis', parcel)],
   ['slope-grid', post('/api/slope-grid', parcel)],
   ['hazards wetlands', post('/api/hazards', { kind: 'wetlands', ...parcel })],

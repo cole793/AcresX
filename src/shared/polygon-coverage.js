@@ -137,7 +137,7 @@ export const DEFAULT_STRIPS = 400;
 // Edges are bucketed by the strips they span, so a long river polygon costs its edge count, not
 // edges x strips. Same half-open rule as pointInRings: a line at y crosses edge (y1, y2) when
 // y1 <= y < y2 (either order).
-function stripCrossings(rings, minY, dy, count) {
+export function stripCrossings(rings, minY, dy, count) {
   const lines = [];
   for (const ring of rings) {
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -158,14 +158,14 @@ function stripCrossings(rings, minY, dy, count) {
 }
 
 // Sorted crossings -> [[x0, x1], [x2, x3], ...] (even-odd).
-function intervalsOf(crossings) {
+export function intervalsOf(crossings) {
   const out = [];
   if (!crossings) return out;
   for (let i = 0; i + 1 < crossings.length; i += 2) if (crossings[i + 1] > crossings[i]) out.push([crossings[i], crossings[i + 1]]);
   return out;
 }
 
-function unionIntervals(lists) {
+export function unionIntervals(lists) {
   const all = lists.flat().sort((a, b) => a[0] - b[0]);
   const out = [];
   for (const [a, b] of all) {
@@ -176,7 +176,7 @@ function unionIntervals(lists) {
   return out;
 }
 
-function overlapLength(a, b) {
+export function overlapLength(a, b) {
   let total = 0, i = 0, j = 0;
   while (i < a.length && j < b.length) {
     const lo = Math.max(a[i][0], b[j][0]), hi = Math.min(a[i][1], b[j][1]);

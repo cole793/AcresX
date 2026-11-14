@@ -113,6 +113,9 @@ export const SPOKANE_OVERLAY_LAYERS = [
   }
 ];
 
+// The county wetland and wetland-buffer layers (outlines used by src/services/buildable-area.js).
+export const SPOKANE_WETLAND_LAYERS = SPOKANE_OVERLAY_LAYERS.filter(layer => layer.type === 'wetland' || layer.type === 'wetland_buffer');
+
 // The cached answer for one layer: [{ key, share }] (no outlines, no attributes).
 export async function queryOverlayShares(layer, where, samples) {
   const features = await arcgisQuery(layer.url, { ...spatialParams(where), outFields: layer.outFields }, { agency: 'Spokane County GIS', label: layer.label });
