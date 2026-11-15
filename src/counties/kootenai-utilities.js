@@ -81,7 +81,7 @@ export const KOOTENAI_UTILITIES = {
     },
     {
       id: 'kootenai-tax-districts', name: 'Kootenai County tax districts (city, water, sewer)', agency: 'Kootenai County GIS',
-      url: KC_TAX_DISTRICTS, services: ['water', 'sewer'], kind: 'area', outFields: 'CITY,WATER,SEWER',
+      url: KC_TAX_DISTRICTS, services: ['water', 'sewer'], kind: 'area', outFields: 'CITY,WATER,SEWER', cityLimits: true,
       read: rows => rows.flatMap(a => {
         const out = [
           ...districtFindings(['water'], districtName(a.WATER, 'water'), `inside Kootenai County tax district for water: ${districtName(a.WATER, 'water')}`),

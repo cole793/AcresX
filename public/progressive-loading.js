@@ -31,7 +31,8 @@
   // state-selector.js overrides apply), the time limit, and the data a failure leaves behind
   // (the same fallbacks the old all-at-once handler used).
   const SECTIONS = {
-    wells: { fn: 'findWells', ms: 15000, label: 'wells', fallback: () => [] },
+    // A failed or timed-out wells lookup is marked (lookupFailed), never read as "no wells".
+    wells: { fn: 'findWells', ms: 15000, label: 'wells', fallback: why => { const f = []; f.lookupFailed = true; if (why === 'timeout') f.timedOut = true; return f; } },
     utility: { fn: 'findUtility', ms: 15000, label: 'utility', fallback: () => [] },
     evidence: { fn: 'findListingEvidence', ms: 12000, label: 'listing', fallback: why => ({ status: 'unavailable', matches: [], error: why === 'timeout' ? 'Listing search timed out' : 'Listing evidence search failed' }) },
     flood: { fn: 'findFlood', ms: 20000, label: 'flood', fallback: why => ({ available: false, ...(why === 'timeout' ? { error: 'Timed out', timedOut: true } : {}) }) },

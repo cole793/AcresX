@@ -1,5 +1,6 @@
-// Offline tests for the "Swap to hookups" frontend (owner decision 2026-11-09): with public water
-// and/or sewer served or likely (last.publicUtilities, public/public-utilities.js) the water/septic
+// Offline tests for the "Swap to hookups" frontend (owner decision 2026-11-09; since the owner bug
+// of 2026-11-15 only "served" swaps, see test/utilities-likely-cost.test.js): with public water
+// and/or sewer served (last.publicUtilities, public/public-utilities.js) the water/septic
 // score factors turn favorable and the well/septic cost lines become connection ranges; with
 // not_found, unavailable or no answer the report is unchanged. Runs the real browser scripts in
 // node:vm with the fake DOM from test/ui-harness.js.
@@ -73,13 +74,17 @@ test('public water served swaps the water factor and the well line only (sewer n
   assert.ok(Number(off.score) > Number(render(baseLast(undefined)).score), 'the score rises');
 });
 
-test('public sewer swaps the septic factor and line independently; likely scores 85', () => {
+test('public sewer swaps the septic factor and line independently; likely is not counted (2026-11-15)', () => {
   const r = render(baseLast({ water: NONE, sewer: LIKELY }));
   assert.equal(r.water, 55, 'water stays on the well depths');
-  assert.equal(r.septic, 85);
+  assert.equal(r.septic, 38, 'likely sewer scores like no sewer: limited soil');
   const septic = r.general.components.septic;
-  assert.deepEqual([septic.label, septic.low, septic.high], ['Sewer connection', 4000, 20000]);
+  assert.deepEqual([septic.label, septic.low], [undefined, 25000], 'the private septic stays the line');
+  assert.deepEqual([septic.alternative.low, septic.alternative.high], [4000, 20000], 'the connection rides along as an alternative');
   assert.equal(r.general.components.well.label, undefined);
+  const served = render(baseLast({ water: NONE, sewer: SERVED() }));
+  assert.equal(served.septic, 92);
+  assert.deepEqual([served.general.components.septic.label, served.general.components.septic.low], ['Sewer connection', 4000]);
   const both = render(baseLast({ water: SERVED(), sewer: SERVED() }));
   assert.deepEqual([both.water, both.septic], [92, 92]);
   assert.equal(both.general.low, 3000 + 4000 + both.general.components.power.low + both.general.components.driveway.low + both.general.components.sitework.low);
@@ -143,7 +148,7 @@ test('index.html renderSummary grades public water and sewer the same way', () =
   const off = run(baseLast({ water: NONE, sewer: NONE }));
   const on = run(baseLast({ water: SERVED(), sewer: LIKELY }));
   assert.deepEqual([off.water, off.soil], ['Deep', 'Limited']);
-  assert.deepEqual([on.water, on.soil], ['Public water', 'Public sewer likely']);
+  assert.deepEqual([on.water, on.soil], ['Public water', 'Limited'], 'likely sewer keeps the soil grade');
   assert.ok(Number(on.score) > Number(off.score));
 });
 

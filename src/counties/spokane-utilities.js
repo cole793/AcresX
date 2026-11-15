@@ -68,7 +68,7 @@ export const SPOKANE_UTILITIES = {
     },
     {
       id: 'spokane-jurisdiction', name: 'Spokane County jurisdictions (city limits)', agency: 'Spokane County GIS',
-      url: SPOKANE_JURISDICTIONS, services: ['water', 'sewer'], kind: 'area', outFields: 'NAME,MUNITYP',
+      url: SPOKANE_JURISDICTIONS, services: ['water', 'sewer'], kind: 'area', outFields: 'NAME,MUNITYP', cityLimits: true,
       read: rows => rows.flatMap(a => {
         const city = spokaneCityInfo(a.NAME, a.MUNITYP);
         if (!city || city.federal) return [];

@@ -118,12 +118,22 @@
 
   if (oldFindWells) {
     // signal: optional AbortSignal (progressive-loading.js passes one as the section time limit).
+    // A failed Idaho/Montana lookup returns [] with lookupFailed, like index.html findWells, so it
+    // is not scored as "no nearby wells" (screening-refinements.js missingInputs).
     window.findWells = async function (parcel, signal) {
       if (stateEl.value === 'WA') return oldFindWells(parcel, signal);
       const [lon, lat] = turf.centroid(parcel).geometry.coordinates;
-      const response = await fetch('/api/well-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}), signal });
-      const data = await response.json();
-      if (!response.ok || !data?.available) throw new Error(data?.error || `Well service returned ${response.status}`);
+      let data;
+      try {
+        const response = await fetch('/api/well-search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({state:stateEl.value, county:countyEl.value, lat, lon}), signal });
+        data = await response.json();
+        if (!response.ok || !data?.available) throw new Error(data?.error || `Well service returned ${response.status}`);
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        console.warn('Well lookup failed', error);
+        const failed = []; failed.lookupFailed = true;
+        return failed;
+      }
       const boundary = turf.polygonToLine(parcel);
       const wells = Array.isArray(data.wells) ? data.wells : [];
       wells.forEach(well => { try { well.properties = well.properties || {}; well.properties._distance = turf.pointToLineDistance(well, boundary, {units:'miles'}); } catch { well.properties._distance = Number.POSITIVE_INFINITY; } });

@@ -22,7 +22,7 @@ export const STEVENS_UTILITIES = {
     WA_DOH_WATER_SOURCE,
     {
       id: 'stevens-city-limits', name: 'Stevens County cities (city limits)', agency: STEVENS_AGENCY,
-      url: STEVENS_CITIES, services: ['water', 'sewer'], kind: 'area', outFields: 'name',
+      url: STEVENS_CITIES, services: ['water', 'sewer'], kind: 'area', outFields: 'name', cityLimits: true,
       read: rows => rows.flatMap(a => cityLimitsFindings(stevensPlaceName(a.name), ['water', 'sewer']))
     }
   ]
