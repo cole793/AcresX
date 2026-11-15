@@ -68,8 +68,8 @@ test('Overpass hangs: an Avista parcel still answers within the budget, with the
     assert.deepEqual(body.alsoListed, ['KOOTENAI ELECTRIC COOPERATIVE']);
     assert.equal(body.territory.confirmed, false);
     assert.equal(body.territory.basis, 'n');
-    // Both Overpass endpoints were tried inside the budget.
-    assert.deepEqual([...new Set(stub.asked)].sort(), ['overpass-api.de', 'overpass.private.coffee', 'services3.arcgis.com']);
+    // Both Overpass endpoints were tried inside the budget (and HIFLD transmission, services2).
+    assert.deepEqual([...new Set(stub.asked)].sort(), ['overpass-api.de', 'overpass.private.coffee', 'services2.arcgis.com', 'services3.arcgis.com']);
   } finally { stub.restore(); }
 });
 
