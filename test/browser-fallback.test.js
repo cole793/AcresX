@@ -113,9 +113,10 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'spokane-assessor', 'fema-flood', 'stevens-zoning', 'kootenai-address']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'spokane-assessor', 'fema-flood', 'stevens-zoning', 'osm-power', 'kootenai-address']);
   assert.equal(typeof fb.run, 'function');
-  assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
+  // The two Overpass hosts serve the osm-power kind (test/power-distance.test.js).
+  assert.deepEqual([...fb.ALLOWED_HOSTS], [...ALLOWED, 'overpass-api.de', 'overpass.private.coffee']);
 });
 
 // ---- Allowlist and input checks

@@ -72,11 +72,19 @@
 
     if (data.state === 'MT') {
       const r = data.statewideRecords?.[0] || {};
+      const cadastral = cadastralUrl(r.PropertyCardLink, r.PARCELID || data.parcelId);
       return {
         totalValue: Number(r.TotalValue),
         landValue: Number(r.TotalLandValue),
         improvementValue: Number(r.TotalBuildingValue),
         year: r.TaxYear || null,
+        // TotalAcres is the assessor acreage on the Montana cadastral record (the Yellowstone
+        // county tax-parcel layer has none); AddressLine1 + CityStateZip is the property address.
+        assessorAcres: amount(r.TotalAcres),
+        situsAddress: String(r.AddressLine1 || '').trim(),
+        situsCity: String(r.CityStateZip || '').trim(),
+        propertySearchUrl: cadastral,
+        propertySearchLabel: cadastral ? CADASTRAL_LABEL : '',
         label: 'Assessor value',
         source: 'Montana Cadastral / ORION'
       };
@@ -114,6 +122,22 @@
   //   cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx, only PID, equal to the record's.
   const PROPERTY_SEARCH_LABEL = 'View on the Stevens County property search (hosted by True Automation)';
   const SCOUT_LABEL = 'View on Spokane County SCOUT';
+  //   Montana (Gallatin, Yellowstone): the state cadastral property page (PropertyCardLink on the
+  //   DNRC Cadastral layer): https, exactly svc.mt.gov/msl/cadastral/, only page=PropertyDetails
+  //   and geocode, the geocode equal to the record's 17-digit PARCELID.
+  const CADASTRAL_LABEL = 'View on the Montana Cadastral property record';
+  function cadastralUrl(value, parcelId) {
+    const geocode = String(parcelId ?? '').replace(/[^0-9A-Za-z]/g, '');
+    if (!/^\d{17}$/.test(geocode)) return '';
+    let url;
+    try { url = new URL(String(value ?? '')); } catch { return ''; }
+    if (url.protocol !== 'https:' || url.hostname !== 'svc.mt.gov' || url.port || url.username || url.password) return '';
+    if (url.pathname !== '/msl/cadastral/' && url.pathname !== '/msl/cadastral') return '';
+    const keys = [...url.searchParams.keys()].sort().join(',');
+    if (keys !== 'geocode,page' || url.searchParams.get('page') !== 'PropertyDetails') return '';
+    if (url.searchParams.get('geocode').replace(/[^0-9A-Za-z]/g, '') !== geocode) return '';
+    return `https://svc.mt.gov/msl/cadastral/?page=PropertyDetails&geocode=${geocode}`;
+  }
   function propertySearchLink(record) {
     const value = record?.propertySearchUrl;
     const stevens = propertySearchUrl(value, record?.propertyId);
@@ -182,6 +206,26 @@
     if (window.AcresXAcreage?.assessorAcres?.(props) != null) return;
     props.ACRES = acres;
     window.AcresXOverview?.refreshAcreage?.();
+  }
+
+  // The situs address and county record link from the assessment, when the parcel search record
+  // had none (the Yellowstone tax-parcel layer's FULLADD is often blank; Kootenai and some WA
+  // parcels have no DATA_LINK). A generic search page (Yellowstone Treasurer) gives way to the
+  // parcel's own record. Only links checked by propertySearchLink()/cadastralUrl() get here.
+  function shareRecordDetails(result) {
+    const props = typeof last !== 'undefined' ? last?.parcel?.properties : null;
+    if (!props || !result) return;
+    const hasSitus = [props.SITUS_ADDRESS, props.SITUS_CITY_NM, props.SITUS_ZIP_NR].some(v => String(v ?? '').trim());
+    if (result.situsAddress && !hasSitus) {
+      props.SITUS_ADDRESS = result.situsAddress;
+      if (result.situsCity) props.SITUS_CITY_NM = result.situsCity;
+      window.AcresXOverview?.refreshIdentity?.();
+    }
+    const link = result.propertySearchUrl;
+    if (link && (!props.DATA_LINK || /propertysearch\/?$/i.test(String(props.DATA_LINK)))) {
+      props.DATA_LINK = link;
+      window.AcresXQuickActions?.refresh?.();
+    }
   }
 
   function ensureStyles() {
@@ -313,6 +357,7 @@
       const result = normalize(data);
       renderAssessment(result);
       shareAssessorAcres(result);
+      shareRecordDetails(result);
       sections?.settle('assessment');
     } catch (error) {
       if (requestId !== assessmentRequestId || stale()) return;
@@ -332,7 +377,7 @@
     else if (state === 'WA') location.textContent = `${county} County, Washington`;
   }
 
-  window.AcresXAssessment = { normalize, classText, CLASS_NOTE, renderAssessment, shareAssessorAcres };
+  window.AcresXAssessment = { normalize, classText, CLASS_NOTE, renderAssessment, shareAssessorAcres, shareRecordDetails, cadastralUrl };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;

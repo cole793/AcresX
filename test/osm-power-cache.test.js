@@ -44,9 +44,11 @@ test('a complete answer is cached per grid cell for 30 days and answers the next
   assert.equal(first.cached, false);
   assert.ok(Math.abs(first.estimatedDistanceFt - 490) < 10, `about 490 ft, got ${first.estimatedDistanceFt}`);
   assert.equal(calls.length, 1);
-  // The query is centred on the cell with the radius widened to cover the whole cell.
+  // The query is centred on the cell with the radii widened to cover the whole cell: lines 3 km,
+  // poles and transformers 600 m, plus 800 m.
   const cell = osmCell(LAT, LON);
-  assert.match(calls[0].body, new RegExp(`around:5800,${cell.lat},${cell.lon}`));
+  assert.match(calls[0].body, new RegExp(`way\\["power"~"\\^\\(line\\|minor_line\\|cable\\)\\$"\\]\\(around:3800,${cell.lat},${cell.lon}\\)`));
+  assert.match(calls[0].body, new RegExp(`node\\["power"~"\\^\\(pole\\|transformer\\)\\$"\\]\\(around:1400,${cell.lat},${cell.lon}\\)`));
   assert.equal(puts.length, 1);
   assert.equal(puts[0].cacheControl, `public, max-age=${OSM_POWER_CACHE_TTL_SECONDS}`);
   assert.equal(OSM_POWER_CACHE_TTL_SECONDS, 30 * 86400);

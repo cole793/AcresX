@@ -42,12 +42,17 @@
   const needsCounty = () => !$('state') || !$('state').value || ((state() === 'MT' || state() === 'ID') && !county());
 
   // "3572 S Moose Canyon Rd", "moose canyon": an address. "27081.9058", "50N04W323200",
-  // "0L8210010030", "03 0823 0341 0010000": a parcel number (no word of 2+ letters after a space).
+  // "0L8210010030", "03 0823 0341 0010000", "RPA 1234 0010": a parcel number (no word of 2+ letters
+  // after a space, or mostly digits without a leading house number).
   function looksLikeAddress(text) {
     const t = String(text || '').trim();
     if (t.length < MIN_CHARS || !/\s/.test(t)) return false;
     const tokens = t.split(/\s+/);
-    const rest = /^\d+[A-Za-z]?$/.test(tokens[0]) ? tokens.slice(1) : tokens;
+    const houseNumber = /^\d+[A-Za-z]?$/.test(tokens[0]);
+    // Mostly digits and no leading house number: a spaced parcel number ("RPA 1234 0010", "SW 1234 5678").
+    const digits = (t.match(/\d/g) || []).length, letters = (t.match(/[A-Za-z]/g) || []).length;
+    if (!houseNumber && digits > letters) return false;
+    const rest = houseNumber ? tokens.slice(1) : tokens;
     return rest.some(tok => /[A-Za-z]{2,}/.test(tok));
   }
 

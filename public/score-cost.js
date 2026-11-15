@@ -270,10 +270,12 @@
       coords = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
     }
     const assessor = p.DATA_LINK || '';
+    // A county search page (Kootenai, Yellowstone Treasurer) is not the parcel's own record.
+    const assessorLabel = /propertysearch/i.test(assessor) ? 'Open county property search ↗' : 'Open county record ↗';
     actions.innerHTML = `
       <button type="button" class="property-quick-action" data-action="parcel">Copy parcel ID</button>
       <button type="button" class="property-quick-action" data-action="coords">Copy coordinates</button>
-      ${assessor ? '<button type="button" class="property-quick-action" data-action="assessor">Open county record ↗</button>' : ''}
+      ${assessor ? `<button type="button" class="property-quick-action" data-action="assessor">${assessorLabel}</button>` : ''}
       <button type="button" class="property-quick-action" data-action="map">Open full map</button>
     `;
     actions.querySelector('[data-action="parcel"]')?.addEventListener('click', e => copyText(parcelId, e.currentTarget, 'Copied ✓'));
@@ -289,9 +291,10 @@
     renderCost();
     addTerrainFacts();
     addQuickActions();
-    const version = document.querySelector('.version');
-    if (version) version.textContent = 'AcresX v0.13 Feasibility Engine';
   }
+
+  // A county record link that arrives with the assessment (public/property-assessment.js).
+  window.AcresXQuickActions = { refresh: addQuickActions };
 
   const baseRenderSummary = typeof renderSummary === 'function' ? renderSummary : null;
   if (baseRenderSummary) {

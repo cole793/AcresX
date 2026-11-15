@@ -374,8 +374,8 @@ function page({ routes = {}, state = 'WA', county = 'Spokane', findParcel } = {}
 
 test('form: parcel numbers keep the existing search; addresses are recognised', () => {
   const { api } = page();
-  for (const id of ['27081.9058', '50N04W323200', '0L8210010030', '03082303410010000', '0434200', '27081 9058', '03 0823 0341 0010000', '50N04W 32 3200']) assert.equal(api.looksLikeAddress(id), false, id);
-  for (const a of ['3572 S Moose Canyon Rd', '510 Fairmont Rd Kalispell', 'moose canyon', '7911 W Ridg']) assert.equal(api.looksLikeAddress(a), true, a);
+  for (const id of ['27081.9058', '50N04W323200', '0L8210010030', '03082303410010000', '0434200', '27081 9058', '03 0823 0341 0010000', '50N04W 32 3200', 'RPA 1234 0010', 'SW 1234 5678', 'RP 04S 16E 360003']) assert.equal(api.looksLikeAddress(id), false, id);
+  for (const a of ['3572 S Moose Canyon Rd', '510 Fairmont Rd Kalispell', 'moose canyon', '7911 W Ridg', '12345 W Hwy 2', 'Highway 2']) assert.equal(api.looksLikeAddress(a), true, a);
 });
 
 test('form: submitting a parcel number is not intercepted (no address calls)', () => {
