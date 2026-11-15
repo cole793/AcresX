@@ -44,9 +44,9 @@ test('GET /api/county-coverage: every registry county, with its badge, and no up
 test('badge explanations say what is missing', () => {
   const by = Object.fromEntries(COUNTY_COVERAGE.map(c => [c.key, c]));
   assert.match(describeCoverage(by['MT:Flathead']).summary, /has not validated this county\. County assessor values, property tax, zoning map and zoning rules sources are not set up; the other layers come from statewide or national data\..*Verify every finding with the county\./);
-  assert.match(describeCoverage(by['MT:Gallatin']).summary, /Property tax and zoning rules not set up\./);
-  assert.match(describeCoverage(by['WA:Spokane']).summary, /daily validation runs \(last 2026-11-14\)\. Zoning rules partly covered; property tax not set up\./);
-  assert.match(describeCoverage(by['ID:Kootenai']).summary, /daily validation runs \(last 2026-11-11\)\. Zoning rules partly covered; property tax not set up\./);
+  assert.match(describeCoverage(by['MT:Gallatin']).summary, /Property tax partly covered; zoning rules not set up\./);
+  assert.match(describeCoverage(by['WA:Spokane']).summary, /daily validation runs \(last 2026-11-14\)\. Property tax and zoning rules partly covered\./);
+  assert.match(describeCoverage(by['ID:Kootenai']).summary, /daily validation runs \(last 2026-11-11\)\. Property tax and zoning rules partly covered\./);
 });
 
 // ---- Dashboard
