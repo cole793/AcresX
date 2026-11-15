@@ -50,13 +50,15 @@ async function call(env, path, { method = 'GET', body, origin = ORIGIN, cookie, 
   return response;
 }
 const jsonOf = async r => r.json();
+// The "Continue to AcresX" button: a same-origin form POST of the token.
+const confirmLink = (env, token, opts = {}) => call(env, '/api/auth/callback', { method: 'POST', rawBody: `token=${token}`, contentType: 'application/x-www-form-urlencoded', ...opts });
 const tokenFromEmail = e => e.body.text.match(/token=([A-Za-z0-9_-]{43})/)[1];
 
 async function signIn(env, email = 'Jane@Example.com', ip = '203.0.113.7') {
   const r = await call(env, '/api/auth/request-link', { method: 'POST', body: { email }, headers: { 'CF-Connecting-IP': ip } });
   assert.equal(r.status, 200);
   const token = tokenFromEmail(emails.at(-1));
-  const cb = await call(env, `/api/auth/callback?token=${token}`);
+  const cb = await confirmLink(env, token);
   assert.equal(cb.status, 303);
   const cookie = cb.headers.get('Set-Cookie').split(';')[0];
   return { cookie, token };
@@ -83,7 +85,7 @@ test('accounts are off, with no database writes, until the flag, the email key a
     assert.equal((await r.json()).enabled, false);
     const saved = await call(env, '/api/saved-properties/WA%3ASpokane%3A1', { method: 'PUT', body: { data: { name: 'x' } } });
     assert.equal(saved.status, 503);
-    const cb = await call(env, `/api/auth/callback?token=${'a'.repeat(43)}`);
+    const cb = await confirmLink(env, 'a'.repeat(43));
     assert.equal(cb.status, 303); assert.equal(cb.headers.get('Location'), '/?signin=unavailable');
     if (env.MLS_DB) assert.equal(env.MLS_DB.log.writes, 0, `no writes when ${reason}`);
   }
@@ -195,7 +197,7 @@ test('the callback signs in once with a Secure HttpOnly SameSite=Lax 30-day cook
   const env = makeEnv();
   await call(env, '/api/auth/request-link', { method: 'POST', body: { email: '  Jane@Example.COM ' } });
   const token = tokenFromEmail(emails[0]);
-  const cb = await call(env, `/api/auth/callback?token=${token}`, { headers: { 'User-Agent': 'Mozilla/5.0 '.repeat(40) } });
+  const cb = await confirmLink(env, token, { headers: { 'User-Agent': 'Mozilla/5.0 '.repeat(40) } });
   assert.equal(cb.status, 303);
   assert.equal(cb.headers.get('Location'), '/?signedIn=1');
   assert.equal(cb.headers.get('Cache-Control'), 'no-store');
@@ -208,15 +210,15 @@ test('the callback signs in once with a Secure HttpOnly SameSite=Lax 30-day cook
   assert.ok(sessions[0].user_agent.length <= 120);
   assert.equal(env.MLS_DB.rows('SELECT email FROM users')[0].email, 'jane@example.com', 'stored lower-cased');
   // Single use.
-  const again = await call(env, `/api/auth/callback?token=${token}`);
+  const again = await confirmLink(env, token);
   assert.equal(again.headers.get('Location'), '/?signin=expired');
   assert.equal(again.headers.get('Set-Cookie'), null);
   // Expired.
   await call(env, '/api/auth/request-link', { method: 'POST', body: { email: 'jane@example.com' } });
   const late = tokenFromEmail(emails[1]);
   env.MLS_DB.sqlite.prepare('UPDATE login_tokens SET expires_at = ? WHERE token_hash = ?').run(Date.now() - 1, sha(late));
-  assert.equal((await call(env, `/api/auth/callback?token=${late}`)).headers.get('Location'), '/?signin=expired');
-  assert.equal((await call(env, '/api/auth/callback?token=short')).headers.get('Location'), '/?signin=invalid');
+  assert.equal((await confirmLink(env, late)).headers.get('Location'), '/?signin=expired');
+  assert.equal((await confirmLink(env, 'short')).headers.get('Location'), '/?signin=invalid');
   // /api/me with the cookie.
   const me = await call(env, '/api/me', { cookie: cookie.split(';')[0] });
   assert.equal(me.headers.get('Cache-Control'), 'no-store');
@@ -224,8 +226,46 @@ test('the callback signs in once with a Secure HttpOnly SameSite=Lax 30-day cook
   assert.equal(body.signedIn, true); assert.equal(body.user.email, 'jane@example.com');
   // A second sign-in reuses the same user.
   await call(env, '/api/auth/request-link', { method: 'POST', body: { email: 'JANE@example.com' } });
-  await call(env, `/api/auth/callback?token=${tokenFromEmail(emails[2])}`);
+  await confirmLink(env, tokenFromEmail(emails[2]));
   assert.equal(env.MLS_DB.rows('SELECT * FROM users').length, 1);
+});
+
+test('opening the emailed link only shows a Continue button; the token is spent only by a same-origin POST', async () => {
+  const env = makeEnv();
+  await call(env, '/api/auth/request-link', { method: 'POST', body: { email: 'jane@example.com' } });
+  const token = tokenFromEmail(emails[0]);
+  const writes = env.MLS_DB.log.writes;
+  // A link scanner (or the person) opening the link, several times.
+  for (let i = 0; i < 3; i++) {
+    const page = await call(env, `/api/auth/callback?token=${token}`);
+    assert.equal(page.status, 200);
+    assert.equal(page.headers.get('Set-Cookie'), null);
+    assert.equal(page.headers.get('Cache-Control'), 'no-store');
+    assert.equal(page.headers.get('Referrer-Policy'), 'no-referrer');
+    assert.match(page.headers.get('Content-Security-Policy'), /default-src 'none'.*form-action 'self'/);
+    const html = await page.text();
+    assert.match(html, /<form method="post" action="\/api\/auth\/callback"><input type="hidden" name="token" value="[A-Za-z0-9_-]{43}"><button type="submit">Continue to AcresX<\/button><\/form>/);
+    assert.doesNotMatch(html, /<script/i);
+  }
+  assert.equal(env.MLS_DB.log.writes, writes, 'GET reads and writes nothing');
+  assert.equal(env.MLS_DB.rows('SELECT used_at FROM login_tokens')[0].used_at, null);
+  assert.equal(env.MLS_DB.rows('SELECT * FROM sessions').length, 0);
+  const bad = await call(env, '/api/auth/callback?token=%22%3E%3Cscript%3E');
+  assert.equal(bad.status, 400);
+  assert.doesNotMatch(await bad.text(), /<script>|"><script/);
+  // The POST must come from this site and carry the token as a form field.
+  for (const opts of [{ origin: null }, { origin: 'https://evil.example' }, { headers: { 'Sec-Fetch-Site': 'cross-site' } }]) {
+    const r = await confirmLink(env, token, opts);
+    assert.equal(r.status, 403);
+  }
+  assert.equal((await call(env, '/api/auth/callback', { method: 'POST', body: { token } })).headers.get('Location'), '/?signin=invalid', 'JSON is not accepted');
+  assert.equal(env.MLS_DB.rows('SELECT used_at FROM login_tokens')[0].used_at, null, 'still unspent');
+  const ok = await confirmLink(env, token);
+  assert.equal(ok.status, 303);
+  assert.equal(ok.headers.get('Location'), '/?signedIn=1');
+  assert.match(ok.headers.get('Set-Cookie'), /^__Host-acresx_session=/);
+  assert.notEqual(env.MLS_DB.rows('SELECT used_at FROM login_tokens')[0].used_at, null);
+  assert.equal((await confirmLink(env, token)).headers.get('Location'), '/?signin=expired');
 });
 
 test('sessions slide: an older session is extended to 30 days and the cookie is re-sent', async () => {

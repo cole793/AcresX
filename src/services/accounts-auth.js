@@ -4,7 +4,11 @@
 //                                         (no account enumeration); at most 5 links per email and
 //                                         10 per IP per hour (counted from login_tokens; over the
 //                                         limit nothing is sent, the answer is the same)
-//   GET  /api/auth/callback?token=        single-use, 15-minute token -> session cookie -> /
+//   GET  /api/auth/callback?token=        a "Continue to AcresX" page only: it reads nothing, writes
+//                                         nothing and does not use the token, so email link
+//                                         scanners that open links cannot spend it
+//   POST /api/auth/callback (form: token)  same-origin only; single-use, 15-minute token ->
+//                                         session cookie -> /
 //   POST /api/auth/logout
 //   GET  /api/me                          { enabled, signedIn, user: { id, email } }
 //
@@ -146,10 +150,33 @@ function redirect(location, cookie) {
   return new Response(null, { status: 303, headers });
 }
 
+// The page the emailed link opens. A plain HTML form (no script) that POSTs the token back.
+export const CONTINUE_PAGE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+function continuePage(request) {
+  const token = new URL(request.url).searchParams.get('token') || '';
+  const valid = TOKEN_PATTERN.test(token);
+  const body = valid
+    ? `<h1>Sign in to AcresX</h1><p>Press the button to finish signing in on this device.</p><form method="post" action="/api/auth/callback"><input type="hidden" name="token" value="${token}"><button type="submit">Continue to AcresX</button></form><p class="small">The link works once and expires 15 minutes after it was sent.</p>`
+    : '<h1>This sign-in link is not valid</h1><p>Check that the whole link was copied, or <a href="/">request a new one</a>.</p>';
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex, nofollow"><title>Sign in · AcresX</title><style>body{margin:0;background:#eef3ef;color:#17231c;font:16px/1.5 Arial,Helvetica,sans-serif}main{max-width:440px;margin:48px auto;background:#fff;padding:28px;border-radius:16px;box-shadow:0 10px 32px #0002;box-sizing:border-box}img{height:30px;display:block;margin-bottom:16px}h1{font-size:22px;margin:0 0 8px}p{color:#3f5047;margin:0 0 16px}.small{font-size:13px;color:#66736b;margin:16px 0 0}button{width:100%;min-height:48px;border:0;border-radius:11px;background:#1d5d3a;color:#fff;font:800 16px Arial,Helvetica,sans-serif;cursor:pointer}a{color:#1d5d3a}@media(max-width:500px){main{margin:16px;padding:20px}}</style></head><body><main><img src="/assets/acresx-logo.png" alt="AcresX">${body}</main></body></html>`;
+  return new Response(html, { status: valid ? 200 : 400, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': CONTINUE_PAGE_CSP, 'X-Robots-Tag': 'noindex', 'X-Content-Type-Options': 'nosniff' } });
+}
+
+async function formToken(request) {
+  if (!/^application\/x-www-form-urlencoded\b/i.test(request.headers.get('Content-Type') || '')) return '';
+  const declared = Number(request.headers.get('Content-Length'));
+  if (Number.isFinite(declared) && declared > LIMITS.authBody) return '';
+  const text = await request.text();
+  if (text.length > LIMITS.authBody) return '';
+  return new URLSearchParams(text).get('token') || '';
+}
+
 async function callback(request, env) {
+  const refused = refuseCrossSite(request, env);
+  if (refused) return refused;
   const { db } = await accountsDb(env, request);
   if (!db) return redirect('/?signin=unavailable');
-  const token = new URL(request.url).searchParams.get('token') || '';
+  const token = await formToken(request);
   if (!TOKEN_PATTERN.test(token)) return redirect('/?signin=invalid');
   const now = Date.now();
   const hash = await sha256Hex(token);
@@ -191,7 +218,8 @@ export async function handleAuthRoutes(request, env, ctx, url) {
   const { pathname } = url;
   const m = request.method;
   if (pathname === '/api/auth/request-link' && m === 'POST') return requestLink(request, env, ctx);
-  if (pathname === '/api/auth/callback' && m === 'GET') return callback(request, env);
+  if (pathname === '/api/auth/callback' && m === 'GET') return continuePage(request);
+  if (pathname === '/api/auth/callback' && m === 'POST') return callback(request, env);
   if (pathname === '/api/auth/logout' && m === 'POST') return logout(request, env);
   if (pathname === '/api/me' && m === 'GET') return me(request, env);
   return null;
