@@ -25,6 +25,7 @@ import { handlePublicUtilities } from './services/public-utilities.js';
 import { handleCostContext } from './services/cost-context.js';
 import { handleBuildableArea } from './services/buildable-area.js';
 import { handleCountyCoverage } from './services/county-coverage.js';
+import { handleAddressSearch } from './services/address-search.js';
 import { json } from './shared/http.js';
 import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
@@ -68,6 +69,7 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   if(url.pathname==='/api/property-tax-test'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(url.pathname==='/api/property-assessment'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(request.method==='POST'&&url.pathname==='/api/parcel-search')return await handleParcelSearch(request);
+  if(request.method==='POST'&&url.pathname==='/api/address-search')return await handleAddressSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/well-search')return await handleWellSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/existing-well')return await handleExistingWell(request);
   if(request.method==='POST'&&url.pathname==='/api/reso-listings')return await handleResoListings(request,env);

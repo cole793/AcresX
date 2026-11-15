@@ -23,7 +23,9 @@ export const FALLBACK_KINDS = Object.freeze({
   stevensAssessor: 'stevens-assessor',
   spokaneAssessor: 'spokane-assessor',
   femaFlood: 'fema-flood',
-  stevensZoning: 'stevens-zoning'
+  stevensZoning: 'stevens-zoning',
+  // Address search (src/counties/kootenai-address.js): always the browser, never tried first.
+  kootenaiAddress: 'kootenai-address'
 });
 
 const eligibleStatus = status => status === 403 || status === 429 || (status >= 500 && status <= 599);
