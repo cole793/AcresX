@@ -3,6 +3,7 @@ name: Preview
 # Uploads each pull request as a Cloudflare Worker *version* (not a deployment) and comments a
 # preview link on the PR. Production keeps serving the deployed version until the PR is merged.
 # Previews share production secrets and the MLS_DB D1 database; cron triggers don't run on them.
+# Accounts are off on previews (ACCOUNTS_ENABLED:false below), so a preview never writes account data.
 
 on:
   pull_request:
@@ -44,7 +45,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           alias="pr-${PR_NUMBER:-manual}"
-          npx wrangler versions upload --preview-alias "$alias" --message "Preview ${alias} at ${HEAD_SHA:0:7}"
+          # Previews share the live D1 database: accounts (which write to it) are switched off
+          # here, and src/services/accounts-store.js also refuses preview hosts.
+          npx wrangler versions upload --preview-alias "$alias" --message "Preview ${alias} at ${HEAD_SHA:0:7}" --var ACCOUNTS_ENABLED:false
           out=$(jq -c 'select(.type == "version-upload")' "$WRANGLER_OUTPUT_FILE_PATH" | tail -1)
           echo "alias_url=$(jq -r '.preview_alias_url // empty' <<<"$out")" >> "$GITHUB_OUTPUT"
           echo "version_url=$(jq -r '.preview_url // empty' <<<"$out")" >> "$GITHUB_OUTPUT"

@@ -58,6 +58,10 @@ issue body escaping and the parcel-lookup rate-limit retry are tested offline in
 - Previews run the PR's code with the **live** secrets and the **live** `MLS_DB` database. Don't
   run MLS syncs (`/api/reso-listings` with `sync: true`) or anything else that writes data from a
   preview.
+- Accounts (sign-in, saved properties/reports/branding in D1, share links) are off on previews:
+  `preview.yml` uploads with `--var ACCOUNTS_ENABLED:false` and `src/services/accounts-store.js`
+  refuses preview hosts. Account tests use an in-memory D1 on `node:sqlite` (`test/fake-d1.js`)
+  that runs the real `migrations/0002_accounts.sql`.
 - Cron triggers only run on the deployed (production) version, never on previews.
 - Preview links are public, like the live site.
 - `"preview_urls": true` in `wrangler.jsonc` turns preview URLs on for the Worker. It's applied
