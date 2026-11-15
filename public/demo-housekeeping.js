@@ -62,12 +62,15 @@
     const placeholder = window.AcresXSections?.placeholder(SECTION_OF[detail]);
     if (placeholder === 'pending') return { label: 'Checking', cls: 'screening', note: 'Waiting for this data source to answer' };
     if (placeholder === 'timeout') return { label: 'Timed out', cls: 'verify', note: 'The data source did not answer in time; use Retry' };
-    if (detail === 'wells') return Array.isArray(last.wells) && last.wells.length ? { label: 'Confirmed', cls: 'confirmed', note: 'Public well records returned for this search' } : { label: 'Verify', cls: 'verify', note: 'No nearby public well records returned' };
+    // Well and zoning wording: public/coverage-trust.js ("Nearby records" / "On-parcel record";
+    // "County GIS" only where the county's zoning is validated). Never "Confirmed".
+    const CX = window.AcresXCoverage;
+    if (detail === 'wells') return CX ? CX.wellChip(last) : Array.isArray(last.wells) && last.wells.length ? { label: 'Nearby records', cls: 'screening', note: 'Public well records near the parcel; they do not show a well on this parcel' } : { label: 'Verify', cls: 'verify', note: 'No nearby public well records returned' };
     if (detail === 'soil') return last?.land?.soil?.available ? { label: 'Screening', cls: 'screening', note: 'Derived from mapped USDA soil data; field verification required' } : { label: 'Verify', cls: 'verify', note: 'Soil screening is not available for this parcel' };
     if (detail === 'power') return Array.isArray(last.utility) && last.utility.length ? { label: 'Screening', cls: 'screening', note: 'Likely utility territory; service availability requires provider verification' } : { label: 'Verify', cls: 'verify', note: 'Serving utility has not been identified' };
     if (detail === 'listing') return last?.evidence?.status === 'found' ? { label: 'Verify', cls: 'verify', note: 'Public listing information should be independently verified' } : { label: 'Verify', cls: 'verify', note: 'No reliable active listing was matched' };
     if (detail === 'slope') return last?.land?.terrain?.available ? { label: 'Screening', cls: 'screening', note: 'Estimated from elevation data; not a survey' } : { label: 'Verify', cls: 'verify', note: 'Terrain screening is not available for this parcel' };
-    if (detail === 'zoning') { const z = last?.zoningPermits?.zoning; return z?.status === 'gis_match' ? { label: 'Confirmed', cls: 'confirmed', note: `Mapped ${/^City /i.test(last?.zoningPermits?.jurisdiction || '') ? 'city' : 'county'} zoning record returned; permitted uses still require agency verification` } : { label: 'Verify', cls: 'verify', note: 'Zoning record requires agency verification' }; }
+    if (detail === 'zoning') { if (CX) return CX.zoningChip(last); const z = last?.zoningPermits?.zoning; return z?.status === 'gis_match' ? { label: 'Mapped — verify', cls: 'screening', note: 'Mapped zoning record returned; permitted uses still require agency verification' } : { label: 'Verify', cls: 'verify', note: 'Zoning record requires agency verification' }; }
     if (detail === 'permits') return { label: 'Verify', cls: 'verify', note: 'Permit requirements depend on the proposed project and jurisdiction' };
     return { label: 'Verify', cls: 'verify', note: 'Verification recommended' };
   }

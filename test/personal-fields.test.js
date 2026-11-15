@@ -102,6 +102,7 @@ const parcel = { parcelId: PARCEL, geometry: polygon, address: '100 SITE RD', ..
 // [label, request, expectation on the parsed body (optional; checks the route really ran)]
 const CASES = [
   ['upstream-health', get('/api/upstream-health')],
+  ['county-coverage', get('/api/county-coverage')],
   ['property-tax-test GET', get('/api/property-tax-test')],
   ['property-tax-test POST MT', post('/api/property-tax-test', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL })],
   ['property-assessment WA', post('/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: SPOKANE_PARCEL }), b => { assert.equal(b.available, true); assert.equal(b.countyRecords[0].parcelNumber, SPOKANE_PARCEL); assert.equal(b.records[0].site_address, '100 SITE RD'); }],

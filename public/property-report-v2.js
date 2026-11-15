@@ -152,7 +152,9 @@
     const n = num(shown) ?? (calc ? Number(calc.score.toFixed(1)) : null);
     const value = n == null ? '' : n.toFixed(1);
     const band = n == null ? 'na' : n >= 7 ? 'good' : n >= 5.5 ? 'fair' : 'poor';
-    const rating = n == null ? '' : n >= 8.5 ? 'Excellent' : n >= 7 ? 'Good' : n >= 5.5 ? 'Moderate' : 'Challenging';
+    const base = n == null ? '' : n >= 8.5 ? 'Excellent' : n >= 7 ? 'Good' : n >= 5.5 ? 'Moderate' : 'Challenging';
+    // Limited-coverage county (public/coverage-trust.js): "Excellent · limited data"; same number.
+    const rating = window.AcresXCoverage?.softRating ? window.AcresXCoverage.softRating(base, data) : base;
     let drivers = [];
     if (calc) {
       // Impact on the score: weight x distance from a neutral 70. Largest three, either direction.
@@ -199,7 +201,7 @@
         return g.category === 'present' ? `Mapped wetland on ${pct != null ? `${pct.toFixed(1)}% of ` : ''}the parcel` : g.category === 'none' ? 'No mapped wetlands' : `Wetlands: ${g.label.toLowerCase()}`;
       }
       case 'power': return good ? `Power provider territory mapped (${f.power.primary || 'provider found'})` : 'Power provider not identified';
-      case 'zoning': return good ? `Official zoning mapped (${f.zoneCode || 'zone found'})` : 'Zoning not confirmed from an official map';
+      case 'zoning': return good ? (f.coverage?.limited ? `Zoning mapped from statewide data (${f.zoneCode || 'zone found'}); verify` : `Official zoning mapped (${f.zoneCode || 'zone found'})`) : 'Zoning not confirmed from an official map';
       default: return '';
     }
   }
@@ -265,7 +267,10 @@
       flood, wet, well: wellDepth(data), power: powerFacts(data), road: ra,
       water: PU?.water(data) || null, sewer: PU?.sewer(data) || null, puChecked: Boolean(data.publicUtilities?.available),
       soil: data.land?.soil || {}, terrain: data.land?.terrain || {}, sfd,
-      assess: assessment(data), cost: costEstimate(data)
+      assess: assessment(data), cost: costEstimate(data),
+      // County coverage badge (public/coverage-trust.js, /api/county-coverage); null if not loaded.
+      coverage: window.AcresXCoverage?.forData?.(data)?.coverage || null,
+      structure: window.AcresXCoverage?.existingStructure?.(data) || null
     };
     f.findings = findings(data, f);
     return f;
@@ -275,6 +280,8 @@
 
   function findings(data, f) {
     const red = [], amber = [], green = [];
+    // Assessor improvements or a well record on the parcel: there may already be a home (info only).
+    const existing = f.structure ? [{ title: f.structure.title, detail: f.structure.detail }] : [];
     const overlays = Array.isArray(f.zp.overlays) ? f.zp.overlays : [];
     if (f.flood.category === 'high') red.push({ title: 'High-risk flood zone on the parcel', detail: f.flood.share || f.flood.detail });
     else if (['moderate', 'undetermined', 'not_mapped', 'limited'].includes(f.flood.category)) amber.push({ title: `Flood: ${f.flood.label.toLowerCase()}`, detail: f.flood.share || f.flood.detail });
@@ -302,7 +309,7 @@
     if (f.flood.category === 'minimal') green.push({ title: 'Minimal flood hazard', detail: f.flood.detail });
     if (f.wet.category === 'none' && !overlays.some(o => o.type === 'wetland')) green.push({ title: 'No mapped wetlands', detail: 'National Wetlands Inventory' });
     const tag = level => x => ({ ...x, level });
-    const risks = [...red.map(tag('risk')), ...amber.map(tag('verify'))];
+    const risks = [...red.map(tag('risk')), ...existing.map(tag('verify')), ...amber.map(tag('verify'))];
     const goods = green.map(tag('good'));
     const keepGood = Math.min(goods.length, Math.max(2, 6 - risks.length));
     const out = [...risks.slice(0, 6 - keepGood), ...goods.slice(0, keepGood)];
@@ -393,6 +400,9 @@ ${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restrict
 
   // ---- Page 1
 
+  // One line under the header: "Validated county" / "Partially validated" / "Limited coverage …".
+  const coverageLine = c => (c ? `<p class="coverage cov-${esc(c.tier)}"><b>${esc(c.label)}</b>${esc(c.summary)}</p>` : '');
+
   function page1(data, f, score, name) {
     const parcel = data.parcel || {};
     const cost = f.cost;
@@ -405,7 +415,7 @@ ${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restrict
       : `<p class="muted">Key findings not available.</p>`;
     return `<section class="page p1"><div class="page-body">
 <header class="head"><img class="logo" src="/assets/acresx-logo.png" alt="AcresX"><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}</span></div></header>
-<div class="title">
+${coverageLine(f.coverage)}<div class="title">
 <h1>${esc(f.address || 'No situs address')}</h1>
 <div class="facts">
 <div><span>Parcel</span><strong>${esc(f.pid || NA)}</strong></div>
@@ -639,6 +649,8 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .block{break-inside:avoid}
 .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--g);padding-bottom:8px}
 .logo{height:30px}.head-right{text-align:right;font-size:8pt;color:var(--mut)}.head-right .eyebrow{justify-content:flex-end;margin-bottom:2px}
+.coverage{font-size:7.4pt;line-height:1.35;color:var(--mut);margin-top:-4px}.coverage b{display:inline-block;margin-right:7px;border-radius:999px;padding:2px 8px;font-size:7pt;font-weight:800}
+.cov-validated b{background:var(--greenbg);color:var(--g2)}.cov-partial b{background:#e7eef8;color:#2b5283}.cov-limited b{background:var(--amberbg);color:var(--amber)}
 .title h1{font-size:20pt;line-height:1.1;letter-spacing:-.01em;color:var(--ink);margin-bottom:8px}
 .facts{display:flex;gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .facts>div{flex:1;padding:7px 12px;border-left:1px solid var(--line)}.facts>div:first-child{padding-left:0;border-left:0}
@@ -779,7 +791,7 @@ ${p4}
     const attempt = () => { if ($('generateReportBtn') || document.querySelector('.top-actions button:nth-child(2)')) return bind(); if (++tries < 40) setTimeout(attempt, 50); };
     attempt();
   }
-  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport };
+  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindWhenReady);
   else bindWhenReady();
 })();
