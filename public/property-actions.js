@@ -5,8 +5,10 @@
   const text = id => ($(id)?.textContent || '').trim();
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  function read(key) { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
-  function write(key, items) { localStorage.setItem(key, JSON.stringify(items)); }
+  // Signed in (public/accounts.js): the account's copy; otherwise this browser's localStorage.
+  const accountStore = key => { try { return window.AcresXAccounts?.storeFor?.(key) || null; } catch { return null; } };
+  function read(key) { const a = accountStore(key); if (a) return a.read(); try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+  function write(key, items) { const a = accountStore(key); if (a) { a.write(items); return; } localStorage.setItem(key, JSON.stringify(items)); }
   const STATE_NAMES = { WA: 'Washington', ID: 'Idaho', MT: 'Montana' };
   function stateName(code) { return STATE_NAMES[String(code || '').toUpperCase()] || code || ''; }
 
@@ -245,7 +247,8 @@
     pageNodes().forEach(n=>n.style.display='none'); view.style.display='block'; setActiveNav(type==='saved'?'Saved Properties':'Reports');
     const items=read(type==='saved'?SAVED_KEY:REPORTS_KEY);
     const title=type==='saved'?'Saved Properties':'Reports';
-    const subtitle=type==='saved'?'Properties saved on this browser during the AcresX beta.':'Report history saved on this browser.';
+    const inAccount=Boolean(accountStore(type==='saved'?SAVED_KEY:REPORTS_KEY));
+    const subtitle=inAccount?(type==='saved'?'Properties saved to your AcresX account, on every device where you sign in.':'Reports saved to your AcresX account. Share a read-only link with a client.'):(type==='saved'?'Properties saved on this browser during the AcresX beta.':'Report history saved on this browser.');
     view.innerHTML=`<div class="library-head"><div><div class="eyebrow">Beta workspace</div><h2>${title}</h2><p>${subtitle}</p></div><button type="button" class="ghost" id="libraryBack">Back to Dashboard</button></div><div class="library-list">${items.length?'':`<div class="library-empty">No ${type==='saved'?'saved properties':'reports'} yet.</div>`}</div>`;
     $('libraryBack').onclick=showDashboard;
     const list=view.querySelector('.library-list');
@@ -284,11 +287,14 @@
       }
       card.querySelector('.open-item').onclick=()=>openSavedProperty(item);
       card.querySelector('.remove-item').onclick=()=>{const key=type==='saved'?SAVED_KEY:REPORTS_KEY;const remaining=read(key).filter(x=>(type==='saved'?x.key:x.id)!==(type==='saved'?item.key:item.id));write(key,remaining);renderLibrary(type)};
+      if (type !== 'saved') { try { window.AcresXAccounts?.decorateReportCard?.(card, item); } catch {} }
       list.appendChild(card);
     });
     if (type === 'saved') showSavedMap(items, view);
   }
   function refreshLibraryIfOpen(){const v=$('propertyLibraryView');if(!v||v.style.display==='none')return;const active=[...document.querySelectorAll('.sidebar .nav button')].find(b=>b.classList.contains('active'));if((active?.textContent||'').includes('Saved'))renderLibrary('saved');else if((active?.textContent||'').includes('Reports'))renderLibrary('reports')}
+
+  window.AcresXLibrary = { render: renderLibrary, refresh: refreshLibraryIfOpen, read, write };
 
   function initNav(){
     document.querySelectorAll('.sidebar .nav button').forEach(btn=>{

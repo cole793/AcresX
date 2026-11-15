@@ -2,7 +2,9 @@
 // the printable report (property-report-v2.js) then says "Prepared by <name>, <brokerage>" on page 1
 // and carries the agent's contact line in every footer, with AcresX kept as "Powered by AcresX".
 //
-// No accounts and no server storage: branding lives in this browser's localStorage only. Every
+// Signed in (public/accounts.js): branding is kept in the AcresX account (brandingStore()), so it
+// follows the realtor to every device. Signed out, or accounts not set up: branding lives in this
+// browser's localStorage only. Every
 // storage access is wrapped in try/catch; when storage is blocked or full, branding is kept in
 // memory for this page load and the page says so.
 //
@@ -79,7 +81,10 @@
   // wins over whatever storage holds: undefined = no override; null = cleared; object = branding.
   let override;
   function store() { try { return window.localStorage || null; } catch { return null; } }
+  function account() { try { return window.AcresXAccounts?.brandingStore?.() || null; } catch { return null; } }
   function load() {
+    const a = account();
+    if (a) return normalize(a.get());
     if (override !== undefined) return override ? normalize(override) : null;
     let raw = null;
     try { const s = store(); raw = s ? s.getItem(KEY) : null; } catch { raw = null; }
@@ -91,18 +96,23 @@
     if (!result.ok) return { ...result, stored: false };
     if (!result.branding.name) return { ...clear(), branding: null };
     const record = { ...result.branding, updatedAt: new Date().toISOString() };
+    const a = account();
+    if (a) { a.set(record); return { ok: true, errors: {}, branding: normalize(record), stored: true, account: true }; }
     let stored = false;
     try { const s = store(); if (s) { s.setItem(KEY, JSON.stringify(record)); stored = true; } } catch { stored = false; }
     override = stored ? undefined : record;
     return { ok: true, errors: {}, branding: normalize(record), stored };
   }
   function clear() {
+    const a = account();
+    if (a) { a.remove(); return { ok: true, errors: {}, branding: null, stored: true, account: true }; }
     let stored = false;
     try { const s = store(); if (s) { s.removeItem(KEY); stored = true; } } catch { stored = false; }
     override = stored ? undefined : null;
     return { ok: true, errors: {}, branding: null, stored };
   }
   function storageAvailable() {
+    if (account()) return true;
     try { const s = store(); if (!s) return false; const k = `${KEY}.probe`; s.setItem(k, '1'); s.removeItem(k); return true; } catch { return false; }
   }
 
@@ -250,11 +260,12 @@
     draftLogo = null;
     const saved = load() || {};
     const canStore = storageAvailable();
+    const inAccount = Boolean(account());
     const field = ([k, label, type, auto, ph, req]) => `<div class="branding-field${k === 'name' || k === 'brokerage' ? ' wide' : ''}"><label for="branding_${k}">${esc(label)}${req ? ' <em>required for branding</em>' : ''}</label><input id="branding_${k}" name="${k}" type="${type}" maxlength="${LIMITS[k]}" autocomplete="${auto}"${ph ? ` placeholder="${esc(ph)}"` : ''} value="${esc(saved[k] || '')}"${type === 'tel' ? ' inputmode="tel"' : ''}><div class="branding-err" id="branding_${k}_err" aria-live="polite"></div></div>`;
     view.innerHTML = `<div class="library-head"><div><div class="eyebrow">Settings</div><h2>Report branding</h2><p>Put your name, brokerage and logo on the property reports you hand to clients.</p></div><button type="button" class="ghost" id="libraryBack">Back to Dashboard</button></div>
 <div class="branding-layout">
 <form id="brandingForm" class="branding-card" novalidate>
-<p class="branding-note"><strong>Saved in this browser only.</strong> Nothing is uploaded to AcresX. Other browsers and devices won't see it, and clearing this browser's site data removes it.</p>
+${inAccount ? '<p class="branding-note"><strong>Saved to your AcresX account.</strong> Reports you make on any device where you sign in carry this branding, and so do the read-only report links you share.</p>' : '<p class="branding-note"><strong>Saved in this browser only.</strong> Nothing is uploaded to AcresX. Other browsers and devices won\'t see it, and clearing this browser\'s site data removes it.</p>'}
 ${canStore ? '' : '<p class="branding-note warn">This browser is blocking site storage, so branding will apply to reports only until you reload or close this page.</p>'}
 <div class="branding-grid">${FORM_FIELDS.map(field).join('')}</div>
 <div class="branding-field wide"><span class="branding-label">Logo (optional)</span><div class="branding-logo-row"><div class="branding-thumb" id="brandingLogoThumb"></div><div class="branding-logo-actions"><label class="ghost branding-file" for="brandingLogoFile">Upload PNG or JPG</label><input id="brandingLogoFile" type="file" accept="image/png,image/jpeg"><button type="button" class="ghost" id="brandingLogoRemove">Remove logo</button></div></div><div class="branding-hint">Scaled to fit 600 × 200 px and stored under 200 KB. SVG files are not accepted.</div><div class="branding-err" id="branding_logo_err" aria-live="polite"></div></div>
@@ -273,6 +284,7 @@ ${canStore ? '' : '<p class="branding-note warn">This browser is blocking site s
       if (!r.ok) { status('Check the highlighted fields.', 'error'); return; }
       draftLogo = null;
       if (!r.branding) status(r.stored ? 'Branding cleared. Reports use the AcresX header.' : 'Branding cleared for this page.', 'ok');
+      else if (r.account) status('Saved to your account. Your next report will carry this branding.', 'ok');
       else status(r.stored ? 'Saved in this browser. Your next report will carry this branding.' : 'Applied for this page only: this browser would not save it.', r.stored ? 'ok' : 'warn');
       for (const [k] of FORM_FIELDS) { const input = $(`branding_${k}`); if (input && r.branding) input.value = r.branding[k] || ''; }
       refreshPreview();
