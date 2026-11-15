@@ -219,7 +219,7 @@ for (const [why, route] of [
   ['available:false', () => ({ body: { available: false, error: 'Utility territory lookup failed' } })],
   ['a network failure', null]
 ]) {
-  test(`a utility-territory failure (${why}) shows "${NOT_IDENTIFIED_FAILED}", not Avista, and scores as unidentified`, async () => {
+  test(`a utility-territory failure (${why}) shows "${NOT_IDENTIFIED_FAILED}", not Avista, and leaves power out of the score (not checked)`, async () => {
     const t = setup('spokaneCity', route || (() => { throw new Error('Failed to fetch'); }));
     await t.search();
     assert.equal(t.text('utilityMetric'), NOT_IDENTIFIED_FAILED);
@@ -229,7 +229,11 @@ for (const [why, route] of [
     assert.equal(utility.length, 0, 'no provider reaches the score');
     assert.equal(utility.lookupFailed, true);
     assert.equal(t.calls.filter(c => c.path === '/api/power-intelligence').length, 0, 'no power intelligence without a provider');
-    assert.equal(t.powerChip(), '45');
+    // A failed lookup is missing data, not "no provider": power is left out of the score
+    // (2026-11-15), instead of the unidentified-provider 45.
+    assert.equal(t.powerChip(), undefined);
+    assert.match(t.document.querySelector('.score-factor-line').innerHTML, /Power not checked/);
+    assert.match(t.text('scoreNote'), /Incomplete — 6 of 7 factors measured/);
     assert.equal(t.ctx.AcresXSections.status('utility'), 'done');
   });
 }
