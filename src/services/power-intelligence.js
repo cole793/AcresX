@@ -2,6 +2,9 @@ import { getAvistaPowerIntelligence, isAvistaProvider, serviceTerritoryBasis } f
 import { getInlandPowerIntelligence, isInlandPowerProvider } from '../utilities/inland-power.js';
 import { getOsmPowerProximity } from '../utilities/osm-power.js';
 import { nearestAvistaLine } from '../utilities/avista-distribution.js';
+import { nearestTransmissionLine } from '../utilities/hifld-transmission.js';
+import { publishedLineSource, nearestPublishedLine } from '../utilities/published-lines.js';
+import { FALLBACK_KINDS, fallbackHint, hintGeometry } from '../shared/fallback.js';
 import { json } from '../shared/http.js';
 
 // Time box for the whole route. The browser gives this follow-up 15 s
@@ -28,6 +31,7 @@ function timedOutProximity(budgetMs) {
     adapter: 'osm-power-v1',
     status: 'timed_out',
     confidence: 'low',
+    browserFallback: true,
     error: `OpenStreetMap power data did not answer within ${Math.round(budgetMs / 1000)} s.`,
     note: 'Distance not verified: OpenStreetMap power data did not answer in time. This does not mean power is unavailable.'
   };
@@ -40,8 +44,99 @@ function osmDistribution(proximity, fallbackNote) {
     estimatedDistanceFt: mapped ? proximity.estimatedDistanceFt : null,
     confidence: proximity.confidence || 'low',
     infrastructure: proximity.infrastructure || 'unknown',
+    ...(mapped ? { lineType: 'distribution', source: 'OpenStreetMap', sourceLabel: 'OSM' } : {}),
     note: mapped ? proximity.note : (proximity.note || fallbackNote)
   };
+}
+
+// A utility's own published line map (src/utilities/published-lines.js) first, else OpenStreetMap.
+function publishedOrOsmDistribution(published, proximity, fallbackNote) {
+  if (published?.available && Number.isFinite(published.distanceFt)) {
+    const ft = published.distanceFt;
+    return {
+      status: 'utility_published_proximity',
+      estimatedDistanceFt: ft,
+      confidence: ft <= 1320 ? 'moderate' : 'low',
+      infrastructure: published.infrastructure || 'utility_distribution_line',
+      lineType: 'distribution',
+      source: published.source,
+      sourceLabel: published.sourceLabel || `${published.utility} map`,
+      sourceUrl: published.sourceUrl,
+      note: `${published.utility}'s published grid map shows a distribution line about ${ft.toLocaleString('en-US')} ft from the parcel. It is not a service point; ${published.utility} confirms the route, capacity and cost.`
+    };
+  }
+  return osmDistribution(proximity, fallbackNote);
+}
+
+// The one line the power card names (additive field `nearestLine`): the nearest DISTRIBUTION line
+// when one is mapped (that is the only distance the cost model uses), else the nearest other
+// mapped line (OSM power=line without a voltage, or a transmission line from OSM or HIFLD).
+// A mapped line is never a service connection; the utility confirms the route.
+export function chooseNearestLine(distribution, proximity, transmission) {
+  if (Number.isFinite(distribution?.estimatedDistanceFt)) {
+    const utility = distribution.status === 'utility_published_proximity';
+    return {
+      distanceFt: distribution.estimatedDistanceFt,
+      lineType: 'distribution',
+      infrastructure: distribution.infrastructure || 'unknown',
+      source: distribution.source || (utility ? 'Utility-published line map' : 'OpenStreetMap'),
+      sourceLabel: distribution.sourceLabel || (utility ? 'utility map' : 'OSM'),
+      sourceUrl: distribution.sourceUrl || (utility ? '' : 'https://www.openstreetmap.org'),
+      confidence: distribution.confidence || 'low',
+      note: 'Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost.'
+    };
+  }
+  const candidates = [];
+  const other = proximity?.available ? proximity.nearestOtherLine : null;
+  if (other && Number.isFinite(other.distanceFt)) {
+    candidates.push({ distanceFt: other.distanceFt, lineType: other.lineType === 'transmission' ? 'transmission' : 'unknown', infrastructure: other.infrastructureClass || 'unknown', source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', voltage: other.voltage || '' });
+  }
+  if (transmission?.available && Number.isFinite(transmission.distanceFt)) {
+    candidates.push({ distanceFt: transmission.distanceFt, lineType: 'transmission', infrastructure: 'transmission_line', source: transmission.source, sourceLabel: 'HIFLD', sourceUrl: transmission.sourceUrl, voltage: transmission.voltageKv ? `${transmission.voltageKv} kV` : '' });
+  }
+  if (!candidates.length) return null;
+  const best = candidates.sort((a, b) => a.distanceFt - b.distanceFt)[0];
+  return {
+    ...best,
+    confidence: 'low',
+    note: best.lineType === 'transmission'
+      ? 'Nearest mapped line is a high-voltage transmission line, which does not serve homes directly; no distribution line was mapped nearby. The utility confirms the route and cost.'
+      : 'Nearest mapped power line; its voltage is not mapped, so it may be a distribution or a transmission line. The utility confirms the route and cost.'
+  };
+}
+
+function transmissionSummary(t) {
+  if (!t) return null;
+  if (!t.available) return { available: false, status: t.status || 'source_unavailable', lineType: 'transmission' };
+  return {
+    available: true,
+    lineType: 'transmission',
+    distanceFt: Number.isFinite(t.distanceFt) ? t.distanceFt : null,
+    searchedFt: t.searchedFt,
+    voltageKv: t.voltageKv ?? null,
+    source: t.source,
+    sourceUrl: t.sourceUrl,
+    usableForResidentialExtensionCost: false,
+    note: Number.isFinite(t.distanceFt)
+      ? 'Transmission lines (69 kV and up) do not serve homes directly. Shown for context only; not used in the power cost range.'
+      : `No mapped transmission line within ${Math.round((t.searchedFt || 0) / 5280)} miles.`
+  };
+}
+
+// Adds the nearest-line fields, and the browser fallback hint when OpenStreetMap failed in a way
+// the user's browser might get past (src/shared/fallback.js) and no utility map gave a distance.
+function addLineFields(result, { proximity, transmission, body }) {
+  result.transmissionLine = transmissionSummary(transmission);
+  result.nearestLine = chooseNearestLine(result.distribution, proximity, transmission);
+  const utilityDistance = result.distribution?.status === 'utility_published_proximity' && Number.isFinite(result.distribution?.estimatedDistanceFt);
+  if (proximity?.browserFallback === true && !utilityDistance) {
+    const lat = Number(body.lat), lon = Number(body.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      const geometry = hintGeometry(body.geometry);
+      result.fallback = fallbackHint(FALLBACK_KINDS.osmPower, { lat, lon, ...(geometry ? { geometry } : {}) });
+    }
+  }
+  return result;
 }
 
 // The primary provider is providers[0] (the browser and /api/utility-territory put it first).
@@ -87,11 +182,19 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
     ? withDeadline(nearestAvistaLine({ ...point, geometry: body.geometry || null, timeoutMs: Math.min(4000, budgetMs), signal: controller.signal }),
       budgetMs, () => ({ available: false, status: 'timed_out' }))
     : Promise.resolve(null);
-  const [proximity, avistaLine] = await Promise.all([proximityTask, avistaLineTask]);
+  const publishedSource = publishedLineSource(provider);
+  const publishedTask = publishedSource
+    ? withDeadline(nearestPublishedLine(publishedSource, { ...point, geometry: body.geometry || null, timeoutMs: Math.min(4000, budgetMs), signal: controller.signal }),
+      budgetMs, () => ({ available: false, status: 'timed_out' }))
+    : Promise.resolve(null);
+  const transmissionTask = withDeadline(nearestTransmissionLine({ ...point, geometry: body.geometry || null, timeoutMs: Math.min(4000, budgetMs), signal: controller.signal }),
+    budgetMs, () => ({ available: false, status: 'timed_out' }));
+  const [proximity, avistaLine, published, transmission] = await Promise.all([proximityTask, avistaLineTask, publishedTask, transmissionTask]);
   controller.abort();
+  const lines = { proximity, transmission, body };
 
   if (!provider) {
-    return json({
+    return json(addLineFields({
       available: Boolean(proximity.available),
       status: 'provider_unknown',
       provider: '',
@@ -107,7 +210,7 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
         required: true,
         recommendation: 'Confirm the serving electric utility and parcel-level service availability before purchase.'
       }
-    }, 200, 'public, max-age=3600, s-maxage=86400');
+    }, lines), 200, 'public, max-age=3600, s-maxage=86400');
   }
 
   if (isAvistaProvider(provider)) {
@@ -129,10 +232,16 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
         estimatedDistanceFt: proximity.estimatedDistanceFt,
         confidence: proximity.confidence,
         infrastructure: proximity.infrastructure,
+        lineType: 'distribution',
+        source: 'OpenStreetMap',
+        sourceLabel: 'OSM',
         note: proximity.note
       };
+    } else if (result.distribution?.status === 'utility_published_proximity') {
+      result.distribution.lineType = 'distribution';
+      result.distribution.sourceLabel = 'Avista map';
     }
-    return json(applyOverlap(result, alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
+    return json(applyOverlap(addLineFields(result, lines), alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
   }
 
   if (isInlandPowerProvider(provider)) {
@@ -146,10 +255,10 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
       ...osmDistribution(proximity, 'Distance not verified.'),
       note: 'Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route.'
     };
-    return json(applyOverlap(result, alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
+    return json(applyOverlap(addLineFields(result, lines), alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
   }
 
-  return json(applyOverlap({
+  return json(applyOverlap(addLineFields({
     available: true,
     adapter: 'generic-v2-osm',
     provider,
@@ -159,7 +268,7 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
       basis: serviceTerritoryBasis(body.state)
     },
     proximity,
-    distribution: osmDistribution(proximity, `A dedicated ${provider} utility infrastructure adapter has not been built yet.`),
+    distribution: publishedOrOsmDistribution(published, proximity, `A dedicated ${provider} utility infrastructure adapter has not been built yet.`),
     costEstimate: {
       available: false,
       status: 'screening_only',
@@ -169,5 +278,5 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
       required: true,
       recommendation: `Contact ${provider} for parcel-level service availability, transformer capacity, and extension pricing.`
     }
-  }, alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
+  }, lines), alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
 }

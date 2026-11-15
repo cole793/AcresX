@@ -23,7 +23,9 @@ export const FALLBACK_KINDS = Object.freeze({
   stevensAssessor: 'stevens-assessor',
   spokaneAssessor: 'spokane-assessor',
   femaFlood: 'fema-flood',
-  stevensZoning: 'stevens-zoning'
+  stevensZoning: 'stevens-zoning',
+  // OpenStreetMap power lines from Overpass, which rate-limits Cloudflare's shared addresses (429).
+  osmPower: 'osm-power'
 });
 
 const eligibleStatus = status => status === 403 || status === 429 || (status >= 500 && status <= 599);

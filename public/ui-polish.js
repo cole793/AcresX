@@ -48,7 +48,15 @@
     const grade = document.getElementById('powerGrade');
     const dot = document.getElementById('powerDot');
 
-    if (Number.isFinite(distribution.estimatedDistanceFt)) {
+    // nearestLine (src/services/power-intelligence.js chooseNearestLine): the nearest mapped
+    // distribution line, else the nearest other mapped line (transmission or unclassified).
+    const line = power.nearestLine;
+    if (line && Number.isFinite(line.distanceFt)) {
+      const type = ['distribution', 'transmission'].includes(line.lineType) ? line.lineType : 'type not mapped';
+      if (status) status.textContent = `Nearest mapped power line ~${Math.round(line.distanceFt).toLocaleString()} ft (${line.sourceLabel || 'mapped data'}, ${type}) — the utility confirms the route`;
+      if (grade) grade.textContent = line.lineType === 'distribution' ? `${String(line.confidence || 'Low').replace(/^./, c => c.toUpperCase())} confidence` : line.lineType === 'transmission' ? 'Transmission only' : 'Verify utility';
+      if (dot) dot.className = `traffic-dot ${line.lineType === 'distribution' && line.confidence !== 'low' ? 'green' : 'amber'}`;
+    } else if (Number.isFinite(distribution.estimatedDistanceFt)) {
       if (status) status.textContent = `${infrastructureLabel(distribution.infrastructure)} mapped ~${Math.round(distribution.estimatedDistanceFt).toLocaleString()} ft from parcel`;
       if (grade) grade.textContent = `${String(distribution.confidence || 'Low').replace(/^./, c => c.toUpperCase())} confidence`;
       if (dot) dot.className = `traffic-dot ${distribution.confidence === 'low' ? 'amber' : 'green'}`;
@@ -175,7 +183,10 @@
     const providerLine = alsoListed.length
       ? `${ranked ? 'Most likely provider.' : 'Overlapping territories (listed first, not ranked).'} Also listed: ${esc(alsoListed.join(', '))}.${rankingNote ? `<br>${esc(rankingNote)}` : ''}`
       : territory.confirmed ? 'Likely electric utility territory identified.' : 'Serving utility identified from available territory data.';
-    const sourceLabel = distribution.status === 'utility_published_proximity' ? "Avista's distribution map" : 'OpenStreetMap';
+    const publishedLabel = distribution.sourceLabel && !/avista/i.test(distribution.sourceLabel) ? distribution.sourceLabel : "Avista's distribution map";
+    const sourceLabel = distribution.status === 'utility_published_proximity' ? publishedLabel : 'OpenStreetMap';
+    const line = power.nearestLine || null;
+    const radiusMi = Number(proximity.searchRadiusFt) > 0 ? (Number(proximity.searchRadiusFt) / 5280).toFixed(1) : '3.1';
 
     root.innerHTML = `
       <div class="notice"><strong>${esc(provider)}</strong><br>${providerLine}</div>
@@ -185,12 +196,13 @@
           <div class="datum"><span>Nearest mapped infrastructure</span><strong>${Number.isFinite(distribution.estimatedDistanceFt) ? Math.round(distribution.estimatedDistanceFt).toLocaleString() + ' ft' : 'Not mapped nearby'}</strong></div>
           <div class="datum"><span>Infrastructure type</span><strong>${esc(infrastructureLabel(distribution.infrastructure))}</strong></div>
           <div class="datum"><span>Confidence</span><strong>${esc(String(distribution.confidence || 'Low').replace(/^./, c => c.toUpperCase()))}</strong></div>
-          <div class="datum"><span>Source</span><strong>${sourceLabel}</strong></div>
+          <div class="datum"><span>Source</span><strong>${esc(sourceLabel)}</strong></div>
+          ${line && line.lineType !== 'distribution' && Number.isFinite(line.distanceFt) ? `<div class="datum"><span>Nearest mapped line (${esc(line.lineType === 'transmission' ? 'transmission' : 'type not mapped')})</span><strong>${Math.round(line.distanceFt).toLocaleString()} ft · ${esc(line.sourceLabel || '')}</strong></div>` : ''}
         </div>
         <div class="notice">${esc(distribution.note || proximity.note || 'Public distribution mapping is incomplete.')}</div>
       </div>
       <div class="result-item">
-        <h4>Mapped evidence within ~3.1 miles</h4>
+        <h4>Mapped evidence within ~${radiusMi} miles</h4>
         <div class="data-grid">
           <div class="datum"><span>Power poles</span><strong>${Number(evidence.mappedPoles || 0)}</strong></div>
           <div class="datum"><span>Distribution lines / cables</span><strong>${Number(evidence.mappedDistributionLines || 0)}</strong></div>

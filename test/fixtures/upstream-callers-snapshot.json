@@ -427,9 +427,12 @@
           },
           "distribution": {
             "status": "osm_mapped_proximity",
-            "estimatedDistanceFt": 88,
+            "estimatedDistanceFt": 60,
             "confidence": "high",
             "infrastructure": "overhead_distribution",
+            "lineType": "distribution",
+            "source": "OpenStreetMap",
+            "sourceLabel": "OSM",
             "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
           },
           "costEstimate": {
@@ -450,49 +453,45 @@
           },
           "proximity": {
             "available": true,
-            "adapter": "osm-power-v1",
+            "adapter": "osm-power-v2",
             "status": "mapped_distribution_found",
             "provider": "Avista Corp",
-            "searchRadiusFt": 16404,
+            "searchRadiusFt": 9843,
+            "poleSearchRadiusFt": 1969,
             "nearest": {
-              "osmType": "node",
-              "osmId": 11,
-              "type": "pole",
+              "osmType": "way",
+              "osmId": 13,
+              "type": "minor_line",
+              "lineType": "distribution",
               "infrastructureClass": "overhead_distribution",
-              "distanceFt": 87.99975031517839,
-              "operator": "Avista",
-              "voltage": "",
+              "distanceFt": 60,
+              "operator": "",
+              "voltage": "13200",
               "location": "",
               "source": "OpenStreetMap"
             },
-            "estimatedDistanceFt": 88,
+            "estimatedDistanceFt": 60,
             "infrastructure": "overhead_distribution",
+            "lineType": "distribution",
+            "nearestOtherLine": null,
             "confidence": "high",
             "confidenceScore": 90,
             "evidence": {
               "mappedPoles": 1,
               "mappedDistributionLines": 1,
               "mappedTransformers": 1,
-              "mappedFeatures": 3
+              "mappedFeatures": 3,
+              "mappedTransmissionLines": 0,
+              "mappedUnclassifiedLines": 0
             },
             "nearby": [
-              {
-                "osmType": "node",
-                "osmId": 11,
-                "type": "pole",
-                "infrastructureClass": "overhead_distribution",
-                "distanceFt": 87.99975031517839,
-                "operator": "Avista",
-                "voltage": "",
-                "location": "",
-                "source": "OpenStreetMap"
-              },
               {
                 "osmType": "way",
                 "osmId": 13,
                 "type": "minor_line",
+                "lineType": "distribution",
                 "infrastructureClass": "overhead_distribution",
-                "distanceFt": 248.67962622729488,
+                "distanceFt": 60,
                 "operator": "",
                 "voltage": "13200",
                 "location": "",
@@ -500,10 +499,23 @@
               },
               {
                 "osmType": "node",
+                "osmId": 11,
+                "type": "pole",
+                "lineType": "distribution",
+                "infrastructureClass": "overhead_distribution",
+                "distanceFt": 73,
+                "operator": "Avista",
+                "voltage": "",
+                "location": "",
+                "source": "OpenStreetMap"
+              },
+              {
+                "osmType": "node",
                 "osmId": 12,
                 "type": "transformer",
+                "lineType": "distribution",
                 "infrastructureClass": "transformer",
-                "distanceFt": 804.6290802519775,
+                "distanceFt": 803,
                 "operator": "",
                 "voltage": "",
                 "location": "",
@@ -511,18 +523,46 @@
               }
             ],
             "source": "OpenStreetMap / Overpass API",
+            "sourceUrl": "https://www.openstreetmap.org",
+            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified.",
             "cached": false,
             "cacheCell": "4760:-11740",
+            "attempts": [
+              {
+                "host": "overpass-api.de",
+                "ok": true
+              }
+            ]
+          },
+          "transmissionLine": {
+            "available": true,
+            "lineType": "transmission",
+            "distanceFt": null,
+            "searchedFt": 26400,
+            "voltageKv": null,
+            "source": "HIFLD U.S. Electric Power Transmission Lines (archived; last data update 2024-09-30)",
+            "sourceUrl": "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/US_Electric_Power_Transmission_Lines/FeatureServer/0",
+            "usableForResidentialExtensionCost": false,
+            "note": "No mapped transmission line within 5 miles."
+          },
+          "nearestLine": {
+            "distanceFt": 60,
+            "lineType": "distribution",
+            "infrastructure": "overhead_distribution",
+            "source": "OpenStreetMap",
+            "sourceLabel": "OSM",
             "sourceUrl": "https://www.openstreetmap.org",
-            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
+            "confidence": "high",
+            "note": "Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost."
           },
           "alsoListed": []
         }
       }
     },
     "requests": [
+      "GET https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/US_Electric_Power_Transmission_Lines/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=26400&units=esriSRUnit_Foot&outFields=VOLTAGE%2CVOLT_CLASS%2CTYPE&returnGeometry=true&outSR=4326&geometryPrecision=6&maxAllowableOffset=0.00005&resultRecordCount=200",
       "GET https://services3.arcgis.com/WlYQgAChrqj0tuQi/arcgis/rest/services/DER_Hosting_Capacity_PRD/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=330&units=esriSRUnit_Foot&outFields=SECTIONID&returnGeometry=true&outSR=4326&geometryPrecision=6&resultRecordCount=1000",
-      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5800%2C47.605%2C-117.395)%3B)%3Bout%20tags%20geom%20center%3B"
+      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(way%5B%22power%22~%22%5E(line%7Cminor_line%7Ccable)%24%22%5D(around%3A3800%2C47.605%2C-117.395)%3Bnode%5B%22power%22~%22%5E(pole%7Ctransformer)%24%22%5D(around%3A1400%2C47.605%2C-117.395)%3B)%3Bout%20tags%20geom%20qt%3B"
     ]
   },
   "power: first Overpass endpoint fails, second answers": {
@@ -580,49 +620,45 @@
           },
           "proximity": {
             "available": true,
-            "adapter": "osm-power-v1",
+            "adapter": "osm-power-v2",
             "status": "mapped_distribution_found",
             "provider": "Inland Power & Light",
-            "searchRadiusFt": 16404,
+            "searchRadiusFt": 9843,
+            "poleSearchRadiusFt": 1969,
             "nearest": {
-              "osmType": "node",
-              "osmId": 11,
-              "type": "pole",
+              "osmType": "way",
+              "osmId": 13,
+              "type": "minor_line",
+              "lineType": "distribution",
               "infrastructureClass": "overhead_distribution",
-              "distanceFt": 87.99975031517839,
-              "operator": "Avista",
-              "voltage": "",
+              "distanceFt": 60,
+              "operator": "",
+              "voltage": "13200",
               "location": "",
               "source": "OpenStreetMap"
             },
-            "estimatedDistanceFt": 88,
+            "estimatedDistanceFt": 60,
             "infrastructure": "overhead_distribution",
+            "lineType": "distribution",
+            "nearestOtherLine": null,
             "confidence": "high",
             "confidenceScore": 90,
             "evidence": {
               "mappedPoles": 1,
               "mappedDistributionLines": 1,
               "mappedTransformers": 1,
-              "mappedFeatures": 3
+              "mappedFeatures": 3,
+              "mappedTransmissionLines": 0,
+              "mappedUnclassifiedLines": 0
             },
             "nearby": [
-              {
-                "osmType": "node",
-                "osmId": 11,
-                "type": "pole",
-                "infrastructureClass": "overhead_distribution",
-                "distanceFt": 87.99975031517839,
-                "operator": "Avista",
-                "voltage": "",
-                "location": "",
-                "source": "OpenStreetMap"
-              },
               {
                 "osmType": "way",
                 "osmId": 13,
                 "type": "minor_line",
+                "lineType": "distribution",
                 "infrastructureClass": "overhead_distribution",
-                "distanceFt": 248.67962622729488,
+                "distanceFt": 60,
                 "operator": "",
                 "voltage": "13200",
                 "location": "",
@@ -630,10 +666,23 @@
               },
               {
                 "osmType": "node",
+                "osmId": 11,
+                "type": "pole",
+                "lineType": "distribution",
+                "infrastructureClass": "overhead_distribution",
+                "distanceFt": 73,
+                "operator": "Avista",
+                "voltage": "",
+                "location": "",
+                "source": "OpenStreetMap"
+              },
+              {
+                "osmType": "node",
                 "osmId": 12,
                 "type": "transformer",
+                "lineType": "distribution",
                 "infrastructureClass": "transformer",
-                "distanceFt": 804.6290802519775,
+                "distanceFt": 803,
                 "operator": "",
                 "voltage": "",
                 "location": "",
@@ -641,25 +690,63 @@
               }
             ],
             "source": "OpenStreetMap / Overpass API",
+            "sourceUrl": "https://www.openstreetmap.org",
+            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified.",
             "cached": false,
             "cacheCell": "4760:-11740",
-            "sourceUrl": "https://www.openstreetmap.org",
-            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
+            "attempts": [
+              {
+                "host": "overpass-api.de",
+                "ok": false,
+                "kind": "http",
+                "status": 429,
+                "afterMs": 0
+              },
+              {
+                "host": "overpass.private.coffee",
+                "ok": true
+              }
+            ]
           },
           "distribution": {
             "status": "osm_mapped_proximity",
-            "estimatedDistanceFt": 88,
+            "estimatedDistanceFt": 60,
             "confidence": "high",
             "infrastructure": "overhead_distribution",
+            "lineType": "distribution",
+            "source": "OpenStreetMap",
+            "sourceLabel": "OSM",
             "note": "Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route."
+          },
+          "transmissionLine": {
+            "available": true,
+            "lineType": "transmission",
+            "distanceFt": null,
+            "searchedFt": 26400,
+            "voltageKv": null,
+            "source": "HIFLD U.S. Electric Power Transmission Lines (archived; last data update 2024-09-30)",
+            "sourceUrl": "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/US_Electric_Power_Transmission_Lines/FeatureServer/0",
+            "usableForResidentialExtensionCost": false,
+            "note": "No mapped transmission line within 5 miles."
+          },
+          "nearestLine": {
+            "distanceFt": 60,
+            "lineType": "distribution",
+            "infrastructure": "overhead_distribution",
+            "source": "OpenStreetMap",
+            "sourceLabel": "OSM",
+            "sourceUrl": "https://www.openstreetmap.org",
+            "confidence": "high",
+            "note": "Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost."
           },
           "alsoListed": []
         }
       }
     },
     "requests": [
-      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5800%2C47.605%2C-117.395)%3B)%3Bout%20tags%20geom%20center%3B",
-      "POST https://overpass.private.coffee/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(node%5B%22power%22%3D%22pole%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bnode%5B%22power%22%3D%22transformer%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bway%5B%22power%22%3D%22minor_line%22%5D(around%3A5800%2C47.605%2C-117.395)%3Bway%5B%22power%22%3D%22cable%22%5D(around%3A5800%2C47.605%2C-117.395)%3B)%3Bout%20tags%20geom%20center%3B"
+      "GET https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/US_Electric_Power_Transmission_Lines/FeatureServer/0/query?f=json&where=1%3D1&geometry=-117.3995%2C47.6005&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=26400&units=esriSRUnit_Foot&outFields=VOLTAGE%2CVOLT_CLASS%2CTYPE&returnGeometry=true&outSR=4326&geometryPrecision=6&maxAllowableOffset=0.00005&resultRecordCount=200",
+      "POST https://overpass-api.de/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(way%5B%22power%22~%22%5E(line%7Cminor_line%7Ccable)%24%22%5D(around%3A3800%2C47.605%2C-117.395)%3Bnode%5B%22power%22~%22%5E(pole%7Ctransformer)%24%22%5D(around%3A1400%2C47.605%2C-117.395)%3B)%3Bout%20tags%20geom%20qt%3B",
+      "POST https://overpass.private.coffee/api/interpreter BODY data=%5Bout%3Ajson%5D%5Btimeout%3A9%5D%3B(way%5B%22power%22~%22%5E(line%7Cminor_line%7Ccable)%24%22%5D(around%3A3800%2C47.605%2C-117.395)%3Bnode%5B%22power%22~%22%5E(pole%7Ctransformer)%24%22%5D(around%3A1400%2C47.605%2C-117.395)%3B)%3Bout%20tags%20geom%20qt%3B"
     ]
   },
   "power: both Overpass endpoints fail": {
@@ -673,10 +760,27 @@
           "provider": "",
           "proximity": {
             "available": false,
-            "adapter": "osm-power-v1",
+            "adapter": "osm-power-v2",
             "status": "source_unavailable",
             "confidence": "low",
             "error": "Overpass returned 504",
+            "browserFallback": true,
+            "attempts": [
+              {
+                "host": "overpass-api.de",
+                "ok": false,
+                "kind": "http",
+                "status": 429,
+                "afterMs": 0
+              },
+              {
+                "host": "overpass.private.coffee",
+                "ok": false,
+                "kind": "http",
+                "status": 504,
+                "afterMs": 0
+              }
+            ],
             "note": "Distance not verified: OpenStreetMap power data was unavailable. This does not mean power is unavailable."
           },
           "distribution": {
@@ -689,6 +793,20 @@
           "verification": {
             "required": true,
             "recommendation": "Confirm the serving electric utility and parcel-level service availability before purchase."
+          },
+          "transmissionLine": {
+            "available": false,
+            "status": "source_unavailable",
+            "lineType": "transmission"
+          },
+          "nearestLine": null,
+          "fallback": {
+            "mode": "browser",
+            "kind": "osm-power",
+            "input": {
+              "lat": 47.6005,
+              "lon": -117.3995
+            }
           }
         }
       }
