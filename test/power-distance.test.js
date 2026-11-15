@@ -7,8 +7,9 @@ import { test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { distanceToParcelFt } from '../src/shared/line-distance.js';
-import { classifyPowerElement } from '../src/utilities/osm-power.js';
+import { classifyPowerElement, summarizeOsmPower, overpassPowerQuery, osmCell, OVERPASS_ENDPOINTS } from '../src/utilities/osm-power.js';
 import { handlePowerIntelligence } from '../src/services/power-intelligence.js';
+import { makeLazyContext, readPublic } from './ui-harness.js';
 
 const realFetch = globalThis.fetch;
 let restoreUpstream;
@@ -16,6 +17,7 @@ before(() => { restoreUpstream = configureUpstream({ backoffMs: 0, log: () => {}
 after(() => { restoreUpstream(); });
 afterEach(() => { globalThis.fetch = realFetch; });
 
+const plain = v => JSON.parse(JSON.stringify(v));
 const jsonResponse = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 // A 0.002 x 0.002 degree parcel (about 490 x 730 ft) in rural Spokane County.
@@ -169,4 +171,90 @@ test("Flathead Electric: the co-op's own published line map gives the distance, 
   // The co-op's overhead (14) and underground (15) line layers were both asked.
   const fec = calls.filter(c => c.path.includes('Public_Basic_FEC_System'));
   assert.deepEqual(fec.map(c => c.path.match(/FeatureServer\/(\d+)/)[1]).sort(), ['14', '15']);
+});
+
+// ---- Browser fallback (public/browser-fallback.js kind 'osm-power')
+
+function browser(fetchImpl) {
+  const h = makeLazyContext();
+  const timer = (fn, ms) => { const t = setTimeout(fn, ms); t.unref?.(); return t; };
+  Object.assign(h.context, { URL, URLSearchParams, AbortController, Response, Headers, fetch: fetchImpl, setTimeout: timer, clearTimeout });
+  h.run(readPublic('browser-fallback.js'));
+  return h.context.AcresXFallback;
+}
+function browserOverpass(answer = { elements: OSM_ELEMENTS }) {
+  const calls = [];
+  const fetchImpl = async (input, init = {}) => {
+    const url = new URL(String(input));
+    calls.push({ url, init });
+    return typeof answer === 'function' ? answer(url) : jsonResponse(answer);
+  };
+  return { calls, fetchImpl };
+}
+
+test('osm-power end to end: Worker rate-limited -> hint -> the browser gives the answer the Worker gives when Overpass answers', async () => {
+  stub();
+  const healthy = plain((await power(inland)).body);
+  stub({ overpass: 429 });
+  const failed = await handlePowerIntelligence(post(inland));
+  const b = browserOverpass();
+  const fb = browser(b.fetchImpl);
+  const recovered = await (await fb.recover('/api/power-intelligence', failed)).json();
+  assert.equal('fallback' in recovered, false);
+  assert.equal(recovered.proximity.loadedFrom, 'browser');
+  const strip = body => { const out = plain(body); delete out.proximity.attempts; delete out.proximity.loadedFrom; return out; };
+  assert.deepEqual(strip(recovered), strip(healthy));
+  assert.deepEqual(plain(fb.loaded()), { 'osm-power': 'OpenStreetMap (Overpass API)' });
+  // One request, to the allowlisted main instance, the Worker's exact query, no cookies or redirects.
+  assert.equal(b.calls.length, 1);
+  const [{ url, init }] = b.calls;
+  assert.equal(url.origin + url.pathname, OVERPASS_ENDPOINTS[0]);
+  assert.equal(url.searchParams.get('data'), overpassPowerQuery(osmCell(CENTER.lat, CENTER.lon), 10));
+  assert.equal(init.credentials, 'omit');
+  assert.equal(init.redirect, 'error');
+});
+
+test('osm-power in the browser: the first instance fails -> the second; both fail -> the Worker answer is kept', async () => {
+  stub({ overpass: 429 });
+  const failed = await handlePowerIntelligence(post(inland));
+  const second = browserOverpass(url => (url.hostname === 'overpass-api.de' ? new Response('busy', { status: 429 }) : jsonResponse({ elements: OSM_ELEMENTS })));
+  const body = await (await browser(second.fetchImpl).recover('/api/power-intelligence', failed.clone())).json();
+  assert.deepEqual(second.calls.map(c => c.url.hostname), ['overpass-api.de', 'overpass.private.coffee']);
+  assert.ok(Number.isFinite(body.distribution.estimatedDistanceFt));
+  const down = browserOverpass(() => new Response('busy', { status: 429 }));
+  const realWarn = console.warn; console.warn = () => {};
+  try {
+    const kept = await (await browser(down.fetchImpl).recover('/api/power-intelligence', failed.clone())).json();
+    assert.equal(kept.fallback.kind, 'osm-power');
+    assert.equal(kept.distribution.estimatedDistanceFt, null);
+  } finally { console.warn = realWarn; }
+});
+
+test('osm-power parity: the browser copy of the OSM summary matches the Worker on the same elements', async () => {
+  const fb = browser(async () => jsonResponse({ elements: OSM_ELEMENTS }));
+  for (const geometry of [PARCEL, null]) {
+    const base = { available: true, adapter: 'generic-v2-osm', provider: 'X', distribution: { status: 'no_verified_distance', estimatedDistanceFt: null }, transmissionLine: null };
+    const body = plain(await fb.run('osm-power', { ...CENTER, ...(geometry ? { geometry } : {}) }, { base }));
+    const worker = plain(summarizeOsmPower(OSM_ELEMENTS, { ...CENTER, geometry, provider: 'X' }));
+    const { cached, cacheCell, loadedFrom, ...browserSummary } = body.proximity;
+    assert.deepEqual(browserSummary, worker);
+    assert.equal(cacheCell, osmCell(CENTER.lat, CENTER.lon).key);
+  }
+  await assert.rejects(fb.run('osm-power', { lat: 'x', lon: 1 }, { base: {} }), /bad point/);
+  await assert.rejects(fb.run('osm-power', CENTER), /no power answer/);
+});
+
+test('osm-power: the browser copies of the line-distance and OSM summary code are verbatim', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = name => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8');
+  const browserText = readPublic('browser-fallback.js');
+  const indent = text => text.split('\n').map(l => (l.trim() ? `    ${l}` : '')).join('\n');
+  const functions = (text, names) => names.map(name => {
+    const start = text.search(new RegExp(`(?:export )?function ${name}\\(`));
+    assert.ok(start >= 0, name);
+    return text.slice(start, text.indexOf('\n}\n', start) + 2).replace(/^export /, '');
+  });
+  const ld = functions(src('shared/line-distance.js'), ['projector', 'parcelRings', 'pointSegment', 'segmentsCross', 'segmentDistance', 'insideRings', 'segmentBoxDistance', 'parcelMeasurer', 'distanceToParcelFt']);
+  const osm = functions(src('utilities/osm-power.js'), ['osmCell', 'overpassPowerQuery', 'slimElement', 'maxVoltage', 'classifyPowerElement', 'elementPath', 'confidenceFor', 'summarizeOsmPower']);
+  for (const fn of [...ld, ...osm]) assert.ok(browserText.includes(indent(fn)), `browser copy differs: ${fn.slice(0, 60)}`);
 });

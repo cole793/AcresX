@@ -2,8 +2,8 @@
 // 2026-10-29, "option A"). The Worker always asks first. When an eligible layer fails there with a
 // network error, a timeout or a 403/429/5xx, its /api answer keeps its shape and adds
 //   fallback: { mode: 'browser', kind, input }          (src/shared/fallback.js)
-// This script wraps window.fetch for five /api routes (parcel search, zoning, wells, assessment,
-// flood), with Kootenai and Stevens kinds for zoning and assessment and a Spokane kind for assessment. When such an answer arrives it runs the
+// This script wraps window.fetch for six /api routes (parcel search, zoning, wells, assessment,
+// flood, power intelligence), with Kootenai and Stevens kinds for zoning and assessment and a Spokane kind for assessment. When such an answer arrives it runs the
 // known query for that kind from the user's browser and hands the page an answer in the Worker's
 // shape, so the existing render path shows it. It then labels the section
 // "Loaded directly from <agency>".
@@ -19,7 +19,8 @@
 // - The parsing below is a copy of the Worker's (src/counties/kootenai.js, kootenai-cities.js,
 //   kootenai-assessor.js, stevens-assessor.js, spokane-assessor.js, stevens.js, stevens-cities.js,
 //   src/zoning/stevens-rules.js aliases, src/shared/polygon-coverage.js, src/shared/arcgis.js
-//   spatialParams, src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js).
+//   spatialParams, src/states/idaho/wells.js, src/services/flood.js, src/counties/stevens-flood.js,
+//   src/utilities/osm-power.js, src/shared/line-distance.js, src/services/power-intelligence.js).
 //   test/browser-fallback.test.js and test/stevens-zoning.test.js run both on the same recorded
 //   fixtures and check the answers match. Change both together.
 //
@@ -36,7 +37,7 @@
   'use strict';
   if (root.AcresXFallback) return;
 
-  const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org']);
+  const ALLOWED_HOSTS = Object.freeze(['map.kcgov.us', 'gis.cdaid.org', 'gis.postfalls.gov', 'gis.idwr.idaho.gov', 'hazards.fema.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org', 'overpass-api.de', 'overpass.private.coffee']);
   const TIMEOUT_MS = 12000;
   // How much more time a progressive-loading section gets once its browser fallback starts.
   const EXTEND_MS = 30000;
@@ -1391,6 +1392,396 @@
     };
   }
 
+  // ---- 6. OpenStreetMap power lines. Overpass answers Cloudflare's shared addresses with 429 or
+  // times out, so the Worker sends this hint when OpenStreetMap failed and no utility map gave a
+  // distance. Like stevens-zoning it completes the Worker's own answer (`base`): provider,
+  // territory, the utility map and HIFLD transmission results stay as the Worker found them; the
+  // OSM proximity, the distance shown and the nearest line are filled in. Same query as the Worker
+  // (one per lookup, nothing cached here). Browsers do not let a page set User-Agent, so Overpass
+  // sees the browser's own. LineDistance and OsmPower are verbatim copies of
+  // src/shared/line-distance.js and src/utilities/osm-power.js (test/power-distance.test.js checks
+  // the text matches); change both together.
+
+  const OSM_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
+  const OSM_MAX_BYTES = 4000000;
+  const OSM_AGENCY = 'OpenStreetMap (Overpass API)';
+
+  const LineDistance = (() => {
+    const FT_PER_DEG_LAT = 364000;
+    const MAX_PARCEL_VERTICES = 4000;
+
+    function projector(lat0) {
+      const kx = FT_PER_DEG_LAT * Math.cos(lat0 * Math.PI / 180);
+      return ([lon, lat]) => [lon * kx, lat * FT_PER_DEG_LAT];
+    }
+
+    const finitePair = p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
+
+    // Polygon / MultiPolygon (or a Feature of one) -> rings of [lon, lat].
+    function parcelRings(geometry) {
+      const g = geometry?.type === 'Feature' ? geometry.geometry : geometry;
+      let rings = [];
+      if (g?.type === 'Polygon' && Array.isArray(g.coordinates)) rings = g.coordinates;
+      else if (g?.type === 'MultiPolygon' && Array.isArray(g.coordinates)) rings = g.coordinates.flat();
+      const out = [];
+      let n = 0;
+      for (const ring of rings) {
+        if (!Array.isArray(ring)) continue;
+        const clean = ring.filter(finitePair);
+        if (clean.length < 3 || n + clean.length > MAX_PARCEL_VERTICES) continue;
+        n += clean.length;
+        out.push(clean);
+      }
+      return out;
+    }
+
+    function pointSegment(p, a, b) {
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const len2 = dx * dx + dy * dy;
+      const t = len2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2)) : 0;
+      return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+    }
+
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    function segmentsCross(a, b, c, d) {
+      const d1 = cross(c, d, a), d2 = cross(c, d, b), d3 = cross(a, b, c), d4 = cross(a, b, d);
+      return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+    }
+    function segmentDistance(a, b, c, d) {
+      if (segmentsCross(a, b, c, d)) return 0;
+      return Math.min(pointSegment(a, c, d), pointSegment(b, c, d), pointSegment(c, a, b), pointSegment(d, a, b));
+    }
+
+    // Even-odd rule over every ring (holes included).
+    function insideRings(p, rings) {
+      let inside = false;
+      for (const ring of rings) {
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const [xi, yi] = ring[i], [xj, yj] = ring[j];
+          if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    // Distance from segment a-b to an axis-aligned box (0 when it touches or enters the box). The
+    // parcel lies inside its bounding box, so this is a lower bound of the distance to the parcel and
+    // lets most segments be skipped without measuring against every parcel edge.
+    function segmentBoxDistance(a, b, r) {
+      const inBox = p => p[0] >= r.minX && p[0] <= r.maxX && p[1] >= r.minY && p[1] <= r.maxY;
+      if (inBox(a) || inBox(b)) return 0;
+      const c = [[r.minX, r.minY], [r.maxX, r.minY], [r.maxX, r.maxY], [r.minX, r.maxY]];
+      return Math.min(segmentDistance(a, b, c[0], c[1]), segmentDistance(a, b, c[1], c[2]), segmentDistance(a, b, c[2], c[3]), segmentDistance(a, b, c[3], c[0]));
+    }
+
+    // A measurer for one parcel: the projection, edges and bounding box are built once and reused for
+    // every line. measurer.bound(path) is a cheap lower bound (distance to the parcel's bounding box);
+    // measurer.exact(path, below) the exact distance (stops early, returning a value >= below, once
+    // the line cannot be nearer than `below`). Both return feet, or Infinity for an empty path.
+    // Returns null when there is neither a usable outline nor a point.
+    function parcelMeasurer({ lat, lon, geometry } = {}) {
+      lat = Number(lat); lon = Number(lon);
+      const rings = parcelRings(geometry);
+      const lat0 = Number.isFinite(lat) ? lat : rings[0]?.[0]?.[1];
+      if (!Number.isFinite(lat0)) return null;
+      const project = projector(lat0);
+      const projRings = rings.map(ring => ring.map(project));
+      const edges = [];
+      for (const ring of projRings) for (let i = 0; i < ring.length - 1; i++) edges.push([ring[i], ring[i + 1]]);
+      const origin = Number.isFinite(lat) && Number.isFinite(lon) ? project([lon, lat]) : null;
+      if (!edges.length && !origin) return null;
+      const box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+      for (const [x, y] of edges.length ? projRings.flat() : [origin]) {
+        box.minX = Math.min(box.minX, x); box.minY = Math.min(box.minY, y); box.maxX = Math.max(box.maxX, x); box.maxY = Math.max(box.maxY, y);
+      }
+      const segmentsOf = path => {
+        const pts = (Array.isArray(path) ? path : []).filter(finitePair).map(project);
+        return pts.length === 1 ? [[pts[0], pts[0]]] : pts.slice(1).map((b, i) => [pts[i], b]);
+      };
+      function bound(path) {
+        let best = Infinity;
+        for (const [a, b] of segmentsOf(path)) { best = Math.min(best, segmentBoxDistance(a, b, box)); if (best === 0) break; }
+        return best;
+      }
+      function exact(path, below = Infinity) {
+        let best = below;
+        let found = Infinity;
+        // Nearest-looking segments first; stop once the lower bound reaches the best so far.
+        const ranked = segmentsOf(path).map(([a, b]) => ({ a, b, lb: segmentBoxDistance(a, b, box) })).sort((x, y) => x.lb - y.lb);
+        for (const { a, b, lb } of ranked) {
+          if (lb >= best) break;
+          if (!edges.length) { const dist = pointSegment(origin, a, b); if (dist < best) best = found = dist; continue; }
+          if (lb === 0 && (insideRings(a, projRings) || insideRings(b, projRings))) return 0;
+          for (const [c, d] of edges) {
+            const dist = segmentDistance(a, b, c, d);
+            if (dist < best) best = found = dist;
+            if (best === 0) return 0;
+          }
+        }
+        return Number.isFinite(found) ? found : (ranked.length ? Math.max(below, ranked[0].lb) : Infinity);
+      }
+      return { bound, exact };
+    }
+
+    // paths: [[[lon, lat], ...], ...]; a single point is a path of one vertex.
+    // Returns the distance in feet (0 when touching or inside), or Infinity when there is nothing to
+    // measure.
+    function distanceToParcelFt(paths, where = {}) {
+      const m = parcelMeasurer(where);
+      if (!m) return Infinity;
+      let best = Infinity;
+      for (const path of paths || []) best = Math.min(best, m.exact(path, best));
+      return best;
+    }
+    return { parcelMeasurer, distanceToParcelFt };
+  })();
+
+  const OsmPower = (() => {
+    const { parcelMeasurer } = LineDistance;
+    const OSM_CELL_DEG = 0.01, LINE_RADIUS_M = 3000, POLE_RADIUS_M = 600, CELL_MARGIN_M = 800, FT_PER_M = 3.28084;
+    function osmCell(lat, lon) {
+      const cellLat = Math.floor(lat / OSM_CELL_DEG), cellLon = Math.floor(lon / OSM_CELL_DEG);
+      return { key: `${cellLat}:${cellLon}`, lat: Number(((cellLat + 0.5) * OSM_CELL_DEG).toFixed(4)), lon: Number(((cellLon + 0.5) * OSM_CELL_DEG).toFixed(4)) };
+    }
+
+    function overpassPowerQuery(cell, serverTimeoutS = 8) {
+      const lines = LINE_RADIUS_M + CELL_MARGIN_M, poles = POLE_RADIUS_M + CELL_MARGIN_M;
+      return `[out:json][timeout:${serverTimeoutS}];(way["power"~"^(line|minor_line|cable)$"](around:${lines},${cell.lat},${cell.lon});node["power"~"^(pole|transformer)$"](around:${poles},${cell.lat},${cell.lon}););out tags geom qt;`;
+    }
+
+    function slimElement(e) {
+      const tags = e.tags ? { power: e.tags.power, location: e.tags.location, operator: e.tags.operator, voltage: e.tags.voltage } : undefined;
+      const out = { type: e.type, id: e.id, tags };
+      if (Number.isFinite(e.lat) && Number.isFinite(e.lon)) { out.lat = e.lat; out.lon = e.lon; }
+      if (Array.isArray(e.geometry)) out.geometry = e.geometry.filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lon)).map(p => ({ lat: p.lat, lon: p.lon }));
+      return out;
+    }
+
+    // Highest voltage in a tag like "115000;13200", in volts, or null.
+    function maxVoltage(value) {
+      const volts = String(value ?? '').split(/[;,]/).map(v => Number(v.trim())).filter(v => Number.isFinite(v) && v > 0);
+      return volts.length ? Math.max(...volts) : null;
+    }
+
+    // { type, lineType: 'distribution' | 'transmission' | 'unknown', infrastructureClass }
+    function classifyPowerElement(tags = {}) {
+      const power = String(tags.power || '');
+      const kv = maxVoltage(tags.voltage);
+      const underground = String(tags.location || '').toLowerCase().includes('underground');
+      if (power === 'pole') return { type: 'pole', lineType: 'distribution', infrastructureClass: 'overhead_distribution' };
+      if (power === 'transformer') return { type: 'transformer', lineType: 'distribution', infrastructureClass: 'transformer' };
+      if (power === 'minor_line') return { type: 'minor_line', lineType: 'distribution', infrastructureClass: 'overhead_distribution' };
+      if (power === 'cable') {
+        if (kv && kv > 35000) return { type: 'cable', lineType: 'transmission', infrastructureClass: 'transmission_cable' };
+        return { type: 'cable', lineType: 'distribution', infrastructureClass: underground ? 'underground_distribution' : 'distribution_cable' };
+      }
+      if (power === 'line') {
+        if (kv && kv <= 35000) return { type: 'line', lineType: 'distribution', infrastructureClass: 'overhead_distribution' };
+        if (kv) return { type: 'line', lineType: 'transmission', infrastructureClass: 'transmission_line' };
+        return { type: 'line', lineType: 'unknown', infrastructureClass: 'mapped_power_line' };
+      }
+      return { type: power || 'power_feature', lineType: 'unknown', infrastructureClass: 'unknown' };
+    }
+
+    function elementPath(element) {
+      if (Number.isFinite(element.lat) && Number.isFinite(element.lon)) return [[element.lon, element.lat]];
+      if (Array.isArray(element.geometry)) return element.geometry.map(p => [Number(p.lon), Number(p.lat)]).filter(p => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+      if (element.center && Number.isFinite(element.center.lat) && Number.isFinite(element.center.lon)) return [[element.center.lon, element.center.lat]];
+      return [];
+    }
+
+    function confidenceFor({ nearest, poles, lines, transformers, providerKnown }) {
+      let score = providerKnown ? 10 : 0;
+      if (nearest && nearest.distanceFt <= 300) score += 40;
+      else if (nearest && nearest.distanceFt <= 800) score += 30;
+      else if (nearest && nearest.distanceFt <= 1500) score += 20;
+      else if (nearest) score += 10;
+      if (poles >= 2) score += 20;
+      else if (poles === 1) score += 10;
+      if (lines >= 1) score += 20;
+      if (transformers >= 1) score += 10;
+
+      const confidence = score >= 70 ? 'high' : score >= 40 ? 'moderate' : 'low';
+      return { score: Math.min(score, 100), confidence };
+    }
+
+    // Overpass elements -> the proximity answer (without the cache fields). Pure.
+    function summarizeOsmPower(elements, { lat, lon, geometry = null, provider = '' } = {}) {
+      const center = { lat: Number(lat), lon: Number(lon) };
+      const lineRadiusFt = Math.round(LINE_RADIUS_M * FT_PER_M);
+      const poleRadiusFt = Math.round(POLE_RADIUS_M * FT_PER_M);
+      // Every element within its search radius counts as evidence (by the cheap lower bound, distance
+      // to the parcel's bounding box). Exact distances are measured only where they can change what is
+      // shown: the 8 nearest distribution features and the nearest other line. Measuring every line in
+      // a town against every parcel edge took about a second of CPU.
+      const measurer = parcelMeasurer({ lat: center.lat, lon: center.lon, geometry });
+      const candidates = [];
+      for (const element of measurer ? elements || [] : []) {
+        const path = elementPath(element);
+        if (!path.length) continue;
+        const cls = classifyPowerElement(element.tags || {});
+        const limit = cls.type === 'pole' || cls.type === 'transformer' ? poleRadiusFt : lineRadiusFt;
+        const bound = measurer.bound(path);
+        if (bound <= limit) candidates.push({ element, cls, path, limit, bound });
+      }
+      candidates.sort((a, b) => a.bound - b.bound || String(a.element.id).localeCompare(String(b.element.id)));
+      const nearestDistribution = [];
+      let otherBest = Infinity;
+      const features = [];
+      for (const c of candidates) {
+        const distribution = c.cls.lineType === 'distribution';
+        const needed = distribution ? nearestDistribution.length < 8 || c.bound < nearestDistribution[7] : c.bound < otherBest;
+        let distanceFt = null;
+        if (needed) {
+          distanceFt = measurer.exact(c.path);
+          if (distanceFt > c.limit) continue;
+          if (distribution) { nearestDistribution.push(distanceFt); nearestDistribution.sort((a, b) => a - b); }
+          else otherBest = Math.min(otherBest, distanceFt);
+        }
+        const element = c.element;
+        features.push({
+          osmType: element.type,
+          osmId: element.id,
+          type: c.cls.type,
+          lineType: c.cls.lineType,
+          infrastructureClass: c.cls.infrastructureClass,
+          distanceFt: distanceFt == null ? null : Math.round(distanceFt),
+          operator: element.tags?.operator || '',
+          voltage: element.tags?.voltage || '',
+          location: element.tags?.location || '',
+          source: 'OpenStreetMap'
+        });
+      }
+      // Measured features first, nearest first; the rest (counted only) after.
+      const order = f => (f.distanceFt == null ? Infinity : f.distanceFt);
+      features.sort((a, b) => order(a) - order(b) || String(a.osmId).localeCompare(String(b.osmId)));
+      const measured = f => f.distanceFt != null;
+
+      const distributionFeatures = features.filter(f => f.lineType === 'distribution');
+      const nearest = distributionFeatures.find(measured) || null;
+      const otherLines = features.filter(f => f.lineType !== 'distribution');
+      const nearestOtherLine = otherLines.find(measured) || null;
+      const poles = distributionFeatures.filter(f => f.type === 'pole').length;
+      const lines = distributionFeatures.filter(f => f.type !== 'pole' && f.type !== 'transformer').length;
+      const transformers = distributionFeatures.filter(f => f.type === 'transformer').length;
+      const confidence = confidenceFor({ nearest, poles, lines, transformers, providerKnown: Boolean(provider) });
+
+      return {
+        available: true,
+        adapter: 'osm-power-v2',
+        status: nearest ? 'mapped_distribution_found' : 'no_mapped_distribution_found',
+        provider: provider || '',
+        searchRadiusFt: lineRadiusFt,
+        poleSearchRadiusFt: poleRadiusFt,
+        nearest,
+        estimatedDistanceFt: nearest ? nearest.distanceFt : null,
+        infrastructure: nearest ? nearest.infrastructureClass : 'unknown',
+        lineType: nearest ? 'distribution' : (nearestOtherLine ? nearestOtherLine.lineType : 'unknown'),
+        nearestOtherLine,
+        confidence: confidence.confidence,
+        confidenceScore: confidence.score,
+        evidence: {
+          mappedPoles: poles,
+          mappedDistributionLines: lines,
+          mappedTransformers: transformers,
+          mappedFeatures: distributionFeatures.length,
+          mappedTransmissionLines: otherLines.filter(f => f.lineType === 'transmission').length,
+          mappedUnclassifiedLines: otherLines.filter(f => f.lineType === 'unknown').length
+        },
+        nearby: distributionFeatures.filter(measured).slice(0, 8),
+        source: 'OpenStreetMap / Overpass API',
+        sourceUrl: 'https://www.openstreetmap.org',
+        note: nearest
+          ? 'Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified.'
+          : 'No nearby distribution infrastructure was mapped in OpenStreetMap within the search radius. This does not mean power is unavailable.'
+      };
+    }
+    return { osmCell, overpassPowerQuery, slimElement, summarizeOsmPower };
+  })();
+
+  // Copy of src/services/power-intelligence.js osmDistribution and chooseNearestLine.
+  function osmDistribution(proximity, fallbackNote) {
+    const mapped = proximity.available && Number.isFinite(proximity.estimatedDistanceFt);
+    return {
+      status: mapped ? 'osm_mapped_proximity' : 'no_verified_distance',
+      estimatedDistanceFt: mapped ? proximity.estimatedDistanceFt : null,
+      confidence: proximity.confidence || 'low',
+      infrastructure: proximity.infrastructure || 'unknown',
+      ...(mapped ? { lineType: 'distribution', source: 'OpenStreetMap', sourceLabel: 'OSM' } : {}),
+      note: mapped ? proximity.note : (proximity.note || fallbackNote)
+    };
+  }
+  function chooseNearestLine(distribution, proximity, transmission) {
+    if (Number.isFinite(distribution?.estimatedDistanceFt)) {
+      const utility = distribution.status === 'utility_published_proximity';
+      return {
+        distanceFt: distribution.estimatedDistanceFt, lineType: 'distribution', infrastructure: distribution.infrastructure || 'unknown',
+        source: distribution.source || (utility ? 'Utility-published line map' : 'OpenStreetMap'),
+        sourceLabel: distribution.sourceLabel || (utility ? 'utility map' : 'OSM'),
+        sourceUrl: distribution.sourceUrl || (utility ? '' : 'https://www.openstreetmap.org'),
+        confidence: distribution.confidence || 'low',
+        note: 'Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost.'
+      };
+    }
+    const candidates = [];
+    const other = proximity?.available ? proximity.nearestOtherLine : null;
+    if (other && Number.isFinite(other.distanceFt)) {
+      candidates.push({ distanceFt: other.distanceFt, lineType: other.lineType === 'transmission' ? 'transmission' : 'unknown', infrastructure: other.infrastructureClass || 'unknown', source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', voltage: other.voltage || '' });
+    }
+    if (transmission?.available && Number.isFinite(transmission.distanceFt)) {
+      candidates.push({ distanceFt: transmission.distanceFt, lineType: 'transmission', infrastructure: 'transmission_line', source: transmission.source, sourceLabel: 'HIFLD', sourceUrl: transmission.sourceUrl, voltage: transmission.voltageKv ? `${transmission.voltageKv} kV` : '' });
+    }
+    if (!candidates.length) return null;
+    const best = candidates.sort((a, b) => a.distanceFt - b.distanceFt)[0];
+    return {
+      ...best,
+      confidence: 'low',
+      note: best.lineType === 'transmission'
+        ? 'Nearest mapped line is a high-voltage transmission line, which does not serve homes directly; no distribution line was mapped nearby. The utility confirms the route and cost.'
+        : 'Nearest mapped power line; its voltage is not mapped, so it may be a distribution or a transmission line. The utility confirms the route and cost.'
+    };
+  }
+  // The Worker's per-adapter distribution rule (src/services/power-intelligence.js), given the
+  // proximity the Worker could not get.
+  function powerDistribution(base, proximity) {
+    const current = base.distribution || {};
+    if (current.status === 'utility_published_proximity' && Number.isFinite(current.estimatedDistanceFt)) return current;
+    if (base.status === 'provider_unknown') {
+      return {
+        status: proximity.status || 'unknown', estimatedDistanceFt: proximity.estimatedDistanceFt ?? null, confidence: proximity.confidence || 'low',
+        infrastructure: proximity.infrastructure || 'unknown', note: proximity.note || 'Electric utility territory was not identified for this parcel.'
+      };
+    }
+    if (base.adapter === 'avista-v1') {
+      return proximity.available && Number.isFinite(proximity.estimatedDistanceFt)
+        ? { status: 'osm_mapped_proximity', estimatedDistanceFt: proximity.estimatedDistanceFt, confidence: proximity.confidence, infrastructure: proximity.infrastructure, lineType: 'distribution', source: 'OpenStreetMap', sourceLabel: 'OSM', note: proximity.note }
+        : current;
+    }
+    if (base.adapter === 'inland-power-v1') {
+      return { ...osmDistribution(proximity, 'Distance not verified.'), note: 'Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route.' };
+    }
+    return osmDistribution(proximity, `A dedicated ${base.provider} utility infrastructure adapter has not been built yet.`);
+  }
+
+  async function osmPower(input, signal, base) {
+    if (!base || typeof base !== 'object' || Array.isArray(base)) throw new Error('AcresX fallback: no power answer to complete');
+    const point = pointOf(input, true), geometry = geometryOf(input, false);
+    const cell = OsmPower.osmCell(point.lat, point.lon);
+    const query = OsmPower.overpassPowerQuery(cell, 10);
+    let data = null, lastError = null;
+    for (const endpoint of OSM_ENDPOINTS) {
+      try { data = await request(endpoint, { data: query }, { agency: 'Overpass', signal, maxBytes: OSM_MAX_BYTES }); break; } catch (error) { lastError = error; if (signal?.aborted) throw error; }
+    }
+    if (!data) throw lastError || new Error('Overpass did not answer');
+    if (!Array.isArray(data.elements)) throw new Error('Overpass returned no elements');
+    const provider = String(base.provider || '');
+    const elements = data.elements.map(OsmPower.slimElement);
+    const proximity = { ...OsmPower.summarizeOsmPower(elements, { lat: point.lat, lon: point.lon, geometry, provider }), cached: false, cacheCell: cell.key, loadedFrom: 'browser' };
+    const { fallback: _hint, ...rest } = base;
+    const distribution = powerDistribution(rest, proximity);
+    return { ...rest, proximity, distribution, nearestLine: chooseNearestLine(distribution, proximity, rest.transmissionLine) };
+  }
+
   // ---- Kinds, the fetch hook and labels
 
   const KINDS = {
@@ -1401,7 +1792,8 @@
     'stevens-assessor': { api: '/api/property-assessment', run: stevensAssessor, agency: () => 'Stevens County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'spokane-assessor': { api: '/api/property-assessment', run: spokaneAssessor, agency: () => 'Spokane County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] },
-    'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] }
+    'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] },
+    'osm-power': { api: '/api/power-intelligence', run: osmPower, agency: () => OSM_AGENCY, targets: ['powerStatus'] }
   };
 
   let loaded = {};
