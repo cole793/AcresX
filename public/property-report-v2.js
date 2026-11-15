@@ -24,6 +24,10 @@
 //   minimum caps the score); the score's one-line "why" is printed under the score.
 // Listing data is shown only when a listing matched, as unverified context; it never feeds the score.
 // No owner names are read or shown.
+// Co-branding: when the user saved report branding on the Settings page (public/report-branding.js,
+// this browser only), page 1 says "Prepared by <name>, <brokerage>" with their logo and contact line,
+// every footer carries their contact line, and AcresX appears as "Powered by AcresX". The screening
+// disclaimers are the same with or without branding. All branding text is escaped here.
 (() => {
   const $ = id => document.getElementById(id);
   const txt = id => ($(id)?.textContent || '').trim();
@@ -400,8 +404,11 @@
 
   const eyebrow = t => `<div class="eyebrow">${esc(t)}</div>`;
   const chip = (level, text) => `<span class="chip ${level}">${esc(text)}</span>`;
-  const pageHead = (title, f) => `<header class="mini-head"><img class="logo-sm" src="/assets/acresx-logo.png" alt="AcresX"><div class="mini-title">${eyebrow(title)}<span>${esc(f.address || 'No situs address')} · Parcel ${esc(f.pid || NA)}</span></div></header>`;
-  const footer = (n, total) => `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`;
+  const brandMark = b => (b.logo ? `<img class="agent-logo-sm" src="${esc(b.logo)}" alt="${esc(b.brokerage || b.name)}">` : `<span class="agent-mark">${esc(b.preparedBy)}</span>`);
+  const pageHead = (title, f) => `<header class="mini-head">${f.brand ? brandMark(f.brand) : '<img class="logo-sm" src="/assets/acresx-logo.png" alt="AcresX">'}<div class="mini-title">${eyebrow(title)}<span>${esc(f.address || 'No situs address')} · Parcel ${esc(f.pid || NA)}</span></div></header>`;
+  const footer = (n, total, brand) => (brand
+    ? `<footer class="foot branded"><span class="foot-agent">Prepared by ${esc(brand.preparedBy)}${brand.footerContact.length ? ` · ${brand.footerContact.map(esc).join(' · ')}` : ''}</span><span class="foot-right">Powered by AcresX · Screening only · Page ${n} of ${total}</span></footer>`
+    : `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`);
 
   // ---- Page 1: buildable acres (screening estimate; feeds only the score's homesite check)
 
@@ -429,6 +436,15 @@ ${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restrict
   // One line under the header: "Validated county" / "Partially validated" / "Limited coverage …".
   const coverageLine = c => (c ? `<p class="coverage cov-${esc(c.tier)}"><b>${esc(c.label)}</b>${esc(c.summary)}</p>` : '');
 
+  const generatedOn = () => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  function headerP1(b) {
+    if (!b) return `<header class="head"><img class="logo" src="/assets/acresx-logo.png" alt="AcresX"><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(generatedOn())}</span></div></header>`;
+    return `<header class="head branded"><div class="agent">${b.logo ? `<img class="agent-logo" src="${esc(b.logo)}" alt="${esc(b.brokerage || b.name)}">` : ''}<div class="agent-text"><div class="prepared">Prepared by <strong>${esc(b.name)}</strong>${b.brokerage ? `, ${esc(b.brokerage)}` : ''}</div>${b.contact.length ? `<div class="agent-contact">${b.contact.map(esc).join(' · ')}</div>` : ''}</div></div><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(generatedOn())}</span><span class="powered">Powered by AcresX</span></div></header>`;
+  }
+  function brandParts() {
+    try { const B = window.AcresXBranding; return B ? B.parts(B.load()) : null; } catch { return null; }
+  }
+
   function page1(data, f, score, name) {
     const parcel = data.parcel || {};
     const cost = f.cost;
@@ -440,7 +456,7 @@ ${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restrict
       ? `<div class="flags">${f.findings.map(x => `<div class="flag ${x.level}"><b>${x.level === 'good' ? '✓' : x.level === 'risk' ? '!' : '?'}</b><div><strong>${esc(x.title)}</strong>${x.detail ? `<span>${esc(x.detail)}</span>` : ''}</div></div>`).join('')}</div>`
       : `<p class="muted">Key findings not available.</p>`;
     return `<section class="page p1"><div class="page-body">
-<header class="head"><img class="logo" src="/assets/acresx-logo.png" alt="AcresX"><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}</span></div></header>
+${headerP1(f.brand)}
 ${coverageLine(f.coverage)}<div class="title">
 <h1>${esc(f.address || 'No situs address')}</h1>
 <div class="facts">
@@ -457,7 +473,7 @@ ${buildableBlock(data.buildableArea)}
 </div>
 <section class="block">${eyebrow('Key findings')}${flags}</section>
 <p class="disclaimer">Screening information from public records. Verify material findings with the responsible agency, utility or licensed professional before relying on them.</p>
-</div>${footer(1, f.pages)}</section>`;
+</div>${footer(1, f.pages, f.brand)}</section>`;
   }
 
   // ---- Page 2
@@ -606,7 +622,7 @@ ${buildableBlock(data.buildableArea)}
 <section class="block">${eyebrow('Site conditions')}${siteCards(data, f, S)}</section>
 <section class="block">${eyebrow('Assessor record')}${assessorBlock(f, S)}</section>
 ${listingBlock(data)}
-</div>${footer(2, f.pages)}</section>`;
+</div>${footer(2, f.pages, f.brand)}</section>`;
   }
 
   // ---- Page 3
@@ -650,7 +666,7 @@ ${listingBlock(data)}
 <section class="block">${eyebrow('Before you buy')}${checklist(data, f)}</section>
 <section class="small">${eyebrow('Sources')}<p class="muted src-note">Map and record layers were read when this report was generated (${esc(today())}); cost sources show their effective date.</p>${sources ? `<ol class="sources">${sources}</ol>` : '<p class="muted">No sources recorded.</p>'}
 <p class="limits"><strong>Preliminary screening only.</strong> AcresX compiles public records and third-party data. It is not a survey, appraisal, title report, wetland delineation, septic design, utility availability confirmation, zoning determination or engineering analysis, and does not guarantee development approval. Parcel boundaries and mapped features are approximate. Cost estimates are planning ranges, not bids. Verify material findings with the responsible agency, utility, licensed professional and title provider.</p></section>
-</div>${footer(3, f.pages)}</section>`;
+</div>${footer(3, f.pages, f.brand)}</section>`;
   }
 
   // ---- Page 4 (appendix): how each cost line was estimated. Source numbers match page 3.
@@ -658,7 +674,7 @@ ${listingBlock(data)}
     return `<section class="page p4"><div class="page-body">${pageHead('Appendix: cost assumptions', f)}
 <section>${eyebrow('How each cost line was estimated')}<p class="muted">The formula, inputs and assumptions behind each line of the cost table on page 3. Bracketed numbers refer to the sources on page 3. Screening estimate, not a quote.</p></section>
 <ol class="notes">${notes.join('')}</ol>
-</div>${footer(4, f.pages)}</section>`;
+</div>${footer(4, f.pages, f.brand)}</section>`;
   }
 
   // ---- Document
@@ -732,6 +748,13 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .flag.good{background:var(--greenbg);border-color:var(--g2)}.flag.good b{background:var(--g2)}
 .disclaimer{font-size:7.5pt;color:var(--mut);margin-top:auto}
 .mini-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--g);padding-bottom:7px}
+.head.branded{align-items:center;gap:14px}.agent{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.agent-logo{max-height:44px;max-width:2.1in;object-fit:contain;flex:none}.agent-text{min-width:0}
+.prepared{font-size:11pt;line-height:1.2;color:var(--ink);overflow-wrap:anywhere}.prepared strong{color:var(--g)}
+.agent-contact{font-size:7.8pt;color:var(--mut);margin-top:2px;overflow-wrap:anywhere}
+.head.branded .head-right{flex:none;display:flex;flex-direction:column;align-items:flex-end}.powered{font-size:6.8pt;color:var(--mut);margin-top:1px}
+.agent-logo-sm{max-height:22px;max-width:1.6in;object-fit:contain}.agent-mark{font-size:8pt;font-weight:800;color:var(--g);max-width:3.6in;overflow-wrap:anywhere}
+.foot.branded{gap:12px}.foot-agent{min-width:0;overflow-wrap:anywhere}.foot-right{flex:none;text-align:right}
 .logo-sm{height:20px}.mini-title{text-align:right;font-size:8pt;color:var(--mut)}.mini-title .eyebrow{justify-content:flex-end;margin-bottom:1px;font-size:8pt}
 .zone-head{display:flex;gap:12px;align-items:center;margin-bottom:6px}
 .zone-code{background:var(--g);color:#fff;font-weight:900;font-size:13pt;border-radius:8px;padding:6px 11px;min-width:56px;text-align:center}
@@ -770,10 +793,15 @@ table{border-collapse:collapse;width:100%}
 .d1 .page-body{gap:9px}.d1 .checklist li{font-size:7.6pt}.d1 .costs td{padding:4px 6px 4px 0}.d1 .site p,.d1 .uses td{font-size:7.4pt}.d1 .small .sources{font-size:6.3pt}.d1 .notes p{font-size:7.6pt}
 .d2 .page-body{gap:7px}.d2 .checklist li{font-size:7.3pt}.d2 .checklist{gap:4px 14px}.d2 .site{padding:5px 8px}.d2 .uses td{padding:2px 6px 2px 0}.d2 .small .sources{font-size:6pt}.d2 .notes p{font-size:7.2pt}.d2 .notes li{padding:6px 0}.d2 .flag{padding:6px 9px}
 .d3 .site p,.d3 .uses td,.d3 .overlays li{font-size:7pt}.d3 .small .sources{font-size:5.7pt}.d3 .notes p{font-size:6.8pt}.d3 .costs td{padding:4px 6px 4px 0}
+.p1.d1 .score-card,.p1.d1 .cost-card{padding:9px 12px}.p1.d1 .flag{padding:6px 9px}.p1.d1 .facts>div{padding:5px 10px}.p1.d1 .buildable{padding:5px 10px}
+.p1.d2 .title h1{font-size:17pt;margin-bottom:5px}.p1.d2 .score-num{font-size:25pt}.p1.d2 .score-row{margin-bottom:3px}.p1.d2 .drivers li{padding:1px 0}.p1.d2 .flags{gap:5px}.p1.d2 .flag{padding:5px 8px}.p1.d2 .agent-logo{max-height:38px}
+.p1.d3 .title h1{font-size:15pt;margin-bottom:3px}.p1.d3 .facts>div{padding:3px 9px}.p1.d3 .facts strong{font-size:9pt}.p1.d3 .flag span,.p1.d3 .cost-card p,.p1.d3 .b-list{font-size:7pt}.p1.d3 .score-why,.p1.d3 .drivers li{font-size:8pt}.p1.d3 .cost-num{font-size:17pt}.p1.d3 .agent-logo{max-height:32px}.p1.d3 .prepared{font-size:10pt}
 @media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none}}
 `;
   // Pages have a fixed Letter height; a page whose content would overflow is tightened in steps
   // (d1-d3), and if it still overflows it grows instead of clipping (no overlap, no cut-off).
+  // Page 1 has its own steps (padding, title and score sizes; never the map, whose overlay is drawn
+  // for its fixed aspect ratio), so a branded header, a reference and a long brokerage still fit.
   const FIT = `(function(){function fit(){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('d1','d2','d3','grow');var b=p.querySelector('.page-body');var over=function(){return b.scrollHeight>b.clientHeight+1};var steps=['d1','d2','d3'];for(var i=0;i<steps.length&&over();i++)p.classList.add(steps[i]);if(over())p.classList.add('grow')})}window.__acresxFit=fit;window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})();`;
 
   function makeReport(name) {
@@ -781,6 +809,7 @@ table{border-collapse:collapse;width:100%}
     const f = gatherFacts(data);
     // A fourth page (appendix) when the cost lines carry their assumptions; every footer says "of N".
     f.pages = f.cost?.lines.some(l => l.basis) ? 4 : 3;
+    f.brand = brandParts();
     const S = sourceList();
     const score = scoreInfo(data, f);
     const p1 = page1(data, f, score, name);
