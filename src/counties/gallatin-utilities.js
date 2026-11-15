@@ -72,7 +72,7 @@ export const GALLATIN_UTILITIES = {
     },
     {
       id: 'gallatin-city-limits', name: 'Gallatin County incorporated cities and towns', agency: 'Gallatin County GIS',
-      url: GALLATIN_CITY_LIMITS, services: ['water', 'sewer'], kind: 'area', outFields: 'NAME,TYPE',
+      url: GALLATIN_CITY_LIMITS, services: ['water', 'sewer'], kind: 'area', outFields: 'NAME,TYPE', cityLimits: true,
       read: rows => rows.flatMap(a => {
         const place = gallatinPlace(a);
         return place ? cityLimitsFindings(place.name, ['water', 'sewer'].filter(s => !(MAPPED[place.key] || []).includes(s))) : [];

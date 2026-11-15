@@ -1,19 +1,24 @@
 // Public water and sewer screening for POST /api/public-utilities { state, county, lat, lon, geometry }.
 //
-// Owner decision (2026-11-09, "Swap to hookups"): when a parcel is in a public water and/or sewer
-// service area, the report says "Public water/sewer likely available — verify with the
-// city/district", swaps the well and/or septic cost line for a connection-fee planning range, and
-// scores that factor as favorable (public/public-utilities.js). Water and sewer are independent.
+// Owner decision (2026-11-09, "Swap to hookups"), narrowed by the owner bug of 2026-11-15: only a
+// "served" finding swaps the well and/or septic cost line for a connection and scores that factor
+// as favorable. A "likely" finding keeps the private well/septic as the primary estimate and the
+// connection is shown as an alternative line (public/public-utilities.js). Water and sewer are
+// independent.
 //
 // Answer (always HTTP 200 for a well-formed request):
 //   { available, state, county,
 //     water: Finding, sewer: Finding,
 //     sources: [{ id, name, url, services, ok, error? }],   // every layer asked, in order
 //     note, checkedAt }
-//   Finding = { status, provider, basis, source: { name, url }, distanceM?, asOf?, others? }
+//   Finding = { status, provider, basis, source: { name, url }, distanceM?, asOf?, others?, cityLimits? }
+//   cityLimits (served/likely only, added 2026-11-15): 'inside' | 'outside' | 'unknown' (the
+//   county's city-limits layer did not answer), so the page can say that city service outside
+//   city limits usually needs annexation or an extension agreement.
 //   status:
 //     served       inside an official service-area / district polygon AND inside city/town limits,
-//                  or an official main within SERVED_MAX_M of the parcel outline
+//                  or an official main within SERVED_MAX_M of the parcel outline (a city or town
+//                  system's main only when the parcel is inside that city's limits, 2026-11-15)
 //     likely       a main SERVED_MAX_M..LIKELY_MAX_M from the outline; a district polygon outside
 //                  city limits ("inside <district> service area; confirm a main reaches the
 //                  parcel"); inside city/town limits where that city publishes no map for that
@@ -169,8 +174,13 @@ export function mainsFinding(source, features, target) {
   if (source.maxStatus === 'likely') status = 'likely';
   const where = distanceM === 0 ? 'crosses or touches the parcel' : `${distanceM} m from the parcel${target.rings ? '' : ' point'}`;
   const basis = `${source.mainLabel} ${where}${source.asOf ? ` (map as of ${source.asOf}${source.maxStatus === 'likely' ? '; older map, so not counted as served' : ''})` : ''}`;
-  return [{ service: source.services[0], status, provider: source.provider, basis, source: sourceRef(source), distanceM, ...(source.asOf ? { asOf: source.asOf } : {}) }];
+  return [{ service: source.services[0], status, provider: source.provider, basis, source: sourceRef(source), distanceM, ...(source.asOf ? { asOf: source.asOf } : {}), ...(isCitySystem(source) ? { citySystem: true } : {}) }];
 }
+
+// A city or town utility (City of Spokane, City of Bozeman, ...), as opposed to a district or a
+// county utility (Spokane County Utilities). Its mains serve parcels inside that city.
+export const isCitySystem = source => source.citySystem ?? /^(city|town) of /i.test(text(source.provider));
+const placeKey = name => text(name).toLowerCase().replace(/\s*\(.*?\)\s*/g, ' ').replace(/^(city|town) of /, '').replace(/[^a-z0-9]+/g, ' ').trim();
 
 async function runSource(source, ctx) {
   const opts = { ...QUERY_TIMEOUTS, agency: source.agency, label: `utilities:${source.id}` };
@@ -188,12 +198,27 @@ async function runSource(source, ctx) {
 // districts, Stevens PUD Suncrest, the Montana districts) the polygon says the district covers the
 // parcel, not that a main reaches it, so it is "likely". Main distances are not affected. When the
 // city-limits layer failed, the parcel is treated as outside (the answer is incomplete anyway).
-export function cityLimitsRule(findings) {
-  const inCity = findings.some(f => f.inCity);
+//
+// Owner bug (2026-11-15): a city system's main within SERVED_MAX_M counts as "served" only inside
+// that city's limits. Outside them (or when the city-limits layer did not answer) the city usually
+// requires annexation or an extension agreement first, so it is "likely". Every served/likely
+// finding carries cityLimits: 'inside' | 'outside' | 'unknown'.
+// citiesChecked: whether the county's city-limits layer (source.cityLimits) answered; null when the
+// county has no such layer.
+export function cityLimitsRule(findings, { citiesChecked = true } = {}) {
+  const cities = findings.filter(f => f.inCity).map(f => f.inCity);
+  const inCity = cities.length > 0;
+  const where = inCity ? 'inside' : citiesChecked === false ? 'unknown' : 'outside';
   return findings.filter(f => f.service).map(f => {
-    if (!f.fromArea || inCity) { const { fromArea: _a, ...rest } = f; return rest; }
-    const { fromArea: _a, ...rest } = f;
-    return { ...rest, status: 'likely', basis: `inside ${f.provider} service area; confirm a main reaches the parcel` };
+    const { fromArea: _a, citySystem, ...rest } = f;
+    const out = { ...rest, cityLimits: where };
+    if (f.fromArea && !inCity) return { ...out, status: 'likely', basis: `inside ${f.provider} service area; confirm a main reaches the parcel` };
+    if (citySystem && f.status === 'served' && !cities.some(c => placeKey(c) === placeKey(f.provider))) {
+      const city = text(f.provider).replace(/\s*\(.*?\)\s*$/, '');
+      const outside = inCity ? `outside ${city} limits` : where === 'unknown' ? `${city} limits not checked` : `outside ${city} limits`;
+      return { ...out, status: 'likely', basis: `${f.basis}; ${outside}, so city service usually needs annexation or an extension agreement` };
+    }
+    return out;
   });
 }
 
@@ -243,7 +268,8 @@ export async function lookupPublicUtilities({ state, county, lat, lon, geometry 
   }
   const ctx = { lat, lon, target: targetOf(geometry, lon, lat), now };
   const results = await Promise.allSettled(config.sources.map(source => runSource(source, ctx)));
-  const findings = cityLimitsRule(results.flatMap(r => (r.status === 'fulfilled' ? r.value : [])));
+  const limits = config.sources.map((s, i) => (s.cityLimits ? results[i].status === 'fulfilled' : null)).filter(x => x != null);
+  const findings = cityLimitsRule(results.flatMap(r => (r.status === 'fulfilled' ? r.value : [])), { citiesChecked: limits.length ? limits.every(Boolean) : null });
   const sources = config.sources.map((s, i) => ({
     id: s.id, name: s.name, url: s.url, services: s.services, ok: results[i].status === 'fulfilled',
     ...(results[i].status === 'fulfilled' ? {} : { error: text(results[i].reason?.message) || 'request failed' })
