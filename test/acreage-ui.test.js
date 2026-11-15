@@ -26,9 +26,8 @@ test('overview: both acreages far apart -> both shown with the verify note', () 
   assert.deepEqual(renderOverview(cases.far), { acres: '2.89', detail: '2.89 ac (assessor) · 1.98 ac mapped', note: NOTE });
 });
 
-test('overview: mapped only -> mapped acreage labeled as mapped, as before', () => {
-  const sqft = Math.round(acresToSqm(1.977409) * 10.7639104167).toLocaleString();
-  assert.deepEqual(renderOverview(cases.mappedOnly), { acres: '1.98', detail: `${sqft} sq ft · mapped area`, note: '' });
+test('overview: mapped only -> mapped acreage in acres (not square feet), labeled as mapped', () => {
+  assert.deepEqual(renderOverview(cases.mappedOnly), { acres: '1.98', detail: '1.98 ac mapped', note: '' });
 });
 
 test('overview: assessor only -> assessor acreage labeled', () => {
@@ -65,7 +64,7 @@ test('report density warning uses assessor acres when present, else mapped', () 
 test('overview: Stevens assessor acres from the assessment are shown next to mapped acreage', () => {
   const stevensParcel = () => ({ type: 'Feature', geometry: square, properties: { ORIG_PARCEL_ID: '2611300', _countyDisplay: 'Stevens' } });
   const before = renderOverview({ parcel: stevensParcel(), mappedSqm: acresToSqm(5.94) });
-  assert.match(before.detail, /sq ft · mapped area$/);
+  assert.equal(before.detail, '5.94 ac mapped');
   const after = renderOverviewWithAssessment({ parcel: stevensParcel(), mappedSqm: acresToSqm(5.94), assessorAcres: 6.5 });
   assert.deepEqual(after.overview, { acres: '6.50', detail: '6.50 ac (assessor) · 5.94 ac mapped', note: '' });
   assert.equal(after.properties.ACRES, 6.5);

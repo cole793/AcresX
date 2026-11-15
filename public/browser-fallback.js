@@ -345,7 +345,7 @@
         ORIG_PARCEL_ID: pin, PARCEL_ID_NR: pin, COUNTY_NM: 'Kootenai',
         _countyDisplay: 'Kootenai', _stateCode: 'ID', _stateDisplay: 'Idaho',
         SITUS_ADDRESS: trimmed(attrs.Loc_Addr), SITUS_CITY_NM: trimmed(attrs.Loc_City), SITUS_ZIP_NR: '',
-        DATA_LINK: '', ACRES: numberOrNull(attrs.Acres),
+        DATA_LINK: 'https://id-kootenai.publicaccessnow.com/Assessor/PropertySearch.aspx', ACRES: numberOrNull(attrs.Acres),
         _assessment: { categories: '' },
         _source: { name: KC_PARCEL_SOURCE, url: KC_PARCEL_LAYER }
       }

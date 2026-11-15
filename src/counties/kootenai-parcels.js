@@ -13,6 +13,8 @@
 
 import { arcgisJson, cachedJson } from '../shared/upstream.js';
 
+// Kootenai County Assessor public property search (Aumentum Public Access).
+export const KC_PROPERTY_SEARCH = 'https://id-kootenai.publicaccessnow.com/Assessor/PropertySearch.aspx';
 export const KC_PARCEL_LAYER = 'https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0';
 export const KC_PARCEL_SOURCE = 'Kootenai County GIS (Ownership_Display parcel layer)';
 // Never add Name here: it is the owner's name.
@@ -103,7 +105,9 @@ function mergeGeometries(geometries) {
 // --- Layer attributes -> the properties /api/parcel-search returns ---------------------------
 // Same property names the statewide path fills (src/states/idaho/parcels.js normalizeFeature),
 // because the frontend reads those: ORIG_PARCEL_ID, PARCEL_ID_NR, SITUS_*, COUNTY_NM,
-// _countyDisplay, DATA_LINK, ACRES. The layer has no ZIP or assessor link, so those stay ''.
+// _countyDisplay, DATA_LINK, ACRES. The layer has no ZIP, so that stays ''. It has no per-parcel
+// assessor link either, and the county's public assessor site takes no parcel number in its URL,
+// so DATA_LINK is the Kootenai County Assessor property search (search by PIN there).
 // Named fields only (no spread of attrs).
 export function mapKootenaiParcel(attrs = {}, geometry = null) {
   const pin = str(attrs.PIN);
@@ -114,7 +118,7 @@ export function mapKootenaiParcel(attrs = {}, geometry = null) {
       ORIG_PARCEL_ID: pin, PARCEL_ID_NR: pin, COUNTY_NM: 'Kootenai',
       _countyDisplay: 'Kootenai', _stateCode: 'ID', _stateDisplay: 'Idaho',
       SITUS_ADDRESS: str(attrs.Loc_Addr), SITUS_CITY_NM: str(attrs.Loc_City), SITUS_ZIP_NR: '',
-      DATA_LINK: '', ACRES: num(attrs.Acres),
+      DATA_LINK: KC_PROPERTY_SEARCH, ACRES: num(attrs.Acres),
       _assessment: { categories: '' },
       _source: { name: KC_PARCEL_SOURCE, url: KC_PARCEL_LAYER }
     }
