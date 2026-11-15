@@ -2,8 +2,8 @@
 // 2026-10-29, "option A"). The Worker always asks first. When an eligible layer fails there with a
 // network error, a timeout or a 403/429/5xx, its /api answer keeps its shape and adds
 //   fallback: { mode: 'browser', kind, input }          (src/shared/fallback.js)
-// This script wraps window.fetch for six /api routes (parcel search, zoning, wells, assessment,
-// flood, power intelligence), with Kootenai and Stevens kinds for zoning and assessment and a Spokane kind for assessment. When such an answer arrives it runs the
+// This script wraps window.fetch for seven /api routes (parcel search, zoning, wells, assessment,
+// flood, power intelligence, address search), with Kootenai and Stevens kinds for zoning and assessment and a Spokane kind for assessment. When such an answer arrives it runs the
 // known query for that kind from the user's browser and hands the page an answer in the Worker's
 // shape, so the existing render path shows it. It then labels the section
 // "Loaded directly from <agency>".
@@ -1392,6 +1392,139 @@
     };
   }
 
+  // ---- Kootenai address search (copy of src/shared/address-locator.js with
+  // src/counties/kootenai-address.js, and the /api/address-search answer around it). The Worker
+  // never calls map.kcgov.us for address search; it answers every Kootenai action with this hint.
+  // Owner field `Name` is never requested.
+
+  const KC_ADDRESS_LOCATOR = 'https://map.kcgov.us/arcgis/rest/services/GISAPP22_COMP_LOC/GeocodeServer';
+  const KC_ADDRESS_FIELDS = 'PIN,Loc_Addr,Loc_City';
+  const KC_ADDRESS_AGENCY = 'Kootenai County GIS';
+  const KC_ADDRESS_EXAMPLE = '50N04W323200';
+  const ADDR = Object.freeze({ textMax: 120, suggestMax: 6, choicesMax: 8, minScore: 80, nearMeters: 30 });
+  const ADDR_POINT_TYPES = new Set(['PointAddress', 'Subaddress']);
+  const ADDR_INTERPOLATED_TYPES = new Set(['StreetAddress', 'StreetAddressExt']);
+  const ADDR_DIRECTIONS = { NORTH: 'N', SOUTH: 'S', EAST: 'E', WEST: 'W', NORTHEAST: 'NE', NORTHWEST: 'NW', SOUTHEAST: 'SE', SOUTHWEST: 'SW' };
+  const ADDR_DIRECTION_SET = new Set(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW', ...Object.keys(ADDR_DIRECTIONS)]);
+  const ADDR_STREET_TYPES = { ROAD: 'RD', STREET: 'ST', AVENUE: 'AVE', AV: 'AVE', DRIVE: 'DR', LANE: 'LN', TRAIL: 'TRL', TR: 'TRL', COURT: 'CT', HIGHWAY: 'HWY', PLACE: 'PL', BOULEVARD: 'BLVD', CIRCLE: 'CIR', PARKWAY: 'PKWY', TERRACE: 'TER', ROUTE: 'RTE' };
+  const ADDR_STREET_TYPE_SET = new Set(['RD', 'ST', 'AVE', 'DR', 'LN', 'TRL', 'CT', 'HWY', 'PL', 'BLVD', 'CIR', 'PKWY', 'TER', 'LOOP', 'WAY', 'RTE', ...Object.keys(ADDR_STREET_TYPES)]);
+
+  function addrText(input) {
+    const text = String(input?.text ?? '').replace(/\s+/g, ' ').trim();
+    if (text.length < 3 || text.length > ADDR.textMax || !/^[A-Za-z0-9 .,#'&/-]+$/.test(text)) throw new Error('AcresX fallback: bad address text');
+    return text;
+  }
+  function addrMagicKey(input) {
+    const key = input?.magicKey;
+    if (key === undefined || key === null || key === '') return '';
+    if (String(key).length > 1024 || !/^[A-Za-z0-9+/=_:.-]+$/.test(String(key))) throw new Error('AcresX fallback: bad suggestion key');
+    return String(key);
+  }
+  function addrStreetParts(text) {
+    const street = String(text ?? '').split(',')[0].toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const tokens = street ? street.split(' ') : [];
+    const number = tokens.length && /^\d+[A-Z]?$/.test(tokens[0]) ? tokens.shift() : '';
+    const words = tokens.filter(t => !ADDR_DIRECTION_SET.has(t) && !ADDR_STREET_TYPE_SET.has(t) && t.length >= 2);
+    return { number, words };
+  }
+  function addrSitusWhere(field, text) {
+    const { number, words } = addrStreetParts(text);
+    if (!words.length) return null;
+    if (number) return `UPPER(${field}) LIKE '${number} %${words.join('%')}%'`;
+    if (!words.some(w => w.length >= 4)) return null;
+    return `UPPER(${field}) LIKE '%${words.join(' ')}%'`;
+  }
+  function addrNormalizeStreet(text) {
+    return String(text ?? '').split(',')[0].toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
+      .split(' ').map(t => ADDR_DIRECTIONS[t] || ADDR_STREET_TYPES[t] || t).join(' ');
+  }
+  function addrBestCandidate(candidates) {
+    const usable = (Array.isArray(candidates) ? candidates : [])
+      .map(c => ({ address: String(c?.address ?? '').trim(), score: Number(c?.score), type: String(c?.attributes?.Addr_type ?? ''), lon: Number(c?.location?.x), lat: Number(c?.location?.y) }))
+      .filter(c => Number.isFinite(c.lon) && Number.isFinite(c.lat) && Number.isFinite(c.score) && c.score >= ADDR.minScore && (ADDR_POINT_TYPES.has(c.type) || ADDR_INTERPOLATED_TYPES.has(c.type)));
+    usable.sort((a, b) => (ADDR_POINT_TYPES.has(b.type) - ADDR_POINT_TYPES.has(a.type)) || (b.score - a.score));
+    const best = usable[0];
+    return best ? { address: best.address, score: best.score, type: best.type, interpolated: !ADDR_POINT_TYPES.has(best.type), point: { lat: best.lat, lon: best.lon } } : null;
+  }
+  function kcAddressRows(features) {
+    const seen = new Set(), out = [];
+    for (const f of Array.isArray(features) ? features : []) {
+      const a = f?.attributes || {};
+      const parcelId = trimmed(a.PIN);
+      if (!parcelId || seen.has(parcelId)) continue;
+      seen.add(parcelId);
+      out.push({ parcelId, address: trimmed(a.Loc_Addr), city: trimmed(a.Loc_City), county: 'Kootenai', state: 'ID' });
+    }
+    return out;
+  }
+  const kcAddrOpts = signal => ({ agency: 'Kootenai County address search', signal, arcgisMessage: 'Kootenai County address search failed' });
+  const kcParcelRows = async (params, signal) => kcAddressRows(await arcgisFeatures(KC_PARCEL_LAYER, { returnGeometry: 'false', outFields: KC_ADDRESS_FIELDS, ...params }, kcAddrOpts(signal)));
+  async function kcParcelsAt(point, signal) {
+    const base = { geometry: `${point.lon},${point.lat}`, geometryType: 'esriGeometryPoint', inSR: '4326', spatialRel: 'esriSpatialRelIntersects', where: '1=1' };
+    const under = await kcParcelRows(base, signal);
+    if (under.length) return { parcels: under.slice(0, ADDR.choicesMax), near: false };
+    const near = await kcParcelRows({ ...base, distance: String(ADDR.nearMeters), units: 'esriSRUnit_Meter', resultRecordCount: String(ADDR.choicesMax) }, signal);
+    return { parcels: near.slice(0, ADDR.choicesMax), near: near.length > 0 };
+  }
+  async function kcParcelsBySitus(text, signal, count = ADDR.choicesMax) {
+    const like = addrSitusWhere('Loc_Addr', text);
+    if (!like) return [];
+    const rows = await kcParcelRows({ where: like, resultRecordCount: String(Math.max(count * 3, 20)) }, signal);
+    const typed = addrNormalizeStreet(text), { number } = addrStreetParts(text);
+    const rank = r => (addrNormalizeStreet(r.address) === typed ? 0 : number && addrNormalizeStreet(r.address).startsWith(`${number} `) ? 1 : 2);
+    return rows.filter(r => r.address).sort((a, b) => rank(a) - rank(b) || a.address.localeCompare(b.address)).slice(0, count);
+  }
+  async function kcResolve(text, magicKey, signal) {
+    let candidate = null;
+    try {
+      const data = await request(`${KC_ADDRESS_LOCATOR}/findAddressCandidates`, { f: 'json', SingleLine: text, outSR: 4326, outFields: 'Addr_type,Loc_name', maxLocations: 5, ...(magicKey ? { magicKey } : {}) }, kcAddrOpts(signal));
+      candidate = addrBestCandidate(data?.candidates);
+    } catch (error) { try { console.warn('Kootenai County GIS locator failed; trying the parcel situs field', error?.message || error); } catch { /* ignore */ } }
+    if (candidate) {
+      const { parcels, near } = await kcParcelsAt(candidate.point, signal);
+      if (parcels.length && !near) return { method: 'address-point', point: candidate.point, matchedAddress: candidate.address, interpolated: candidate.interpolated, exact: !candidate.interpolated && parcels.length === 1, parcels };
+      if (parcels.length) return { method: 'address-near', point: candidate.point, matchedAddress: candidate.address, interpolated: candidate.interpolated, exact: false, parcels };
+    }
+    const situs = await kcParcelsBySitus(text, signal);
+    if (situs.length) {
+      const typed = addrNormalizeStreet(text);
+      const same = situs.filter(r => addrNormalizeStreet(r.address) === typed);
+      const exact = same.length === 1;
+      return { method: 'situs', point: candidate?.point || null, matchedAddress: candidate?.address || '', interpolated: false, exact, parcels: exact ? same : situs };
+    }
+    return { method: 'none', point: candidate?.point || null, matchedAddress: candidate?.address || '', interpolated: Boolean(candidate?.interpolated), exact: false, parcels: [] };
+  }
+  async function kootenaiAddress(input, signal) {
+    const action = String(input?.action || '');
+    const head = { available: true, state: 'ID', county: 'Kootenai', action };
+    const source = { agency: KC_ADDRESS_AGENCY };
+    if (action === 'suggest') {
+      const text = addrText(input);
+      const data = await request(`${KC_ADDRESS_LOCATOR}/suggest`, { f: 'json', text, maxSuggestions: ADDR.suggestMax }, kcAddrOpts(signal));
+      const seen = new Set();
+      const suggestions = (Array.isArray(data?.suggestions) ? data.suggestions : [])
+        .map(s => ({ text: String(s?.text ?? '').trim(), magicKey: String(s?.magicKey ?? '') }))
+        .filter(s => s.text && !seen.has(s.text.toUpperCase()) && seen.add(s.text.toUpperCase()))
+        .slice(0, ADDR.suggestMax);
+      return { ...head, example: KC_ADDRESS_EXAMPLE, suggestions, method: 'locator', source };
+    }
+    if (action === 'resolve') return { ...head, example: KC_ADDRESS_EXAMPLE, ...(await kcResolve(addrText(input), addrMagicKey(input), signal)), source };
+    if (action === 'point') {
+      const point = pointOf(input, true);
+      return { ...head, example: KC_ADDRESS_EXAMPLE, point, ...(await kcParcelsAt(point, signal)), source };
+    }
+    if (action === 'other-counties') {
+      // Another Idaho county was chosen: is the number a Kootenai PIN? (kootenaiParcelWhere)
+      const raw = parcelIdOf(input), compact = normalizeId(raw);
+      if (!compact) throw new Error('AcresX fallback: parcel number required');
+      const id = raw.toUpperCase().replaceAll("'", "''");
+      const rows = (await kcParcelRows({ where: `PIN='${id}' OR PID='${id}'`, resultRecordCount: '5' }, signal)).filter(r => normalizeId(r.parcelId) === compact);
+      const county = trimmed(input?.county).replace(/[^A-Za-z .]/g, '');
+      return { available: true, state: 'ID', county, action, parcelId: raw, example: '', matches: rows.map(({ county: c, parcelId, address, city }) => ({ county: c, parcelId, address, city })), checked: ['Kootenai'], unavailable: false, source: { agency: 'county parcel layers' } };
+    }
+    throw new Error('AcresX fallback: unknown address action');
+  }
+
   // ---- 6. OpenStreetMap power lines. Overpass answers Cloudflare's shared addresses with 429 or
   // times out, so the Worker sends this hint when OpenStreetMap failed and no utility map gave a
   // distance. Like stevens-zoning it completes the Worker's own answer (`base`): provider,
@@ -1851,7 +1984,9 @@
     'spokane-assessor': { api: '/api/property-assessment', run: spokaneAssessor, agency: () => 'Spokane County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] },
     'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] },
-    'osm-power': { api: '/api/power-intelligence', run: osmPower, agency: () => OSM_AGENCY, targets: ['powerStatus'] }
+    'osm-power': { api: '/api/power-intelligence', run: osmPower, agency: () => OSM_AGENCY, targets: ['powerStatus'] },
+    // Address search labels its own results (public/address-search.js), so no target here.
+    'kootenai-address': { api: '/api/address-search', run: kootenaiAddress, agency: () => KC_ADDRESS_AGENCY, targets: [] }
   };
 
   let loaded = {};
