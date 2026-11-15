@@ -113,7 +113,7 @@ test('browser fallback is injected last, after the renderers it labels', async (
 
 test('browser fallback exposes run(kind, input) for later wiring', () => {
   const { api: fb } = browser(async () => { throw new Error('unused'); });
-  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'spokane-assessor', 'fema-flood', 'stevens-zoning']);
+  assert.deepEqual([...fb.kinds], ['kootenai-parcel', 'kootenai-zoning', 'idaho-wells', 'kootenai-assessor', 'stevens-assessor', 'spokane-assessor', 'fema-flood', 'stevens-zoning', 'kootenai-address']);
   assert.equal(typeof fb.run, 'function');
   assert.deepEqual([...fb.ALLOWED_HOSTS], ALLOWED);
 });
