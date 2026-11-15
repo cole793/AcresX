@@ -17,9 +17,32 @@
     if(!card)return {}; const value=card.querySelector('.snapshot-value'); const spans=[...card.querySelectorAll(':scope > span:not(.snapshot-icon):not(.traffic-dot):not(.chevron)')];
     return {value,status:spans[0]||null};
   }
+  // No match -> the full snapshot card gives way to a one-line note under the snapshot grid
+  // (most parcels have no listing). The full card stays when the RESO dataset or the web
+  // listing search (last.evidence, index.html) found one.
+  function addCollapseStyles(){
+    if(document.getElementById('listingCollapseStyles'))return;
+    const style=document.createElement('style'); style.id='listingCollapseStyles';
+    style.textContent=`.snapshot-grid .snapshot-card[data-detail="listing"].listing-collapsed{display:none!important}
+      @media(min-width:1251px){.snapshot-grid:has(.snapshot-card[data-detail="listing"].listing-collapsed){grid-template-columns:repeat(4,1fr)}}
+      .listing-no-match-note{margin-top:10px;font-size:12px;line-height:1.45;color:#526158;display:flex;gap:6px;align-items:baseline}
+      .listing-no-match-note strong{color:var(--ink);font-weight:700;white-space:nowrap}`;
+    document.head.appendChild(style);
+  }
+  function evidenceFound(){ try{ if(typeof last!=='undefined'&&last?.evidence?.status==='found')return true; }catch(_){} return false; }
+  function collapse(card,result){
+    const collapsed=!result?.best&&!evidenceFound();
+    card.classList.toggle('listing-collapsed',collapsed);
+    const grid=card.closest('.snapshot-grid'); let note=document.getElementById('listingNoMatchNote');
+    if(!collapsed){ note?.remove(); return; }
+    addCollapseStyles();
+    if(!note&&grid){ note=document.createElement('div'); note.id='listingNoMatchNote'; note.className='listing-no-match-note'; grid.insertAdjacentElement('afterend',note); }
+    if(note)note.innerHTML=`<strong>Listing context:</strong><span>${result?.configured===false?'No listing dataset is connected, so listings were not checked.':'No matching listing found in the connected listing dataset. This does not mean the property is not listed.'}</span>`;
+  }
   function paint(result){
     const card=listingCard(); if(!card)return; const p=parts(card), best=result?.best;
     card.dataset.resoState=best?'matched':'unmatched';
+    collapse(card,result);
     if(best){
       if(p.value)p.value.textContent=best.status || 'Listing found';
       if(p.status)p.status.textContent=`${money(best.listPrice)}${best.daysOnMarket!=null?` · ${best.daysOnMarket} DOM`:''}`;

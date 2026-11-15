@@ -25,6 +25,7 @@ import { handlePublicUtilities } from './services/public-utilities.js';
 import { handleCostContext } from './services/cost-context.js';
 import { handleBuildableArea } from './services/buildable-area.js';
 import { handleCountyCoverage } from './services/county-coverage.js';
+import { handleListingSearchStatus } from './services/listing-search-status.js';
 import { json } from './shared/http.js';
 import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
@@ -64,6 +65,7 @@ async function maybeInjectUiPolish(request,response) { if(request.method!=='GET'
 export default { async scheduled(controller,env,ctx){const req=new Request('https://acresx.internal/api/reso-listings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sync:true,incremental:true})});ctx.waitUntil(handleResoListings(req,env));}, async fetch(request,env,ctx) { const url=new URL(request.url); try {
   if(url.pathname==='/api/upstream-health'&&request.method==='GET')return await handleUpstreamHealth();
   if(url.pathname==='/api/county-coverage'&&request.method==='GET')return handleCountyCoverage();
+  if(url.pathname==='/api/listing-search-status'&&request.method==='GET')return handleListingSearchStatus(env);
   if(url.pathname==='/api/property-tax-test'&&request.method==='GET')return await runPropertyTaxBrowserTest(request);
   if(url.pathname==='/api/property-tax-test'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(url.pathname==='/api/property-assessment'&&request.method==='POST')return await handlePropertyTaxTest(request);

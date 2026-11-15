@@ -126,13 +126,21 @@ async function findZoningPermits(parcel,signal){const p=parcel.properties,[lon,l
 async function findFlood(parcel,signal){try{return await hazardQuery('flood',parcel,signal)}catch(e){return {available:false,intersects:false,high:false,zones:[],error:e.message}}}
 async function findWetlands(parcel,signal){try{return await hazardQuery('wetlands',parcel,signal)}catch(e){return {available:false,intersects:false,count:0,types:[],error:e.message}}}
 async function findLandAnalysis(parcel,signal){try{const r=await fetch('/api/land-analysis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({geometry:parcel.geometry}),signal});const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||`Land analysis returned ${r.status}`);return j}catch(e){return {available:false,error:e.message,soil:{available:false},terrain:{available:false}}}}
+// Web listing search needs a paid search provider secret; without one /api/listing-evidence
+// answers 503. Ask /api/listing-search-status once per page load and skip the call (quietly)
+// when no provider is configured, or after the endpoint has answered 503 once.
+let listingSearchReady=null;
+function listingSearchConfigured(){if(!listingSearchReady)listingSearchReady=fetch('/api/listing-search-status').then(r=>r.ok?r.json():null).then(j=>j?.configured!==false).catch(()=>true);return listingSearchReady}
+const LISTING_SEARCH_OFF={status:'unavailable',summary:'Search not configured',confidence:'Low',claims:[],matches:[],configured:false};
 async function findListingEvidence(parcel,signal){
   const p=parcel.properties||{}, [lon,lat]=turf.centroid(parcel).geometry.coordinates;
   const parcelId=p.ORIG_PARCEL_ID||p.PARCEL_ID_NR||'';
   const address=[p.SITUS_ADDRESS,p.SITUS_CITY_NM,p.SITUS_ZIP_NR].filter(Boolean).join(', ');
+  if(!(await listingSearchConfigured()))return {...LISTING_SEARCH_OFF};
   try{
     const r=await fetch('/api/listing-evidence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parcelId,address,county:p._countyDisplay||p.COUNTY_NM||'',lat,lon}),signal});
     const j=await r.json();
+    if(r.status===503&&j?.status==='unavailable'){listingSearchReady=Promise.resolve(false);return {...LISTING_SEARCH_OFF}}
     if(!r.ok) throw new Error(j.error||`Listing search returned ${r.status}`);
     return j;
   }catch(e){return {status:'unavailable',summary:'Search not configured',confidence:'Low',matches:[],error:e.message}}
