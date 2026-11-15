@@ -60,6 +60,7 @@ export const LAYERS = [
   { key: 'zoning', label: 'Zoning', route: '/api/zoning-permits' },
   { key: 'zoningRules', label: 'Zoning rules', route: '/api/zoning-rules' },
   { key: 'assessment', label: 'Assessment', route: '/api/property-assessment' },
+  { key: 'tax', label: 'Property tax', route: '/api/property-tax' },
   { key: 'listing', label: 'Listing', route: '/api/reso-listings' }
 ];
 
@@ -67,7 +68,7 @@ export const LAYERS = [
 export const READ_ONLY_ROUTES = new Set([
   '/api/arcgis', '/api/parcel-search', '/api/well-search', '/api/existing-well', '/api/land-analysis',
   '/api/slope-grid', '/api/hazards', '/api/utility-territory', '/api/power-intelligence',
-  '/api/zoning-permits', '/api/zoning-rules', '/api/property-assessment', '/api/reso-listings', '/api/public-utilities'
+  '/api/zoning-permits', '/api/zoning-rules', '/api/property-assessment', '/api/property-tax', '/api/reso-listings', '/api/public-utilities'
 ]);
 
 // /api/reso-listings accepts sync options (sync, cursor, incremental, ...) that write to the live
@@ -409,6 +410,15 @@ export const interpret = {
       source: data.statewideSource || data.source || data.countySource || null
     });
   },
+  // /api/property-tax (src/services/property-tax.js): billed amount, or Kootenai's levy-rate
+  // estimate. A county site that is down, blocked or not connected is 'unavailable', never an error.
+  tax(data) {
+    if (!data.available) return unavailable(`${text(data.status) || 'tax'}: ${text(data.note) || 'property tax not available'}`, { taxStatus: data.status || null });
+    const total = finite(data.total);
+    return ok(`${data.basis === 'estimate' ? 'estimated' : 'billed'} ${data.taxYear || '?'} tax $${total != null ? total.toLocaleString('en-US', { minimumFractionDigits: 2 }) : 'n/a'}`, {
+      taxTotal: total, taxYear: finite(data.taxYear), taxBasis: data.basis || null, taxSource: data.source?.name || null
+    });
+  },
   listing(data) {
     if (data.configured === false) return unavailable('listing source not configured');
     if (!data.available) return unavailable(text(data.status) || 'listing lookup not available');
@@ -593,6 +603,8 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
   layers.assessment = isUnsupportedAssessment(assessmentRes)
     ? { route: assessmentRes.route, httpStatus: assessmentRes.httpStatus, ms: assessmentRes.ms, status: 'unavailable', detail: `no assessment source for this county (${text(assessmentRes.data.error)})`, values: {} }
     : interpretLayer('assessment', assessmentRes);
+  // public/property-tax.js sends the same body as the assessment lookup.
+  layers.tax = interpretLayer('tax', await call('/api/property-tax', { state, county, parcelId }));
 
   // Listing context: lookup only. Never add `sync` here (see the header comment).
   layers.listing = interpretLayer('listing', await call('/api/reso-listings', { parcelId: resolvedId || parcelId || undefined, address: address || undefined }));

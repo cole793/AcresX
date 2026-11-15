@@ -3,7 +3,7 @@
 `scripts/validate-county.mjs` runs a set of test parcels through the **deployed** AcresX API, using
 the same requests the browser makes, and records a status for each data layer: parcel, wells,
 existing well, soil, terrain, slope grid, flood, wetlands, utility, power, zoning, zoning rules,
-assessment and listing context. It shows which layers work in each county and catches a county
+assessment, property tax and listing context. It shows which layers work in each county and catches a county
 GIS service that changes or goes down before a realtor does.
 
 It only makes read-only lookups. It never sends `sync` to `/api/reso-listings` (that writes to the
@@ -206,7 +206,9 @@ services with an explicit field list, and refuses owner, taxpayer and mailing fi
 discovery. The statewide layer has no acreage field, so a WA parcel's acres are computed from its
 outline (the `turf.area` formula, shown as "(mapped)"). Where `/api/property-assessment` has no
 source for a county (HTTP 400 "currently supports ...", for example Stevens), the assessment
-layer is `unavailable`, as the browser shows it, not `error`.
+layer is `unavailable`, as the browser shows it, not `error`. The property tax layer
+(`/api/property-tax`) is `unavailable` too when a county tax site is down, blocks the lookup or
+is not connected; it is never an error, so it cannot open an alert issue by itself.
 
 For WA discovery use the statewide layer with the county's FIPS code in `where`, and
 `"acresField": "Shape__Area", "acresUnit": "sqft"` (state plane square feet), so acre bands and

@@ -13,23 +13,23 @@ const V = 'validated', P = 'partial', N = 'not_configured';
 const EXPECTED = {
   'ID:Kootenai': {
     level: 3, priority: 1, lastValidated: '2026-11-11', checklistScore: 87, checklistScoreDate: '2026-11-03',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: P }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: P }
   },
   'WA:Spokane': {
     level: 3, priority: 1, lastValidated: '2026-11-14', checklistScore: 79, checklistScoreDate: '2026-11-03',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: P }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: P }
   },
   'MT:Yellowstone': {
     level: 3, priority: 1, lastValidated: '2026-11-11', checklistScore: 80, checklistScoreDate: '2026-11-03',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: P }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: P }
   },
   'MT:Gallatin': {
     level: 2, priority: 2, lastValidated: '2026-11-03', checklistScore: 75, checklistScoreDate: '2026-11-03',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: N }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: N }
   },
   'WA:Stevens': {
     level: 3, priority: 2, lastValidated: '2026-11-12', checklistScore: 78, checklistScoreDate: '2026-11-07',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: N, zoning: V, zoningRules: V }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: V }
   }
 };
 

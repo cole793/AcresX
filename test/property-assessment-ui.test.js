@@ -9,6 +9,7 @@ import vm from 'node:vm';
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const assessmentSource = read('public/property-assessment.js');
 const reportSource = read('public/property-report-v2.js');
+const taxSource = read('public/property-tax.js');
 
 class El {
   constructor(tag) { this.tagName = tag.toUpperCase(); this.children = []; this.parent = null; this.id = ''; this.className = ''; this._text = ''; this._html = ''; this.listeners = {}; }
@@ -57,6 +58,7 @@ function page() {
   };
   const context = vm.createContext({ window, document, console, URL, URLSearchParams, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
   vm.runInContext(assessmentSource, context);
+  vm.runInContext(taxSource, context);
   vm.runInContext(reportSource, context);
   const fact = id => document.getElementById(id)?.textContent;
   const report = data => {
@@ -64,7 +66,7 @@ function page() {
     document.getElementById('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
     return opened.at(-1);
   };
-  return { window, document, fact, report, A: window.AcresXAssessment };
+  return { window, document, fact, report, A: window.AcresXAssessment, T: window.AcresXPropertyTax };
 }
 
 // The API's answer for PIN 47N03W052200 (see test/property-assessment.test.js).
@@ -312,4 +314,58 @@ test('report: Spokane shows the assessor class next to zoning and the assessed v
   assert.match(html, /<span>Tax category<\/span><strong>11 – Single Unit<\/strong><small>Tax category, not zoning<\/small>/);
   assert.match(html, /<span>Assessed value \(2027\)<\/span><strong>\$589,000<\/strong><\/div><div><span>Land<\/span><strong>\$110,000<\/strong><\/div><div><span>Improvements<\/span><strong>\$479,000<\/strong>/);
   assert.equal(once(html, '$589,000'), 1);
+});
+
+// ---- Property tax (/api/property-tax, src/services/property-tax.js; public/property-tax.js)
+
+const billedTax = {
+  available: true, state: 'MT', county: 'Gallatin', parcelId: '06069905302080000', status: 'found', basis: 'billed', taxYear: 2026, total: 9208.96,
+  installments: [{ label: 'First half', amount: 4604.5 }, { label: 'Second half', amount: 4604.46 }], label: 'Billed 2026 property tax',
+  source: { name: 'Gallatin County Treasurer (iTax)', url: 'https://itax.gallatin.mt.gov/detail.aspx?taxid=RHH41234' }, asOf: '2026-11-13',
+  link: { label: 'View tax bill on Gallatin County iTax', url: 'https://itax.gallatin.mt.gov/detail.aspx?taxid=RHH41234' }
+};
+const estimatedTax = {
+  available: true, state: 'ID', county: 'Kootenai', parcelId: '50N04W323200', status: 'found', basis: 'estimate', taxYear: 2026, total: 25.1, levyRate: 3.641236,
+  note: 'Estimated from the 2026 levy rate; excludes fees and special assessments.', label: 'Estimated 2026 property tax',
+  source: { name: 'Kootenai County, Rates for the Year 2026 (levy rate by tax area group)', url: 'https://www.kcgov.us/DocumentCenter/View/17378' }, asOf: '2026-11-02',
+  link: { label: 'View tax bill on the Kootenai County Treasurer site', url: 'https://id-kootenai.publicaccessnow.com/Treasurer/TaxSearch.aspx' }
+};
+const blockedTax = { available: false, status: 'unavailable', basis: null, taxYear: null, total: null, note: 'The county tax site did not answer automated lookups. Open the tax bill on the county site.', source: null, asOf: null,
+  link: { label: 'View tax bill on Spokane County SCOUT', url: 'https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=23123.9051' } };
+
+test('overview: property tax fact shows the billed amount, its basis and the county link', () => {
+  const { T, fact, document } = page();
+  T.render(billedTax);
+  assert.equal(fact('overviewPropertyTaxLabel'), 'Property tax (2026)');
+  assert.equal(fact('overviewPropertyTax'), '$9,208.96');
+  const basis = document.getElementById('overviewPropertyTaxBasis').innerHTML;
+  assert.match(basis, /^Billed amount from the county treasurer, as of 2026-11-13\. <a href="https:\/\/itax\.gallatin\.mt\.gov\/detail\.aspx\?taxid=RHH41234" target="_blank" rel="noopener">View tax bill on Gallatin County iTax ↗<\/a>$/);
+});
+
+test('overview: an estimate is labeled as one; a blocked site shows Not available with the bill link', () => {
+  const { T, fact, document } = page();
+  T.render(estimatedTax);
+  assert.equal(fact('overviewPropertyTax'), '≈ $25.10');
+  assert.match(document.getElementById('overviewPropertyTaxBasis').innerHTML, /^Estimated from the 2026 levy rate; excludes fees and special assessments\. <a href="https:\/\/id-kootenai/);
+  T.render(blockedTax);
+  assert.equal(fact('overviewPropertyTaxLabel'), 'Property tax');
+  assert.equal(fact('overviewPropertyTax'), 'Not available');
+  assert.match(document.getElementById('overviewPropertyTaxBasis').innerHTML, /did not answer automated lookups\. Open the tax bill on the county site\. <a href="https:\/\/cp\.spokanecounty\.org/);
+});
+
+test('overview: links to hosts other than the county tax sites are dropped', () => {
+  const { T, document } = page();
+  T.render({ ...billedTax, link: { label: 'View tax bill', url: 'https://evil.example/x' } });
+  assert.doesNotMatch(document.getElementById('overviewPropertyTaxBasis').innerHTML, /<a /);
+  assert.equal(T.safeUrl('javascript:alert(1)'), '');
+});
+
+test('report: page 2 assessor record gains the property tax line', () => {
+  const { report } = page();
+  const billed = report({ parcel, propertyAssessment: kootenai, propertyTax: estimatedTax });
+  assert.match(billed, /<span>Property tax \(2026\)<\/span><strong>≈ \$25\.10<sup class="ref">\[\d+\]<\/sup><\/strong><small>Estimated from the 2026 levy rate; excludes fees and special assessments\.<\/small>/);
+  const none = report({ parcel, propertyAssessment: kootenai, propertyTax: blockedTax });
+  assert.match(none, /<span>Property tax<\/span><strong>Not available<sup class="ref">/);
+  const without = report({ parcel, propertyAssessment: kootenai });
+  assert.doesNotMatch(without, /Property tax/);
 });

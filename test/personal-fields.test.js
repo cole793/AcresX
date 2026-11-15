@@ -11,6 +11,7 @@ import worker from '../src/index.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { PERSONAL_FIELD, withoutPersonalFields, responseWithoutPersonalFields } from '../src/shared/personal-fields.js';
 import { RATE_LIMIT_RETRY_MS } from '../src/states/idaho/parcels.js';
+import { montanaBillYear } from '../src/counties/yellowstone-tax.js';
 
 // Owner and mailing fields as the upstream layers name them, with placeholder values.
 const PLANTED = {
@@ -77,6 +78,10 @@ function askedFor(p, url) {
 function reply(input, init) {
   const url = new URL(String(input instanceof Request ? input.url : input));
   const p = params(url, init);
+  // County treasurer pages (/api/property-tax): real tax markup next to planted owner, taxpayer,
+  // mailing, receipt and grantor labels.
+  if (TAX_PAGES[url.hostname]) return new Response(TAX_PAGES[url.hostname](), { status: 200, headers: { 'Content-Type': 'text/html' } });
+  if (url.hostname === 'gis.dnrc.mt.gov' && p.get('outFields') === 'PARCELID,AssessmentCode') return json({ features: [{ attributes: { PARCELID: MT_PARCEL, AssessmentCode: '00RHH41234', ...PLANTED } }] });
   if (url.hostname === 'sdmdataaccess.sc.egov.usda.gov') return json({ Table: [['mukey', 'muname'], ['1', 'Test loam']], ...PLANTED });
   if (url.hostname === 'google.serper.dev') return json({ organic: [{ title: `100 SITE RD ${PARCEL} land for sale`, link: 'https://listing.example/1', snippet: 'Power on site. Well installed.', ...PLANTED }] });
   // The Spokane jurisdiction layer names unincorporated land 'Spokane County' (it decides county
@@ -90,6 +95,17 @@ function reply(input, init) {
   }
   return json({ value: 1000, elements: [], results: [], features: [esriFeature], ...PLANTED });
 }
+
+// Montana parcel numbers are 17 digits (src/counties/yellowstone-tax.js, gallatin-tax.js).
+const MT_PARCEL = '06069905302080000';
+const PLANTED_HTML = '<span id="MainContent_OwnerName_dlOwner_txtNameLabel_0">PLACEHOLDER OWNER</span><span id="MainContent_Taxpayer_dlTaxpayer_addressLabel_0">1 PLACEHOLDER MAIL ST</span>'
+  + '<span id="_ctl0_ContentPlaceHolder1_lblOwners">PLACEHOLDER OWNER</span><span id="_ctl0_ContentPlaceHolder1_lblMailing">1 PLACEHOLDER MAIL ST</span><span id="_ctl0_ContentPlaceHolder1_lblReceipt">PLACEHOLDER 1</span>'
+  + '<table><tr><td>Owner:</td><td>PLACEHOLDER OWNER</td></tr><tr><td>Grantor</td><td>PLACEHOLDER SELLER</td></tr><tr><td>Receipt</td><td>PLACEHOLDER 2</td></tr></table>';
+const TAX_PAGES = {
+  'cp.spokanecounty.org': () => `<html><body>${PLANTED_HTML}<span id="lblDateAs"><b>Data As Of: 11/14/2026</b></span><table id="MainContent_TaxInfo_GridView16"><tr><td></td><td>Total Taxes for 2026</td><td>1,000.00</td><td>0.00</td></tr><tr><td>2026</td><td>A/V Property Tax</td><td>1,000.00</td><td>0.00</td></tr></table></body></html>`,
+  'www.yellowstonecountymt.gov': () => `<html><body>${PLANTED_HTML}Tax ID: <b>${PARCEL}</b> &nbsp;&nbsp;Tax Year: <b>${montanaBillYear()}</b><table class="table table-striped data-table"><tr><td>&nbsp;</td><td><b>Totals</b></td><td>50.00</td><td></td><td>50.00</td><td></td><td>100.00</td></tr></table>The tax information was updated on 11/14/2026.</body></html>`,
+  'itax.gallatin.mt.gov': () => `<html><body>${PLANTED_HTML}<span id="_ctl0_ContentPlaceHolder1_lblStatus">Current</span><span id="_ctl0_ContentPlaceHolder1_lblYearTaxes"><b>2026 Taxes:</b></span><span id="_ctl0_ContentPlaceHolder1_lblTaxTotal">$200.00</span></body></html>`
+};
 
 const env = { ASSETS: { fetch: async () => new Response('<html><body></body></html>', { headers: { 'Content-Type': 'text/html' } }) }, SERPER_API_KEY: 'test-key-not-real' };
 const waits = [];
@@ -111,6 +127,11 @@ const CASES = [
   ['property-assessment MT Gallatin', post('/api/property-assessment', { state: 'MT', county: 'Gallatin', parcelId: PARCEL }), b => assert.equal(b.statewideRecords.length, 1)],
   ['property-assessment ID Kootenai', post('/api/property-assessment', { state: 'ID', county: 'Kootenai', parcelId: PARCEL })],
   ['property-assessment WA Stevens', post('/api/property-assessment', { state: 'WA', county: 'Stevens', parcelId: STEVENS_PARCEL }), b => { assert.equal(b.available, true); assert.equal(b.countyRecords[0].parcelNumber, STEVENS_PARCEL); }],
+  ['property-tax WA Spokane', post('/api/property-tax', { state: 'WA', county: 'Spokane', parcelId: SPOKANE_PARCEL }), b => { assert.equal(b.available, true); assert.equal(b.total, 1000); }],
+  ['property-tax MT Yellowstone', post('/api/property-tax', { state: 'MT', county: 'Yellowstone', parcelId: '03072527101010000' }), b => { assert.equal(b.available, true); assert.equal(b.total, 100); }],
+  ['property-tax MT Gallatin', post('/api/property-tax', { state: 'MT', county: 'Gallatin', parcelId: MT_PARCEL }), b => { assert.equal(b.available, true); assert.equal(b.total, 200); }],
+  ['property-tax WA Stevens', post('/api/property-tax', { state: 'WA', county: 'Stevens', parcelId: STEVENS_PARCEL })],
+  ['property-tax ID Kootenai', post('/api/property-tax', { state: 'ID', county: 'Kootenai', parcelId: PARCEL })],
   ['property-assessment ID Ada', post('/api/property-assessment', { state: 'ID', county: 'Ada', parcelId: PARCEL }), b => assert.equal(b.statewideRecords.length, 1)],
   ['parcel-search MT Gallatin', post('/api/parcel-search', { state: 'MT', county: 'Gallatin', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.PARCELID, PARCEL)],
   ['parcel-search MT Yellowstone', post('/api/parcel-search', { state: 'MT', county: 'Yellowstone', parcelId: PARCEL }), b => assert.equal(b.parcel.properties.GEOCODE, PARCEL)],
