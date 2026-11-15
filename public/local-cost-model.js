@@ -24,7 +24,11 @@
 // - septic: the same for sewer; else a private septic system (soil range + exact permit fees).
 // - permits: the building permit for an assumed 2,000 sf home with a 500 sf attached garage. Montana
 //   county land: no building permit; DLI electrical + plumbing, the county approach permit and the
-//   county zoning permit (only inside a mapped county zoning district).
+//   county zoning permit (only inside a mapped county zoning district). In Montana the building-
+//   permit side follows the city limits (last.publicUtilities.cityLimits, the county city-limits
+//   layer; 2026-11-15), not the zoning jurisdiction: a parcel under a city's extraterritorial
+//   zoning (Billings RR3 outside the Billings limits) gets the county/state permits, with "City
+//   of Billings zoning applies; confirm any zoning permit with the City" and no county zoning fee.
 // - driveway: road-access length (/api/cost-context) x local $/ft from state DOT low bids.
 // - sitework: slope tiers as pad earthwork volume x local excavation $/cy + a base allowance.
 // The buildability score never reads this estimate. Listing/MLS data never feeds it.
@@ -313,17 +317,19 @@
     const fee = v => Math.min(z.max, Math.max(z.min, z.pct * v));
     return { minValue, low: fee(minValue), high: fee(Math.max(minValue, home.valuationHigh)), highValue: Math.max(minValue, home.valuationHigh) };
   }
-  function montanaCountyPermit(l, rule, home) {
+  function montanaCountyPermit(l, rule, home, { cityZoning = '' } = {}) {
     const zp = l?.zoningPermits || {};
     const status = String(zp.zoning?.status || '');
-    const zoned = status === 'gis_match';
+    // Under a city's zoning outside its limits: the city's zoning, not a county zoning district.
+    const zoned = status === 'gis_match' && !cityZoning;
     const z = rule.zoning;
     const zfee = z.kind === 'lup' ? gallatinLup(z, home) : { low: z.value, high: z.value };
     const zText = z.kind === 'lup'
       ? `${z.label}: the greater of ${usd0(z.min)} or ${z.pct * 100}% of the market value of construction (at least $${z.finishedPerSf}/sf finished, $${z.unfinishedPerSf}/sf unfinished; garage counted as unfinished), capped at ${usd0(z.max)}: ${usd0(zfee.low)} at ${usd0(zfee.minValue)}${zfee.high !== zfee.low ? ` to ${usd0(zfee.high)} at ${usd0(zfee.highValue)}` : ''} (effective ${z.asOf})`
       : `${z.label} ${usd0(z.value)}${z.dated ? ` (${z.dated})` : ''}`;
     const zoneName = zp.zoning?.code ? ` (${zp.zoning.code})` : '';
-    const zoningText = zoned ? `Inside ${z.where}${zoneName}: ${zText}.`
+    const zoningText = cityZoning ? `${cityZoning} zoning applies${zoneName}; confirm any zoning permit with the City (no fee added; the county zoning permit does not apply).`
+      : zoned ? `Inside ${z.where}${zoneName}: ${zText}.`
       : status === 'unzoned' ? `Mapped unzoned, so no county zoning permit is added. If county zoning did apply: ${zText}.`
         : `County zoning not resolved for this parcel; not added. Inside ${z.where}: ${zText}.`;
     const e = rule.electrical, pl = rule.plumbing, a = rule.approach, nb = rule.noBuildingPermit;
@@ -333,16 +339,34 @@
       text: `${rule.jurisdiction}: ${nb.label} (${nb.note}). ${e.label}. ${pl.label} = ${usd0(pl.value)} (${pl.note}). ${zoningText} ${a.label}: ${usd0(a.value)}, if the driveway meets a county road (a state highway approach is an MDT permit, not sourced).`,
       src: [ref(nb), ref(e), ref(pl), ref(z), ref(a)] };
   }
-  function permits(l, C, P, privateSeptic) {
+  const isCityName = name => /^(city|town) of /i.test(String(name || ''));
+  // Montana building permits follow the city limits, not the zoning jurisdiction (the zoning
+  // adapter's permitJurisdiction is the zoning jurisdiction, e.g. Billings' extraterritorial zoning).
+  // { juris, cityZoning, note }: the permit jurisdiction to price and why.
+  function permitJurisdiction(l, C) {
     const juris = jurisdiction(l);
+    const county = (C.permits || []).find(r => r.kind === 'mt-county');
+    const limits = l?.publicUtilities?.cityLimits;
+    if (!county || !limits || limits.status === 'unknown') return { juris, cityZoning: '', note: '' };
+    const zoningJuris = String(l?.zoningPermits?.jurisdiction || juris || '').trim();
+    if (limits.status === 'outside' && isCityName(juris)) {
+      return { juris: county.jurisdiction.replace(/\s*\(.*\)$/, ''), cityZoning: isCityName(zoningJuris) ? zoningJuris : '', rule: county,
+        note: `Outside ${juris} limits on the county city-limits map, so ${juris} building permits do not apply.` };
+    }
+    if (limits.status === 'inside' && limits.city && !isCityName(juris)) return { juris: limits.city, cityZoning: '', note: `Inside ${limits.city} limits on the county city-limits map.` };
+    return { juris, cityZoning: '', note: '' };
+  }
+  function permits(l, C, P, privateSeptic) {
+    const pj = permitJurisdiction(l, C);
+    const juris = pj.juris;
     const home = P.home;
     const homeText = `Assumes a ${home.livingSf.toLocaleString('en-US')} sf home with a ${home.garageSf} sf attached garage (an assumption; your plans set the real valuation).`;
-    const rule = (C.permits || []).find(r => r.match.test(juris));
+    const rule = pj.rule || (C.permits || []).find(r => r.match.test(juris));
     const impact = (C.impactFees || []).find(r => r.match.test(juris));
     const impactLine = impact ? { low: impact.value, high: impact.value, text: ` Plus ${impact.label}: ${usd0(impact.value)}.`, src: [ref(impact)] } : { low: 0, high: 0, text: '', src: [] };
     let out;
     if (rule?.kind === 'mt-county') {
-      out = montanaCountyPermit(l, rule, home);
+      out = montanaCountyPermit(l, rule, home, { cityZoning: pj.cityZoning });
     } else if (rule?.kind === 'kootenai-ubc') {
       const k = kootenaiPermit(rule, home);
       const a = rule.approach;
@@ -374,7 +398,7 @@
         text: `${juris || 'Permit jurisdiction not resolved'}: building permit fee schedule not sourced. Generic range ${usd0(P.permitGeneric.low)}-${usd0(P.permitGeneric.high)} (spans the sourced City of Spokane and Kootenai County schedules). Approach permit fee not sourced.${C.cityPermitNote ? ` ${C.cityPermitNote}` : ''}`,
         src: [planningRef()] };
     }
-    return line('permits', out.low + impactLine.low, out.high + impactLine.high, out.label || 'Permits (building + approach)', `${homeText} ${out.text}${impactLine.text}`, [...out.src, ...impactLine.src], { confidence: out.conf, jurisdiction: juris });
+    return line('permits', out.low + impactLine.low, out.high + impactLine.high, out.label || 'Permits (building + approach)', `${homeText}${pj.note ? ` ${pj.note}` : ''} ${out.text}${impactLine.text}`, [...out.src, ...impactLine.src], { confidence: out.conf, jurisdiction: juris });
   }
 
   // ---- Driveway and site work
