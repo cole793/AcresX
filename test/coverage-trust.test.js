@@ -32,7 +32,7 @@ test('GET /api/county-coverage: every registry county, with its badge, and no up
     assert.deepEqual(body.counties.filter(c => c.supported).map(key).sort(), ['ID:Kootenai', 'MT:Gallatin', 'MT:Yellowstone', 'WA:Spokane', 'WA:Stevens']);
     const by = Object.fromEntries(body.counties.map(c => [key(c), c]));
     assert.equal(by['ID:Kootenai'].coverage.label, 'Validated county');
-    assert.equal(by['WA:Spokane'].coverage.label, 'Partially validated');
+    assert.equal(by['WA:Spokane'].coverage.label, 'Validated county');
     assert.equal(by['MT:Gallatin'].coverage.label, 'Partially validated');
     assert.equal(by['MT:Flathead'].coverage.label, LIMITED);
     assert.equal(by['MT:Flathead'].coverage.limited, true);
@@ -45,7 +45,7 @@ test('badge explanations say what is missing', () => {
   const by = Object.fromEntries(COUNTY_COVERAGE.map(c => [c.key, c]));
   assert.match(describeCoverage(by['MT:Flathead']).summary, /has not validated this county\. County assessor values, property tax, zoning map and zoning rules sources are not set up; the other layers come from statewide or national data\..*Verify every finding with the county\./);
   assert.match(describeCoverage(by['MT:Gallatin']).summary, /Property tax and zoning rules not set up\./);
-  assert.match(describeCoverage(by['WA:Spokane']).summary, /Zoning rules partly covered; property tax not set up\./);
+  assert.match(describeCoverage(by['WA:Spokane']).summary, /daily validation runs \(last 2026-11-14\)\. Zoning rules partly covered; property tax not set up\./);
   assert.match(describeCoverage(by['ID:Kootenai']).summary, /daily validation runs \(last 2026-11-11\)\. Zoning rules partly covered; property tax not set up\./);
 });
 
@@ -85,6 +85,7 @@ async function dashboard(data, { registry = countyCoverageBody() } = {}) {
       ['div', { class: 'overview-grid' }, '', [['article', { class: 'card metric score-card' }, '', [['div', {}, '', [
         ['div', { id: 'scoreMetric' }, '9.1'], ['div', { id: 'scoreNote' }, 'Excellent buildability · 7-factor screening']
       ]]]]]],
+      ['article', { id: 'buildableAreaCard', class: 'card buildable-card' }, 'About 79.0 of 79.3 acres buildable'],
       ['div', { class: 'snapshot-grid' }, '', [card('wells', [['div', { class: 'snapshot-top' }]])]],
       ['div', { class: 'zoning-grid' }, '', [card('zoning', [['div', {}, '', [['strong', {}, 'Zoning']]]])]]
     ]]]
@@ -98,7 +99,7 @@ async function dashboard(data, { registry = countyCoverageBody() } = {}) {
   const $ = id => h.document.getElementById(id);
   const chip = detail => h.document.querySelector(`[data-detail="${detail}"] .snapshot-confidence`)?.textContent;
   const shown = el => (el && !el.hidden ? el.textContent : '');
-  return { h, badge: shown($('coverageBadge')), badgeClass: $('coverageBadge')?.className, structure: shown($('existingStructureNote')), scoreNote: $('scoreNote').textContent, score: $('scoreMetric').textContent, flag: shown(h.document.querySelector('.coverage-score-flag')), wells: chip('wells'), zoning: chip('zoning') };
+  return { h, badge: shown($('coverageBadge')), badgeClass: $('coverageBadge')?.className, structure: shown($('existingStructureNote')), buildableNote: shown($('buildableStructureNote')), scoreNote: $('scoreNote').textContent, score: $('scoreMetric').textContent, flag: shown(h.document.querySelector('.coverage-score-flag')), wells: chip('wells'), zoning: chip('zoning') };
 }
 
 test('Flathead (limited): badge, "limited data" score label, improvements finding, honest chips', async () => {
@@ -109,16 +110,18 @@ test('Flathead (limited): badge, "limited data" score label, improvements findin
   assert.equal(d.scoreNote, 'Excellent buildability · limited data');
   assert.equal(d.flag, 'County not validated: statewide sources only');
   assert.match(d.structure, /^Assessor lists improvements \(\$191,160\)The parcel may already have a home or buildings\./);
+  assert.equal(d.buildableNote, 'Assessor lists improvements ($191,160)Existing buildings are not subtracted from these buildable acres.');
   assert.equal(d.wells, 'Nearby records');
   assert.equal(d.zoning, 'Statewide data — verify');
 });
 
-test('Spokane (level 2, zoning validated): "Partially validated", "County GIS", no structure note for $0 improvements', async () => {
+test('Spokane (level 3, zoning validated): "Validated county", "County GIS", no structure note for $0 improvements', async () => {
   const d = await dashboard(spokane());
-  assert.match(d.badge, /^Partially validated/);
+  assert.match(d.badge, /^Validated county/);
   assert.equal(d.scoreNote, 'Excellent buildability · 7-factor screening');
   assert.equal(d.flag, '');
   assert.equal(d.structure, '');
+  assert.equal(d.buildableNote, '');
   assert.equal(d.wells, 'Nearby records', 'a low-confidence nearby match is not an on-parcel record');
   assert.equal(d.zoning, 'County GIS');
 });
@@ -164,14 +167,14 @@ test('report page 1 (limited county): coverage line, "Excellent · limited data"
   assert.equal(pages.length, 4, 'still 3 pages plus the appendix');
   const p1 = pages[0];
   assert.match(p1, new RegExp(`<p class="coverage cov-limited"><b>${LIMITED}</b>`));
-  assert.match(p1, /<div class="score-rating">Excellent · limited data<\/div>/);
+  assert.match(p1, /<div class="score-rating">Excellent · limited data<\/div><\/div><p class="score-why">[^<]+<\/p>/, "the limited-data rating and the score why line both print");
   assert.match(p1, /<div class="flag verify"><b>\?<\/b><div><strong>Assessor lists improvements \(\$191,160\)<\/strong>/);
   assert.equal((p1.match(/<div class="flag /g) || []).length <= 6, true, 'still at most 6 key findings');
 });
 
-test('report page 1 (Spokane): "Partially validated", no improvements finding', () => {
+test('report page 1 (Spokane): "Validated county", no improvements finding', () => {
   const p1 = report(spokane())[0];
-  assert.match(p1, /<p class="coverage cov-partial"><b>Partially validated<\/b>/);
+  assert.match(p1, /<p class="coverage cov-validated"><b>Validated county<\/b>/);
   assert.match(p1, /<div class="score-rating">Excellent<\/div>/);
   assert.doesNotMatch(p1, /Assessor lists improvements/);
 });
