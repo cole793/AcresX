@@ -18,6 +18,7 @@ import { handlePowerIntelligence } from './services/power-intelligence.js';
 import { handleUtilityTerritory } from './services/utility-territory.js';
 import { handleZoningRules } from './services/zoning-rules.js';
 import { handlePropertyTaxTest } from './services/property-tax-test.js';
+import { handlePropertyTax } from './services/property-tax.js';
 import { handleExistingWell } from './services/existing-well.js';
 import { handleResoListings } from './services/reso-listings.js';
 import { handleUpstreamHealth } from './services/upstream-health.js';
@@ -70,6 +71,7 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   if(url.pathname==='/api/property-tax-test'&&request.method==='GET')return await runPropertyTaxBrowserTest(request);
   if(url.pathname==='/api/property-tax-test'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(url.pathname==='/api/property-assessment'&&request.method==='POST')return await handlePropertyTaxTest(request);
+  if(url.pathname==='/api/property-tax'&&request.method==='POST')return await handlePropertyTax(request,env,ctx);
   if(request.method==='POST'&&url.pathname==='/api/parcel-search')return await handleParcelSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/address-search')return await handleAddressSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/well-search')return await handleWellSearch(request);
