@@ -105,6 +105,7 @@
       .coverage-badge span{flex:1 1 260px;min-width:0}
       .coverage-structure-note{margin:10px 0 2px;padding:9px 12px;border-radius:10px;background:#fff3dc;border:1px solid #ead29e;border-left:4px solid #d39a2a;font:600 12.5px/1.4 "DM Sans",sans-serif;color:#5e4210}
       .coverage-structure-note strong{display:block;font-weight:800;color:#68430b}
+      #buildableStructureNote{grid-column:1/-1;margin:0}
       .coverage-score-flag{margin-top:6px;font:800 11px/1.3 "DM Sans",sans-serif;color:#f3cf86}
     `;
     document.head.appendChild(style);
@@ -122,10 +123,11 @@
     return el;
   }
   // Writes only when the text changes, so the MutationObservers on the dashboard settle.
+  const written = new WeakMap();
   function setHtml(el, cls, html) {
     if (el.className !== cls) el.className = cls;
     // Compared with what was last written, not innerHTML (the browser re-serializes entities).
-    if (el.dataset.html !== html) { el.dataset.html = html; el.innerHTML = html; }
+    if (written.get(el) !== html) { written.set(el, html); el.innerHTML = html; }
     if (el.hidden !== !html) el.hidden = !html;
   }
 
@@ -145,6 +147,18 @@
     const note = ensure('existingStructureNote', 'coverage-structure-note', info, anchor);
     const s = existingStructure(data);
     setHtml(note, 'coverage-structure-note', s ? `<strong>${esc(s.title)}</strong>${esc(s.detail)}` : '');
+  }
+
+  // The buildable-area card (public/buildable-area.js, which rewrites the card): the same finding,
+  // since its acres count the whole parcel as open land.
+  function renderBuildable(data) {
+    const card = document.getElementById('buildableAreaCard');
+    if (!card) return;
+    const s = existingStructure(data);
+    let note = document.getElementById('buildableStructureNote');
+    if (!s) { if (note) note.hidden = true; return; }
+    if (!note || note.parentNode !== card) { note = document.createElement('div'); note.id = 'buildableStructureNote'; card.appendChild(note); }
+    setHtml(note, 'coverage-structure-note', `<strong>${esc(s.title)}</strong>Existing buildings are not subtracted from these buildable acres.`);
   }
 
   function renderScore(data) {
@@ -174,6 +188,7 @@
     addStyles();
     renderBadge(data);
     renderStructure(data);
+    renderBuildable(data);
     renderScore(data);
   }
 
