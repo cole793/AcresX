@@ -155,21 +155,27 @@
     const shown = val('scoreMetric');
     const n = num(shown) ?? (calc ? Number(calc.score.toFixed(1)) : null);
     const value = n == null ? '' : n.toFixed(1);
-    const band = n == null ? 'na' : n >= 7 ? 'good' : n >= 5.5 ? 'fair' : 'poor';
-    const base = n == null ? '' : n >= 8.5 ? 'Excellent' : n >= 7 ? 'Good' : n >= 5.5 ? 'Moderate' : 'Challenging';
+    // Fewer than 4 of 7 factors measured: "Provisional", in a neutral color (screening-refinements.js).
+    const provisional = Boolean(calc?.completeness?.provisional);
+    const band = n == null || provisional ? 'na' : n >= 7 ? 'good' : n >= 5.5 ? 'fair' : 'poor';
+    const base = n == null ? '' : provisional ? 'Provisional' : n >= 8.5 ? 'Excellent' : n >= 7 ? 'Good' : n >= 5.5 ? 'Moderate' : 'Challenging';
     // Limited-coverage county (public/coverage-trust.js): "Excellent · limited data"; same number.
     const rating = window.AcresXCoverage?.softRating ? window.AcresXCoverage.softRating(base, data) : base;
     let drivers = [];
     if (calc) {
       // Impact on the score: weight x distance from a neutral 70. Largest three, either direction.
-      drivers = Object.entries(calc.factors).map(([key, f]) => ({ key, score: f.score, impact: (f.score - 70) * (calc.weights?.[key] ?? 10) }))
+      // Measured factors only; a factor whose source did not answer is listed as "not checked".
+      drivers = Object.entries(calc.factors).filter(([, f]) => f.measured !== false).map(([key, f]) => ({ key, score: f.score, impact: (f.score - 70) * (calc.weights?.[key] ?? 10) }))
         .filter(d => d.impact !== 0).sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact)).slice(0, 3)
         .map(d => ({ good: d.score >= 70, text: driverText(d.key, d.score >= 70, data, facts) })).filter(d => d.text);
+      (calc.completeness?.missing || []).forEach(m => drivers.push({ missing: true, text: m.text }));
     }
     if (!drivers.length) drivers = facts.findings.slice(0, 3).map(f => ({ good: f.level === 'good', text: f.title }));
     // The same one-line "why" as the dashboard score card (screening-refinements.js).
     const why = calc?.why || '';
-    return { value, band, rating, drivers, why };
+    // "Incomplete — 5 of 7 factors measured", the dashboard's label; '' when every factor was measured.
+    const incomplete = calc?.completeness?.label || '';
+    return { value, band, rating, drivers, why, incomplete };
   }
 
   function driverText(key, good, data, f) {
@@ -265,7 +271,7 @@
     if (!lines.length) return null;
     // The total is the sum of the lines shown (page 1 and page 3 print this same pair).
     const low = lines.reduce((s, x) => s + Math.round(x.low), 0), high = lines.reduce((s, x) => s + Math.round(x.high), 0);
-    return { lines, low, high, local: Boolean(e.local), note: e.coverageNote || (e.local ? '' : 'Generic regional ranges; local prices not yet sourced for this county.') };
+    return { lines, low, high, local: Boolean(e.local), note: e.coverageNote || (e.local ? '' : 'Generic regional ranges; local prices not yet sourced for this county.'), missingNote: e.missingNote || '' };
   }
 
   // Confidence tag per cost line, from the `verified` flags of its sources (cost-tables.js):
@@ -313,6 +319,12 @@
     // Assessor improvements or a well record on the parcel: there may already be a home (info only).
     const existing = f.structure ? [{ title: f.structure.title, detail: f.structure.detail }] : [];
     const overlays = Array.isArray(f.zp.overlays) ? f.zp.overlays : [];
+    // Layers whose source did not answer (screening-refinements.js missingInputs): one "not
+    // checked" finding instead of a warning that reads as bad data.
+    let missing = {};
+    try { missing = window.AcresXScore?.missingInputs?.(data) || {}; } catch { missing = {}; }
+    const gaps = Object.values(missing);
+    if (gaps.length) amber.push({ title: `Not checked: ${gaps.map(m => m.what.toLowerCase()).join(', ')} — try again`, detail: `${gaps.map(m => m.reason.charAt(0).toUpperCase() + m.reason.slice(1)).join('; ')}. Left out of the score.` });
     if (f.flood.category === 'high') red.push({ title: 'High-risk flood zone on the parcel', detail: f.flood.share || f.flood.detail });
     else if (['moderate', 'undetermined', 'not_mapped', 'limited'].includes(f.flood.category)) amber.push({ title: `Flood: ${f.flood.label.toLowerCase()}`, detail: f.flood.share || f.flood.detail });
     if (f.wet.category === 'present' || f.wet.category === 'unmeasured') red.push({ title: 'Mapped wetland on the parcel', detail: f.wet.detail });
@@ -320,10 +332,10 @@
     if (f.road?.available && f.road.status === 'found' && f.road.road?.public === false) amber.push({ title: 'Access is by a private road', detail: `Nearest road ${f.road.road.name || ''} is private; confirm a recorded easement.` });
     else if (f.road?.status === 'none_within') amber.push({ title: 'No mapped road nearby', detail: 'Confirm legal access before buying.' });
     if (f.power.others.length) amber.push({ title: 'Overlapping power territories', detail: `${f.power.primary} · also listed: ${f.power.others.join(', ')}` });
-    else if (!f.power.primary) amber.push({ title: 'Power provider not identified', detail: 'Ask the local utilities which one serves the parcel.' });
+    else if (!f.power.primary && !missing.power) amber.push({ title: 'Power provider not identified', detail: 'Ask the local utilities which one serves the parcel.' });
     if (f.puChecked && !f.sewer) amber.push({ title: 'No public sewer found', detail: 'Plan for a septic system and a soil evaluation.' });
     if (!f.water && f.well && f.well.depth > 400) amber.push({ title: 'Deep wells nearby', detail: `About ${Math.round(f.well.depth)} ft median depth of nearby wells` });
-    if (!f.water && !f.well) amber.push({ title: 'No nearby well depths', detail: 'Ask a local driller about expected depth and yield.' });
+    if (!f.water && !f.well && !missing.water) amber.push({ title: 'No nearby well depths', detail: 'Ask a local driller about expected depth and yield.' });
     if (!f.sewer && f.soil.available && f.soil.feasibility === 'limited') amber.push({ title: 'Soils may limit septic', detail: f.soil.mapUnit || 'USDA soil screening' });
     if (f.terrain.available && Number(f.terrain.gradePct) > 8 && Number(f.terrain.gradePct) <= 15) amber.push({ title: 'Moderate slope', detail: `${Number(f.terrain.gradePct).toFixed(1)}% average grade` });
     if (f.terrain.available && Number(f.terrain.gradePct) > 15) red.push({ title: 'Steep ground', detail: `${Number(f.terrain.gradePct).toFixed(1)}% average grade` });
@@ -450,7 +462,7 @@ ${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restrict
     const cost = f.cost;
     const refName = name && ![f.address, `Parcel ${f.pid}`, f.pid, 'Property'].includes(name) ? name : '';
     const drivers = score.drivers.length
-      ? `<ul class="drivers">${score.drivers.map(d => `<li class="${d.good ? 'good' : 'risk'}"><b>${d.good ? '✓' : '⚠'}</b>${esc(d.text)}</li>`).join('')}</ul>`
+      ? `<ul class="drivers">${score.drivers.map(d => (d.missing ? `<li class="missing"><b>?</b>${esc(d.text)}</li>` : `<li class="${d.good ? 'good' : 'risk'}"><b>${d.good ? '✓' : '⚠'}</b>${esc(d.text)}</li>`)).join('')}</ul>`
       : `<p class="muted">Score drivers not available.</p>`;
     const flags = f.findings.length
       ? `<div class="flags">${f.findings.map(x => `<div class="flag ${x.level}"><b>${x.level === 'good' ? '✓' : x.level === 'risk' ? '!' : '?'}</b><div><strong>${esc(x.title)}</strong>${x.detail ? `<span>${esc(x.detail)}</span>` : ''}</div></div>`).join('')}</div>`
@@ -468,8 +480,8 @@ ${refName ? `<div><span>Reference</span><strong>${esc(refName)}</strong></div>` 
 ${parcelMap(parcel, data.buildableArea)}
 ${buildableBlock(data.buildableArea)}
 <div class="hero">
-<article class="score-card band-${score.band}">${eyebrow('Buildability score')}<div class="score-row"><div class="score-num">${esc(score.value || '—')}<small>${score.value ? '/10' : ''}</small></div><div class="score-rating">${esc(score.rating || NA)}</div></div>${score.why ? `<p class="score-why">${esc(score.why)}</p>` : ''}${drivers}</article>
-<article class="cost-card">${eyebrow('Site development cost')}<div class="cost-num">${cost ? esc(range(cost.low, cost.high)) : NA}</div><p>${cost ? `Midpoint about ${esc(kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2))}. Sum of ${cost.lines.length} lines: ${esc(cost.lines.map(l => String(l.label).replace(/\s*\(.*\)$/, '').toLowerCase()).join(', '))} (page 3). ${cost.local ? 'Local prices where sourced.' : 'Generic regional ranges.'} ` : 'Cost inputs were not available when this report was generated. '}Screening estimate, not a quote.</p></article>
+<article class="score-card band-${score.band}">${eyebrow('Buildability score')}<div class="score-row"><div class="score-num">${esc(score.value || '—')}<small>${score.value ? '/10' : ''}</small></div><div class="score-rating">${esc(score.rating || NA)}</div></div>${score.incomplete ? `<p class="score-incomplete">${esc(score.incomplete)}</p>` : ''}${score.why ? `<p class="score-why">${esc(score.why)}</p>` : ''}${drivers}</article>
+<article class="cost-card">${eyebrow('Site development cost')}<div class="cost-num">${cost ? esc(range(cost.low, cost.high)) : NA}</div><p>${cost ? `Midpoint about ${esc(kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2))}. Sum of ${cost.lines.length} lines: ${esc(cost.lines.map(l => String(l.label).replace(/\s*\(.*\)$/, '').toLowerCase()).join(', '))} (page 3). ${cost.local ? 'Local prices where sourced.' : 'Generic regional ranges.'} ${cost.missingNote ? `${esc(cost.missingNote)} ` : ''}` : 'Cost inputs were not available when this report was generated. '}Screening estimate, not a quote.</p></article>
 </div>
 <section class="block">${eyebrow('Key findings')}${flags}</section>
 <p class="disclaimer">Screening information from public records. Verify material findings with the responsible agency, utility or licensed professional before relying on them.</p>
@@ -735,7 +747,8 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .band-fair{background:var(--amberbg);border-color:#efd6a6}.band-fair .score-num,.band-fair .score-rating{color:var(--amber)}
 .band-poor{background:var(--redbg);border-color:#efc3bf}.band-poor .score-num,.band-poor .score-rating{color:var(--red)}
 .drivers{list-style:none;margin:0;padding:0}.drivers li{display:flex;gap:7px;padding:3px 0;font-size:8.5pt;font-weight:600;color:var(--ink)}
-.drivers b{width:12px;flex:none;text-align:center}.drivers li.good b{color:var(--g2)}.drivers li.risk b{color:var(--red)}
+.drivers b{width:12px;flex:none;text-align:center}.drivers li.good b{color:var(--g2)}.drivers li.risk b{color:var(--red)}.drivers li.missing{color:var(--mut)}.drivers li.missing b{color:var(--amber)}
+.score-incomplete{font-size:8.5pt;margin:0 0 4px;color:var(--amber);font-weight:800}
 .cost-card{background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold)}
 .cost-num{font-size:20pt;font-weight:900;color:var(--g);line-height:1.1;margin:2px 0 6px;letter-spacing:-.01em}
 .cost-card p{font-size:8pt;color:var(--mut)}

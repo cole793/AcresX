@@ -90,16 +90,76 @@
     const powerScore = last?.powerIntelligence?.territory?.confirmed ? 78 : utilityFound ? 70 : 45;
     const zoningScore = zoning.status === 'gis_match' ? 86 : zoning.status === 'no_match' ? 52 : 45;
 
+    const gaps = missingInputs();
+    const factor = (key, score, label) => ({ score, label, measured: !gaps[key], ...(gaps[key] ? { missing: gaps[key] } : {}) });
     return {
-      water: { score: water, label: 'Water' },
-      soil: { score: soilScore, label: 'Septic' },
-      terrain: { score: terrainScore, label: 'Terrain' },
-      flood: { score: floodFactor, label: 'Flood' },
-      wetlands: { score: wetlandsScore(wetlands), label: 'Wetlands' },
-      power: { score: powerScore, label: 'Power' },
-      zoning: { score: zoningScore, label: 'Zoning' }
+      water: factor('water', water, 'Water'),
+      soil: factor('soil', soilScore, 'Septic'),
+      terrain: factor('terrain', terrainScore, 'Terrain'),
+      flood: factor('flood', floodFactor, 'Flood'),
+      wetlands: factor('wetlands', wetlandsScore(wetlands), 'Wetlands'),
+      power: factor('power', powerScore, 'Power'),
+      zoning: factor('zoning', zoningScore, 'Zoning')
     };
   }
+
+  // ---- Missing inputs (2026-11-15): "data missing" is not "data says bad"
+  // A factor whose source failed, timed out or has not answered yet is left out of the score
+  // (the other factors' weights are re-normalized), instead of being scored as a low 40-50.
+  // Real answers keep their score: no nearby wells on record, no utility territory found, a
+  // county without a zoning source, the FEMA backup's "limited flood data". Per factor:
+  //   water     no public water, and the well-records lookup failed or timed out
+  //   soil      no public sewer, and the USDA soil answer is unavailable
+  //   terrain   the USGS elevation answer is unavailable
+  //   flood     the FEMA flood answer is unavailable
+  //   wetlands  the NWI wetlands answer is unavailable
+  //   power     no confirmed territory, and the utility-territory lookup failed or timed out
+  //   zoning    the zoning source answered unavailable / error
+  // { what, service, state: 'pending'|'timeout'|'failed', section, reason, text } per missing key.
+  const MISSING = {
+    water: { what: 'Water', service: 'the well-records lookup', section: 'wells' },
+    soil: { what: 'Soil', service: 'USDA soil service', section: 'land' },
+    terrain: { what: 'Terrain', service: 'USGS elevation service', section: 'land' },
+    flood: { what: 'Flood', service: 'FEMA flood map service', section: 'flood' },
+    wetlands: { what: 'Wetlands', service: 'NWI wetlands service', section: 'wetlands' },
+    power: { what: 'Power', service: 'the utility-territory lookup', section: 'utility' },
+    zoning: { what: 'Zoning', service: 'the county zoning source', section: 'zoningPermits' }
+  };
+  const MIN_MEASURED = 4;
+
+  function sectionState(name) {
+    let s;
+    try { s = window.AcresXSections?.status?.(name); } catch { s = undefined; }
+    return s === 'pending' || s === 'timeout' || s === 'failed' ? s : null;
+  }
+
+  function missingInputs(l = last) {
+    const PU = window.AcresXUtilities;
+    const soil = l?.land?.soil, terrain = l?.land?.terrain;
+    const timedOut = x => Boolean(x?.timedOut) || /timed out/i.test(String(x?.error || ''));
+    // A layer whose answer is still null has not arrived yet.
+    const stateOf = (section, answer) => sectionState(section) || (answer == null ? 'pending' : timedOut(answer) ? 'timeout' : 'failed');
+    const out = {};
+    const add = (key, state) => {
+      const m = MISSING[key];
+      const reason = state === 'pending' ? `${m.service} is still loading` : `${m.service} ${state === 'timeout' ? 'timed out' : "didn't answer"}`;
+      const text = `${m.what} not checked (${reason})${state === 'pending' ? '' : ' — try again'}`;
+      out[key] = { key, what: m.what, service: m.service, section: m.section, state, reason, text };
+    };
+    const wellsState = sectionState('wells');
+    if (!PU?.water?.(l) && (wellsState || l?.wells?.lookupFailed)) add('water', wellsState || 'failed');
+    if (!PU?.sewer?.(l) && !soil?.available) add('soil', stateOf('land', l?.land));
+    if (!terrain?.available) add('terrain', stateOf('land', l?.land));
+    if (!l?.flood?.available) add('flood', stateOf('flood', l?.flood));
+    if (!l?.wetlands?.available) add('wetlands', stateOf('wetlands', l?.wetlands));
+    const utilState = sectionState('utility');
+    if (!l?.powerIntelligence?.territory?.confirmed && (utilState || l?.utility?.lookupFailed)) add('power', utilState || 'failed');
+    const zp = l?.zoningPermits;
+    if (zp == null || ['unavailable', 'error'].includes(zp?.zoning?.status)) add('zoning', stateOf('zoningPermits', zp));
+    return out;
+  }
+
+  const factorNames = list => andList(list.map(f => f.label));
 
   function renderWellSummary() {
     const WD = window.AcresXWellDepth;
@@ -151,35 +211,68 @@
 
   // The buildability score: 7 factors (0-100) weighted by WEIGHTS, shown /10, then the
   // buildable-area homesite check (buildableCheck above). Listing/MLS data and the cost
-  // estimate never feed it.
+  // estimate never feed it. Factors with missing inputs (missingInputs above) are left out and
+  // the weights of the measured ones re-normalized, so a timed-out layer does not lower the score;
+  // the score is then "Incomplete — N of 7 factors measured", and "Provisional" below 4 measured.
   function calculateScore() {
     const factors = scoreFactors();
-    let weighted = 0;
-    Object.entries(factors).forEach(([key, factor]) => { weighted += factor.score * WEIGHTS[key] / 100; });
+    const all = Object.entries(factors);
+    const measured = all.filter(([, f]) => f.measured);
+    const weightSum = measured.reduce((s, [key]) => s + WEIGHTS[key], 0);
+    const weighted = weightSum ? measured.reduce((s, [key, f]) => s + f.score * WEIGHTS[key], 0) / weightSum : null;
     const buildable = buildableCheck();
-    const factorScore = weighted / 10;
-    const score = buildable.cap != null ? Math.min(factorScore, buildable.cap) : factorScore;
-    const rating = score >= 8.5 ? 'Excellent' : score >= 7 ? 'Good' : score >= 5.5 ? 'Moderate' : 'Challenging';
-    const constraint = Object.values(factors).sort((a, b) => a.score - b.score)[0];
+    const factorScore = weighted == null ? null : weighted / 10;
+    const score = factorScore == null ? null : buildable.cap != null ? Math.min(factorScore, buildable.cap) : factorScore;
+    const missing = all.filter(([, f]) => !f.measured).map(([key, f]) => ({ ...f.missing, label: f.label }));
+    const total = all.length;
+    const provisional = measured.length < MIN_MEASURED;
+    const completeness = {
+      measured: measured.length, total, complete: !missing.length, provisional, missing,
+      label: missing.length ? `Incomplete — ${measured.length} of ${total} factors measured` : '',
+      detail: missing.length ? `Not measured: ${missing.map(m => `${m.label} (${m.reason})`).join('; ')}. Left out of the score${provisional ? '; too few factors for a firm rating' : ''}.` : '',
+      // Sections a retry can re-run (settled ones only: a pending one is still on its way).
+      retry: [...new Set(missing.filter(m => m.state !== 'pending').map(m => m.section))]
+    };
+    const band = score == null ? '' : score >= 8.5 ? 'Excellent' : score >= 7 ? 'Good' : score >= 5.5 ? 'Moderate' : 'Challenging';
+    const rating = score == null ? 'Not scored' : provisional ? 'Provisional' : band;
+    const pool = (measured.length ? measured : all).map(([, f]) => f);
+    const constraint = pool.slice().sort((a, b) => a.score - b.score)[0];
     // One line for "why this score", under the score on the dashboard and on report page 1.
     const why = buildable.measured ? buildable.why
       : buildable.pending ? `Buildable area still measuring · main constraint: ${constraint.label.toLowerCase()}`
       : `Buildable area not measured · main constraint: ${constraint.label.toLowerCase()}`;
-    return { score, factorScore, rating, factors, constraint, buildable, why, weights: { ...WEIGHTS } };
+    return { score, factorScore, rating, band, factors, constraint, buildable, why, completeness, weights: { ...WEIGHTS } };
   }
   // The same score and factors for the printable report (property-report-v2.js), so its score and
   // its "top drivers" come from the inputs the dashboard card uses.
-  window.AcresXScore = { calculate: calculateScore, wellStats, WEIGHTS, HOMESITE_MIN_AC, render: () => renderAll() };
+  window.AcresXScore = { calculate: calculateScore, missingInputs: l => missingInputs(l), wellStats, WEIGHTS, HOMESITE_MIN_AC, MIN_MEASURED, render: () => renderAll() };
+
+  // "Good buildability · 7-factor screening", "Good buildability · Incomplete — 5 of 7 factors
+  // measured", "Provisional score · Incomplete — 3 of 7 factors measured".
+  function scoreNoteText(r) {
+    const c = r.completeness;
+    if (r.score == null) return `Not scored · ${c.label}`;
+    const head = c.provisional ? 'Provisional score' : `${r.rating} buildability`;
+    return `${head} · ${c.complete ? '7-factor screening' : c.label}`;
+  }
+  window.AcresXScore.noteText = scoreNoteText;
+
+  function retryMissing(sections) {
+    const P = window.AcresXProgress;
+    if (P?.retryMissing) P.retryMissing(sections);
+  }
 
   function renderScore() {
-    const { score, rating, factors, constraint, why } = calculateScore();
+    const result = calculateScore();
+    const { score, factors, constraint, why, completeness } = result;
 
     const metric = document.getElementById('scoreMetric');
     const note = document.getElementById('scoreNote');
     const card = document.querySelector('.overview-grid .score-card');
     if (!metric || !card) return;
-    metric.textContent = score.toFixed(1);
-    if (note) note.textContent = `${rating} buildability · 7-factor screening`;
+    metric.textContent = score == null ? '—' : score.toFixed(1);
+    if (note) note.textContent = scoreNoteText(result);
+    renderMissing(card, completeness);
     let whyEl = card.querySelector('.score-why');
     if (!whyEl) {
       whyEl = document.createElement('div');
@@ -192,7 +285,7 @@
     whyEl.textContent = why;
 
     const chips = card.querySelector('.score-factor-line');
-    if (chips) chips.innerHTML = Object.values(factors).map(f => `<span class="score-factor-chip">${f.label} ${Math.round(f.score)}</span>`).join('');
+    if (chips) chips.innerHTML = Object.values(factors).map(f => (f.measured ? `<span class="score-factor-chip">${f.label} ${Math.round(f.score)}</span>` : `<span class="score-factor-chip score-factor-missing" title="${f.missing.reason}">${f.label} not checked</span>`)).join('');
     const constraintEl = card.querySelector('.score-constraint');
     if (constraintEl) constraintEl.textContent = `Primary screening constraint: ${constraint.label}`;
 
@@ -213,6 +306,31 @@
       : pct != null ? `Mapped wetlands: ${pct > 0 && pct < 0.05 ? '<0.1' : pct.toFixed(1)}% of parcel${acres != null ? ` · ${acres.toFixed(2)} ac` : ''}`
       : 'Mapped wetlands detected · coverage percentage unavailable';
   }
+
+  // "Not measured: Septic (USDA soil service didn't answer); …" and a "Retry missing layers"
+  // button under the "why" line, while any factor is missing.
+  function renderMissing(card, c) {
+    let el = card.querySelector('.score-missing');
+    if (c.complete) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'score-missing';
+      el.setAttribute('style', 'font-size:11px;color:#f3cf86;margin-top:7px;line-height:1.35;font-weight:700');
+      const ref = card.querySelector('.score-factor-line');
+      if (ref) card.insertBefore(el, ref); else card.appendChild(el);
+    }
+    const canRetry = c.retry.length && typeof window.AcresXProgress?.retryMissing === 'function';
+    const button = canRetry ? ` <button type="button" class="score-retry-missing" data-sections="${c.retry.join(',')}" style="display:inline-block;margin-top:5px;border:1px solid #d9b46a;background:#fff;color:#8a5b13;border-radius:8px;padding:4px 9px;font:800 11px/1 'DM Sans',sans-serif;cursor:pointer">Retry missing layers</button>` : '';
+    el.innerHTML = `<span class="score-missing-text">${c.detail}</span>${button}`;
+  }
+  // One delegated listener: the card's HTML is rewritten on every render.
+  document.addEventListener?.('click', event => {
+    const btn = event.target?.closest?.('.score-retry-missing');
+    if (!btn) return;
+    event.preventDefault?.();
+    event.stopPropagation?.();
+    retryMissing(String(btn.dataset?.sections || '').split(',').filter(Boolean));
+  }, true);
 
   function money(n) { return `$${Math.round(n / 1000)}k`; }
 
@@ -266,7 +384,9 @@
     if (!root || !title || !detail) return;
     const labels = { well: 'Well', septic: 'Septic', power: 'Power', driveway: 'Driveway', sitework: 'Site work' };
     title.textContent = 'Preliminary Development Cost';
-    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>${window.AcresXCostModel ? `${window.AcresXCostModel.GENERIC_NOTE} ` : ''}Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
+    // Which inputs were missing, when soil / terrain did not load (local-cost-model.js).
+    const missing = window.AcresXCostModel?.missingNote ? window.AcresXCostModel.missingNote(window.AcresXCostModel.missingInputs(last)) : '';
+    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${missing ? `<div class="notice cost-missing">${missing}</div>` : ''}${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>${window.AcresXCostModel ? `${window.AcresXCostModel.GENERIC_NOTE} ` : ''}Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
     detail.classList.add('show');
     detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

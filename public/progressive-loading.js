@@ -269,6 +269,17 @@
     try { root.scrollTo?.({ top: 340, behavior: 'smooth' }); } catch (_) {}
   }
 
+  // "Retry missing layers" on the score card (screening-refinements.js): re-runs settled
+  // sections whose answer left a score factor unmeasured (failed, timed out, or answered with the
+  // layer unavailable). Pending sections are skipped. Returns the sections restarted.
+  function retryMissing(names) {
+    if (!run || typeof last === 'undefined' || !last?.parcel) return [];
+    const list = [...new Set(names || [])].filter(n => SECTIONS[n] && isSettled(run.status[n]));
+    list.forEach(startSection);
+    if (list.length) { run.dirty = true; renderNow(); }
+    return list;
+  }
+
   function retry(name) {
     if (!run || !SECTIONS[name] || run.status[name] !== 'timeout' || typeof last === 'undefined' || !last?.parcel) return;
     startSection(name);
@@ -289,7 +300,7 @@
       .section-retry{display:block;width:max-content;margin:8px 0 0;align-self:flex-start;border:1px solid #d9b46a;background:#fff;color:var(--amber);border-radius:8px;padding:6px 10px;font:800 11px/1 "DM Sans",sans-serif;cursor:pointer}
       .section-retry:hover{background:var(--amber-bg)}
       .property-overview-fact .section-retry{margin-top:4px;padding:4px 8px;font-size:10px}
-      .score-updating .score-factor-line,.score-updating .score-constraint{display:none!important}
+      .score-updating .score-factor-line,.score-updating .score-constraint,.score-updating .score-missing{display:none!important}
       .score-updating .metric-value{font-size:30px!important;color:inherit!important}
       .cost-updating .cost-value{opacity:.75}
       .cost-updating .cost-pill{display:none!important}
@@ -360,7 +371,8 @@
       card?.classList.remove('score-updating');
       metric?.classList.remove('section-pending-text');
       const timedOut = S.timedOut().filter(n => SCORE_INPUTS.includes(n)).map(n => SECTIONS[n].label);
-      if (note && timedOut.length) note.textContent = `${note.textContent} · ${timedOut.join(', ')} timed out (scored as unavailable)`;
+      // An incomplete score already names its missing factors (screening-refinements.js).
+      if (note && timedOut.length && !/Incomplete/.test(note.textContent)) note.textContent = `${note.textContent} · ${timedOut.join(', ')} timed out (scored as unavailable)`;
     } else {
       card?.classList.add('score-updating');
       markText(metric, 'pending', 'Updating…');
@@ -439,5 +451,5 @@
   else wrapRenderers();
 
   root.AcresXSections = S;
-  root.AcresXProgress = { search, retry, begin, startSection, renderNow, paint, wrapRenderers, DEBOUNCE_MS };
+  root.AcresXProgress = { search, retry, retryMissing, begin, startSection, renderNow, paint, wrapRenderers, DEBOUNCE_MS };
 })(typeof window !== 'undefined' ? window : globalThis);
