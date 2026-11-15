@@ -31,6 +31,7 @@ function waResponses() {
     '/api/land-analysis': { available: true, soil: { available: true, feasibility: 'limited', mapUnit: 'Aquepts' }, terrain: { available: true, gradePct: 2, maxGradePct: 8 } },
     '/api/existing-well': { available: true, status: 'possible_match', label: 'Possible well association', confidence: 'Low', score: 30 },
     '/api/property-assessment': { available: true, state: 'WA', county: 'Spokane', source: 'Spokane County Assessor SCOUTSimple', records: [{ PID_NUM: '57344.0125', land_value: 120000, tax_year: 2026 }] },
+    '/api/property-tax': { available: true, state: 'WA', county: 'Spokane', status: 'found', basis: 'billed', taxYear: 2026, total: 1877.65, source: { name: 'Spokane County Treasurer (SCOUT property summary)' } },
     '/api/reso-listings': { available: true, configured: true, matchCount: 1, best: { status: 'Closed' }, matchConfidence: 'moderate' },
     '/api/power-intelligence': { available: true, provider: 'INLAND POWER & LIGHT COMPANY', distribution: { estimatedDistanceFt: 300, confidence: 'low' } },
     '/api/zoning-rules': { available: true, county: 'Spokane', code: 'RCV', family: 'Rural', uses: [{}] },
@@ -74,7 +75,7 @@ test('Washington parcels: Spokane asks /api/parcel-search first; with no parcel 
   assert.deepEqual(calls[0].body, { state: 'WA', county: 'Spokane', parcelId: '57344.0125' });
   assert.deepEqual(routes, [
     '/api/parcel-search', 'arcgis:parcel', 'arcgis:wells', '/api/utility-territory', 'hazards:flood', 'hazards:wetlands', '/api/zoning-permits',
-    '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment', '/api/reso-listings', '/api/power-intelligence',
+    '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment', '/api/property-tax', '/api/reso-listings', '/api/power-intelligence',
     '/api/zoning-rules', '/api/slope-grid'
   ]);
   const parcelParams = calls[1].body.params;

@@ -35,7 +35,11 @@ const statewideBase = {
 //   partial        answered for some parcels, had a mismatch, or answered without usable data
 //   not_configured unavailable on every parcel because nothing is set up for it
 // utilities = the utility-territory and power layers; terrain = the terrain and slope-grid layers.
-// tax: no run returned a tax amount for any parcel, so no county claims tax coverage.
+// tax: 'partial' in every covered county (2026-11-15): /api/property-tax (src/services/property-tax.js)
+// returns the billed amount from the county treasurer pages (Kootenai: an estimate from the 2026
+// levy rate, since the treasurer site blocks automated lookups). Checked live on one or two
+// parcels per county, not yet by the daily validation run (the tax layer is in it from this
+// change on); move to 'validated' after clean runs.
 const overrides = {
   'WA:Spokane': {
     level: 3,
@@ -44,7 +48,7 @@ const overrides = {
     checklistScore: 79,
     checklistScoreDate: '2026-11-03',
     notes: 'Level 3 (checklist section 7): two consecutive clean live validation runs (0 parcels with an error or mismatch) on 2026-11-13 (run 43502221467) and 2026-11-14 (run 43628378292; 165 ok, 15 unavailable: listing on 12 parcels, zoning rules on 3). Owner signed off on 2026-11-11 after comparing 35204.2729 and 57344.0125 with the county sources. Zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1); no tax amount.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Yellowstone': {
     level: 3,
@@ -53,7 +57,7 @@ const overrides = {
     checklistScore: 80,
     checklistScoreDate: '2026-11-03',
     notes: 'Level 3 (checklist section 7): clean live validation runs (0 parcels with an error or mismatch) on 2026-11-09 (run 42716955430), 2026-11-10 (run 42895735135) and 2026-11-11 (run 43094606201, clean in the job log; not published because of the artifact outage fixed by PR #53). Owner signed off on 2026-11-12 after comparing 03103233201230000 (N3 City of Billings, assessed $857,700, flood X) and 03072527101010000 (Special Zoning District 16, assessed $16,479, flood D) with the county and state sources. Zoning rules are missing for 4 of 12 parcels (all unzoned county land); no tax amount.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'partial'}
   },
   'ID:Kootenai': {
     level: 3,
@@ -62,7 +66,7 @@ const overrides = {
     checklistScore: 87,
     checklistScoreDate: '2026-11-03',
     notes: 'Level 3 (checklist section 7): clean live validation runs (0 parcels with an error or mismatch) on 2026-11-09 (run 42716955430, plus the lead\'s manual run after PR #46 deployed), 2026-11-10 (run 42895735135) and 2026-11-11 (run 43094606201, clean in the job log; not published because of the artifact outage fixed by PR #53). Owner signed off on 2026-11-12 after comparing 0L8210010030 (Rural, assessed $372,460, class 515, flood X), and earlier C72150030040 (Coeur d\'Alene R-12), with the county sources. Zoning rules are missing for 3 of 12 parcels (Coeur d\'Alene R-12 twice, county Restricted Residential); no tax amount.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Gallatin': {
     level: 2,
@@ -71,7 +75,7 @@ const overrides = {
     checklistScore: 75,
     checklistScoreDate: '2026-11-03',
     notes: 'Validation run 2026-11-03T23:25Z had 1 terrain error; zoning answered for 10 of 12 parcels. No zoning rules table for Gallatin.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'not_configured'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'not_configured'}
   },
   // Stevens was re-derived from the latest published daily run (2026-11-12, run 43304774155,
   // `latest/stevens.json` on the validation-results branch).
@@ -81,7 +85,7 @@ const overrides = {
     checklistScore: 78,
     checklistScoreDate: '2026-11-07',
     notes: 'Level 3 (checklist section 7): clean live validation runs (0 parcels with an error or mismatch) on 2026-11-11 (run 43094606201, clean in the job log; not published because of the artifact outage fixed by PR #53) and 2026-11-12 (run 43304774155, 0 failed, published on validation-results). Daily check enabled. Hand-checked expected values on more than 3 parcels in validation/counties/stevens.json. Owner signed off on 2026-11-13 ("Stevens checks look good") after checking 0231200 (City of Chewelah, R1) and 2342700 (rural, AR-10, designated forest) against the county sources.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'validated'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'validated'}
   }
 };
 

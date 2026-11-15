@@ -599,9 +599,22 @@ ${buildableBlock(data.buildableArea)}
     return `<div class="sites">${cards.join('')}</div>`;
   }
 
-  function assessorBlock(f, S) {
+  // Property tax line from /api/property-tax (public/property-tax.js keeps it in last.propertyTax):
+  // billed amount or Kootenai's levy-rate estimate, always with its basis; "Not available" otherwise.
+  function taxCell(data, S) {
+    const t = data?.propertyTax;
+    if (!t) return '';
+    const d = window.AcresXPropertyTax?.describe?.(t);
+    if (!d) return '';
+    const ref = t.available && t.source?.name ? S.mark([S.add(t.source.name, { url: window.AcresXPropertyTax.safeUrl(t.source.url), date: t.asOf ? `as of ${t.asOf}` : '' })])
+      : d.linkUrl ? S.mark([S.add(d.linkLabel, { url: d.linkUrl, date: '' })]) : '';
+    return `<div><span>${esc(d.heading)}</span><strong>${esc(d.value)}${ref}</strong><small>${esc(d.basis)}</small></div>`;
+  }
+
+  function assessorBlock(f, S, data) {
     const a = f.assess;
-    if (!a) return `<p class="muted">Assessor values not available for this parcel.</p>`;
+    const tax = taxCell(data, S);
+    if (!a) return tax ? `<div class="assessor">${tax}</div><p class="muted">Assessor values not available for this parcel.</p>` : `<p class="muted">Assessor values not available for this parcel.</p>`;
     const ref = S.mark([S.add(a.source, { date: a.year ? `tax year ${a.year}` : '' })]);
     const cells = [];
     // Land equal to the total is shown once, with a note, instead of the same amount twice.
@@ -614,6 +627,7 @@ ${buildableBlock(data.buildableArea)}
     }
     cells.push(`<div><span>Tax category</span><strong>${esc(a.propertyClass || NA)}</strong><small>Tax category, not zoning</small></div>`);
     cells.push(`<div><span>Assessor acres</span><strong>${a.acres != null ? `${a.acres.toFixed(2)} ac` : NA}</strong></div>`);
+    if (tax) cells.push(tax);
     return `<div class="assessor">${cells.join('')}</div><p class="muted">${esc(a.source || 'County assessor')}${ref}</p>`;
   }
 
@@ -635,7 +649,7 @@ ${buildableBlock(data.buildableArea)}
 <section class="block">${eyebrow('Zoning')}${zoningBlock(f, S)}${densityWarning}</section>
 <section class="block">${eyebrow('Overlays')}${overlayBlock(f, S)}</section>
 <section class="block">${eyebrow('Site conditions')}${siteCards(data, f, S)}</section>
-<section class="block">${eyebrow('Assessor record')}${assessorBlock(f, S)}</section>
+<section class="block">${eyebrow('Assessor record')}${assessorBlock(f, S, data)}</section>
 ${listingBlock(data)}
 </div>${footer(2, f.pages, f.brand)}</section>`;
   }

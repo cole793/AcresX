@@ -26,6 +26,7 @@ function happyResponses() {
     '/api/land-analysis': { available: true, soil: { available: true, feasibility: 'favorable', mapUnit: 'Rathdrum silt loam', hydrologicGroup: 'B' }, terrain: { available: true, gradePct: 4.27, maxGradePct: 9.1, reliefFt: 40 } },
     '/api/existing-well': { available: false, status: 'not_supported', label: 'Existing-well matching is not configured for this county yet.' },
     '/api/property-assessment': { available: true, state: 'ID', statewideSource: 'Idaho Statewide Standardized Parcel Layer', statewideRecords: [{ VAL_TOTAL: 350000, VAL_LAND: 150000, VAL_IMPVTS: 200000 }] },
+    '/api/property-tax': { available: true, state: 'ID', county: 'Kootenai', status: 'found', basis: 'estimate', taxYear: 2026, total: 1234.5, source: { name: 'Kootenai County, Rates for the Year 2026 (levy rate by tax area group)' } },
     '/api/reso-listings': { available: true, configured: true, matchCount: 0, best: null, matchConfidence: 'none' },
     '/api/power-intelligence': { available: true, provider: 'Kootenai Electric Cooperative', distribution: { estimatedDistanceFt: 410.4, confidence: 'moderate', status: 'osm_mapped_proximity' } },
     '/api/zoning-rules': { available: true, county: 'Kootenai', code: 'R', family: 'Rural', uses: [{}, {}, {}] },
@@ -80,7 +81,7 @@ test('browser request sequence and bodies are mirrored', async () => {
   const byRoute = route => calls.filter(x => x.route === route).map(x => x.body);
   assert.deepEqual(calls.map(x => x.route === '/api/hazards' ? `hazards:${x.body.kind}` : x.route), [
     '/api/parcel-search', '/api/well-search', '/api/utility-territory', 'hazards:flood', 'hazards:wetlands',
-    '/api/zoning-permits', '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment',
+    '/api/zoning-permits', '/api/public-utilities', '/api/land-analysis', '/api/existing-well', '/api/property-assessment', '/api/property-tax',
     '/api/reso-listings', '/api/power-intelligence', '/api/zoning-rules', '/api/slope-grid'
   ]);
   assert.ok(calls.every(x => x.method === 'POST' && x.url.startsWith(BASE)));
