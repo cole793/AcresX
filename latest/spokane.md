@@ -1,24 +1,24 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-14T18:52:46.837Z
+- Run: 2026-11-15T19:29:28.782Z
 - Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 165, unavailable 15, error 0, mismatch 0, skipped 0
+- Layer results: ok 175, unavailable 17, error 0, mismatch 0, skipped 0
 
-| Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Listing |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 35204.2729 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 35234.0602 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 13013.2211 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 57344.0125 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 43341.0110 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 47071.9003 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 46301.9025 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 57302.9016 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 37094.9101 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48121.9001 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48136.9052 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 32322.9002 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 35204.2729 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 35234.0602 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 13013.2211 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 57344.0125 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 43341.0110 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 47071.9003 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 46301.9025 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 57302.9016 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 37094.9101 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 48121.9001 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 48136.9052 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 32322.9002 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 
 ## Parcel details
 
@@ -40,6 +40,7 @@ Why: Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 
 - **Zoning**: ok. R1 (City of Spokane) · overlays: Critical aquifer recharge area: high susceptibility [code=R1, jurisdiction=City of Spokane, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: high susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $72,900, class 77 Churches, no tax amount [assessedValue=72900, landValue=72900, improvementValue=0, taxPresent=false, netValue=0, taxYear=2027, propertyClass=77, propertyClassDescription=Churches, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $15.00 [taxTotal=15, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 35234.0602 (City of Spokane Valley, 0.42 ac)
@@ -50,7 +51,7 @@ Why: Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zo
 - **Wells**: ok. 1892 well record(s), 5 of nearest 5 report depth [wellCount=1892, nearestDepthsCount=5, nearestMi=0.2, medianDepthFt=25]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
 - **Soil**: ok. moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Urban land-Lenz, disturbed complex, 3 to 15 percent slopes, soilSlopePct=5]
-- **Terrain**: ok. avg grade 4.6%, max 8.2% [gradePct=4.6, maxGradePct=8.2, reliefFt=9, sampleCount=9]
+- **Terrain**: ok. avg grade 4.9%, max 8.7% [gradePct=4.9, maxGradePct=8.7, reliefFt=9, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.6% [cellCount=16, avgSlopePct=6.6, maxSlopePct=11.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -60,6 +61,7 @@ Why: Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zo
 - **Zoning**: ok. R-3 (City of Spokane Valley) [backup: older copy as of 2024-05-22] · overlays: Critical aquifer recharge area: high susceptibility [code=R-3, jurisdiction=City of Spokane Valley, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=backup, sourceAsOf=2024-05-22, overlays=Critical aquifer recharge area: high susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $589,000, class 11 Single Unit, no tax amount [assessedValue=589000, landValue=110000, improvementValue=479000, taxPresent=false, netValue=76466, taxYear=2027, propertyClass=11, propertyClassDescription=Single Unit, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $1,449.88 [taxTotal=1449.88, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 13013.2211 (City of Cheney, 0.16 ac)
@@ -70,7 +72,7 @@ Why: Small lot inside the City of Cheney (3175 Pheasant St). No county zoning po
 - **Wells**: ok. 353 well record(s), 5 of nearest 5 report depth [wellCount=353, nearestDepthsCount=5, nearestMi=0.13, medianDepthFt=17]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (Cheney ashy silt loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Cheney ashy silt loam, 0 to 8 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3]
-- **Terrain**: ok. avg grade 0%, max 0% [gradePct=0, maxGradePct=0, reliefFt=0, sampleCount=9]
+- **Terrain**: ok. avg grade 3.3%, max 5.9% [gradePct=3.3, maxGradePct=5.9, reliefFt=5, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0% [cellCount=16, avgSlopePct=0, maxSlopePct=0, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -80,6 +82,7 @@ Why: Small lot inside the City of Cheney (3175 Pheasant St). No county zoning po
 - **Zoning**: ok. R-1 (City of Cheney) · overlays: Critical aquifer recharge area: moderate susceptibility; Planned Unit Development overlay: PUD (R-1) [code=R-1, jurisdiction=City of Cheney, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: moderate susceptibility; Planned Unit Development overlay: PUD (R-1), overlayTypes=aquifer_recharge; planned_unit_development, overlaysUnavailable=(none)]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $401,500, class 11 Single Unit, no tax amount [assessedValue=401500, landValue=100000, improvementValue=301500, taxPresent=false, netValue=401500, taxYear=2027, propertyClass=11, propertyClassDescription=Single Unit, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $4,141.86 [taxTotal=4141.86, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 57344.0125 (Newman Lake, 0.45 ac, flood AE, wetlands)
@@ -100,6 +103,7 @@ Why: Small unincorporated lot with a FEMA high-risk zone and mapped NWI wetlands
 - **Zoning**: ok. RCV (Spokane County) · overlays: Shoreline designation: Rural Conservancy; Critical aquifer recharge area: low susceptibility; Mapped wetland buffer: 190 foot buffer; Mapped wetland buffer: 250 foot buffer [code=RCV, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Shoreline designation: Rural Conservancy; Critical aquifer recharge area: low susceptibility; Mapped wetland buffer: 190 foot buffer; Mapped wetland buffer: 250 foot buffer, overlayTypes=shoreline; aquifer_recharge; wetland_buffer, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. RCV: Rural (10 uses) [code=RCV, family=Rural, useCount=10]
 - **Assessment**: ok. assessed $387,870, class 91 Vacant Land, no tax amount [assessedValue=387870, landValue=387870, improvementValue=0, taxPresent=false, netValue=387870, taxYear=2027, propertyClass=91, propertyClassDescription=Vacant Land, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $3,864.93 [taxTotal=3864.93, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 43341.0110 (unincorporated, 1.5 ac, LTA, wetlands)
@@ -110,7 +114,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 39 well record(s), 5 of nearest 5 report depth [wellCount=39, nearestDepthsCount=5, nearestMi=0.06, medianDepthFt=160]
 - **Existing well**: ok. Possible well association [status=possible_match, confidence=Low, score=45]
 - **Soil**: ok. moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Glenrose ashy silt loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
-- **Terrain**: ok. avg grade 2%, max 4.5% [gradePct=2, maxGradePct=4.5, reliefFt=13, sampleCount=9]
+- **Terrain**: ok. avg grade 2.6%, max 4.5% [gradePct=2.6, maxGradePct=4.5, reliefFt=14, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 3.3% [cellCount=16, avgSlopePct=3.3, maxSlopePct=6.6, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=7]
@@ -120,6 +124,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Zoning**: ok. LTA (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=LTA, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. LTA: Resource Lands (8 uses) [code=LTA, family=Resource Lands, useCount=8]
 - **Assessment**: ok. assessed $382,790, class 11 Single Unit, no tax amount [assessedValue=382790, landValue=99990, improvementValue=282800, taxPresent=false, netValue=382790, taxYear=2027, propertyClass=11, propertyClassDescription=Single Unit, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 47071.9003 (Chattaroy, 2.32 ac, RT)
@@ -140,6 +145,7 @@ Why: Unincorporated 1-5 ac parcel (picked by discovery 2026-11-02, seed 42; its 
 - **Zoning**: ok. RT (Spokane County) · overlays: Critical aquifer recharge area: moderate susceptibility [code=RT, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: moderate susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. RT: Rural (10 uses) [code=RT, family=Rural, useCount=10]
 - **Assessment**: ok. assessed $247,350, class 18 Other Residential, no tax amount [assessedValue=247350, landValue=114050, improvementValue=133300, taxPresent=false, netValue=247350, taxYear=2027, propertyClass=18, propertyClassDescription=Other Residential, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $2,459.95 [taxTotal=2459.95, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 46301.9025 (no situs city, 4.62 ac, RCV)
@@ -160,6 +166,7 @@ Why: Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2
 - **Zoning**: ok. RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=RCV, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. RCV: Rural (10 uses) [code=RCV, family=Rural, useCount=10]
 - **Assessment**: ok. assessed $199,510, class 85 Mining, no tax amount [assessedValue=199510, landValue=199510, improvementValue=0, taxPresent=false, netValue=0, taxYear=2027, propertyClass=85, propertyClassDescription=Mining, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $23.50 [taxTotal=23.5, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 57302.9016 (Mead, 9.78 ac, RCV, wetlands)
@@ -180,6 +187,7 @@ Why: Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 202
 - **Zoning**: ok. RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=RCV, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. RCV: Rural (10 uses) [code=RCV, family=Rural, useCount=10]
 - **Assessment**: ok. assessed $469,010, class 18 Other Residential, no tax amount [assessedValue=469010, landValue=125010, improvementValue=344000, taxPresent=false, netValue=469010, taxYear=2027, propertyClass=18, propertyClassDescription=Other Residential, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 37094.9101 (Spokane situs, 5 ac, RCV)
@@ -200,6 +208,7 @@ Why: 5-40 ac parcel with a SPOKANE situs city that is outside city limits (count
 - **Zoning**: ok. RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=RCV, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. RCV: Rural (10 uses) [code=RCV, family=Rural, useCount=10]
 - **Assessment**: ok. assessed $862,700, class 11 Single Unit, no tax amount [assessedValue=862700, landValue=245000, improvementValue=617700, taxPresent=false, netValue=862700, taxYear=2027, propertyClass=11, propertyClassDescription=Single Unit, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $8,598.87 [taxTotal=8598.87, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 48121.9001 (Elk, 154 ac, FZ, wetlands)
@@ -211,7 +220,7 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Keeler-Kruse complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Keeler-Kruse complex, 15 to 30 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=23]
 - **Terrain**: ok. avg grade 11.7%, max 27.2% [gradePct=11.7, maxGradePct=27.2, reliefFt=588, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=40.1, partial=false]
+- **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=41.4, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=0.6]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -220,6 +229,7 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Zoning**: ok. FZ (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=FZ, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. FZ: Resource Lands (8 uses) [code=FZ, family=Resource Lands, useCount=8]
 - **Assessment**: ok. assessed $10,280, class 88 Designated Forest Lnd, no tax amount [assessedValue=10280, taxPresent=false, netValue=10280, taxYear=2027, propertyClass=88, propertyClassDescription=Designated Forest Lnd, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $177.96 [taxTotal=177.96, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 48136.9052 (Colbert, 51.9 ac, RCV, wetlands)
@@ -231,7 +241,7 @@ Why: Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Blackprince-Ardtoo complex, 15 to 30 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=22]
 - **Terrain**: ok. avg grade 6.9%, max 14.8% [gradePct=6.9, maxGradePct=14.8, reliefFt=150, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 11.5% [cellCount=16, avgSlopePct=11.5, maxSlopePct=18.2, partial=false]
+- **Slope grid**: ok. 16 cells, avg 12.3% [cellCount=16, avgSlopePct=12.3, maxSlopePct=22.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.7]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -240,6 +250,7 @@ Why: Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026
 - **Zoning**: ok. RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility; County-mapped wetland: permanent lake; Mapped wetland buffer: 190 foot buffer; Mapped wetland buffer: 250 foot buffer [code=RCV, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility; County-mapped wetland: permanent lake; Mapped wetland buffer: 190 foot buffer; Mapped wetland buffer: 250 foot buffer, overlayTypes=aquifer_recharge; wetland; wetland_buffer, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. RCV: Rural (10 uses) [code=RCV, family=Rural, useCount=10]
 - **Assessment**: ok. assessed $99,910, class 88 Designated Forest Lnd, no tax amount [assessedValue=99910, taxPresent=false, netValue=99910, taxYear=2027, propertyClass=88, propertyClassDescription=Designated Forest Lnd, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $790.25 [taxTotal=790.25, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 32322.9002 (Spangle, 157.8 ac, LTA)
@@ -260,6 +271,7 @@ Why: Unincorporated 40+ ac farm parcel (picked by discovery 2026-11-02, seed 42;
 - **Zoning**: ok. LTA (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=LTA, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. LTA: Resource Lands (8 uses) [code=LTA, family=Resource Lands, useCount=8]
 - **Assessment**: ok. assessed $62,690, class 83 Cur - Use - Ag, no tax amount [assessedValue=62690, taxPresent=false, netValue=62690, taxYear=2027, propertyClass=83, propertyClassDescription=Cur - Use - Ag, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
+- **Property tax**: ok. billed 2026 tax $476.71 [taxTotal=476.71, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.
