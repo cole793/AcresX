@@ -223,12 +223,14 @@
     const status = byId('status');
     if (!status || !S.allSettled()) return;
     const ev = last.evidence || {};
-    const evText = ev.status === 'found' ? `${ev.claims?.length || 0} listing claim${ev.claims?.length === 1 ? '' : 's'}` : ev.status === 'none' ? 'no reliable listing match' : 'listing search unavailable';
+    // No web search provider set up (index.html findListingEvidence, configured: false): say
+    // nothing about the listing search rather than report it as a failure on every parcel.
+    const evText = ev.status === 'found' ? `${ev.claims?.length || 0} listing claim${ev.claims?.length === 1 ? '' : 's'}` : ev.status === 'none' ? 'no reliable listing match' : ev.configured === false ? '' : 'listing search unavailable';
     const wells = Array.isArray(last.wells) ? last.wells.length : 0;
     const utility = Array.isArray(last.utility) && last.utility.length;
     const timedOut = S.timedOut().map(n => SECTIONS[n].label);
     status.className = 'status show warning';
-    status.textContent = `Analysis complete: parcel boundary loaded, ${wells} nearby well record${wells === 1 ? '' : 's'}, ${utility ? 'likely utility identified' : 'utility not identified'}, ${evText}, FEMA flood, NWI wetland, zoning-source and permit screening complete.${timedOut.length ? ` Timed out: ${timedOut.join(', ')} (use Retry on that section).` : ''}`;
+    status.textContent = `Analysis complete: parcel boundary loaded, ${wells} nearby well record${wells === 1 ? '' : 's'}, ${utility ? 'likely utility identified' : 'utility not identified'}, ${evText ? `${evText}, ` : ''}FEMA flood, NWI wetland, zoning-source and permit screening complete.${timedOut.length ? ` Timed out: ${timedOut.join(', ')} (use Retry on that section).` : ''}`;
   }
 
   async function search() {

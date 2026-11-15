@@ -20,6 +20,8 @@
       .property-overview-eyebrow{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--green2);font-weight:800;margin-bottom:7px}
       .property-overview-info h2{font:800 clamp(21px,2.2vw,30px) Manrope;margin:0;line-height:1.15}
       .property-overview-location{margin-top:6px;color:var(--muted);font-size:13px}
+      .property-overview-no-address{font-weight:700;color:#526158}
+      .property-overview-no-address+.property-overview-location{margin-top:2px}
       .property-overview-acres{display:flex;align-items:end;gap:9px;margin-top:24px;padding-bottom:20px;border-bottom:1px solid var(--line)}
       .property-overview-acres strong{font:800 34px Manrope;line-height:1;color:var(--green)}
       .property-overview-acres span{font-size:12px;color:var(--muted);padding-bottom:3px}
@@ -85,7 +87,9 @@
     if (typeof last === 'undefined' || !last?.parcel) return null;
     const p = last.parcel.properties || {};
     const parcelId = p.ORIG_PARCEL_ID || p.PARCEL_ID_NR || 'Unknown';
-    const address = [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].filter(Boolean).join(', ') || `Parcel ${parcelId}`;
+    // No situs address: the heading is the parcel number and the overview says so plainly.
+    const situs = [p.SITUS_ADDRESS, p.SITUS_CITY_NM, p.SITUS_ZIP_NR].map(v => String(v ?? '').trim()).filter(Boolean).join(', ');
+    const address = situs || `Parcel ${parcelId}`;
     const county = p._countyDisplay || p.COUNTY_NM || '—';
     // utilityText (index.html) says "Not identified — contact the county" when the lookup failed,
     // and shows the ranked primary provider first with the others "also listed".
@@ -93,7 +97,7 @@
     const utility = typeof utilityText === 'function' ? utilityText(last.utility) : list.length ? [list[0], list.length > 1 ? `also listed: ${list.slice(1).join(', ')}` : ''].filter(Boolean).join(' · ') : 'Not identified';
     // WA parcels come from the statewide layer, which has no state field; ID and MT parcels carry _stateDisplay.
     const state = p._stateDisplay || STATE_NAMES[p._stateCode] || 'Washington';
-    return { parcelId, address, county, state, utility };
+    return { parcelId, address, hasAddress: Boolean(situs), county, state, utility };
   }
 
   // The one nearby-well-depth definition (screening-inputs.js): median of the residential-comparable
@@ -132,6 +136,7 @@
         <div class="property-overview-info">
           <div class="property-overview-eyebrow">Property overview</div>
           <h2 id="overviewAddress">Selected parcel</h2>
+          <div id="overviewNoAddress" class="property-overview-location property-overview-no-address" hidden>No situs address on record</div>
           <div id="overviewLocation" class="property-overview-location">—</div>
           <div class="property-overview-acres">
             <div><strong id="overviewAcres">—</strong><span> acres</span></div>
@@ -201,9 +206,10 @@
       detailEl.textContent = info.mapped != null ? info.text : `${info.text} · mapped area unavailable`;
       note = info.note;
     } else if (area) {
+      // Acres, like every other county (the assessor figure joins it when the assessment arrives).
       const decimals = area.acres >= 100 ? 1 : 2;
       acresEl.textContent = area.acres.toFixed(decimals);
-      detailEl.textContent = `${Math.round(area.squareFeet).toLocaleString()} sq ft · mapped area`;
+      detailEl.textContent = `${area.acres.toFixed(decimals)} ac mapped`;
     } else {
       acresEl.textContent = '—';
       detailEl.textContent = 'Mapped acreage unavailable';
@@ -222,7 +228,7 @@
     const soil = dominantSoil();
     const wellDepth = nearbyWellDepth();
 
-    document.getElementById('overviewAddress').textContent = identity.address;
+    renderIdentity(identity);
     document.getElementById('overviewLocation').textContent = `${identity.county} County, ${identity.state}`;
     document.getElementById('overviewParcelId').textContent = identity.parcelId;
     document.getElementById('overviewCounty').textContent = identity.county;
@@ -251,8 +257,12 @@
       setTimeout(() => map.invalidateSize(false), 80);
     }
 
-    const version = document.querySelector('.version');
-    if (version) version.textContent = 'AcresX v0.11 Property Overview';
+  }
+
+  function renderIdentity(identity) {
+    document.getElementById('overviewAddress').textContent = identity.address;
+    const none = document.getElementById('overviewNoAddress');
+    if (none) none.hidden = identity.hasAddress;
   }
 
   // For late data that changes the acreage (Stevens assessor acres arrive with the assessment,
@@ -261,6 +271,11 @@
     refreshAcreage() {
       if (typeof last === 'undefined' || !last?.parcel || !document.getElementById('overviewAcres')) return;
       renderAcreage(mappedArea(last.parcel));
+    },
+    // For a situs address that arrives with the assessment (Montana cadastral AddressLine1).
+    refreshIdentity() {
+      if (typeof last === 'undefined' || !last?.parcel || !document.getElementById('overviewAddress')) return;
+      renderIdentity(propertyIdentity());
     }
   };
 

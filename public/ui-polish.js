@@ -143,8 +143,6 @@
       if (grade) grade.textContent = 'No listing';
       if (dot) dot.className = 'traffic-dot';
     }
-    const version = document.querySelector('.version');
-    if (version) version.textContent = 'AcresX v0.15 Power Proximity';
   }
 
   function polishListingDetails() {
