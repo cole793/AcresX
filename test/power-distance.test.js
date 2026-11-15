@@ -100,9 +100,14 @@ test('distance found: the nearest OSM distribution line feeds the distance, the 
   assert.equal(body.distribution.lineType, 'distribution');
   assert.deepEqual({ ...body.nearestLine, note: undefined, confidence: undefined }, {
     distanceFt: body.distribution.estimatedDistanceFt, lineType: 'distribution', infrastructure: 'overhead_distribution',
-    source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', note: undefined, confidence: undefined
+    source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', note: undefined, confidence: undefined,
+    mappedOnly: true, attribution: { text: '\u00a9 OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright' }, featureType: 'minor_line', usableForCost: true
   });
   assert.match(body.nearestLine.note, /not a service connection/);
+  // Within 1,000 ft: fed to the cost model, labelled as mapped lines only.
+  assert.equal(body.distribution.usableForCost, true);
+  assert.equal(body.distribution.mappedOnly, true);
+  assert.match(body.distribution.note, /mapped lines only/);
   // The 115 kV OSM line is "other", HIFLD is reported separately and never as the distance.
   assert.equal(body.proximity.nearestOtherLine.lineType, 'transmission');
   assert.equal(body.transmissionLine.lineType, 'transmission');
@@ -254,15 +259,15 @@ function card(powerIntelligence) {
   return { status: h.el('powerStatus').textContent, grade: h.el('powerGrade').textContent, dot: h.el('powerDot').className };
 }
 
-test('power card: "Nearest mapped power line ~X ft (source, type) — the utility confirms the route"', async () => {
+test('power card: "Nearest line mapped in OpenStreetMap ~X ft — OSM maps few local lines here …" with the OSM credit', async () => {
   stub();
   const found = card((await power(inland)).body);
-  assert.equal(found.status, 'Nearest mapped power line ~364 ft (OSM, distribution) — the utility confirms the route');
-  assert.match(found.grade, /confidence$/);
+  assert.equal(found.status, 'Nearest line mapped in OpenStreetMap ~364 ft — OSM maps few local lines here; the actual nearest line may be closer. The utility confirms the route. \u00a9 OpenStreetMap contributors');
+  assert.match(found.grade, /confidence · mapped lines only$/);
   stub({ overpass: 429 });
   const transmission = card((await power(inland)).body);
-  assert.match(transmission.status, /^Nearest mapped power line ~2,\d{3} ft \(HIFLD, transmission\) — the utility confirms the route$/);
-  assert.equal(transmission.grade, 'Transmission only');
+  assert.match(transmission.status, /^Nearest mapped transmission line ~2,\d{3} ft \(HIFLD\) — transmission lines do not serve homes directly, and local distribution lines are not mapped here\. The utility confirms the route\. Likely served: inside INLAND POWER & LIGHT COMPANY territory\.$/);
+  assert.equal(transmission.grade, 'Distance not confirmed — likely served, verify with INLAND POWER & LIGHT COMPANY');
   assert.equal(transmission.dot, 'traffic-dot amber');
   stub({ overpass: 'network', hifld: 'network' });
   const none = card((await power(inland)).body);

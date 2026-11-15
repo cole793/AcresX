@@ -1699,34 +1699,84 @@
     return { osmCell, overpassPowerQuery, slimElement, summarizeOsmPower };
   })();
 
-  // Copy of src/services/power-intelligence.js osmDistribution and chooseNearestLine.
+  // Copy of src/services/power-intelligence.js: the OSM distance guard, chooseNearestLine and the
+  // per-adapter distribution rules (verbatim; test/power-distance.test.js checks it).
+  const OSM_COST_MAX_FT = 1000;
+  const OSM_ATTRIBUTION = { text: '\u00a9 OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright' };
+  const OSM_MAPPED_ONLY_NOTE = 'OSM maps few local lines here; the actual nearest line may be much closer. The utility confirms the route.';
+  const OSM_FEATURE_NAMES = { pole: 'power pole', transformer: 'transformer', minor_line: 'distribution line', cable: 'distribution cable', line: 'distribution line' };
   function osmDistribution(proximity, fallbackNote) {
     const mapped = proximity.available && Number.isFinite(proximity.estimatedDistanceFt);
+    if (!mapped) {
+      return {
+        status: 'no_verified_distance',
+        estimatedDistanceFt: null,
+        confidence: proximity.confidence || 'low',
+        infrastructure: proximity.infrastructure || 'unknown',
+        note: proximity.note || fallbackNote
+      };
+    }
+    const ft = proximity.estimatedDistanceFt;
+    const featureType = proximity.nearest?.type || 'line';
+    const feature = OSM_FEATURE_NAMES[featureType] || 'power feature';
+    const osm = { lineType: 'distribution', source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', featureType, mappedOnly: true, attribution: OSM_ATTRIBUTION };
+    if (ft <= OSM_COST_MAX_FT) {
+      return {
+        status: 'osm_mapped_proximity',
+        estimatedDistanceFt: ft,
+        confidence: proximity.confidence || 'low',
+        infrastructure: proximity.infrastructure || 'unknown',
+        ...osm,
+        usableForCost: true,
+        note: `Nearest ${feature} mapped in OpenStreetMap about ${ft.toLocaleString('en-US')} ft from the parcel (mapped lines only). ${OSM_MAPPED_ONLY_NOTE}`
+      };
+    }
     return {
-      status: mapped ? 'osm_mapped_proximity' : 'no_verified_distance',
-      estimatedDistanceFt: mapped ? proximity.estimatedDistanceFt : null,
-      confidence: proximity.confidence || 'low',
+      status: 'osm_distance_not_confirmed',
+      estimatedDistanceFt: null,
+      mappedDistanceFt: ft,
+      confidence: 'low',
       infrastructure: proximity.infrastructure || 'unknown',
-      ...(mapped ? { lineType: 'distribution', source: 'OpenStreetMap', sourceLabel: 'OSM' } : {}),
-      note: mapped ? proximity.note : (proximity.note || fallbackNote)
+      ...osm,
+      usableForCost: false,
+      note: `Distance not confirmed. The nearest ${feature} mapped in OpenStreetMap is about ${ft.toLocaleString('en-US')} ft away, but ${OSM_MAPPED_ONLY_NOTE.charAt(0).toLowerCase()}${OSM_MAPPED_ONLY_NOTE.slice(1)} This distance is not used in the cost estimate.`
     };
   }
   function chooseNearestLine(distribution, proximity, transmission) {
+    const osmFields = { source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', mappedOnly: true, attribution: OSM_ATTRIBUTION };
     if (Number.isFinite(distribution?.estimatedDistanceFt)) {
       const utility = distribution.status === 'utility_published_proximity';
       return {
-        distanceFt: distribution.estimatedDistanceFt, lineType: 'distribution', infrastructure: distribution.infrastructure || 'unknown',
-        source: distribution.source || (utility ? 'Utility-published line map' : 'OpenStreetMap'),
-        sourceLabel: distribution.sourceLabel || (utility ? 'utility map' : 'OSM'),
-        sourceUrl: distribution.sourceUrl || (utility ? '' : 'https://www.openstreetmap.org'),
+        distanceFt: distribution.estimatedDistanceFt,
+        lineType: 'distribution',
+        infrastructure: distribution.infrastructure || 'unknown',
+        ...(utility
+          ? { source: distribution.source || 'Utility-published line map', sourceLabel: distribution.sourceLabel || 'utility map', sourceUrl: distribution.sourceUrl || '' }
+          : { ...osmFields, featureType: distribution.featureType || 'line' }),
+        usableForCost: true,
         confidence: distribution.confidence || 'low',
-        note: 'Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost.'
+        note: utility
+          ? 'Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost.'
+          : `Straight-line distance to the nearest line mapped in OpenStreetMap, not a service connection. ${OSM_MAPPED_ONLY_NOTE}`
+      };
+    }
+    // An OSM distribution feature too far away to be trusted (osmDistribution): still the line named.
+    if (proximity?.available && Number.isFinite(proximity.estimatedDistanceFt)) {
+      return {
+        distanceFt: proximity.estimatedDistanceFt,
+        lineType: 'distribution',
+        infrastructure: proximity.infrastructure || 'unknown',
+        ...osmFields,
+        featureType: proximity.nearest?.type || 'line',
+        usableForCost: false,
+        confidence: 'low',
+        note: `Nearest line mapped in OpenStreetMap; distance not confirmed. ${OSM_MAPPED_ONLY_NOTE}`
       };
     }
     const candidates = [];
     const other = proximity?.available ? proximity.nearestOtherLine : null;
     if (other && Number.isFinite(other.distanceFt)) {
-      candidates.push({ distanceFt: other.distanceFt, lineType: other.lineType === 'transmission' ? 'transmission' : 'unknown', infrastructure: other.infrastructureClass || 'unknown', source: 'OpenStreetMap', sourceLabel: 'OSM', sourceUrl: 'https://www.openstreetmap.org', voltage: other.voltage || '' });
+      candidates.push({ distanceFt: other.distanceFt, lineType: other.lineType === 'transmission' ? 'transmission' : 'unknown', infrastructure: other.infrastructureClass || 'unknown', ...osmFields, voltage: other.voltage || '' });
     }
     if (transmission?.available && Number.isFinite(transmission.distanceFt)) {
       candidates.push({ distanceFt: transmission.distanceFt, lineType: 'transmission', infrastructure: 'transmission_line', source: transmission.source, sourceLabel: 'HIFLD', sourceUrl: transmission.sourceUrl, voltage: transmission.voltageKv ? `${transmission.voltageKv} kV` : '' });
@@ -1735,31 +1785,39 @@
     const best = candidates.sort((a, b) => a.distanceFt - b.distanceFt)[0];
     return {
       ...best,
+      usableForCost: false,
       confidence: 'low',
       note: best.lineType === 'transmission'
-        ? 'Nearest mapped line is a high-voltage transmission line, which does not serve homes directly; no distribution line was mapped nearby. The utility confirms the route and cost.'
+        ? 'Nearest mapped line is a high-voltage transmission line, which does not serve homes directly; no distribution line was mapped nearby. Local lines are often not mapped, so this does not mean the parcel is far from power. The utility confirms the route and cost.'
         : 'Nearest mapped power line; its voltage is not mapped, so it may be a distribution or a transmission line. The utility confirms the route and cost.'
     };
+  }
+  function unknownProviderDistribution(proximity) {
+    const d = osmDistribution(proximity, 'Electric utility territory was not identified for this parcel.');
+    if (d.status === 'osm_distance_not_confirmed') return d;
+    if (d.status === 'osm_mapped_proximity') return { ...d, status: proximity.status || 'unknown' };
+    return { status: proximity.status || 'unknown', estimatedDistanceFt: null, confidence: proximity.confidence || 'low', infrastructure: proximity.infrastructure || 'unknown', note: proximity.note || 'Electric utility territory was not identified for this parcel.' };
+  }
+  function avistaDistribution(current, proximity) {
+    if (current?.status === 'utility_published_proximity') return { ...current, lineType: 'distribution', sourceLabel: 'Avista map', usableForCost: true };
+    if (Number.isFinite(current?.estimatedDistanceFt)) return current;
+    const osm = osmDistribution(proximity, '');
+    return osm.status === 'osm_mapped_proximity' ? osm : current;
+  }
+  function inlandDistribution(proximity) {
+    const osm = osmDistribution(proximity, 'Distance not verified.');
+    return osm.status === 'no_verified_distance'
+      ? { ...osm, note: 'Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route.' }
+      : { ...osm, note: `${osm.note} Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route.` };
   }
   // The Worker's per-adapter distribution rule (src/services/power-intelligence.js), given the
   // proximity the Worker could not get.
   function powerDistribution(base, proximity) {
     const current = base.distribution || {};
     if (current.status === 'utility_published_proximity' && Number.isFinite(current.estimatedDistanceFt)) return current;
-    if (base.status === 'provider_unknown') {
-      return {
-        status: proximity.status || 'unknown', estimatedDistanceFt: proximity.estimatedDistanceFt ?? null, confidence: proximity.confidence || 'low',
-        infrastructure: proximity.infrastructure || 'unknown', note: proximity.note || 'Electric utility territory was not identified for this parcel.'
-      };
-    }
-    if (base.adapter === 'avista-v1') {
-      return proximity.available && Number.isFinite(proximity.estimatedDistanceFt)
-        ? { status: 'osm_mapped_proximity', estimatedDistanceFt: proximity.estimatedDistanceFt, confidence: proximity.confidence, infrastructure: proximity.infrastructure, lineType: 'distribution', source: 'OpenStreetMap', sourceLabel: 'OSM', note: proximity.note }
-        : current;
-    }
-    if (base.adapter === 'inland-power-v1') {
-      return { ...osmDistribution(proximity, 'Distance not verified.'), note: 'Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route.' };
-    }
+    if (base.status === 'provider_unknown') return unknownProviderDistribution(proximity);
+    if (base.adapter === 'avista-v1') return avistaDistribution(current, proximity);
+    if (base.adapter === 'inland-power-v1') return inlandDistribution(proximity);
     return osmDistribution(proximity, `A dedicated ${base.provider} utility infrastructure adapter has not been built yet.`);
   }
 

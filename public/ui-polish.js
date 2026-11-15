@@ -40,6 +40,70 @@
     return Array.isArray(last?.utility) ? last.utility.slice(1) : [];
   }
 
+  // ---- The nearest-line wording (one definition: the card, the power details and the printable
+  // report, public/property-report-v2.js, read window.AcresXPowerLine.describe).
+  //
+  // OpenStreetMap maps very few local distribution lines in our counties (src/services/
+  // power-intelligence.js osmDistribution), so an OSM distance is "mapped lines only" and is never
+  // read as "far from power": when the server marks it usableForCost === false (farther than
+  // 1,000 ft, or a line whose type is unknown or transmission) the card reads "Distance not
+  // confirmed — likely served, verify with <utility>", with the territory, road access and
+  // existing-structure context that suggests service. A utility's own map (Avista, Flathead
+  // Electric) is named as such and takes precedence on the server.
+  const OSM_ATTRIBUTION_TEXT = '\u00a9 OpenStreetMap contributors';
+  const OSM_COPYRIGHT_URL = 'https://www.openstreetmap.org/copyright';
+  const OSM_FEATURES = { pole: 'power pole', transformer: 'transformer', minor_line: 'line', cable: 'cable', line: 'line' };
+  const cap = s => String(s || '').replace(/^./, c => c.toUpperCase());
+
+  // Why the parcel is likely served even though no nearby line is mapped (what the page has).
+  function servedContext(power, data) {
+    const out = [];
+    const provider = power?.provider || '';
+    if (provider) out.push(`inside ${provider} territory`);
+    const ra = data?.costContext?.roadAccess;
+    if (ra?.available && ra.status === 'found' && Number.isFinite(Number(ra.distanceFt))) out.push(`${ra.road?.public === false ? 'private' : 'public'} road ~${Math.round(Number(ra.distanceFt)).toLocaleString('en-US')} ft away`);
+    let structure = null;
+    try { structure = window.AcresXCoverage?.existingStructure?.(data) || null; } catch { structure = null; }
+    if (structure?.improvements) out.push('assessor lists improvements on the parcel');
+    else if (structure || (data?.existingWell?.match && Number(data.existingWell.score || 0) >= 55)) out.push('a well record maps to the parcel');
+    return out;
+  }
+
+  // { status, grade, dot, line, osm, usableForCost, context } for the nearest mapped line, or null.
+  function describePowerLine(power, data) {
+    const line = power?.nearestLine;
+    if (!line || !Number.isFinite(Number(line.distanceFt))) return null;
+    const ft = Math.round(Number(line.distanceFt)).toLocaleString('en-US');
+    const provider = power.provider || '';
+    const osm = line.mappedOnly === true || line.source === 'OpenStreetMap';
+    const usableForCost = line.usableForCost === true || (line.usableForCost == null && line.lineType === 'distribution');
+    const context = servedContext(power, data);
+    const notConfirmed = provider ? `Distance not confirmed — likely served, verify with ${provider}` : 'Distance not confirmed — verify with the local utility';
+    const likely = context.length ? ` Likely served: ${context.join('; ')}.` : '';
+    if (osm) {
+      const what = line.lineType === 'distribution' ? (OSM_FEATURES[line.featureType] || 'line') : line.lineType === 'transmission' ? 'transmission line' : 'power line (voltage not mapped)';
+      if (usableForCost && line.lineType === 'distribution') {
+        return { line, osm, usableForCost: true, context,
+          status: `Nearest ${what} mapped in OpenStreetMap ~${ft} ft — OSM maps few local lines here; the actual nearest line may be closer. The utility confirms the route. ${OSM_ATTRIBUTION_TEXT}`,
+          grade: `${cap(line.confidence || 'low')} confidence · mapped lines only`,
+          dot: `traffic-dot ${line.confidence && line.confidence !== 'low' ? 'green' : 'amber'}` };
+      }
+      return { line, osm, usableForCost: false, context,
+        status: `Nearest ${what} mapped in OpenStreetMap ~${ft} ft — OSM maps few local lines here; the actual nearest line may be much closer. The utility confirms the route.${likely} ${OSM_ATTRIBUTION_TEXT}`,
+        grade: notConfirmed, dot: 'traffic-dot amber' };
+    }
+    if (line.lineType === 'transmission') {
+      return { line, osm, usableForCost: false, context,
+        status: `Nearest mapped transmission line ~${ft} ft (${line.sourceLabel || 'mapped data'}) — transmission lines do not serve homes directly, and local distribution lines are not mapped here. The utility confirms the route.${likely}`,
+        grade: notConfirmed, dot: 'traffic-dot amber' };
+    }
+    return { line, osm, usableForCost, context,
+      status: `Nearest distribution line on the ${line.sourceLabel || 'utility map'} ~${ft} ft — the utility confirms the route`,
+      grade: `${cap(line.confidence || 'low')} confidence`,
+      dot: `traffic-dot ${line.confidence && line.confidence !== 'low' ? 'green' : 'amber'}` };
+  }
+  window.AcresXPowerLine = { describe: describePowerLine, servedContext, OSM_ATTRIBUTION_TEXT, OSM_COPYRIGHT_URL };
+
   function applyPowerIntelligence(power) {
     if (!power) return;
     const provider = power.provider || (Array.isArray(last?.utility) ? last.utility[0] : '') || 'Utility not identified';
@@ -50,12 +114,11 @@
 
     // nearestLine (src/services/power-intelligence.js chooseNearestLine): the nearest mapped
     // distribution line, else the nearest other mapped line (transmission or unclassified).
-    const line = power.nearestLine;
-    if (line && Number.isFinite(line.distanceFt)) {
-      const type = ['distribution', 'transmission'].includes(line.lineType) ? line.lineType : 'type not mapped';
-      if (status) status.textContent = `Nearest mapped power line ~${Math.round(line.distanceFt).toLocaleString()} ft (${line.sourceLabel || 'mapped data'}, ${type}) — the utility confirms the route`;
-      if (grade) grade.textContent = line.lineType === 'distribution' ? `${String(line.confidence || 'Low').replace(/^./, c => c.toUpperCase())} confidence` : line.lineType === 'transmission' ? 'Transmission only' : 'Verify utility';
-      if (dot) dot.className = `traffic-dot ${line.lineType === 'distribution' && line.confidence !== 'low' ? 'green' : 'amber'}`;
+    const described = describePowerLine(power, typeof last !== 'undefined' ? last : null);
+    if (described) {
+      if (status) status.textContent = described.status;
+      if (grade) grade.textContent = described.grade;
+      if (dot) dot.className = described.dot;
     } else if (Number.isFinite(distribution.estimatedDistanceFt)) {
       if (status) status.textContent = `${infrastructureLabel(distribution.infrastructure)} mapped ~${Math.round(distribution.estimatedDistanceFt).toLocaleString()} ft from parcel`;
       if (grade) grade.textContent = `${String(distribution.confidence || 'Low').replace(/^./, c => c.toUpperCase())} confidence`;
@@ -186,6 +249,15 @@
     const publishedLabel = distribution.sourceLabel && !/avista/i.test(distribution.sourceLabel) ? distribution.sourceLabel : "Avista's distribution map";
     const sourceLabel = distribution.status === 'utility_published_proximity' ? publishedLabel : 'OpenStreetMap';
     const line = power.nearestLine || null;
+    const described = describePowerLine(power, last);
+    // An OSM-derived distance is shown: the attribution, with its link (the card is a button, so
+    // the link lives here).
+    const osmShown = Boolean(described?.osm) || distribution.mappedOnly === true;
+    const osmCredit = osmShown ? `<div class="notice osm-attribution">Power line data <a href="${OSM_COPYRIGHT_URL}" target="_blank" rel="noopener">${OSM_ATTRIBUTION_TEXT}</a>. OpenStreetMap shows mapped lines only and maps few local lines here; the actual nearest line may be much closer.</div>` : '';
+    const notConfirmed = described && !described.usableForCost;
+    const nearestText = Number.isFinite(distribution.estimatedDistanceFt)
+      ? `${Math.round(distribution.estimatedDistanceFt).toLocaleString()} ft${distribution.mappedOnly ? ' (mapped lines only)' : ''}`
+      : notConfirmed ? 'Distance not confirmed' : 'Not mapped nearby';
     const radiusMi = Number(proximity.searchRadiusFt) > 0 ? (Number(proximity.searchRadiusFt) / 5280).toFixed(1) : '3.1';
 
     root.innerHTML = `
@@ -193,13 +265,15 @@
       <div class="result-item">
         <h4>Distribution proximity screening</h4>
         <div class="data-grid">
-          <div class="datum"><span>Nearest mapped infrastructure</span><strong>${Number.isFinite(distribution.estimatedDistanceFt) ? Math.round(distribution.estimatedDistanceFt).toLocaleString() + ' ft' : 'Not mapped nearby'}</strong></div>
+          <div class="datum"><span>Nearest mapped infrastructure</span><strong>${esc(nearestText)}</strong></div>
           <div class="datum"><span>Infrastructure type</span><strong>${esc(infrastructureLabel(distribution.infrastructure))}</strong></div>
           <div class="datum"><span>Confidence</span><strong>${esc(String(distribution.confidence || 'Low').replace(/^./, c => c.toUpperCase()))}</strong></div>
           <div class="datum"><span>Source</span><strong>${esc(sourceLabel)}</strong></div>
-          ${line && line.lineType !== 'distribution' && Number.isFinite(line.distanceFt) ? `<div class="datum"><span>Nearest mapped line (${esc(line.lineType === 'transmission' ? 'transmission' : 'type not mapped')})</span><strong>${Math.round(line.distanceFt).toLocaleString()} ft · ${esc(line.sourceLabel || '')}</strong></div>` : ''}
+          ${line && notConfirmed && Number.isFinite(line.distanceFt) ? `<div class="datum"><span>Nearest mapped line (${esc(line.lineType === 'distribution' ? 'distribution, not confirmed' : line.lineType === 'transmission' ? 'transmission' : 'type not mapped')})</span><strong>${Math.round(line.distanceFt).toLocaleString()} ft · ${esc(line.sourceLabel || '')}</strong></div>` : ''}
         </div>
+        ${notConfirmed ? `<div class="notice"><strong>${esc(described.grade)}.</strong><br>${described.context.length ? `Likely served: ${esc(described.context.join('; '))}. ` : ''}This mapped distance is not used in the cost estimate.</div>` : ''}
         <div class="notice">${esc(distribution.note || proximity.note || 'Public distribution mapping is incomplete.')}</div>
+        ${osmCredit}
       </div>
       <div class="result-item">
         <h4>Mapped evidence within ~${radiusMi} miles</h4>

@@ -213,8 +213,34 @@
     const pi = data.powerIntelligence || {};
     const primary = titleCase(pi.provider) || list[0] || '';
     const others = list.filter(x => x.toLowerCase() !== primary.toLowerCase());
+    // distribution.estimatedDistanceFt is the distance the cost model uses (null for an
+    // OpenStreetMap line too far or too uncertain to price: src/services/power-intelligence.js).
     const d = num(pi.distribution?.estimatedDistanceFt);
-    return { primary, others, distanceFt: d, lookupFailed: Boolean(data.utility?.lookupFailed) };
+    return { primary, others, distanceFt: d, line: powerLine(pi, data, primary), lookupFailed: Boolean(data.utility?.lookupFailed) };
+  }
+
+  // The nearest mapped line, worded by the same rules as the power card (public/ui-polish.js
+  // AcresXPowerLine): OpenStreetMap distances are "mapped lines only"; a far or uncertain one is
+  // "Distance not confirmed — likely served", never "far from power". null when no line is mapped.
+  function powerLine(pi, data, primary) {
+    const line = pi.nearestLine;
+    const ft = num(line?.distanceFt);
+    if (!line || ft == null) return null;
+    const osm = line.mappedOnly === true || line.source === 'OpenStreetMap';
+    const usable = line.usableForCost === true && line.lineType === 'distribution';
+    const feet = `${Math.round(ft).toLocaleString('en-US')} ft`;
+    let context = [];
+    try { context = window.AcresXPowerLine?.servedContext?.(pi, data) || []; } catch { context = []; }
+    if (!context.length && pi.provider) context = [`inside ${primary || pi.provider} territory`];
+    const verify = primary ? `verify with ${primary}` : 'verify with the local utility';
+    const likely = context.length ? ` Likely served: ${context.join('; ')}` : '';
+    const source = osm
+      ? { name: 'OpenStreetMap power lines (\u00a9 OpenStreetMap contributors; mapped lines only)', url: 'https://www.openstreetmap.org/copyright' }
+      : { name: line.source || line.sourceLabel || 'Utility line map', url: line.sourceUrl || '' };
+    if (osm && usable) return { confirmed: true, source, text: `Nearest line mapped in OpenStreetMap about ${feet} away (mapped lines only; OSM maps few local lines here, so the actual nearest line may be closer); the utility confirms the route` };
+    if (osm) return { confirmed: false, source, text: `Distance not confirmed — likely served, ${verify}. Nearest ${line.lineType === 'distribution' ? '' : line.lineType === 'transmission' ? 'transmission ' : 'unclassified '}line mapped in OpenStreetMap is about ${feet} away, but OSM maps few local lines here; the actual nearest line may be much closer.${likely}` };
+    if (line.lineType === 'transmission') return { confirmed: false, source, text: `Distance not confirmed — likely served, ${verify}. Nearest mapped line is a transmission line about ${feet} away (${line.sourceLabel || 'mapped data'}); local distribution lines are not mapped here.${likely}` };
+    return { confirmed: true, source, text: `Distribution line on the ${line.sourceLabel || 'utility map'} about ${feet} away; the utility confirms the route` };
   }
 
   function costEstimate(data) {
@@ -503,7 +529,14 @@ ${buildableBlock(data.buildableArea)}
     } else card('Public water / sewer', 'verify', NA, ['Public water and sewer maps were not checked for this report']);
     // Power
     const p = f.power;
-    if (p.primary) card('Power', p.others.length ? 'verify' : 'good', p.others.length ? 'Overlapping territories' : 'Provider mapped', [`${p.primary}${p.others.length ? ` · also listed: ${p.others.join(', ')}` : ''}`, p.distanceFt != null ? `Mapped line about ${Math.round(p.distanceFt).toLocaleString('en-US')} ft away; the utility confirms the route` : 'Territory does not confirm a service connection; the utility confirms the route'], [S.add('Utility service territory maps (HIFLD / utility published maps)', { date: '' })]);
+    if (p.primary) {
+      const unconfirmed = p.line && !p.line.confirmed;
+      const level = p.others.length || unconfirmed ? 'verify' : 'good';
+      const status = p.others.length ? 'Overlapping territories' : unconfirmed ? 'Distance not confirmed' : 'Provider mapped';
+      const lineText = p.line ? p.line.text : p.distanceFt != null ? `Mapped line about ${Math.round(p.distanceFt).toLocaleString('en-US')} ft away; the utility confirms the route` : 'Territory does not confirm a service connection; the utility confirms the route';
+      const refs = [S.add('Utility service territory maps (HIFLD / utility published maps)', { date: '' }), ...(p.line ? [S.add(p.line.source.name, { url: p.line.source.url, date: '' })] : [])];
+      card('Power', level, status, [`${p.primary}${p.others.length ? ` · also listed: ${p.others.join(', ')}` : ''}`, lineText], refs);
+    }
     else card('Power', 'verify', p.lookupFailed ? NA : 'Not identified', ['Power provider not identified from territory maps']);
     // Access / driveway
     const ra = f.road;
