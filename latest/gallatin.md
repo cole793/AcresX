@@ -1,24 +1,24 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-14T18:45:46.497Z
+- Run: 2026-11-15T19:24:02.110Z
 - Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 142, unavailable 38, error 0, mismatch 0, skipped 0
+- Layer results: ok 153, unavailable 39, error 0, mismatch 0, skipped 0
 
-| Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Listing |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 06079621201790000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06079611101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06069818101020000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06079801358210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06069905302080000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06069624301010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06033804413010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06033908402700000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06110827101470000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
-| 06101033302010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | unavailable |
-| 06042734301530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 06079812230210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
+| Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 06079621201790000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079611101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06069818101020000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079801358210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06069905302080000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06069624301010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06033804413010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06033908402700000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06110827101470000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06101033302010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06042734301530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079812230210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
 
 ## Parcel details
 
@@ -40,6 +40,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $1,221, no tax amount [assessedValue=1221, landValue=1221, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $69.97 [taxTotal=69.97, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06079611101010000 (MANHATTAN, 316.8 ac)
@@ -52,7 +53,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Soil**: ok. limited (Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes) [feasibility=limited, mapUnit=Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=30]
 - **Terrain**: ok. avg grade 2.8%, max 5.1% [gradePct=2.8, maxGradePct=5.1, reliefFt=203, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.3% [cellCount=16, avgSlopePct=5.3, maxSlopePct=11.4, partial=false]
-- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
+- **Flood**: ok. zones X, D (via FEMA NFHL) [high=false, intersects=true, zones=X; D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -60,6 +61,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $530,345, no tax amount [assessedValue=530345, landValue=221765, improvementValue=308580, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $3,884.15 [taxTotal=3884.15, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06069818101020000 (BOZEMAN, 2.97 ac)
@@ -80,6 +82,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel 
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $1,067,605, no tax amount [assessedValue=1067605, landValue=716325, improvementValue=351280, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $3,336.11 [taxTotal=3336.11, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06079801358210000 (no locality, 0.1 ac)
@@ -100,6 +103,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Zoning**: ok. R-3 (City of Bozeman) · overlays: none mapped [code=R-3, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $662,000, no tax amount [assessedValue=662000, landValue=206513, improvementValue=455487, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $3,337.65 [taxTotal=3337.65, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06069905302080000 (BOZEMAN, 9.88 ac)
@@ -120,6 +124,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county pa
 - **Zoning**: ok. RR-10 (Gallatin County) · overlays: none mapped [code=RR-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $1,228,455, no tax amount [assessedValue=1228455, landValue=1228455, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $9,208.96 [taxTotal=9208.96, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06069624301010000 (no locality, 158.98 ac)
@@ -131,7 +136,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Bangtail-Adel loams, 4 to 25 percent slopes) [feasibility=moderate, mapUnit=Bangtail-Adel loams, 4 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15]
 - **Terrain**: ok. avg grade 13.4%, max 22.2% [gradePct=13.4, maxGradePct=22.2, reliefFt=663, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=30.9, partial=false]
+- **Slope grid**: ok. 16 cells, avg 22.4% [cellCount=16, avgSlopePct=22.4, maxSlopePct=30.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=0.8]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -140,6 +145,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $18,108, no tax amount [assessedValue=18108, landValue=18108, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $125.71 [taxTotal=125.71, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06033804413010000 (BIG SKY, 3.32 ac)
@@ -160,6 +166,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Zoning**: ok. RC-SF-10 (Gallatin County) · overlays: none mapped [code=RC-SF-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $2,012,317, no tax amount [assessedValue=2012317, landValue=2012317, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $14,164.97 [taxTotal=14164.97, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06033908402700000 (GALLATIN GATEWAY, 0.42 ac)
@@ -180,6 +187,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improv
 - **Zoning**: ok. R-SF-11000 (Gallatin County) · overlays: none mapped [code=R-SF-11000, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $1,479,400, no tax amount [assessedValue=1479400, landValue=327612, improvementValue=1151788, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $4,360.14 [taxTotal=4360.14, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06110827101470000 (MANHATTAN, 19.79 ac)
@@ -191,7 +199,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Amesha loam, 8 to 15 percent slopes) [feasibility=moderate, mapUnit=Amesha loam, 8 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=12]
 - **Terrain**: ok. avg grade 6.6%, max 14.7% [gradePct=6.6, maxGradePct=14.7, reliefFt=115, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.1% [cellCount=16, avgSlopePct=14.1, maxSlopePct=35.6, partial=false]
+- **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=35.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -200,6 +208,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Zoning**: unavailable. No mapped zoning district · overlays: none mapped [jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $1,554,437, no tax amount [assessedValue=1554437, landValue=213407, improvementValue=1341030, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $7,192.78 [taxTotal=7192.78, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06101033302010000 (no locality, 74.64 ac)
@@ -220,6 +229,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 - **Zoning**: unavailable. No mapped zoning district · overlays: none mapped [jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $4,500, no tax amount [assessedValue=4500, landValue=4500, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $0.00 [taxTotal=0, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06042734301530000 (no locality, 2.76 ac)
@@ -230,8 +240,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Wells**: ok. 316 well record(s), 5 of nearest 5 report depth [wellCount=316, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=140]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Lonniebee-Cowood complex, 35 to 60 percent slopes) [feasibility=limited, mapUnit=Lonniebee-Cowood complex, 35 to 60 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=48]
-- **Terrain**: ok. avg grade 11.3%, max 20.8% [gradePct=11.3, maxGradePct=20.8, reliefFt=150, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22% [cellCount=16, avgSlopePct=22, maxSlopePct=33, partial=false]
+- **Terrain**: ok. avg grade 9.6%, max 19.5% [gradePct=9.6, maxGradePct=19.5, reliefFt=127, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=34.7, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.3]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -240,6 +250,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Zoning**: ok. RC-SF-2.5 (Gallatin County) · overlays: none mapped [code=RC-SF-2.5, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $869,596, no tax amount [assessedValue=869596, landValue=869596, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $5,501.61 [taxTotal=5501.61, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06079812230210000 (no locality, 0.26 ac)
@@ -260,6 +271,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Zoning**: ok. R-2 (City of Bozeman) · overlays: none mapped [code=R-2, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $742,800, no tax amount [assessedValue=742800, landValue=302880, improvementValue=439920, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: unavailable. not_found: iTax lists no tax bill for this parcel. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.
