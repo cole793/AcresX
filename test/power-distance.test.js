@@ -244,6 +244,32 @@ test('osm-power parity: the browser copy of the OSM summary matches the Worker o
   await assert.rejects(fb.run('osm-power', CENTER), /no power answer/);
 });
 
+// ---- Power card (public/ui-polish.js)
+
+function card(powerIntelligence) {
+  const h = makeLazyContext({ last: { parcel: null, utility: ['INLAND POWER & LIGHT COMPANY'], powerIntelligence } });
+  h.run('var esc = s => String(s ?? ""); function renderSummary() {}');
+  h.run(readPublic('ui-polish.js'));
+  h.run('renderSummary()');
+  return { status: h.el('powerStatus').textContent, grade: h.el('powerGrade').textContent, dot: h.el('powerDot').className };
+}
+
+test('power card: "Nearest mapped power line ~X ft (source, type) — the utility confirms the route"', async () => {
+  stub();
+  const found = card((await power(inland)).body);
+  assert.equal(found.status, 'Nearest mapped power line ~364 ft (OSM, distribution) — the utility confirms the route');
+  assert.match(found.grade, /confidence$/);
+  stub({ overpass: 429 });
+  const transmission = card((await power(inland)).body);
+  assert.match(transmission.status, /^Nearest mapped power line ~2,\d{3} ft \(HIFLD, transmission\) — the utility confirms the route$/);
+  assert.equal(transmission.grade, 'Transmission only');
+  assert.equal(transmission.dot, 'traffic-dot amber');
+  stub({ overpass: 'network', hifld: 'network' });
+  const none = card((await power(inland)).body);
+  assert.equal(none.status, 'INLAND POWER & LIGHT COMPANY territory identified · distance not verified');
+  for (const c of [found, transmission, none]) assert.doesNotMatch(c.status, /service connection (?:confirmed|available)|connected/i);
+});
+
 test('osm-power: the browser copies of the line-distance and OSM summary code are verbatim', async () => {
   const { readFileSync } = await import('node:fs');
   const src = name => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8');

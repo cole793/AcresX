@@ -84,7 +84,9 @@
     const d = Number(pi.distribution?.estimatedDistanceFt);
     const known = pi.distribution && Number.isFinite(d) && d >= 0 && pi.distribution.estimatedDistanceFt !== null;
     const status = pi.distribution?.status || '';
-    const from = status === 'utility_published_proximity' ? "Avista's published distribution line map" : status === 'osm_mapped_proximity' ? 'OpenStreetMap power data' : 'mapped power data';
+    // Utility-published maps: Avista's (src/utilities/avista.js) or another utility's (src/utilities/published-lines.js).
+    const label = String(pi.distribution?.sourceLabel || '');
+    const from = status === 'utility_published_proximity' ? (label && !/avista/i.test(label) ? `the ${label.replace(/ map$/i, '')} published line map` : "Avista's published distribution line map") : status === 'osm_mapped_proximity' ? 'OpenStreetMap power data' : 'mapped power data';
     return { provider, distanceFt: known ? Math.round(d) : null, from, sourceUrl: pi.distribution?.sourceUrl || '' };
   }
   function jurisdiction(l) {
