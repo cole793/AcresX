@@ -82,12 +82,19 @@
     const pi = l?.powerIntelligence || {};
     const provider = String(pi.provider || (Array.isArray(l?.utility) ? l.utility[0] : '') || '').trim();
     const d = Number(pi.distribution?.estimatedDistanceFt);
-    const known = pi.distribution && Number.isFinite(d) && d >= 0 && pi.distribution.estimatedDistanceFt !== null;
+    // usableForCost === false: an OpenStreetMap distance too far or too uncertain to price
+    // (src/services/power-intelligence.js osmDistribution); the "not mapped" range is used instead.
+    const known = pi.distribution && Number.isFinite(d) && d >= 0 && pi.distribution.estimatedDistanceFt !== null && pi.distribution.usableForCost !== false;
     const status = pi.distribution?.status || '';
     // Utility-published maps: Avista's (src/utilities/avista.js) or another utility's (src/utilities/published-lines.js).
     const label = String(pi.distribution?.sourceLabel || '');
-    const from = status === 'utility_published_proximity' ? (label && !/avista/i.test(label) ? `the ${label.replace(/ map$/i, '')} published line map` : "Avista's published distribution line map") : status === 'osm_mapped_proximity' ? 'OpenStreetMap power data' : 'mapped power data';
-    return { provider, distanceFt: known ? Math.round(d) : null, from, sourceUrl: pi.distribution?.sourceUrl || '' };
+    const from = status === 'utility_published_proximity' ? (label && !/avista/i.test(label) ? `the ${label.replace(/ map$/i, '')} published line map` : "Avista's published distribution line map") : status === 'osm_mapped_proximity' ? 'a line or pole mapped in OpenStreetMap' : 'mapped power data';
+    // OpenStreetMap distances are "mapped lines only": said in the basis, with the OSM attribution.
+    const osm = known && status === 'osm_mapped_proximity';
+    const osmNote = osm ? ' Distance from mapped lines only: OSM maps few local lines here, so the actual nearest line may be closer; the utility confirms the route. Line data \u00a9 OpenStreetMap contributors.' : '';
+    // A far or uncertain OSM line (not priced): the "not mapped" range, and the basis says why.
+    const unconfirmed = !known && (status === 'osm_distance_not_confirmed' || pi.distribution?.usableForCost === false || (pi.nearestLine?.mappedOnly === true && pi.nearestLine.usableForCost === false));
+    return { provider, distanceFt: known ? Math.round(d) : null, from, osmNote, unconfirmed, sourceUrl: pi.distribution?.sourceUrl || '' };
   }
   function jurisdiction(l) {
     const z = l?.zoningPermits || {};
@@ -130,12 +137,12 @@
     const j = env.findIndex(e => e.ft >= ft), a = env[j - 1], b = env[j], t = (ft - a.ft) / (b.ft - a.ft);
     return { low: a.low + (b.low - a.low) * t, high: a.high + (b.high - a.high) * t, designs: [...new Set([...a.designs, ...b.designs])] };
   }
-  function genericPower(P, d) {
+  function genericPower(P, d, f = {}) {
     if (Number.isFinite(d) && d <= 2640) {
       const ft = Math.max(50, d);
-      return { low: P.powerBase.low + ft * P.powerPerFt.low, high: P.powerBase.high + ft * P.powerPerFt.high, text: `${d.toLocaleString('en-US')} ft to mapped power x an AcresX planning rate ($${P.powerPerFt.low}-$${P.powerPerFt.high}/ft plus $${P.powerBase.low.toLocaleString('en-US')}-$${P.powerBase.high.toLocaleString('en-US')})` };
+      return { low: P.powerBase.low + ft * P.powerPerFt.low, high: P.powerBase.high + ft * P.powerPerFt.high, text: `${d.toLocaleString('en-US')} ft to mapped power${f.osmNote ? ' (OpenStreetMap)' : ''} x an AcresX planning rate ($${P.powerPerFt.low}-$${P.powerPerFt.high}/ft plus $${P.powerBase.low.toLocaleString('en-US')}-$${P.powerBase.high.toLocaleString('en-US')})${f.osmNote ? `.${f.osmNote.replace(/\.$/, '')}` : ''}` };
     }
-    return { low: P.powerUnknown.low, high: P.powerUnknown.high, text: 'line distance not mapped; AcresX planning allowance' };
+    return { low: P.powerUnknown.low, high: P.powerUnknown.high, text: `line distance not ${f.unconfirmed ? 'confirmed (the nearest line mapped in OpenStreetMap is too far or too uncertain to price; OSM maps few local lines here)' : 'mapped'}; AcresX planning allowance` };
   }
   function power(l, C, P) {
     const f = powerFacts(l);
@@ -149,12 +156,12 @@
       if (f.distanceFt != null) {
         const c = avistaCost(T, f.distanceFt, s, sec);
         return line('electric', avistaLow(c), avistaHigh(c), 'Power (Avista line extension)',
-          `Avista ${stateName} Schedule 51 (rates effective ${T.ohPrimaryFixed.asOf}): ${f.distanceFt.toLocaleString('en-US')} ft of new primary (distance from ${f.from} to the parcel) plus an assumed ${s} ft service. Overhead ${usd0(c.oh.basic)} - allowance = ${usd0(c.oh.cost)}; underground ${usd0(c.ug.basic)} - allowance = ${usd0(c.ug.cost)}. ${secText} ${tail}`,
+          `Avista ${stateName} Schedule 51 (rates effective ${T.ohPrimaryFixed.asOf}): ${f.distanceFt.toLocaleString('en-US')} ft of new primary (distance from ${f.from} to the parcel) plus an assumed ${s} ft service.${f.osmNote} Overhead ${usd0(c.oh.basic)} - allowance = ${usd0(c.oh.cost)}; underground ${usd0(c.ug.basic)} - allowance = ${usd0(c.ug.cost)}. ${secText} ${tail}`,
           src, { confidence: 'Moderate', formula: 'avista', allowance: c.allowance });
       }
       const a = avistaCost(T, P.unknownLineFt.low, s, sec), b = avistaCost(T, P.unknownLineFt.high, s, sec);
       return line('electric', avistaLow(a), avistaHigh(b), 'Power (Avista line extension)',
-        `Distance to Avista's line not mapped: Avista ${stateName} Schedule 51 for ${P.unknownLineFt.low}-${P.unknownLineFt.high.toLocaleString('en-US')} ft of new primary plus an assumed ${s} ft service, overhead to underground, minus the allowance. ${secText} ${tail}`,
+        `Distance to Avista's line not ${f.unconfirmed ? 'confirmed (the nearest line mapped in OpenStreetMap is too far or too uncertain to price; OSM maps few local lines here)' : 'mapped'}: Avista ${stateName} Schedule 51 for ${P.unknownLineFt.low}-${P.unknownLineFt.high.toLocaleString('en-US')} ft of new primary plus an assumed ${s} ft service, overhead to underground, minus the allowance. ${secText} ${tail}`,
         src, { confidence: 'Low', formula: 'avista', allowance: T.allowance.value });
     }
     if (/inland power/i.test(f.provider) && C.power.inland) {
@@ -165,14 +172,14 @@
       const lo = inlandRange(I.points, Math.min(dLow, I.maxFt), 'No');
       const hi = inlandRange(I.points, Math.min(dHigh, I.maxFt), 'No');
       const yes = inlandRange(I.points, Math.min(dLow, I.maxFt), 'Yes');
-      const dText = known ? `${f.distanceFt.toLocaleString('en-US')} ft to mapped power (${f.from}) plus an assumed ${s} ft to the meter` : `distance to Inland's line not mapped; ${dLow.toLocaleString('en-US')}-${dHigh.toLocaleString('en-US')} ft to the meter`;
+      const dText = known ? `${f.distanceFt.toLocaleString('en-US')} ft to mapped power (${f.from}) plus an assumed ${s} ft to the meter` : `distance to Inland's line not ${f.unconfirmed ? 'confirmed (the nearest line mapped in OpenStreetMap is too far or too uncertain to price; OSM maps few local lines here)' : 'mapped'}; ${dLow.toLocaleString('en-US')}-${dHigh.toLocaleString('en-US')} ft to the meter`;
       const over = dHigh > I.maxFt ? ` Beyond the estimator's ${I.maxFt.toLocaleString('en-US')} ft limit Inland quotes each job; the ${I.maxFt.toLocaleString('en-US')} ft value is used.` : '';
       const designs = [...new Set([...lo.designs, ...hi.designs])].join(', ');
       return line('electric', lo.low, hi.high, 'Power (Inland Power line extension)',
-        `Inland Power online estimator, recorded ${I.recorded}: ${dText}, across its ${designs} designs, nearest facility not a transformer${yes ? ` (if it is a transformer: ${usd0(yes.low)}-${usd0(yes.high)})` : ''}.${over} Ballpark only: Inland's estimate excludes trenching, conduit and vaults for underground service (the applicant's cost), rock and easements. Get an Inland Power estimate.`,
+        `Inland Power online estimator, recorded ${I.recorded}: ${dText}, across its ${designs} designs, nearest facility not a transformer${yes ? ` (if it is a transformer: ${usd0(yes.low)}-${usd0(yes.high)})` : ''}.${f.osmNote}${over} Ballpark only: Inland's estimate excludes trenching, conduit and vaults for underground service (the applicant's cost), rock and easements. Get an Inland Power estimate.`,
         [{ name: I.source.name, url: I.source.url, asOf: I.recorded, verified: true }], { confidence: known ? 'Moderate' : 'Low', formula: 'inland' });
     }
-    const g = genericPower(P, f.distanceFt);
+    const g = genericPower(P, f.distanceFt, f);
     if (/northwestern/i.test(f.provider) && C.power.northwestern) {
       const a = C.power.northwestern.allowance;
       return line('electric', Math.max(0, g.low - a.value), Math.max(0, g.high - a.value), 'Power (NorthWestern Energy line extension)',

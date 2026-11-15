@@ -433,7 +433,15 @@
             "lineType": "distribution",
             "source": "OpenStreetMap",
             "sourceLabel": "OSM",
-            "note": "Distance is measured to nearby OpenStreetMap-mapped power infrastructure. OSM coverage is incomplete and is not utility-verified."
+            "sourceUrl": "https://www.openstreetmap.org",
+            "featureType": "minor_line",
+            "mappedOnly": true,
+            "attribution": {
+              "text": "© OpenStreetMap contributors",
+              "url": "https://www.openstreetmap.org/copyright"
+            },
+            "usableForCost": true,
+            "note": "Nearest distribution line mapped in OpenStreetMap about 60 ft from the parcel (mapped lines only). OSM maps few local lines here; the actual nearest line may be much closer. The utility confirms the route."
           },
           "costEstimate": {
             "available": false,
@@ -552,8 +560,15 @@
             "source": "OpenStreetMap",
             "sourceLabel": "OSM",
             "sourceUrl": "https://www.openstreetmap.org",
+            "mappedOnly": true,
+            "attribution": {
+              "text": "© OpenStreetMap contributors",
+              "url": "https://www.openstreetmap.org/copyright"
+            },
+            "featureType": "minor_line",
+            "usableForCost": true,
             "confidence": "high",
-            "note": "Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost."
+            "note": "Straight-line distance to the nearest line mapped in OpenStreetMap, not a service connection. OSM maps few local lines here; the actual nearest line may be much closer. The utility confirms the route."
           },
           "alsoListed": []
         }
@@ -716,7 +731,15 @@
             "lineType": "distribution",
             "source": "OpenStreetMap",
             "sourceLabel": "OSM",
-            "note": "Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route."
+            "sourceUrl": "https://www.openstreetmap.org",
+            "featureType": "minor_line",
+            "mappedOnly": true,
+            "attribution": {
+              "text": "© OpenStreetMap contributors",
+              "url": "https://www.openstreetmap.org/copyright"
+            },
+            "usableForCost": true,
+            "note": "Nearest distribution line mapped in OpenStreetMap about 60 ft from the parcel (mapped lines only). OSM maps few local lines here; the actual nearest line may be much closer. The utility confirms the route. Publicly mapped infrastructure proximity is not a verified Inland Power service connection or extension route."
           },
           "transmissionLine": {
             "available": true,
@@ -736,8 +759,15 @@
             "source": "OpenStreetMap",
             "sourceLabel": "OSM",
             "sourceUrl": "https://www.openstreetmap.org",
+            "mappedOnly": true,
+            "attribution": {
+              "text": "© OpenStreetMap contributors",
+              "url": "https://www.openstreetmap.org/copyright"
+            },
+            "featureType": "minor_line",
+            "usableForCost": true,
             "confidence": "high",
-            "note": "Straight-line distance to the nearest mapped distribution line, not a service connection. The utility confirms the route, capacity and cost."
+            "note": "Straight-line distance to the nearest line mapped in OpenStreetMap, not a service connection. OSM maps few local lines here; the actual nearest line may be much closer. The utility confirms the route."
           },
           "alsoListed": []
         }
