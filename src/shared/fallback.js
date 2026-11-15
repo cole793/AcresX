@@ -25,7 +25,9 @@ export const FALLBACK_KINDS = Object.freeze({
   femaFlood: 'fema-flood',
   stevensZoning: 'stevens-zoning',
   // OpenStreetMap power lines from Overpass, which rate-limits Cloudflare's shared addresses (429).
-  osmPower: 'osm-power'
+  osmPower: 'osm-power',
+  // Address search (src/counties/kootenai-address.js): always the browser, never tried first.
+  kootenaiAddress: 'kootenai-address'
 });
 
 const eligibleStatus = status => status === 403 || status === 429 || (status >= 500 && status <= 599);
