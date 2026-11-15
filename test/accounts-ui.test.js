@@ -12,7 +12,7 @@ const SAVED_KEY = 'acresx.savedProperties.v2';
 const REPORTS_KEY = 'acresx.reports.v1';
 const BRAND_KEY = 'acresx.reportBranding.v1';
 const fixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
-const REPORT_MODULES = ['report-branding.js', 'flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js'];
+const REPORT_MODULES = ['report-branding.js', 'flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-tax.js', 'property-report-v2.js'];
 
 function memoryStorage(initial = {}) {
   const data = new Map(Object.entries(initial).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]));
@@ -261,25 +261,44 @@ function reportContext() {
   return h;
 }
 
-test('a saved report renders from its JSON snapshot exactly like the live report', () => {
-  const h = reportContext();
-  const R = h.context.AcresXReport;
-  const model = R.buildModel('Smith parcel', fixture());
-  model.generatedAt = new Date().toISOString();
-  const live = R.renderHtml(model, { brand: null });
-  const snap = JSON.parse(JSON.stringify(R.snapshot(model)));
-  assert.equal(snap.v, 1);
-  assert.deepEqual(snap.data.parcel.properties, {}, 'no parcel attributes are kept');
-  assert.equal(snap.f.brand, undefined, 'branding is applied when the report is shown, not stored');
-  assert.ok(JSON.stringify(snap).length < 900 * 1024, 'fits the server cap');
-  const again = R.renderHtml(snap, { brand: null, date: snap.generatedAt });
-  assert.equal(again, live);
-  // The live button path still opens the same report.
-  h.context.__acresxLast = fixture();
-  h.context.prompt = () => 'Smith parcel';
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
-  assert.equal(h.opened.at(-1), live);
+// The Spokane report fixture, and the same parcel with a property tax answer (page 2 tax line,
+// data.propertyTax from public/property-tax.js; the shape of a Kootenai levy-rate estimate).
+const withTax = () => ({
+  ...fixture(),
+  propertyTax: {
+    available: true, state: 'WA', county: 'Spokane', parcelId: '23123.9051', status: 'found', basis: 'estimate', taxYear: 2026, total: 1234.56, levyRate: 9.87,
+    note: 'Estimated from the 2026 levy rate; excludes fees and special assessments.', label: 'Estimated 2026 property tax',
+    source: { name: 'County levy rates for 2026', url: 'https://example.gov/levy-2026.pdf' }, asOf: '2026-11-02',
+    link: { label: 'View the tax bill on the county treasurer site', url: 'https://example.gov/treasurer' }
+  }
 });
+
+for (const [label, data, expect] of [['plain', fixture, null], ['with property tax', withTax, /Estimated 2026 property tax|1,23[45]/]]) {
+  test(`a saved report renders from its JSON snapshot exactly like the live report (${label})`, () => {
+    const h = reportContext();
+    const R = h.context.AcresXReport;
+    const model = R.buildModel('Smith parcel', data());
+    model.generatedAt = new Date().toISOString();
+    const live = R.renderHtml(model, { brand: null });
+    if (expect) assert.match(live, expect, 'the fixture exercises the tax line');
+    const snap = JSON.parse(JSON.stringify(R.snapshot(model)));
+    assert.equal(snap.v, 1);
+    assert.deepEqual(snap.data.parcel.properties, {}, 'no parcel attributes are kept');
+    assert.equal(snap.f.brand, undefined, 'branding is applied when the report is shown, not stored');
+    assert.ok(JSON.stringify(snap).length < 900 * 1024, 'fits the server cap');
+    const again = R.renderHtml(snap, { brand: null, date: snap.generatedAt });
+    assert.equal(again, live);
+    // The shared view's checks change nothing for a real report.
+    h.context.__acresxSharedReportTest = true;
+    h.run(readPublic('shared-report.js'));
+    assert.equal(R.renderHtml(h.context.AcresXSharedReport.cleanModel(snap), { brand: null, date: snap.generatedAt }), live);
+    // The live button path still opens the same report.
+    h.context.__acresxLast = data();
+    h.context.prompt = () => 'Smith parcel';
+    h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+    assert.equal(h.opened.at(-1), live);
+  });
+}
 
 test('a shared report carries the agent branding and its generation date', () => {
   const h = reportContext();
@@ -315,6 +334,6 @@ test('/r/ pages and new modules are wired: accounts.js injected before browser-f
   const index = readFileSync(new URL('../src/index.js', import.meta.url), 'utf8');
   assert.match(index, /'accounts','browser-fallback'\]/);
   const html = readPublic('shared-report.html');
-  for (const s of ['report-branding.js', 'public-utilities.js', 'property-report-v2.js', 'shared-report.js']) assert.match(html, new RegExp(`<script src="/${s.replace('.', '\\.')}"></script>`));
+  for (const s of ['report-branding.js', 'public-utilities.js', 'property-tax.js', 'property-report-v2.js', 'shared-report.js']) assert.match(html, new RegExp(`<script src="/${s.replace('.', '\\.')}"></script>`));
   assert.doesNotMatch(html.replace(/<script src="[^"]+"><\/script>/g, ''), /<script/i, 'no inline script (the CSP would block it)');
 });

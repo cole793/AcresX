@@ -863,7 +863,9 @@ table{border-collapse:collapse;width:100%}
       flood: pick(data.flood, ['available', 'sharePct', 'share', 'source']),
       wetlands: pick(data.wetlands, ['available', 'types']),
       land: { landCover: data.land?.landCover || null },
-      resoListings: rec ? { best: pick(rec, ['status', 'standardStatus', 'StandardStatus', 'listPrice', 'daysOnMarket', 'listingId']) } : null
+      resoListings: rec ? { best: pick(rec, ['status', 'standardStatus', 'StandardStatus', 'listPrice', 'daysOnMarket', 'listingId']) } : null,
+      // Page 2 tax line (taxCell, rendered with window.AcresXPropertyTax from public/property-tax.js).
+      propertyTax: data.propertyTax || null
     };
   }
   function snapshot(model) {
