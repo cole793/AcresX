@@ -39,7 +39,7 @@ function render(last, { withUtilities = true } = {}) {
   const page = makeContext({ body: PAGE, clock, fetch: async () => { throw new Error('no network'); }, autoIds: true });
   page.ctx.__last = last;
   page.run('var last = __last; var activeTab = "wells"; function renderSummary() {} function renderResults() { document.getElementById("results").innerHTML = "<p>wells list</p>"; }', 'index-inline.js');
-  for (const f of ['score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', ...(withUtilities ? ['public-utilities.js'] : [])]) page.run(readPublic(f), f);
+  for (const f of ['screening-inputs.js', 'score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', ...(withUtilities ? ['public-utilities.js'] : [])]) page.run(readPublic(f), f);
   page.run('renderSummary(last.parcel)');
   const $ = id => page.document.getElementById(id);
   const chips = page.document.querySelector('.score-factor-line')?.textContent || '';
@@ -118,8 +118,8 @@ test('cards and detail tab say "Public water: …", keep well data as "if a priv
   const r = render(baseLast({ water: SERVED(), sewer: NONE }));
   assert.equal(r.$('waterGrade').textContent, 'Public water');
   assert.match(r.$('waterStatus').textContent, /^Public water likely available — City of Coeur d'Alene · verify with the city\/district$/);
-  assert.equal(r.$('wellNote').textContent, 'If a private well were needed: 1 residential-comparable well · median depth', 'the depth note is kept, labelled');
-  assert.equal(r.$('soilNote').textContent, 'Well drained', 'sewer not found: septic card untouched');
+  assert.equal(r.$('wellNote').textContent, 'If a private well were needed: Median nearby well depth (1 well)', 'the depth note is kept, labelled');
+  assert.equal(r.$('soilNote').textContent, 'Measured parcel grade 4.0%. USDA screening only; a site evaluation sets the system type.', 'sewer not found: the septic card keeps the soil screening (screening-refinements.js), not a sewer label');
   r.page.run('renderResults()');
   const block = r.page.document.querySelector('.public-utilities-detail');
   assert.ok(block, 'detail block shown on the wells tab');

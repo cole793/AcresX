@@ -400,7 +400,7 @@ test('page: shareText and overviewShare for partial, full, edge-only and unmeasu
 
 function report(data) {
   const h = makeLazyContext({ mappedSqm: 20.63 * 4046.8564224, last: data });
-  for (const f of ['flood-status.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js']) h.run(readPublic(f));
+  for (const f of ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js']) h.run(readPublic(f));
   h.el('scoreMetric').textContent = '';
   h.context.__acresxLast = data;
   h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });

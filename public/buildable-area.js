@@ -1,7 +1,8 @@
 // Buildable-acres screening estimate on the dashboard: a card above the Improvement Snapshot and
 // shading on the interactive map (green: buildable, hatched red: removed, hatched amber: mapped
-// wetland buffers, shown but not subtracted, owner decision 2026-11-14). Information only: it
-// is not a score input and never touches calculateScore.
+// wetland buffers, shown but not subtracted, owner decision 2026-11-14). The buildability score
+// reads last.buildableArea for its homesite check (screening-refinements.js buildableCheck, owner
+// request 2026-11-14); the answer arriving re-renders the dashboard so the score updates.
 //
 // Data: POST /api/buildable-area (src/services/buildable-area.js), one request per search, sent
 // once the flood, wetlands, zoning and soil/terrain sections have settled (the Worker reuses their
@@ -90,8 +91,9 @@
     const l = current();
     if (id !== requestId || (S && !S.isCurrent(job.searchId)) || !l || l.parcel !== job.parcel) return;
     l.buildableArea = data;
-    if (S) S.settle('buildableArea');
+    if (S) S.settle('buildableArea'); // progressive-loading.js then re-renders the summary (score included)
     render();
+    if (!S) { try { root.AcresXScore?.render?.(); } catch (error) { console.warn('AcresX score refresh failed', error); } }
   }
 
   // ---- Dashboard card

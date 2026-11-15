@@ -20,7 +20,8 @@
 //   estimate through it). Both pages show the sum of the lines the table lists.
 // - Flood / wetlands / public utilities: window.AcresXFlood, AcresXWetlands, AcresXUtilities.
 // - Buildable acres: data.buildableArea (/api/buildable-area via public/buildable-area.js);
-//   information only, never a score input.
+//   the score's homesite check reads it (screening-refinements.js buildableCheck: under the homesite
+//   minimum caps the score); the score's one-line "why" is printed under the score.
 // Listing data is shown only when a listing matched, as unverified context; it never feeds the score.
 // No owner names are read or shown.
 (() => {
@@ -120,11 +121,9 @@
 
   function wellDepth(data) {
     const S = window.AcresXScore;
-    try { const s = S?.wellStats?.(); if (s) { const d = s.median ?? s.fallbackMedian; return d == null ? null : { depth: d, count: s.count || s.total || 0 }; } } catch {}
-    const v = (Array.isArray(data.wells) ? data.wells : []).slice(0, 5).map(w => Number(w?.properties?.CompletedDepth)).filter(x => Number.isFinite(x) && x > 0).sort((a, b) => a - b);
-    if (!v.length) return null;
-    const m = Math.floor(v.length / 2);
-    return { depth: v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2, count: v.length };
+    // The one definition (screening-inputs.js), the number the dashboard shows.
+    try { const s = window.AcresXWellDepth?.stats(data) || S?.wellStats?.(); if (s) return s.depth == null ? null : { depth: s.depth, count: s.count || 0 }; } catch {}
+    return null;
   }
 
   function floodGrade(f) {
@@ -162,7 +161,9 @@
         .map(d => ({ good: d.score >= 70, text: driverText(d.key, d.score >= 70, data, facts) })).filter(d => d.text);
     }
     if (!drivers.length) drivers = facts.findings.slice(0, 3).map(f => ({ good: f.level === 'good', text: f.title }));
-    return { value, band, rating, drivers };
+    // The same one-line "why" as the dashboard score card (screening-refinements.js).
+    const why = calc?.why || '';
+    return { value, band, rating, drivers, why };
   }
 
   function driverText(key, good, data, f) {
@@ -255,6 +256,8 @@
     const flood = floodGrade(data.flood), wet = wetlandGrade(data.wetlands);
     // "Zone A on 12% of parcel (2.4 ac); rest zone X" (public/flood-status.js; '' when unmeasured).
     flood.share = window.AcresXFlood?.shareText ? window.AcresXFlood.shareText(data.flood) : '';
+    // Septic grade from the measured parcel slope (screening-inputs.js; already applied on the page).
+    try { window.AcresXSeptic?.apply(data.land); } catch {}
     const ra = data.costContext?.roadAccess;
     const sfd = (Array.isArray(zdp.uses) ? zdp.uses : []).find(u => /single[- ]family|dwelling, single|^residence$/i.test(u.label || ''));
     const f = {
@@ -367,7 +370,7 @@
   const pageHead = (title, f) => `<header class="mini-head"><img class="logo-sm" src="/assets/acresx-logo.png" alt="AcresX"><div class="mini-title">${eyebrow(title)}<span>${esc(f.address || 'No situs address')} · Parcel ${esc(f.pid || NA)}</span></div></header>`;
   const footer = (n, total) => `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`;
 
-  // ---- Page 1: buildable acres (screening estimate; never a score input)
+  // ---- Page 1: buildable acres (screening estimate; feeds only the score's homesite check)
 
   const buildableMeasured = b => Boolean(b) && (b.status === 'measured' || b.status === 'partial') && num(b.buildableAcres) != null;
   function buildableBlock(b) {
@@ -413,7 +416,7 @@ ${refName ? `<div><span>Reference</span><strong>${esc(refName)}</strong></div>` 
 ${parcelMap(parcel, data.buildableArea)}
 ${buildableBlock(data.buildableArea)}
 <div class="hero">
-<article class="score-card band-${score.band}">${eyebrow('Buildability score')}<div class="score-row"><div class="score-num">${esc(score.value || '—')}<small>${score.value ? '/10' : ''}</small></div><div class="score-rating">${esc(score.rating || NA)}</div></div>${drivers}</article>
+<article class="score-card band-${score.band}">${eyebrow('Buildability score')}<div class="score-row"><div class="score-num">${esc(score.value || '—')}<small>${score.value ? '/10' : ''}</small></div><div class="score-rating">${esc(score.rating || NA)}</div></div>${score.why ? `<p class="score-why">${esc(score.why)}</p>` : ''}${drivers}</article>
 <article class="cost-card">${eyebrow('Site development cost')}<div class="cost-num">${cost ? esc(range(cost.low, cost.high)) : NA}</div><p>${cost ? `Midpoint about ${esc(kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2))}. Sum of ${cost.lines.length} lines: ${esc(cost.lines.map(l => String(l.label).replace(/\s*\(.*\)$/, '').toLowerCase()).join(', '))} (page 3). ${cost.local ? 'Local prices where sourced.' : 'Generic regional ranges.'} ` : 'Cost inputs were not available when this report was generated. '}Screening estimate, not a quote.</p></article>
 </div>
 <section class="block">${eyebrow('Key findings')}${flags}</section>
@@ -468,7 +471,7 @@ ${buildableBlock(data.buildableArea)}
     // Water / well
     const ex = data.existingWell || {}, exm = ex.best || ex.match || {}, ev = exm.evidence || {};
     const wellNote = ex.available && ex.match ? (ev.insideParcel ? 'A recorded well maps inside the parcel; verify it' : `Possible well record ${num(ev.distanceToParcelFt) != null ? `${Math.round(ev.distanceToParcelFt).toLocaleString('en-US')} ft from the parcel` : 'nearby'} (${String(ex.confidence || 'low').toLowerCase()} confidence)`) : '';
-    const depthLine = f.well ? `Nearby wells: about ${Math.round(f.well.depth)} ft median depth${f.well.count ? ` (${f.well.count} record${f.well.count === 1 ? '' : 's'})` : ''}` : 'No nearby well depths on record';
+    const depthLine = f.well ? `Median nearby well depth (${f.well.count} well${f.well.count === 1 ? '' : 's'}): ${Math.round(f.well.depth)} ft` : 'No nearby well depths on record';
     const wref = S.add(wellSource, { date: '' });
     if (f.water) {
       card('Water', 'good', 'Public water', [`${f.water.basis}${f.water.asOf ? ` (map as of ${f.water.asOf})` : ''}`, `If a private well were needed: ${depthLine.charAt(0).toLowerCase()}${depthLine.slice(1)}`], [S.add(f.water.source?.name, { url: f.water.source?.url, date: f.water.asOf ? `as of ${f.water.asOf}` : '' }), wref]);
@@ -481,7 +484,7 @@ ${buildableBlock(data.buildableArea)}
     const sref = soil.available ? S.add('USDA NRCS Soil Data Access (SSURGO)', { date: '' }) : null;
     const soilLine = soil.available ? [soil.mapUnit || soil.component, soil.drainage, soil.hydrologicGroup ? `hydrologic group ${soil.hydrologicGroup}` : ''].filter(Boolean).join(' · ') : 'Soil data not available';
     if (f.sewer) card('Sewer', 'good', 'Public sewer', [`${f.sewer.basis}${f.sewer.asOf ? ` (map as of ${f.sewer.asOf})` : ''}`, soil.available ? `If a septic system were needed: ${soilLine}` : ''], [S.add(f.sewer.source?.name, { url: f.sewer.source?.url, date: '' }), sref]);
-    else card('Septic / soil', !soil.available ? 'verify' : soil.feasibility === 'favorable' ? 'good' : soil.feasibility === 'limited' ? 'risk' : 'verify', !soil.available ? NA : soil.feasibility === 'favorable' ? 'Favorable' : soil.feasibility === 'limited' ? 'Limited' : 'Moderate', [soilLine, 'USDA screening only; a site evaluation sets the system type'], [sref]);
+    else card('Septic / soil', !soil.available ? 'verify' : soil.feasibility === 'favorable' ? 'good' : soil.feasibility === 'limited' ? 'risk' : 'verify', !soil.available ? NA : soil.feasibility === 'favorable' ? 'Favorable' : soil.feasibility === 'limited' ? 'Limited' : 'Moderate', [soilLine, `${soil.septic?.context ? `${soil.septic.context}${soil.septic.limits?.length ? `; limited by ${soil.septic.limits.join(', ')}` : ''}. ` : ''}USDA screening only; a site evaluation sets the system type`], [sref]);
     // Public water / sewer
     if (PU && data.publicUtilities) {
       const both = f.water && f.sewer, any = f.water || f.sewer;
@@ -666,6 +669,7 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .score-row{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
 .score-num{font-size:30pt;font-weight:900;line-height:1;letter-spacing:-.02em}.score-num small{font-size:11pt;font-weight:700;margin-left:2px;color:var(--mut)}
 .score-rating{font-size:11pt;font-weight:800}
+.score-why{font-size:8.5pt;margin:0 0 6px;color:var(--ink);font-weight:600}
 .band-good{background:var(--greenbg);border-color:#b9dcc6}.band-good .score-num,.band-good .score-rating{color:var(--g2)}
 .band-fair{background:var(--amberbg);border-color:#efd6a6}.band-fair .score-num,.band-fair .score-rating{color:var(--amber)}
 .band-poor{background:var(--redbg);border-color:#efc3bf}.band-poor .score-num,.band-poor .score-rating{color:var(--red)}

@@ -50,6 +50,9 @@
   const SCORE_FOLLOWUPS = ['powerIntelligence'];
   // costContext: public/local-cost-model.js (road access + watershed, counties with local prices only).
   const COST_FOLLOWUPS = ['existingWell', 'costContext'];
+  // Follow-ups that change the score after it is first shown (the score does not wait for them):
+  // buildableArea (public/buildable-area.js) feeds the score's homesite check.
+  const RERENDER_FOLLOWUPS = ['buildableArea'];
   const FOLLOWUP_LABELS = { powerIntelligence: 'power proximity', existingWell: 'well records', costContext: 'road access' };
 
   // Where each section shows on the dashboard: snapshot cards (value + status line) and
@@ -105,7 +108,7 @@
     settle(key, outcome = 'done') {
       if (!run || run.status[key] !== 'pending') return;
       run.status[key] = outcome;
-      if (SCORE_FOLLOWUPS.includes(key) || COST_FOLLOWUPS.includes(key)) {
+      if (SCORE_FOLLOWUPS.includes(key) || COST_FOLLOWUPS.includes(key) || RERENDER_FOLLOWUPS.includes(key)) {
         run.dirty = true;
         scheduleRender();
       }

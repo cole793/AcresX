@@ -61,11 +61,11 @@
 
   // ---- Parcel facts
 
+  // The one nearby-well-depth definition (screening-inputs.js): median of the residential-comparable
+  // wells among the closest five, the number the dashboard and the report show.
   function wellDepth(l) {
-    const v = (Array.isArray(l?.wells) ? l.wells : []).slice(0, 7).map(w => Number(w?.properties?.CompletedDepth)).filter(x => Number.isFinite(x) && x >= 30 && x <= 1500).sort((a, b) => a - b);
-    if (!v.length) return null;
-    const m = Math.floor(v.length / 2);
-    return { median: v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2, count: v.length };
+    const s = root.AcresXWellDepth?.stats(l);
+    return s?.depth == null ? null : { median: s.depth, count: s.count };
   }
   function slopeBand(l) {
     const t = l?.land?.terrain || {};
@@ -242,7 +242,7 @@
     }
     const d = wellDepth(l);
     const drill = d
-      ? { low: d.median * P.wellPerFt.low + P.wellFixed.low, high: d.median * P.wellPerFt.high + P.wellFixed.high, text: `${Math.round(d.median)} ft median of ${d.count} nearby reported wells x $${P.wellPerFt.low}-$${P.wellPerFt.high}/ft plus $${P.wellFixed.low.toLocaleString('en-US')}-$${P.wellFixed.high.toLocaleString('en-US')} pump, tank and wiring` }
+      ? { low: d.median * P.wellPerFt.low + P.wellFixed.low, high: d.median * P.wellPerFt.high + P.wellFixed.high, text: `${Math.round(d.median)} ft median nearby well depth (${d.count} well${d.count === 1 ? '' : 's'}) x $${P.wellPerFt.low}-$${P.wellPerFt.high}/ft plus $${P.wellFixed.low.toLocaleString('en-US')}-$${P.wellFixed.high.toLocaleString('en-US')} pump, tank and wiring` }
       : { low: P.wellNoDepth.low, high: P.wellNoDepth.high, text: 'no usable nearby well depth; AcresX allowance for a typical private well' };
     const ws = l?.costContext?.watershed;
     const w = ws?.available && ws.number != null && C.wellPermit.wria ? C.wellPermit.wria[ws.number] : null;

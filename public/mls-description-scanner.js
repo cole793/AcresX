@@ -107,7 +107,7 @@
     const baseline = { signature, value: value.textContent, status: status.textContent };
     const note = document.createElement('div');
     note.className = 'mls-well-card-note';
-    note.textContent = 'Nearby well depth: ' + baseline.value + ' · Public well records shown in details';
+    note.textContent = 'Median nearby well depth: ' + baseline.value + ' · Public well records shown in details';
     const button = card.querySelector('.snapshot-details-btn');
     if (button) card.insertBefore(note, button);
     else card.appendChild(note);
