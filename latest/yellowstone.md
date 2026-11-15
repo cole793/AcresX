@@ -1,24 +1,24 @@
 # County validation: Yellowstone, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-14T18:59:35.204Z
+- Run: 2026-11-15T19:36:58.398Z
 - Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 152, unavailable 28, error 0, mismatch 0, skipped 0
+- Layer results: ok 162, unavailable 30, error 0, mismatch 0, skipped 0
 
-| Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Listing |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 03113520290010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 03072530104010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 03103333215010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233201230000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03113517000000000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 03072527101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103333303010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233202530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03113519316050000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable |
-| 03072528309010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103333414250000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233202670000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 03113520290010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 03072530104010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 03103333215010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103233201230000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03113517000000000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
+| 03072527101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103333303010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 03103233202530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03113519316050000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 03072528309010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103333414250000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103233202670000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 
 ## Parcel details
 
@@ -40,6 +40,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Zoning**: ok. UNZONED (Yellowstone County) [code=UNZONED, jurisdiction=Yellowstone County, countyStatus=yellowstone-v2, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $753, no tax amount [assessedValue=753, landValue=753, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $700.53 [taxTotal=700.53, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03072530104010000 (no locality, 120.24 ac)
@@ -60,6 +61,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Zoning**: ok. UNZONED (Yellowstone County) [code=UNZONED, jurisdiction=Yellowstone County, countyStatus=yellowstone-v2, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $7,592, no tax amount [assessedValue=7592, landValue=7592, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $82.54 [taxTotal=82.54, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03103333215010000 (BILLINGS, 2.9 ac)
@@ -70,7 +72,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside
 - **Wells**: ok. 1486 well record(s), 5 of nearest 5 report depth [wellCount=1486, nearestDepthsCount=5, nearestMi=0.34, medianDepthFt=22.5]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McRae loam, 4 to 7 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 4 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=6]
-- **Terrain**: ok. avg grade 7.1%, max 20.4% [gradePct=7.1, maxGradePct=20.4, reliefFt=68, sampleCount=9]
+- **Terrain**: ok. avg grade 6.9%, max 22.5% [gradePct=6.9, maxGradePct=22.5, reliefFt=63, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 15.5% [cellCount=16, avgSlopePct=15.5, maxSlopePct=23.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -80,6 +82,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside
 - **Zoning**: ok. P1 (City of Billings) · overlays: none mapped [code=P1, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. P1: Public / Institutional (6 uses) [code=P1, family=Public / Institutional, useCount=6]
 - **Assessment**: ok. assessed $324,700, no tax amount [assessedValue=324700, landValue=129397, improvementValue=195303, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $4,501.42 [taxTotal=4501.42, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03103233201230000 (BILLINGS, 0.41 ac)
@@ -91,7 +94,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (McRae loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 1 to 4 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3]
 - **Terrain**: ok. avg grade 1.5%, max 2.2% [gradePct=1.5, maxGradePct=2.2, reliefFt=5, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 2.2% [cellCount=16, avgSlopePct=2.2, maxSlopePct=2.5, partial=false]
+- **Slope grid**: ok. 16 cells, avg 4.4% [cellCount=16, avgSlopePct=4.4, maxSlopePct=8.7, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -100,6 +103,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 - **Zoning**: ok. N3 (City of Billings) · overlays: none mapped [code=N3, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. N3: Neighborhood Residential (6 uses) [code=N3, family=Neighborhood Residential, useCount=6]
 - **Assessment**: ok. assessed $857,700, no tax amount [assessedValue=857700, landValue=149932, improvementValue=707768, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $12,747.74 [taxTotal=12747.74, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03113517000000000 (no locality, 20.97 ac)
@@ -110,7 +114,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural parcel wi
 - **Wells**: ok. 293 well record(s), 5 of nearest 5 report depth [wellCount=293, nearestDepthsCount=5, nearestMi=0.12, medianDepthFt=29]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Vananda silty clay, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Vananda silty clay, 0 to 1 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=1]
-- **Terrain**: ok. avg grade 0.2%, max 0.6% [gradePct=0.2, maxGradePct=0.6, reliefFt=17, sampleCount=9]
+- **Terrain**: ok. avg grade 0.2%, max 0.7% [gradePct=0.2, maxGradePct=0.7, reliefFt=17, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.4% [cellCount=16, avgSlopePct=0.4, maxSlopePct=1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -120,6 +124,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural parcel wi
 - **Zoning**: ok. UNZONED (Yellowstone County) [code=UNZONED, jurisdiction=Yellowstone County, countyStatus=yellowstone-v2, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed n/a, no tax amount [taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: unavailable. not_found: No Yellowstone County tax ID matched this parcel number. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03072527101010000 (no locality, 281.17 ac)
@@ -140,6 +145,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural parc
 - **Zoning**: ok. D16 (Yellowstone County) · overlays: none mapped [code=D16, jurisdiction=Yellowstone County, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. D16: Special / Other (1 uses) [code=D16, family=Special / Other, useCount=1]
 - **Assessment**: ok. assessed $16,479, no tax amount [assessedValue=16479, landValue=16479, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $178.82 [taxTotal=178.82, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03103333303010000 (BILLINGS, 1 ac)
@@ -160,6 +166,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Downtown Billing
 - **Zoning**: ok. CBD (City of Billings) · overlays: none mapped [code=CBD, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. CBD: Commercial (4 uses) [code=CBD, family=Commercial, useCount=4]
 - **Assessment**: ok. assessed $6,981,390, no tax amount [assessedValue=6981390, landValue=1719500, improvementValue=5261890, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03103233202530000 (BILLINGS, 0.34 ac)
@@ -180,6 +187,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 - **Zoning**: ok. N3 (City of Billings) · overlays: none mapped [code=N3, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. N3: Neighborhood Residential (6 uses) [code=N3, family=Neighborhood Residential, useCount=6]
 - **Assessment**: ok. assessed $701,200, no tax amount [assessedValue=701200, landValue=135215, improvementValue=565985, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $10,494.05 [taxTotal=10494.05, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03113519316050000 (no locality, 5.19 ac)
@@ -200,6 +208,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant pa
 - **Zoning**: ok. UNZONED (Yellowstone County) [code=UNZONED, jurisdiction=Yellowstone County, countyStatus=yellowstone-v2, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary]
 - **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $7,658, no tax amount [assessedValue=7658, landValue=7658, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $376.09 [taxTotal=376.09, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03072528309010000 (no locality, 224.37 ac)
@@ -210,7 +219,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved r
 - **Wells**: ok. 28 well record(s), 5 of nearest 5 report depth [wellCount=28, nearestDepthsCount=5, nearestMi=1.05, medianDepthFt=43]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Absarokee clay loam, 4 to 7 percent slopes) [feasibility=limited, mapUnit=Absarokee clay loam, 4 to 7 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=6]
-- **Terrain**: ok. avg grade 3.4%, max 5.1% [gradePct=3.4, maxGradePct=5.1, reliefFt=218, sampleCount=9]
+- **Terrain**: ok. avg grade 3.4%, max 5.2% [gradePct=3.4, maxGradePct=5.2, reliefFt=224, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6% [cellCount=16, avgSlopePct=6, maxSlopePct=12.4, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=1.1]
@@ -220,6 +229,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved r
 - **Zoning**: ok. D16 (Yellowstone County) · overlays: none mapped [code=D16, jurisdiction=Yellowstone County, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. D16: Special / Other (1 uses) [code=D16, family=Special / Other, useCount=1]
 - **Assessment**: ok. assessed $44,238, no tax amount [assessedValue=44238, landValue=17308, improvementValue=26930, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $380.41 [taxTotal=380.41, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03103333414250000 (BILLINGS, 1.32 ac)
@@ -240,6 +250,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings East Bi
 - **Zoning**: ok. EB_CW (City of Billings) · overlays: none mapped [code=EB_CW, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. EB_CW: Special / Other (1 uses) [code=EB_CW, family=Special / Other, useCount=1]
 - **Assessment**: ok. assessed $711,050, no tax amount [assessedValue=711050, landValue=590730, improvementValue=120320, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $11,260.75 [taxTotal=11260.75, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 03103233202670000 (BILLINGS, 0.37 ac)
@@ -260,6 +271,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 - **Zoning**: ok. N3 (City of Billings) · overlays: none mapped [code=N3, jurisdiction=City of Billings, countyStatus=yellowstone-v2, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. N3: Neighborhood Residential (6 uses) [code=N3, family=Neighborhood Residential, useCount=6]
 - **Assessment**: ok. assessed $737,500, no tax amount [assessedValue=737500, landValue=140610, improvementValue=596890, taxPresent=false, source=Montana Cadastral / ORION integration]
+- **Property tax**: ok. billed 2026 tax $5,202.81 [taxTotal=5202.81, taxYear=2026, taxBasis=billed, taxSource=Yellowstone County Treasurer (property tax detail)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.
