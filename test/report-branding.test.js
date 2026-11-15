@@ -240,3 +240,34 @@ test('the sidebar Settings item is enabled and the module is injected before bro
   assert.ok(list.indexOf('report-branding') < list.indexOf('browser-fallback'));
   assert.equal(list.at(-1), 'browser-fallback');
 });
+
+test('a hostile stored logo never reaches an img src in the report (page 1 header or page 2-4 mini headers)', () => {
+  const hostile = [
+    'data:image/png;base64,AAAA" onerror="alert(1)',
+    'javascript:alert(1)',
+    'data:image/png;base64,AAAA"><script>alert(1)</script>',
+    "data:image/png;base64,AAAA' onload='alert(1)",
+    'data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9ImFsZXJ0KDEpIi8+',
+    'data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==',
+    `data:image/png;base64,${'A'.repeat(210 * 1024)}`
+  ];
+  for (const logo of hostile) {
+    const storage = memoryStorage({ [KEY]: JSON.stringify({ ...JANE, website: 'https://example.com', logo }) });
+    const { pages, html } = report({ storage });
+    const body = html.replace(/<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, '');
+    assert.match(pages[0], /Prepared by <strong>Jane Example<\/strong>/, 'the rest of the branding still applies');
+    assert.doesNotMatch(body, /agent-logo/, `no logo img for ${logo.slice(0, 40)}`);
+    assert.doesNotMatch(body, /javascript:|onerror="alert|onload='alert|<script>alert|image\/svg|text\/html/);
+    for (const p of pages.slice(1)) assert.match(p, /<header class="mini-head"><span class="agent-mark">Jane Example, Example Realty<\/span>/);
+  }
+  // Even if a hostile value bypassed load(), the report's own escaping keeps it inside the attribute.
+  const h = makeLazyContext({ mappedSqm: 20.63 * 4046.8564224, last: fixture() });
+  for (const f of MODULES) h.run(readPublic(f));
+  h.context.AcresXBranding = { load: () => ({}), parts: () => ({ name: 'Jane', brokerage: 'X', preparedBy: 'Jane, X', contact: [], footerContact: [], logo: 'x" onerror="alert(1)' }) };
+  h.context.__acresxLast = fixture();
+  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  const out = h.opened.at(-1);
+  assert.match(out, /<img class="agent-logo" src="x&quot; onerror=&quot;alert\(1\)"/);
+  assert.match(out, /<img class="agent-logo-sm" src="x&quot; onerror=&quot;alert\(1\)"/);
+  assert.doesNotMatch(out, /onerror="alert/);
+});
