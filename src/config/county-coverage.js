@@ -38,12 +38,12 @@ const statewideBase = {
 // tax: no run returned a tax amount for any parcel, so no county claims tax coverage.
 const overrides = {
   'WA:Spokane': {
-    level: 2,
+    level: 3,
     priority: 1,
-    lastValidated: '2026-11-03',
+    lastValidated: '2026-11-14',
     checklistScore: 79,
     checklistScoreDate: '2026-11-03',
-    notes: 'Validated with the WA validation tool (PR #36) on 2026-11-03. That run had 2 soil errors (USDA soil service timeouts); zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1).',
+    notes: 'Level 3 (checklist section 7): two consecutive clean live validation runs (0 parcels with an error or mismatch) on 2026-11-13 (run 43502221467) and 2026-11-14 (run 43628378292; 165 ok, 15 unavailable: listing on 12 parcels, zoning rules on 3). Owner signed off on 2026-11-11 after comparing 35204.2729 and 57344.0125 with the county sources. Zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1); no tax amount.',
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'not_configured',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Yellowstone': {
