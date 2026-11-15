@@ -71,7 +71,7 @@
     const zoning = last?.zoningPermits?.zoning || {};
     const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
 
-    // Public water / sewer (public-utilities.js) replace the well and septic inputs when served or likely.
+    // Public water / sewer (public-utilities.js) replace the well and septic inputs when served (not when only likely, 2026-11-15).
     const PU = window.AcresXUtilities;
     const wellWater = depth != null ? (depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
     // Septic: USDA drainage and hydrologic group with the measured parcel slope (screening-inputs.js).

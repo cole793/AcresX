@@ -271,7 +271,10 @@
     if (!lines.length) return null;
     // The total is the sum of the lines shown (page 1 and page 3 print this same pair).
     const low = lines.reduce((s, x) => s + Math.round(x.low), 0), high = lines.reduce((s, x) => s + Math.round(x.high), 0);
-    return { lines, low, high, local: Boolean(e.local), note: e.coverageNote || (e.local ? '' : 'Generic regional ranges; local prices not yet sourced for this county.'), missingNote: e.missingNote || '' };
+    // Connection alternatives of "likely" public water/sewer (public-utilities.js) and the unverified
+    // listing note: shown under the table, never in the total (the dashboard card shows the same).
+    const alternatives = lines.map(x => x.alternative).filter(Boolean);
+    return { lines, low, high, local: Boolean(e.local), note: e.coverageNote || (e.local ? '' : 'Generic regional ranges; local prices not yet sourced for this county.'), missingNote: e.missingNote || '', alternatives, listingNote: e.listingNote || '' };
   }
 
   // Confidence tag per cost line, from the `verified` flags of its sources (cost-tables.js):
@@ -551,9 +554,13 @@ ${buildableBlock(data.buildableArea)}
     else card('Septic / soil', !soil.available ? 'verify' : soil.feasibility === 'favorable' ? 'good' : soil.feasibility === 'limited' ? 'risk' : 'verify', !soil.available ? NA : soil.feasibility === 'favorable' ? 'Favorable' : soil.feasibility === 'limited' ? 'Limited' : 'Moderate', [soilLine, `${soil.septic?.context ? `${soil.septic.context}${soil.septic.limits?.length ? `; limited by ${soil.septic.limits.join(', ')}` : ''}. ` : ''}USDA screening only; a site evaluation sets the system type`], [sref]);
     // Public water / sewer
     if (PU && data.publicUtilities) {
+      // Served counts; likely is "may be available", not counted (owner bug 2026-11-15).
       const both = f.water && f.sewer, any = f.water || f.sewer;
+      const maybe = PU.likely?.('water', data) || PU.likely?.('sewer', data);
       const srcs = (data.publicUtilities.sources || []).filter(s => s.ok !== false).slice(0, 2).map(s => S.add(s.name, { url: s.url, date: '' }));
-      card('Public water / sewer', both ? 'good' : 'verify', both ? 'Both likely' : any ? 'One likely' : data.publicUtilities.available ? 'Not found' : NA, [PU.line('water', data), PU.line('sewer', data)], srcs);
+      const note = PU.listingNote?.(data) || '';
+      card('Public water / sewer', both ? 'good' : 'verify', both ? 'Both mapped' : any ? 'One mapped' : maybe ? 'May be available' : data.publicUtilities.available ? 'Not found' : NA,
+        note ? [`${PU.line('water', data)} · ${PU.line('sewer', data)}`, note] : [PU.line('water', data), PU.line('sewer', data)], srcs);
     } else card('Public water / sewer', 'verify', NA, ['Public water and sewer maps were not checked for this report']);
     // Power
     const p = f.power;
@@ -646,10 +653,11 @@ ${listingBlock(data)}
       const tag = costTag(l);
       const refs = (l.sources || []).filter(s => s.name).map(s => S.add(s.name, { url: s.url, date: !s.asOf ? '' : /^undated$/i.test(s.asOf) ? 'undated' : `as of ${s.asOf}`, verified: s.verified }));
       if (l.basis) notes.push(`<li><strong>${esc(l.label)}</strong>${S.mark(refs)}<span class="amt-note">${esc(range(l.low, l.high))}</span><p>${esc(l.basis)}</p></li>`);
-      return `<tr><td><strong>${esc(l.label)}</strong>${S.mark(refs)}</td><td><span class="tag ${tag.cls}">${esc(tag.text)}</span></td><td class="amt">${esc(range(l.low, l.high))}</td></tr>`;
+      const alt = l.alternative ? `<tr class="alt"><td colspan="3">${esc(l.alternative.text)} <em>Alternative, not in the total.</em></td></tr>` : '';
+      return `<tr><td><strong>${esc(l.label)}</strong>${S.mark(refs)}</td><td><span class="tag ${tag.cls}">${esc(tag.text)}</span></td><td class="amt">${esc(range(l.low, l.high))}</td></tr>${alt}`;
     }).join('');
     return `<table class="costs"><thead><tr><th>Line</th><th>Confidence</th><th class="amt">Range</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2">Total (matches page 1)</td><td class="amt">${esc(range(c.low, c.high))}</td></tr></tfoot></table>
-<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.pages > 3 ? `<p class="pointer">How each line was estimated: appendix, page ${f.pages}.</p>` : ''}`;
+${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in the estimate or the score.</p>` : ''}<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.pages > 3 ? `<p class="pointer">How each line was estimated: appendix, page ${f.pages}.</p>` : ''}`;
   }
 
   function checklist(data, f) {
@@ -660,8 +668,10 @@ ${listingBlock(data)}
     if (f.flood.category === 'high' || f.flood.category === 'moderate') fw.push('a floodplain determination');
     if (f.wet.category === 'present' || f.wet.category === 'unmeasured' || (f.zp.overlays || []).some(o => /wetland/.test(o.type || ''))) fw.push('a wetland delineation');
     items.push(['Flood and wetlands', fw.length ? `Get ${fw.join(' and ')} before choosing a homesite; buffers can move where you can build.` : 'Confirm with the county that no flood or critical-area permit applies to your homesite.']);
-    items.push(['Water', f.water ? `Confirm water connection availability, capacity and fees with ${f.water.provider || 'the city/district'}.` : 'Review nearby well logs and ask a licensed driller about depth, yield and water quality.']);
-    items.push(['Sewer or septic', f.sewer ? `Confirm sewer connection availability and fees with ${f.sewer.provider || 'the city/district'}.` : 'Order a soil and site evaluation from the local health district for a septic permit.']);
+    const PU = window.AcresXUtilities;
+    const ask = service => { const m = PU?.likely?.(service, data); return m ? ` Also ask ${String(m.provider || 'the city or district').replace(/\s*\(.*?\)\s*$/, '')} whether public ${service} can serve the parcel${/^(city|town) of /i.test(m.provider || '') && m.cityLimits && m.cityLimits !== 'inside' ? ' (outside city limits this usually needs annexation or an extension agreement)' : ''}.` : ''; };
+    items.push(['Water', f.water ? `Confirm water connection availability, capacity and fees with ${f.water.provider || 'the city/district'}.` : `Review nearby well logs and ask a licensed driller about depth, yield and water quality.${ask('water')}`]);
+    items.push(['Sewer or septic', f.sewer ? `Confirm sewer connection availability and fees with ${f.sewer.provider || 'the city/district'}.` : `Order a soil and site evaluation from the local health district for a septic permit.${ask('sewer')}`]);
     items.push(['Power', f.power.primary ? `Request a line-extension estimate from ${f.power.primary}${f.power.others.length ? `, and confirm whether ${f.power.others.join(' or ')} serves the parcel instead` : ''}.` : 'Ask the local utilities which one serves the parcel and request a line-extension estimate.']);
     const priv = f.road?.status === 'found' && f.road.road?.public === false;
     items.push(['Access', priv ? `Confirm legal access over ${f.road.road.name || 'the private road'}: a recorded easement and any road maintenance agreement.` : 'Confirm legal access and the driveway approach permit with the road authority.']);
@@ -792,7 +802,7 @@ table{border-collapse:collapse;width:100%}
 .costs td{padding:5px 6px 5px 0;border-bottom:1px solid var(--line);font-size:9pt;vertical-align:top}
 .costs .amt{text-align:right;white-space:nowrap;padding-right:0}.costs td.amt{font-weight:800;color:var(--g)}
 .costs tfoot td{border-top:2px solid var(--g);border-bottom:0;font-weight:900;font-size:10.5pt;padding-top:7px}.costs tfoot td.amt{color:var(--g);font-size:11pt}
-.costs tr{break-inside:avoid}
+.costs tr{break-inside:avoid}.costs tr.alt td{font-size:7.8pt;color:var(--mut);padding-top:0;border-bottom:1px solid var(--line)}.listing-note{font-size:8pt;color:var(--amber);font-weight:700;margin:6px 0 0}
 .tag{font-size:7pt;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap}.tag.fee{background:var(--greenbg);color:var(--g2)}.tag.local{background:#e7eef8;color:#2b5283}.tag.estimate{background:var(--amberbg);color:var(--amber)}
 .checklist{margin:0;padding:0;list-style:none;counter-reset:c;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
 .checklist li{counter-increment:c;display:flex;gap:8px;font-size:8pt;line-height:1.33;break-inside:avoid;color:#33443a}.checklist li:before{content:counter(c);flex:none;width:17px;height:17px;border-radius:4px;border:1.5px solid var(--g);color:var(--g);font-weight:800;font-size:7.5pt;display:grid;place-items:center}

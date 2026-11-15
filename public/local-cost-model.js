@@ -16,9 +16,11 @@
 //   NorthWestern Energy (MT): Rule 6, generic range minus the $400 residential allowance; Montana
 //   co-ops: their published deposit/fee + generic range; other providers: generic range,
 //   "no published tariff found".
-// - well: a water connection fee when public water is served/likely and the provider publishes
-//   one; else the generic connection range (public-utilities.js); else a private well (depth
-//   range + exact start-card/permit fee).
+// - well: a water connection fee when public water is served and the provider publishes one; else
+//   the generic connection range (public-utilities.js); else a private well (depth range + exact
+//   start-card/permit fee). Public water only "likely" (2026-11-15): the private well stays the
+//   line, and the connection (published fee or generic range) rides along as `alternative`, shown
+//   under the line and never added to the total.
 // - septic: the same for sewer; else a private septic system (soil range + exact permit fees).
 // - permits: the building permit for an assumed 2,000 sf home with a 500 sf attached garage. Montana
 //   county land: no building permit; DLI electrical + plumbing, the county approach permit and the
@@ -213,10 +215,11 @@
   function connectionFor(C, provider, service) {
     return (C.connections || []).find(c => c[service] && c.match.test(String(provider || ''))) || null;
   }
-  function connection(service, l, C, P, base) {
+  // The connection line for a served or likely finding f: the provider's published fee where
+  // cost-tables.js has one, else the generic connection range (public-utilities.js).
+  function connection(service, f, C, P) {
     const PU = root.AcresXUtilities;
-    const f = PU ? (service === 'water' ? PU.water(l) : PU.sewer(l)) : null;
-    if (!f) return null;
+    if (!PU || !f) return null;
     const noun = service === 'water' ? 'water' : 'sewer';
     const phrase = f.status === 'served' ? 'likely available' : 'may be available';
     const fee = connectionFor(C, f.provider, service);
@@ -233,8 +236,23 @@
         `Public ${noun} ${phrase} (${f.provider || fee.provider}). ${parts.join('; ')}, plus an AcresX allowance of ${usd0(allowance.low)}-${usd0(allowance.high)} for the ${allowanceText} (unsourced; get a contractor quote). Excludes any main extension. Verify with the city/district.`,
         [ref(e), ...(hook ? [ref(hook)] : []), planningRef()], { confidence: 'Moderate', publicUtility: f.status, feeProvider: fee.provider });
     }
-    const g = service === 'water' ? PU.waterCost(base, l) : PU.sewerCost(base, l);
-    return { ...g, key: service === 'water' ? 'well' : 'septic', basis: `${g.basis} Generic connection range: no published fee sourced for ${f.provider || 'this provider'}.`, sources: [planningRef()], quoteRecommended: true, confidence: 'Low' };
+    const r = service === 'water' ? PU.WATER_COST : PU.SEWER_COST;
+    return line(service === 'water' ? 'well' : 'septic', r.low, r.high, `${service === 'water' ? 'Water' : 'Sewer'} connection`,
+      `Public ${noun} ${phrase}${f.provider ? ` (${f.provider})` : ''}: ${f.basis}. Replaces the private ${service === 'water' ? 'well' : 'septic'} allowance; ${PU.FEE_BASIS}. Planning range, not a quote — verify with the city/district. Generic connection range: no published fee sourced for ${f.provider || 'this provider'}.`,
+      [planningRef()], { confidence: 'Low', publicUtility: f.status });
+  }
+  // Served: the connection is the line. Likely: the private line, with the connection attached as
+  // `alternative` (public-utilities.js wording; not in the total).
+  function waterSewerLine(service, l, C, P, privateLine) {
+    const PU = root.AcresXUtilities;
+    const served = PU ? (service === 'water' ? PU.water(l) : PU.sewer(l)) : null;
+    if (served) return connection(service, served, C, P);
+    const base = privateLine();
+    const maybe = PU?.likely ? PU.likely(service, l) : null;
+    if (!maybe) return base;
+    const c = connection(service, maybe, C, P);
+    const alt = PU.alternative(service, l, { low: c.low, high: c.high }, { sources: c.sources, feeProvider: c.feeProvider || null, connectionBasis: c.basis });
+    return alt ? { ...base, alternative: alt } : base;
   }
 
   function well(l, C, P) {
@@ -424,14 +442,24 @@
   function localEstimate(l, C) {
     const P = tables().PLANNING;
     const electric = power(l, C, P);
-    const water = connection('water', l, C, P, null) || well(l, C, P);
-    const sewer = connection('sewer', l, C, P, null);
-    const septicLine = sewer || septic(l, C, P);
+    const water = waterSewerLine('water', l, C, P, () => well(l, C, P));
+    const septicLine = waterSewerLine('sewer', l, C, P, () => septic(l, C, P));
+    const sewer = Boolean(root.AcresXUtilities?.sewer?.(l));
     const components = { well: water, septic: septicLine, electric, driveway: driveway(l, C, P), sitework: sitework(l, C, P), permits: permits(l, C, P, !sewer) };
     const low = Object.values(components).reduce((a, x) => a + x.low, 0);
     const high = Object.values(components).reduce((a, x) => a + x.high, 0);
     const moderate = Object.values(components).filter(x => x.confidence === 'Moderate').length;
-    return { local: true, county: C.label, researched: C.researched, low, high, midpoint: Math.round((low + high) / 2), confidence: moderate >= 4 ? 'Moderate' : 'Low', components, coverageNote: `Local prices for ${C.label} (sourced ${C.researched}).` };
+    return { local: true, county: C.label, researched: C.researched, low, high, midpoint: Math.round((low + high) / 2), confidence: moderate >= 4 ? 'Moderate' : 'Low', components, coverageNote: `Local prices for ${C.label} (sourced ${C.researched}).`, ...context(components, l) };
+  }
+
+  // Context shown with the estimate, never part of it (2026-11-15): the connection alternatives of
+  // "likely" public water/sewer lines, and what a matched listing says about public water/sewer
+  // (unverified; public-utilities.js listingNote).
+  function context(components, l) {
+    const alternatives = Object.values(components || {}).map(x => x?.alternative).filter(Boolean);
+    let listingNote = '';
+    try { listingNote = root.AcresXUtilities?.listingNote?.(l) || ''; } catch { listingNote = ''; }
+    return { alternatives, listingNote };
   }
 
   // Soil / terrain inputs that did not load (2026-11-15). The range is kept (septic and site work
@@ -463,7 +491,7 @@
     if (C) return { ...localEstimate(l, C), ...extra };
     const base = typeof root.__acresxScreeningCostEstimate === 'function' ? root.__acresxScreeningCostEstimate()
       : typeof root.__acresxGeneralCostEstimate === 'function' ? root.__acresxGeneralCostEstimate() : null;
-    return base ? { ...base, local: false, coverageNote: GENERIC_NOTE, ...extra } : null;
+    return base ? { ...base, local: false, coverageNote: GENERIC_NOTE, ...context(base.components, l), ...extra } : null;
   }
 
   // ---- Cost context: road access + watershed (/api/cost-context follow-up, local counties only;
@@ -510,7 +538,7 @@
     if (typeof document === 'undefined' || document.getElementById('localCostStyles')) return;
     const s = document.createElement('style');
     s.id = 'localCostStyles';
-    s.textContent = '.cost-sources{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5}.cost-sources a{color:var(--green)}.cost-quote-badge{display:inline-block;margin-left:6px;border-radius:999px;background:#fff4dd;color:#8a5a00;font-size:9px;font-weight:800;padding:3px 7px;vertical-align:middle}.cost-unverified{color:#8a5a00;font-weight:700}.cost-coverage{font-size:10px;font-weight:800;color:var(--green2);margin-top:6px}.cost-missing{font-size:10px;font-weight:800;color:#8a5a00;margin-top:6px}';
+    s.textContent = '.cost-sources{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5}.cost-sources a{color:var(--green)}.cost-quote-badge{display:inline-block;margin-left:6px;border-radius:999px;background:#fff4dd;color:#8a5a00;font-size:9px;font-weight:800;padding:3px 7px;vertical-align:middle}.cost-unverified{color:#8a5a00;font-weight:700}.cost-coverage{font-size:10px;font-weight:800;color:var(--green2);margin-top:6px}.cost-missing{font-size:10px;font-weight:800;color:#8a5a00;margin-top:6px}.cost-alt{font-size:10px;line-height:1.45;color:var(--muted);margin-top:6px}.cost-listing{font-size:10px;font-weight:700;color:#8a5a00;margin-top:6px}';
     document.head?.appendChild(s);
   }
   function sourcesHtml(item) {
@@ -522,10 +550,15 @@
     }).join('<br>')}</div>`;
   }
   function itemHtml(item) {
-    return `<div class="result-item cost-line" data-cost-key="${esc(item.key)}"><div class="result-top"><h4>${esc(item.label)}${item.quoteRecommended ? '<span class="cost-quote-badge">Get a quote</span>' : ''}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice"><strong>${esc(item.confidence || 'Low')} confidence.</strong> ${esc(item.basis)}</div>${sourcesHtml(item)}</div>`;
+    const alt = item.alternative;
+    return `<div class="result-item cost-line" data-cost-key="${esc(item.key)}"><div class="result-top"><h4>${esc(item.label)}${item.quoteRecommended ? '<span class="cost-quote-badge">Get a quote</span>' : ''}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice"><strong>${esc(item.confidence || 'Low')} confidence.</strong> ${esc(item.basis)}</div>${sourcesHtml(item)}${alt ? `<div class="cost-alt"><strong>Alternative, not in the total:</strong> ${esc(alt.text)}</div>` : ''}</div>`;
+  }
+  // Under the dashboard total and the details total: the connection alternatives and the listing note.
+  function contextHtml(e) {
+    return `${(e.alternatives || []).map(a => `<div class="cost-alt">${esc(a.text)}</div>`).join('')}${e.listingNote ? `<div class="cost-listing">${esc(e.listingNote)}</div>` : ''}`;
   }
   function detailsHtml(e) {
-    return `<div class="cost-detail-total"><span>${esc(e.coverageNote)} Midpoint ${money(e.midpoint)}</span>${e.missingNote ? `<div class="cost-missing">${esc(e.missingNote)}</div>` : ''}<strong>${money(e.low)}–${money(e.high)}</strong></div>${Object.values(e.components).map(itemHtml).join('')}<div class="notice"><strong>${SCREENING}</strong><br>Exact fees are shown where an official schedule was found; everything else is a labeled planning range. Utility engineering, septic design, drilling, access and contractor pricing can change actual costs materially. Verify with the responsible agency, utility and contractors.</div>`;
+    return `<div class="cost-detail-total"><span>${esc(e.coverageNote)} Midpoint ${money(e.midpoint)}</span>${e.missingNote ? `<div class="cost-missing">${esc(e.missingNote)}</div>` : ''}${e.listingNote ? `<div class="cost-listing">${esc(e.listingNote)}</div>` : ''}<strong>${money(e.low)}–${money(e.high)}</strong></div>${Object.values(e.components).map(itemHtml).join('')}<div class="notice"><strong>${SCREENING}</strong><br>Exact fees are shown where an official schedule was found; everything else is a labeled planning range. Utility engineering, septic design, drilling, access and contractor pricing can change actual costs materially. Verify with the responsible agency, utility and contractors.</div>`;
   }
   function showDetails() {
     const e = estimate();
@@ -559,7 +592,7 @@
       return;
     }
     const e = estimate(l);
-    card.innerHTML = `<div class="cost-icon">$</div><div><div class="cost-kicker">Preliminary development estimate</div><div class="cost-value">${usdRange(e.low, e.high)}</div><div class="cost-note">Midpoint ${money(e.midpoint)} · ${esc(e.confidence)} confidence. ${esc(e.coverageNote)} Uses this parcel's power distance, public utilities, wells, soils, terrain and road access. ${SCREENING}</div>${e.missingNote ? `<div class="cost-missing">${esc(e.missingNote)}</div>` : ''}<div class="cost-pill">View sources and assumptions →</div></div>`;
+    card.innerHTML = `<div class="cost-icon">$</div><div><div class="cost-kicker">Preliminary development estimate</div><div class="cost-value">${usdRange(e.low, e.high)}</div><div class="cost-note">Midpoint ${money(e.midpoint)} · ${esc(e.confidence)} confidence. ${esc(e.coverageNote)} Uses this parcel's power distance, public utilities, wells, soils, terrain and road access. ${SCREENING}</div>${e.missingNote ? `<div class="cost-missing">${esc(e.missingNote)}</div>` : ''}${contextHtml(e)}<div class="cost-pill">View sources and assumptions →</div></div>`;
     card.onclick = showDetails;
     card.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault?.(); showDetails(); } };
   }

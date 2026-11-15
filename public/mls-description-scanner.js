@@ -4,7 +4,7 @@
   const normalize = value => String(value || '').replace(/\s+/g, ' ').trim();
   function scan(remarks) {
     const text = normalize(remarks);
-    const out = { well: [], septic: [], power: [] };
+    const out = { well: [], septic: [], power: [], utilities: [] };
     if (!text) return out;
     const rules = {
       well: [
@@ -26,6 +26,16 @@
         ['provider_inland', /\bInland Power(?:\s*(?:&|and)\s*Light)?\b/i],
         ['provider_avista', /\bAvista(?: Utilities)?\b/i],
         ['provider_vera', /\bVera (?:Water (?:and|&) )?Power\b/i]
+      ],
+      // Public water/sewer statements (2026-11-15). public/public-utilities.js shows them as an
+      // unverified "Listing says" note next to the utilities and cost; they never change the
+      // score or which cost is priced. no_public_* : the listing says there is none; well_septic:
+      // the listing names a private well and/or septic system as the plan or what is there.
+      utilities: [
+        ['no_public_water_sewer', /\bno (?:public|city|municipal|community) (?:water (?:or|and|\/|&) sewer|water\/sewer|utilities)\b|\b(?:public|city|municipal) (?:water (?:and|&|\/) sewer|water\/sewer|utilities) (?:is |are )?(?:not available|unavailable|not (?:at|to) (?:the )?(?:property|lot|site))\b|\bnot (?:on|connected to|served by) (?:public|city|municipal) (?:water (?:or|and|\/|&) sewer|water\/sewer|utilities)\b/i],
+        ['no_public_water', /\bno (?:public|city|municipal|community) water\b(?! (?:or|and|\/|&) sewer)|\b(?:public|city|municipal) water (?:is )?(?:not available|unavailable)\b/i],
+        ['no_public_sewer', /\bno (?:public|city|municipal|community) sewer\b|\b(?:public |city |municipal )?sewer (?:is )?(?:not available|unavailable)\b/i],
+        ['well_septic', /\b(?:private |individual )?well (?:and|&|\/) septic\b|\b(?:will |would )?(?:need|require)s? (?:a )?(?:private )?well and (?:a )?septic\b|\bdrill (?:a )?well and install (?:a )?septic\b/i]
       ]
     };
     for (const [category, patterns] of Object.entries(rules)) {
