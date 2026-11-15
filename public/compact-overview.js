@@ -41,7 +41,7 @@
     if (!grid) return;
 
     // Remove duplicate soil/well facts, preserving the first populated instance.
-    for (const target of ['dominant soil', 'avg. nearby well depth']) {
+    for (const target of ['dominant soil', 'median nearby well depth']) {
       const matches = [...grid.querySelectorAll('.property-overview-fact')].filter(f => labelText(f) === target);
       if (matches.length > 1) {
         const populated = matches.find(f => {

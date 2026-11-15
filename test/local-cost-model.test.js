@@ -57,7 +57,7 @@ function page(last, { withModel = true } = {}) {
   const p = makeContext({ body: PAGE, clock, fetch: async () => { throw new Error('no network in tests'); } });
   p.ctx.__last = last;
   p.run('var last = __last; var activeTab = "wells"; function renderSummary() {} function renderResults() {}', 'index-inline.js');
-  const files = ['score-cost.js', 'screening-refinements.js', ...(withModel ? ['cost-tables.js', 'local-cost-model.js'] : []), 'public-utilities.js'];
+  const files = ['screening-inputs.js', 'score-cost.js', 'screening-refinements.js', ...(withModel ? ['cost-tables.js', 'local-cost-model.js'] : []), 'public-utilities.js'];
   for (const f of files) p.run(readPublic(f), f);
   p.run('renderSummary(last.parcel)');
   const est = () => p.run('window.AcresXCostModel.estimate()');
@@ -512,7 +512,7 @@ function pageWithSections(last, waiting) {
   p.ctx.__waiting = waiting;
   p.run('var last = __last; var activeTab = "wells"; function renderSummary() {} function renderResults() {}', 'index-inline.js');
   p.run('window.AcresXSections = { ready: () => false, waitingFor: () => __waiting, claim: () => false, settle() {}, isCurrent: () => true, placeholder: () => null };', 'sections-stub.js');
-  for (const f of ['score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js']) p.run(readPublic(f), f);
+  for (const f of ['screening-inputs.js', 'score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js']) p.run(readPublic(f), f);
   p.run('renderSummary(last.parcel)');
   // The model rewrites the card's innerHTML (stored as text by the fake DOM); the generic module
   // writes into the existing .cost-value element.

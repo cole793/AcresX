@@ -96,11 +96,11 @@
     return { parcelId, address, county, state, utility };
   }
 
-  function averageNearbyWellDepth() {
-    if (typeof last === 'undefined' || !Array.isArray(last?.wells)) return null;
-    const depths = last.wells.slice(0, 5).map(w => Number(w?.properties?.CompletedDepth)).filter(d => Number.isFinite(d) && d > 0);
-    if (!depths.length) return null;
-    return { depth: Math.round(depths.reduce((sum, d) => sum + d, 0) / depths.length), count: depths.length };
+  // The one nearby-well-depth definition (screening-inputs.js): median of the residential-comparable
+  // wells among the closest five.
+  function nearbyWellDepth() {
+    if (typeof last === 'undefined' || !window.AcresXWellDepth) return null;
+    return window.AcresXWellDepth.stats(last);
   }
 
   function dominantSoil() {
@@ -145,7 +145,7 @@
             <div class="property-overview-fact"><span>Flood screening</span><strong id="overviewFlood">—</strong></div>
             <div class="property-overview-fact"><span>Wetland screening</span><strong id="overviewWetlands">—</strong></div>
             <div class="property-overview-fact"><span>Dominant soil</span><strong id="overviewSoil">—</strong></div>
-            <div class="property-overview-fact"><span>Avg. nearby well depth</span><strong id="overviewWellDepth">—</strong></div>
+            <div class="property-overview-fact"><span>Median nearby well depth</span><strong id="overviewWellDepth">—</strong></div>
             <div class="property-overview-fact"><span>Public water / sewer</span><strong id="overviewPublicUtilities">—</strong></div>
           </div>
           <div class="property-overview-foot">Mapped acreage is calculated from the public parcel boundary and may differ slightly from assessor-recorded acreage.</div>
@@ -220,7 +220,7 @@
     const flood = hazardLabel(last.flood, 'flood');
     const wetlands = hazardLabel(last.wetlands, 'wetlands');
     const soil = dominantSoil();
-    const wellDepth = averageNearbyWellDepth();
+    const wellDepth = nearbyWellDepth();
 
     document.getElementById('overviewAddress').textContent = identity.address;
     document.getElementById('overviewLocation').textContent = `${identity.county} County, ${identity.state}`;
@@ -230,7 +230,7 @@
     setFact('overviewFlood', flood.text, flood.cls);
     setFact('overviewWetlands', wetlands.text, wetlands.cls);
     setFact('overviewSoil', soil || 'Not available');
-    setFact('overviewWellDepth', wellDepth ? `${wellDepth.depth.toLocaleString()} ft · ${wellDepth.count} nearby log${wellDepth.count === 1 ? '' : 's'}` : 'Not available');
+    setFact('overviewWellDepth', window.AcresXWellDepth ? window.AcresXWellDepth.fact(wellDepth) : 'Not available');
     // window.AcresXUtilities: public/public-utilities.js (served/likely public water and sewer).
     const PU = window.AcresXUtilities;
     setFact('overviewPublicUtilities', PU ? PU.overviewText(last) : 'Not checked', PU && (PU.water(last) || PU.sewer(last)) ? 'good' : '');

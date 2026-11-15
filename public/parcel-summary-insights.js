@@ -1,11 +1,8 @@
 (() => {
-  function avgWellDepth() {
-    if (typeof last === 'undefined' || !Array.isArray(last?.wells)) return null;
-    const values = last.wells.slice(0, 5)
-      .map(w => Number(w?.properties?.CompletedDepth ?? w?.CompletedDepth ?? w?.depth ?? w?.wellDepth))
-      .filter(v => Number.isFinite(v) && v > 0);
-    if (!values.length) return null;
-    return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  // The one nearby-well-depth definition (screening-inputs.js).
+  function nearbyWellDepth() {
+    if (typeof last === 'undefined' || !window.AcresXWellDepth) return null;
+    return window.AcresXWellDepth.stats(last);
   }
 
   function soilName() {
@@ -33,7 +30,7 @@
     document.getElementById('overviewNearbyWellDepthWrap')?.remove();
 
     const soil = soilName();
-    const well = avgWellDepth();
+    const well = nearbyWellDepth();
 
     // Keep exactly one Dominant Soil row and use the populated/current value when available.
     const soilFacts = factsByLabel('Dominant soil');
@@ -47,14 +44,14 @@
       soilFacts.forEach(f => { if (f !== primary) f.remove(); });
     }
 
-    // Keep exactly one Avg. Nearby Well Depth row and show only the average depth.
-    const wellFacts = factsByLabel('Avg. nearby well depth');
+    // Keep exactly one Median Nearby Well Depth row (the same number as the well card and report).
+    const wellFacts = factsByLabel('Median nearby well depth');
     if (wellFacts.length) {
       const primary = wellFacts[0];
       const strong = primary.querySelector('strong');
       // While nearby wells are loading or timed out, progressive-loading.js's placeholder stays.
       const placeholder = window.AcresXSections?.placeholderText('wells');
-      if (strong) strong.textContent = placeholder || (well ? `${well.toLocaleString()} ft` : 'Not available');
+      if (strong) strong.textContent = placeholder || (window.AcresXWellDepth ? window.AcresXWellDepth.fact(well) : 'Not available');
       wellFacts.slice(1).forEach(f => f.remove());
     }
   }

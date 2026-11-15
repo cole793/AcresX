@@ -25,7 +25,8 @@
 // says how much of the parcel each zone covers ("Zone A on 12% of parcel (2.4 ac); rest zone X"),
 // and says plainly when the high-risk zone only touches the parcel's edge; overviewShare() is the
 // short form for the overview fact. Both are '' when the share was not measured. They never
-// change the category or the score.
+// change the category or grade().score. shareScore() is the buildability score's flood factor
+// when the share was measured (see its comment); screening-refinements.js uses it.
 (function (root) {
   const BACKUP_PROVIDER = 'Esri USA Flood Hazard Areas';
   const LIMITED_LABEL = 'Limited flood data';
@@ -213,8 +214,24 @@
   // each consumer's own scale before every consumer shared these scores.
   const score = flood => grade(flood).score;
 
+  // The flood factor for the buildability score when FEMA zone shares were measured (2026-11-14),
+  // else null (callers keep score()). Only high-risk (SFHA) answers change:
+  //   SFHA under 1% of the parcel (edge only)   85   small penalty (minimal is 96)
+  //   SFHA 1% to under 95%                      5 + 75 x (share outside the SFHA)^1.5
+  //                                             (10% -> 69, 25% -> 54, 50% -> 32, 67% -> 19)
+  //   SFHA 95% or more (whole parcel)           5    severe
+  // Other categories keep their category score.
+  function shareScore(flood) {
+    if (!measured(flood) || category(flood) !== 'high') return null;
+    const share = finite(flood.sfhaSharePct);
+    if (share == null) return null;
+    if (share < 1) return 85;
+    if (share >= 95) return 5;
+    return Math.round((5 + 75 * Math.pow(1 - share / 100, 1.5)) * 10) / 10;
+  }
+
   root.AcresXFlood = {
     BACKUP_PROVIDER, BACKUP_NOTE, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, PAPER_MAP_NOTE, PAPER_MAP_SUFFIX, CATEGORIES, GRADES,
-    isLimited, isBackup, isPaperMap, backupSuffix, rowCategory, category, detail, grade, score, shareText, overviewShare
+    isLimited, isBackup, isPaperMap, backupSuffix, rowCategory, category, detail, grade, score, shareScore, shareText, overviewShare
   };
 })(typeof window !== 'undefined' ? window : globalThis);

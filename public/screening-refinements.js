@@ -6,40 +6,44 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  function median(values) {
-    const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
-    if (!sorted.length) return null;
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  }
-
-  function wellText(well) {
-    const p = well?.properties || {};
-    return [
-      p.WellProjectType, p.WellSubType, p.ProjectName, p.SiteType, p.WaterUse,
-      p.WELL_USE, p.USE, p.Status, p.STATUS
-    ].filter(Boolean).join(' ').toLowerCase();
-  }
-
-  function excludedWell(well) {
-    const text = wellText(well);
-    return /\b(irrigat|agricultur|industrial|monitor|observation|injection|dewater|geothermal|environmental|remediation|municipal)\w*/i.test(text);
-  }
-
+  // Nearby well depth: the one definition in screening-inputs.js (window.AcresXWellDepth), the
+  // median of the residential-comparable wells among the closest five.
   function wellStats() {
-    if (typeof last === 'undefined' || !Array.isArray(last?.wells)) return null;
-    const wells = last.wells.slice(0, 5);
-    const comparable = wells.filter(w => !excludedWell(w));
-    const depths = comparable.map(w => number(w?.properties?.CompletedDepth)).filter(v => v && v > 0);
-    const fallbackDepths = wells.map(w => number(w?.properties?.CompletedDepth)).filter(v => v && v > 0);
-    const med = median(depths);
-    return {
-      median: med,
-      count: depths.length,
-      excluded: wells.filter(excludedWell).length,
-      total: wells.length,
-      fallbackMedian: median(fallbackDepths)
-    };
+    if (typeof last === 'undefined') return null;
+    return window.AcresXWellDepth ? window.AcresXWellDepth.stats(last) : null;
+  }
+
+  // ---- Buildable area in the score (owner request 2026-11-14)
+  // window.AcresXBuildable / POST /api/buildable-area: the parcel minus mapped flood zones,
+  // wetlands, steep slopes (and a plain zoning setback). Kept simple on purpose:
+  // - Homesite minimum: 0.5 ac, or half the parcel on a parcel under 1 acre (a small city lot
+  //   that is all buildable is not penalized). The zoning minimum lot is not used: it applies to
+  //   the whole lot, not to the area left outside constraints.
+  // - Buildable acres below that minimum: the score is capped at 2.5 + 2.5 x (buildable / minimum),
+  //   2.5 at 0 ac up to 5.0 at the minimum ("Challenging"): a house may not fit.
+  // - At or above it: no buildable-area penalty. Flood and wetlands are already scored by how much
+  //   of the parcel they cover, so the area they remove is not penalized a second time.
+  // - Not measured (still loading, or unavailable): no change; the score updates when it arrives.
+  const HOMESITE_MIN_AC = 0.5;
+  const REMOVED_NAMES = { flood: 'the flood zone', wetland: 'wetlands', slope: 'steep slopes', setback: 'setbacks' };
+  const andList = list => (list.length <= 1 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list.at(-1)}`);
+
+  function buildableCheck() {
+    const b = last?.buildableArea;
+    const B = window.AcresXBuildable;
+    const ok = b && (b.status === 'measured' || b.status === 'partial') && number(b.buildableAcres) != null;
+    if (!ok) return { measured: false, pending: !b };
+    const acres = number(b.buildableAcres);
+    const parcel = number(b.parcelAcres);
+    const need = parcel != null && parcel < 1 ? Math.min(HOMESITE_MIN_AC, parcel / 2) : HOMESITE_MIN_AC;
+    const tight = acres < need;
+    const fmt = a => (B ? B.fmtAcres(a, parcel ?? a) : (parcel ?? a) >= 10 ? a.toFixed(1) : a.toFixed(2));
+    const removed = [...new Set((b.removed || []).filter(r => number(r.acres) > 0).map(r => REMOVED_NAMES[r.key] || String(r.reason || r.key).toLowerCase()))];
+    let why;
+    if (tight) why = `Only ${fmt(acres)} ac remain outside ${andList(removed) || 'mapped constraints'}: a homesite may not fit`;
+    else if (removed.length) why = `${fmt(acres)} ac remain outside ${andList(removed)}`;
+    else why = `All ${fmt(acres)} ac outside mapped flood zones, wetlands and steep slopes`;
+    return { measured: true, acres, need, tight, cap: tight ? 2.5 + 2.5 * (acres / need) : null, why };
   }
 
   function wetlandsScore(wetlands) {
@@ -59,7 +63,7 @@
 
   function scoreFactors() {
     const wells = wellStats();
-    const depth = wells?.median ?? wells?.fallbackMedian;
+    const depth = wells?.depth ?? null;
     const soil = last?.land?.soil || {};
     const terrain = last?.land?.terrain || {};
     const flood = last?.flood || {};
@@ -70,13 +74,19 @@
     // Public water / sewer (public-utilities.js) replace the well and septic inputs when served or likely.
     const PU = window.AcresXUtilities;
     const wellWater = depth != null ? (depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
-    const soilSeptic = !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
+    // Septic: USDA drainage and hydrologic group with the measured parcel slope (screening-inputs.js).
+    const SX = window.AcresXSeptic;
+    const soilSeptic = SX ? SX.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
     const water = PU ? PU.waterScore(wellWater, last) : wellWater;
     const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
     const terrainScore = !terrain.available ? 50 : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
     const FX = window.AcresXFlood;
     // Without flood-status.js loaded yet: the older scale, without throwing.
     const floodScore = FX ? FX.score(flood) : !flood.available || flood.source?.emptyResult ? 50 : flood.high ? 20 : flood.intersects ? 55 : 96;
+    // With measured zone shares, the flood factor follows how much of the parcel is in the SFHA
+    // (flood-status.js shareScore); unmeasured shares keep the category score above.
+    const floodShareScore = FX?.shareScore ? FX.shareScore(flood) : null;
+    const floodFactor = floodShareScore ?? floodScore;
     const powerScore = last?.powerIntelligence?.territory?.confirmed ? 78 : utilityFound ? 70 : 45;
     const zoningScore = zoning.status === 'gis_match' ? 86 : zoning.status === 'no_match' ? 52 : 45;
 
@@ -84,7 +94,7 @@
       water: { score: water, label: 'Water' },
       soil: { score: soilScore, label: 'Septic' },
       terrain: { score: terrainScore, label: 'Terrain' },
-      flood: { score: floodScore, label: 'Flood' },
+      flood: { score: floodFactor, label: 'Flood' },
       wetlands: { score: wetlandsScore(wetlands), label: 'Wetlands' },
       power: { score: powerScore, label: 'Power' },
       zoning: { score: zoningScore, label: 'Zoning' }
@@ -92,27 +102,26 @@
   }
 
   function renderWellSummary() {
+    const WD = window.AcresXWellDepth;
     const stats = wellStats();
-    if (!stats) return;
-    const depth = stats.median ?? stats.fallbackMedian;
+    if (!stats || !WD) return;
+    const depth = stats.depth;
     const metric = document.getElementById('wellMetric');
     const note = document.getElementById('wellNote');
     const grade = document.getElementById('waterGrade');
     const status = document.getElementById('waterStatus');
+    const dot = document.getElementById('waterDot');
     const card = document.querySelector('.snapshot-card[data-detail="wells"]');
 
-    if (metric) metric.textContent = depth != null ? `${Math.round(depth)} ft` : 'Not found';
-    if (note) {
-      if (stats.median != null) note.textContent = `${stats.count} residential-comparable well${stats.count === 1 ? '' : 's'} · median depth${stats.excluded ? ` · ${stats.excluded} nonresidential excluded` : ''}`;
-      else if (stats.fallbackMedian != null) note.textContent = `No clearly residential well type identified · ${stats.total} nearby depth record${stats.total === 1 ? '' : 's'}`;
-      else note.textContent = 'No nearby depth records returned';
-    }
+    if (metric) metric.textContent = depth != null ? WD.value(stats) : 'Not found';
+    if (note) note.textContent = WD.note(stats);
 
     // With public water the card's grade and status are public-utilities.js's; the depths stay as
     // the "if a private well were needed" figures.
     if (depth != null && !window.AcresXUtilities?.water(last)) {
       const label = depth <= 200 ? 'Shallow' : depth <= 400 ? 'Moderate' : 'Deep';
       if (grade) grade.textContent = label;
+      if (dot) dot.className = `traffic-dot ${depth <= 200 ? 'green' : depth <= 400 ? 'amber' : 'red'}`;
       if (status) status.textContent = stats.excluded ? `${stats.excluded} nonresidential well${stats.excluded === 1 ? '' : 's'} excluded from depth estimate` : 'Residential-comparable nearby well depths';
       if (card) {
         card.classList.remove('snapshot-good', 'snapshot-limited', 'snapshot-bad', 'snapshot-neutral');
@@ -121,22 +130,49 @@
     }
   }
 
-  // The buildability score: 7 factors (0-100) weighted by WEIGHTS, shown /10.
+  // Septic card: the grade from the measured parcel slope, with the soil map unit's slope class as
+  // context. public-utilities.js (loaded later) replaces grade and status when sewer is likely.
+  function renderSepticSummary() {
+    const soil = last?.land?.soil;
+    if (!soil?.available) return;
+    window.AcresXSeptic?.apply(last.land);
+    const sx = soil.septic;
+    if (!sx) return;
+    const f = soil.feasibility;
+    const grade = document.getElementById('soilGrade');
+    const dot = document.getElementById('soilDot');
+    const status = document.getElementById('soilStatus');
+    const note = document.getElementById('soilNote');
+    if (grade) grade.textContent = f === 'favorable' ? 'Favorable' : f === 'limited' ? 'Limited' : 'Moderate';
+    if (dot) dot.className = `traffic-dot ${f === 'favorable' ? 'green' : f === 'limited' ? 'red' : 'amber'}`;
+    if (status) status.textContent = [soil.component || soil.mapUnit || 'Mapped soil', soil.drainage, soil.hydrologicGroup ? `Group ${soil.hydrologicGroup}` : '', sx.limits.length ? `limited by ${sx.limits.join(', ')}` : ''].filter(Boolean).join(' · ');
+    if (note) note.textContent = `${sx.context}. ${sx.note}`;
+  }
+
+  // The buildability score: 7 factors (0-100) weighted by WEIGHTS, shown /10, then the
+  // buildable-area homesite check (buildableCheck above). Listing/MLS data and the cost
+  // estimate never feed it.
   function calculateScore() {
     const factors = scoreFactors();
     let weighted = 0;
     Object.entries(factors).forEach(([key, factor]) => { weighted += factor.score * WEIGHTS[key] / 100; });
-    const score = weighted / 10;
+    const buildable = buildableCheck();
+    const factorScore = weighted / 10;
+    const score = buildable.cap != null ? Math.min(factorScore, buildable.cap) : factorScore;
     const rating = score >= 8.5 ? 'Excellent' : score >= 7 ? 'Good' : score >= 5.5 ? 'Moderate' : 'Challenging';
     const constraint = Object.values(factors).sort((a, b) => a.score - b.score)[0];
-    return { score, rating, factors, constraint, weights: { ...WEIGHTS } };
+    // One line for "why this score", under the score on the dashboard and on report page 1.
+    const why = buildable.measured ? buildable.why
+      : buildable.pending ? `Buildable area still measuring · main constraint: ${constraint.label.toLowerCase()}`
+      : `Buildable area not measured · main constraint: ${constraint.label.toLowerCase()}`;
+    return { score, factorScore, rating, factors, constraint, buildable, why, weights: { ...WEIGHTS } };
   }
   // The same score and factors for the printable report (property-report-v2.js), so its score and
   // its "top drivers" come from the inputs the dashboard card uses.
-  window.AcresXScore = { calculate: calculateScore, wellStats, WEIGHTS };
+  window.AcresXScore = { calculate: calculateScore, wellStats, WEIGHTS, HOMESITE_MIN_AC, render: () => renderAll() };
 
   function renderScore() {
-    const { score, rating, factors, constraint } = calculateScore();
+    const { score, rating, factors, constraint, why } = calculateScore();
 
     const metric = document.getElementById('scoreMetric');
     const note = document.getElementById('scoreNote');
@@ -144,6 +180,16 @@
     if (!metric || !card) return;
     metric.textContent = score.toFixed(1);
     if (note) note.textContent = `${rating} buildability · 7-factor screening`;
+    let whyEl = card.querySelector('.score-why');
+    if (!whyEl) {
+      whyEl = document.createElement('div');
+      // Its own class: .score-constraint is the "Primary screening constraint" line's selector.
+      whyEl.className = 'score-why';
+      whyEl.setAttribute('style', 'font-size:11px;color:#d1e0d6;margin-top:9px;line-height:1.35;font-weight:700');
+      const ref = card.querySelector('.score-factor-line');
+      if (ref) card.insertBefore(whyEl, ref); else card.appendChild(whyEl);
+    }
+    whyEl.textContent = why;
 
     const chips = card.querySelector('.score-factor-line');
     if (chips) chips.innerHTML = Object.values(factors).map(f => `<span class="score-factor-chip">${f.label} ${Math.round(f.score)}</span>`).join('');
@@ -172,16 +218,17 @@
 
   function costEstimate() {
     const wells = wellStats();
-    const depth = wells?.median ?? wells?.fallbackMedian;
+    const depth = wells?.depth ?? null;
     const soil = last?.land?.soil || {};
     const terrain = last?.land?.terrain || {};
     const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
+    const wellBasis = () => `${Math.round(depth)} ft median nearby well depth (${wells.count} well${wells.count === 1 ? '' : 's'})`;
 
     let well;
     if (depth == null) well = { low: 20000, high: 40000, basis: 'No nearby comparable well depths; broad planning allowance' };
-    else if (depth <= 200) well = { low: 14000, high: 24000, basis: `${Math.round(depth)} ft median residential-comparable well depth` };
-    else if (depth <= 400) well = { low: 20000, high: 35000, basis: `${Math.round(depth)} ft median residential-comparable well depth` };
-    else well = { low: 30000, high: 50000, basis: `${Math.round(depth)} ft median residential-comparable well depth` };
+    else if (depth <= 200) well = { low: 14000, high: 24000, basis: wellBasis() };
+    else if (depth <= 400) well = { low: 20000, high: 35000, basis: wellBasis() };
+    else well = { low: 30000, high: 50000, basis: wellBasis() };
 
     let septic;
     if (!soil.available) septic = { low: 18000, high: 32000, basis: 'Soil screening unavailable; broad planning allowance' };
@@ -237,6 +284,7 @@
   function renderAll() {
     if (typeof last === 'undefined' || !last?.parcel) return;
     renderWellSummary();
+    renderSepticSummary();
     renderScore();
     renderCost();
   }
