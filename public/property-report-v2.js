@@ -58,7 +58,10 @@
     return s.split(/(\s+)/).map((w, i) => (KEEP_UPPER.has(w.replace(/\W/g, '')) ? w : (i && SMALL.has(w.toLowerCase()) ? w.toLowerCase() : w.toLowerCase().replace(/(^|[-/'(])([a-z])/g, (m, a, b) => a + b.toUpperCase())))).join('');
   };
   const sentence = s => { s = String(s || '').trim(); return s && !/[.!?]$/.test(s) ? `${s}.` : s; };
-  const today = () => new Date().toISOString().slice(0, 10);
+  // A saved or shared report (renderHtml from a snapshot) prints the date it was generated.
+  let renderDate = null;
+  const reportNow = () => (renderDate ? new Date(renderDate) : new Date());
+  const today = () => reportNow().toISOString().slice(0, 10);
 
   function reportState() { try { return window.__acresxLast || (typeof last !== 'undefined' ? last : null); } catch { return window.__acresxLast || null; } }
 
@@ -448,7 +451,7 @@ ${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restrict
   // One line under the header: "Validated county" / "Partially validated" / "Limited coverage …".
   const coverageLine = c => (c ? `<p class="coverage cov-${esc(c.tier)}"><b>${esc(c.label)}</b>${esc(c.summary)}</p>` : '');
 
-  const generatedOn = () => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const generatedOn = () => reportNow().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   function headerP1(b) {
     if (!b) return `<header class="head"><img class="logo" src="/assets/acresx-logo.png" alt="AcresX"><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(generatedOn())}</span></div></header>`;
     return `<header class="head branded"><div class="agent">${b.logo ? `<img class="agent-logo" src="${esc(b.logo)}" alt="${esc(b.brokerage || b.name)}">` : ''}<div class="agent-text"><div class="prepared">Prepared by <strong>${esc(b.name)}</strong>${b.brokerage ? `, ${esc(b.brokerage)}` : ''}</div>${b.contact.length ? `<div class="agent-contact">${b.contact.map(esc).join(' · ')}</div>` : ''}</div></div><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(generatedOn())}</span><span class="powered">Powered by AcresX</span></div></header>`;
@@ -831,30 +834,84 @@ table{border-collapse:collapse;width:100%}
   // for its fixed aspect ratio), so a branded header, a reference and a long brokerage still fit.
   const FIT = `(function(){function fit(){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('d1','d2','d3','grow');var b=p.querySelector('.page-body');var over=function(){return b.scrollHeight>b.clientHeight+1};var steps=['d1','d2','d3'];for(var i=0;i<steps.length&&over();i++)p.classList.add(steps[i]);if(over())p.classList.add('grow')})}window.__acresxFit=fit;window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})();`;
 
-  function makeReport(name) {
-    const data = reportState() || {};
+  // The report is built in two steps so a saved account report or a shared link (/r/<token>)
+  // renders with this same code from JSON, never from stored HTML:
+  //   buildModel(name, data) -> { name, data, f, score } from the live page (window.AcresX* modules)
+  //   snapshot(model)        -> the JSON kept for a saved report: the computed facts plus the few
+  //                             `data` fields the page renderers read (snapshotData). A renderer
+  //                             that starts reading another `data` field adds it there.
+  //   renderHtml(model, { brand, date }) -> the report document
+  function buildModel(name, data = reportState() || {}) {
     const f = gatherFacts(data);
-    // A fourth page (appendix) when the cost lines carry their assumptions; every footer says "of N".
-    f.pages = f.cost?.lines.some(l => l.basis) ? 4 : 3;
-    f.brand = brandParts();
-    const S = sourceList();
     const score = scoreInfo(data, f);
-    const p1 = page1(data, f, score, name);
-    const p2 = page2(data, f, S);
-    const notes = [];
-    const p3 = page3(data, f, S, notes);
-    const p4 = f.pages > 3 ? appendix(f, notes) : '';
-    const docTitle = `${f.address || `Parcel ${f.pid}`} — AcresX Property Report`;
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div>
+    return { name, data, f, score };
+  }
+
+  const geometryOnly = g => (g && typeof g === 'object' && g.type && g.coordinates ? { type: g.type, coordinates: g.coordinates } : null);
+  const pick = (o, keys) => { const out = {}; if (o && typeof o === 'object') for (const k of keys) if (o[k] !== undefined) out[k] = o[k]; return out; };
+  function snapshotData(data) {
+    const ex = data.existingWell || {};
+    const exMatch = m => (m ? { evidence: pick(m.evidence, ['insideParcel', 'distanceToParcelFt']) } : undefined);
+    const listing = data.resoListings || data.listingContext || {};
+    const rec = listing.best || listing.match || null;
+    const b = data.buildableArea;
+    return {
+      parcel: data.parcel?.geometry ? { type: 'Feature', properties: {}, geometry: geometryOnly(data.parcel.geometry) } : null,
+      buildableArea: b && typeof b === 'object' ? { ...b, geometry: geometryOnly(b.geometry), removedGeometry: geometryOnly(b.removedGeometry), bufferGeometry: geometryOnly(b.bufferGeometry) } : null,
+      existingWell: { available: ex.available, confidence: ex.confidence, match: exMatch(ex.match), best: exMatch(ex.best) },
+      publicUtilities: data.publicUtilities || null,
+      flood: pick(data.flood, ['available', 'sharePct', 'share', 'source']),
+      wetlands: pick(data.wetlands, ['available', 'types']),
+      land: { landCover: data.land?.landCover || null },
+      resoListings: rec ? { best: pick(rec, ['status', 'standardStatus', 'StandardStatus', 'listPrice', 'daysOnMarket', 'listingId']) } : null,
+      // Page 2 tax line (taxCell, rendered with window.AcresXPropertyTax from public/property-tax.js).
+      propertyTax: data.propertyTax || null
+    };
+  }
+  function snapshot(model) {
+    const { brand, pages, ...f } = model.f || {};
+    return JSON.parse(JSON.stringify({ v: 1, name: model.name, generatedAt: model.generatedAt || new Date().toISOString(), f, score: model.score, data: snapshotData(model.data || {}) }));
+  }
+
+  function renderHtml(model, { brand, date } = {}) {
+    const data = model.data || {};
+    const f = { ...model.f };
+    // A fourth page (appendix) when the cost lines carry their assumptions; every footer says "of N".
+    f.pages = f.cost?.lines?.some(l => l.basis) ? 4 : 3;
+    f.brand = brand === undefined ? brandParts() : brand;
+    const score = model.score;
+    renderDate = date || null;
+    try {
+      const S = sourceList();
+      const p1 = page1(data, f, score, model.name);
+      const p2 = page2(data, f, S);
+      const notes = [];
+      const p3 = page3(data, f, S, notes);
+      const p4 = f.pages > 3 ? appendix(f, notes) : '';
+      const docTitle = `${f.address || `Parcel ${f.pid}`} — AcresX Property Report`;
+      return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div>
 ${p1}
 ${p2}
 ${p3}
 ${p4}
 <script>${FIT}</script></body></html>`;
+    } finally { renderDate = null; }
+  }
+
+  function openReport(html) {
     const w = window.open('', '_blank');
-    if (!w) { alert('Allow pop-ups to generate the report.'); return; }
+    if (!w) { alert('Allow pop-ups to generate the report.'); return false; }
     w.document.write(html);
     w.document.close();
+    return true;
+  }
+
+  function makeReport(name) {
+    const model = buildModel(name);
+    model.generatedAt = new Date().toISOString();
+    if (!openReport(renderHtml(model))) return;
+    // Signed in (public/accounts.js): the report is also saved to the account. Signed out: nothing.
+    try { window.AcresXAccounts?.reportGenerated?.(model, snapshot); } catch (error) { console.warn('Report not saved to the account', error); }
   }
 
   function askAndGenerate() {
@@ -880,7 +937,7 @@ ${p4}
     const attempt = () => { if ($('generateReportBtn') || document.querySelector('.top-actions button:nth-child(2)')) return bind(); if (++tries < 40) setTimeout(attempt, 50); };
     attempt();
   }
-  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment };
+  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment, buildModel, snapshot, renderHtml, openReport };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindWhenReady);
   else bindWhenReady();
 })();

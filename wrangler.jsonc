@@ -13,7 +13,13 @@
   "vars": {
     "RESO_BASE_URL": "https://api-demo.mlsgrid.com/v2",
     "RESO_PROVIDER": "mlsgrid",
-    "RESO_ORIGINATING_SYSTEM_NAME": "sarmls"
+    "RESO_ORIGINATING_SYSTEM_NAME": "sarmls",
+    // Accounts (src/services/accounts-store.js). On for the production Worker only:
+    // .github/workflows/preview.yml uploads previews with --var ACCOUNTS_ENABLED:false, and preview
+    // hosts are refused anyway. Accounts also stay off until the RESEND_API_KEY secret exists and
+    // migrations/0002_accounts.sql has been applied.
+    "ACCOUNTS_ENABLED": "true",
+    "ACCOUNTS_EMAIL_FROM": "AcresX <login@acresx.info>"
   },
   "d1_databases": [
     {
