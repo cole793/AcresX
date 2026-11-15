@@ -434,14 +434,36 @@
     return { local: true, county: C.label, researched: C.researched, low, high, midpoint: Math.round((low + high) / 2), confidence: moderate >= 4 ? 'Moderate' : 'Low', components, coverageNote: `Local prices for ${C.label} (sourced ${C.researched}).` };
   }
 
+  // Soil / terrain inputs that did not load (2026-11-15). The range is kept (septic and site work
+  // use their wider "not resolved" ranges), but the estimate says which inputs were missing.
+  // Soil counts only while a private septic line is priced (no public sewer).
+  function missingInputs(l) {
+    let gaps = {};
+    try { gaps = root.AcresXScore?.missingInputs?.(l) || {}; } catch { gaps = {}; }
+    const out = [];
+    if (!l?.land?.soil?.available && !root.AcresXUtilities?.sewer?.(l)) out.push({ key: 'soil', what: 'Soil', line: 'septic', reason: gaps.soil?.reason || "USDA soil service didn't answer" });
+    if (!l?.land?.terrain?.available) out.push({ key: 'terrain', what: 'Terrain', line: 'site work', reason: gaps.terrain?.reason || "USGS elevation service didn't answer" });
+    return out;
+  }
+  // "Soil and terrain not checked (USDA soil service didn't answer; USGS elevation service
+  // didn't answer): the septic and site work lines use wider planning ranges." '' when none.
+  function missingNote(list) {
+    if (!list.length) return '';
+    const and = a => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`);
+    const what = and(list.map((m, i) => (i ? m.what.toLowerCase() : m.what)));
+    return `${what} not checked (${list.map(m => m.reason).join('; ')}): the ${and(list.map(m => m.line))} line${list.length > 1 ? 's use' : ' uses'} wider planning ranges until ${list.length > 1 ? 'they load' : 'it loads'}.`;
+  }
+
   function estimate(l) {
     l = current(l);
     if (!l?.parcel) return null;
     const C = profile(l);
-    if (C) return localEstimate(l, C);
+    const missing = missingInputs(l);
+    const extra = { missingInputs: missing, missingNote: missingNote(missing) };
+    if (C) return { ...localEstimate(l, C), ...extra };
     const base = typeof root.__acresxScreeningCostEstimate === 'function' ? root.__acresxScreeningCostEstimate()
       : typeof root.__acresxGeneralCostEstimate === 'function' ? root.__acresxGeneralCostEstimate() : null;
-    return base ? { ...base, local: false, coverageNote: GENERIC_NOTE } : null;
+    return base ? { ...base, local: false, coverageNote: GENERIC_NOTE, ...extra } : null;
   }
 
   // ---- Cost context: road access + watershed (/api/cost-context follow-up, local counties only;
@@ -488,7 +510,7 @@
     if (typeof document === 'undefined' || document.getElementById('localCostStyles')) return;
     const s = document.createElement('style');
     s.id = 'localCostStyles';
-    s.textContent = '.cost-sources{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5}.cost-sources a{color:var(--green)}.cost-quote-badge{display:inline-block;margin-left:6px;border-radius:999px;background:#fff4dd;color:#8a5a00;font-size:9px;font-weight:800;padding:3px 7px;vertical-align:middle}.cost-unverified{color:#8a5a00;font-weight:700}.cost-coverage{font-size:10px;font-weight:800;color:var(--green2);margin-top:6px}';
+    s.textContent = '.cost-sources{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5}.cost-sources a{color:var(--green)}.cost-quote-badge{display:inline-block;margin-left:6px;border-radius:999px;background:#fff4dd;color:#8a5a00;font-size:9px;font-weight:800;padding:3px 7px;vertical-align:middle}.cost-unverified{color:#8a5a00;font-weight:700}.cost-coverage{font-size:10px;font-weight:800;color:var(--green2);margin-top:6px}.cost-missing{font-size:10px;font-weight:800;color:#8a5a00;margin-top:6px}';
     document.head?.appendChild(s);
   }
   function sourcesHtml(item) {
@@ -503,7 +525,7 @@
     return `<div class="result-item cost-line" data-cost-key="${esc(item.key)}"><div class="result-top"><h4>${esc(item.label)}${item.quoteRecommended ? '<span class="cost-quote-badge">Get a quote</span>' : ''}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice"><strong>${esc(item.confidence || 'Low')} confidence.</strong> ${esc(item.basis)}</div>${sourcesHtml(item)}</div>`;
   }
   function detailsHtml(e) {
-    return `<div class="cost-detail-total"><span>${esc(e.coverageNote)} Midpoint ${money(e.midpoint)}</span><strong>${money(e.low)}–${money(e.high)}</strong></div>${Object.values(e.components).map(itemHtml).join('')}<div class="notice"><strong>${SCREENING}</strong><br>Exact fees are shown where an official schedule was found; everything else is a labeled planning range. Utility engineering, septic design, drilling, access and contractor pricing can change actual costs materially. Verify with the responsible agency, utility and contractors.</div>`;
+    return `<div class="cost-detail-total"><span>${esc(e.coverageNote)} Midpoint ${money(e.midpoint)}</span>${e.missingNote ? `<div class="cost-missing">${esc(e.missingNote)}</div>` : ''}<strong>${money(e.low)}–${money(e.high)}</strong></div>${Object.values(e.components).map(itemHtml).join('')}<div class="notice"><strong>${SCREENING}</strong><br>Exact fees are shown where an official schedule was found; everything else is a labeled planning range. Utility engineering, septic design, drilling, access and contractor pricing can change actual costs materially. Verify with the responsible agency, utility and contractors.</div>`;
   }
   function showDetails() {
     const e = estimate();
@@ -530,15 +552,19 @@
     if (!profile(l)) {
       // Generic counties: the card from score-cost.js / screening-refinements.js, plus the label.
       if (!card.querySelector('.cost-coverage')) { const n = document.createElement('div'); n.className = 'cost-coverage'; n.textContent = GENERIC_NOTE; card.appendChild(n); }
+      const note = missingNote(missingInputs(l));
+      let m = card.querySelector('.cost-missing');
+      if (note && !m) { m = document.createElement('div'); m.className = 'cost-missing'; card.appendChild(m); }
+      if (m) { if (note) m.textContent = note; else m.remove(); }
       return;
     }
     const e = estimate(l);
-    card.innerHTML = `<div class="cost-icon">$</div><div><div class="cost-kicker">Preliminary development estimate</div><div class="cost-value">${usdRange(e.low, e.high)}</div><div class="cost-note">Midpoint ${money(e.midpoint)} · ${esc(e.confidence)} confidence. ${esc(e.coverageNote)} Uses this parcel's power distance, public utilities, wells, soils, terrain and road access. ${SCREENING}</div><div class="cost-pill">View sources and assumptions →</div></div>`;
+    card.innerHTML = `<div class="cost-icon">$</div><div><div class="cost-kicker">Preliminary development estimate</div><div class="cost-value">${usdRange(e.low, e.high)}</div><div class="cost-note">Midpoint ${money(e.midpoint)} · ${esc(e.confidence)} confidence. ${esc(e.coverageNote)} Uses this parcel's power distance, public utilities, wells, soils, terrain and road access. ${SCREENING}</div>${e.missingNote ? `<div class="cost-missing">${esc(e.missingNote)}</div>` : ''}<div class="cost-pill">View sources and assumptions →</div></div>`;
     card.onclick = showDetails;
     card.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault?.(); showDetails(); } };
   }
 
-  const M = { estimate, local: l => Boolean(profile(l)), profile, avistaCost, drivewayRate, kootenaiPermit, coverageNote: l => (profile(l) ? estimate(l)?.coverageNote || '' : GENERIC_NOTE), GENERIC_NOTE, render, showDetails, detailsHtml, claimCostContext, loadCostContext };
+  const M = { estimate, missingInputs, missingNote, local: l => Boolean(profile(l)), profile, avistaCost, drivewayRate, kootenaiPermit, coverageNote: l => (profile(l) ? estimate(l)?.coverageNote || '' : GENERIC_NOTE), GENERIC_NOTE, render, showDetails, detailsHtml, claimCostContext, loadCostContext };
   root.AcresXCostModel = M;
   // Older callers (property-report-v2.js before this change, tests): the Spokane estimate.
   root.__acresxSpokaneCostEstimate = () => (where().key === 'WA:spokane' ? estimate() : null);

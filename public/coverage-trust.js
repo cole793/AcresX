@@ -169,9 +169,12 @@
     const text = note.textContent || '';
     // "Excellent buildability · 7-factor screening" (screening-refinements.js) -> "Excellent
     // buildability · limited data". The number is unchanged.
+    // An incomplete score keeps its "Incomplete — N of 7 factors measured" part:
+    // "Good buildability · limited data · Incomplete — 5 of 7 factors measured".
     if (isLimited && !/limited data/i.test(text)) {
-      const m = /^(Excellent|Good|Moderate|Challenging)\b/.exec(text.trim());
-      if (m) note.textContent = `${m[1]} buildability · limited data`;
+      const t = text.trim();
+      const m = /^((?:Excellent|Good|Moderate|Challenging) buildability|Provisional score)( · 7-factor screening)?/.exec(t);
+      if (m) note.textContent = `${m[1]} · limited data${t.slice(m[0].length)}`;
     }
     let flag = card.querySelector('.coverage-score-flag');
     if (isLimited && !flag) { flag = document.createElement('div'); flag.className = 'coverage-score-flag'; card.appendChild(flag); }
