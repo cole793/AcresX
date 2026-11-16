@@ -908,12 +908,236 @@ ${p4}
     } finally { renderDate = null; }
   }
 
-  function openReport(html) {
-    const w = window.open('', '_blank');
-    if (!w) { alert('Allow pop-ups to generate the report.'); return false; }
-    w.document.write(html);
-    w.document.close();
+  // ---- In-page report view (owner bug 2026-11-15: "I can't save/print reports on mobile")
+  //
+  // The report used to go window.prompt() -> window.open('', '_blank') -> document.write(). In
+  // iPhone in-app browsers (WKWebView without the JavaScript-panel and new-window delegates)
+  // prompt() returns null at once and window.open() returns null, so a tap on Generate report did
+  // nothing at all, and the "allow pop-ups" alert() was suppressed too. Now the report opens in a
+  // full-screen view on this page (no popup, no prompt):
+  // - Generate report opens the view at once, in the tap, with an inline reference field
+  //   (prefilled with the address) and Create report / Cancel. Create builds the report exactly as
+  //   before (renderHtml) and saves it to the account when signed in (accounts.js reportGenerated).
+  // - The pages render into a shadow root, so the report CSS and the app CSS cannot touch each
+  //   other; the markup is renderHtml's body without its toolbar and inline script.
+  // - The toolbar's "Save as PDF / Print" calls window.print() straight from the tap. While the
+  //   view is open, @media print hides everything on the page but the report, and @page sets US
+  //   Letter with no margin, so the print is the same Letter pages as before. The page-fit step
+  //   (FIT above) runs here on open, when images load and before printing.
+  // - "Share" shows only when the view was given a share link and the browser has navigator.share.
+  // - Phones see the Letter pages scaled to the screen width (CSS zoom, reset for printing).
+  // - iPhone/iPad get a hint: Save as PDF / Print, then Share -> Save to Files; a browser without
+  //   window.print gets "open this page in Safari or Chrome" instead of a dead button.
+  // Saved account reports (accounts.js viewReport) open in the same view; /r/<token> pages keep
+  // their own page (shared-report.js).
+  const VIEW_ID = 'acresxReportView';
+  const VIEW_CSS = CSS.replace('@page{size:letter;margin:0}\n', '').replace(':root{', ':host{display:block;').replace('\nbody{', '\n.rv-doc{').replace('@media print{body{', '@media print{.rv-doc{') +
+    '.rv-doc{padding:1px 0 24px;min-height:100%}@media print{.rv-doc{padding:0}.page{zoom:1!important}}\n';
+  const PAGE_CSS = '@page{size:letter;margin:0}';
+  const UI_CSS = `
+#${VIEW_ID}{position:fixed;inset:0;z-index:99995;display:none;flex-direction:column;background:rgba(13,30,20,.45);font-family:Arial,Helvetica,sans-serif;color:#17231c}
+#${VIEW_ID}.open{display:flex}#${VIEW_ID}.showing{background:#e6ece8}
+html.arv-open,html.arv-open body{overflow:hidden}
+#${VIEW_ID} .arv-bar{flex:none;background:#174f34;color:#fff;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));box-shadow:0 2px 12px #0003}
+#${VIEW_ID} .arv-ask,#${VIEW_ID} .arv-actions{max-width:8.5in;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#${VIEW_ID} .arv-ask label{flex:1 1 100%;font-size:13px;font-weight:800}
+#${VIEW_ID} .arv-ask input{flex:1 1 220px;min-width:0;min-height:44px;border:0;border-radius:9px;padding:0 12px;font:16px Arial,Helvetica,sans-serif;color:#17231c;background:#fff}
+#${VIEW_ID} .arv-sub{flex:1 1 100%;margin:0;font-size:12px;opacity:.85}
+#${VIEW_ID} .arv-title{flex:1 1 160px;min-width:0;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#${VIEW_ID} button{min-height:44px;border:1px solid #ffffff80;border-radius:9px;padding:0 14px;background:transparent;color:#fff;font:800 14px Arial,Helvetica,sans-serif;cursor:pointer}
+#${VIEW_ID} button.arv-primary{background:#fff;color:#174f34;border-color:#fff}
+#${VIEW_ID} .arv-hint{flex:1 1 100%;margin:0;font-size:12px;line-height:1.4;opacity:.9}
+#${VIEW_ID} [hidden]{display:none!important}
+#${VIEW_ID} .arv-status{margin:24px auto;max-width:480px;background:#fff;border-radius:12px;padding:18px 20px;font-size:15px}
+#${VIEW_ID} .arv-pages{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+@media(max-width:600px){#${VIEW_ID} .arv-bar{padding-left:12px;padding-right:12px}#${VIEW_ID} .arv-actions button,#${VIEW_ID} .arv-ask button{flex:1 1 auto;padding:0 10px}#${VIEW_ID} .arv-ask input{flex-basis:100%}#${VIEW_ID} .arv-title{flex-basis:100%}}
+@media print{
+html.arv-open body>*:not(#${VIEW_ID}){display:none!important}
+html.arv-open,html.arv-open body{overflow:visible!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;display:block!important}
+#${VIEW_ID}.open{position:static!important;display:block!important;background:#fff!important}
+#${VIEW_ID} .arv-bar,#${VIEW_ID} .arv-status{display:none!important}
+#${VIEW_ID} .arv-pages{overflow:visible!important;height:auto!important}
+}`;
+  const unesc = s => String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+  // renderHtml's document -> what the view shows: the report body without the toolbar and script.
+  function viewMarkup(html) {
+    const body = String(html).split('<body>')[1] || '';
+    const pages = body.split('<script>')[0].replace(/^<div class="toolbar">[\s\S]*?<\/div>\n?/, '');
+    return `<style>${VIEW_CSS}</style><div class="rv-doc">${pages}</div>`;
+  }
+  const isIOS = () => { try { const n = window.navigator || {}; return /iP(hone|ad|od)/.test(n.userAgent || '') || (n.platform === 'MacIntel' && n.maxTouchPoints > 1); } catch { return false; } };
+  const canPrint = () => typeof window.print === 'function';
+  const canShare = () => { try { return typeof window.navigator?.share === 'function'; } catch { return false; } };
+
+  function node(tag, props = {}, kids = []) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === 'text') n.textContent = v;
+      else if (k === 'class') n.className = v;
+      else if (k === 'id' || k === 'hidden' || k === 'type' || k === 'value') n[k] = v;
+      else n.setAttribute(k, v);
+    }
+    kids.forEach(k => n.appendChild(k));
+    return n;
+  }
+
+  let view = null;
+  let viewSeq = 0; // bumped on every open/close; a slow saved-report load checks it (showLoading)
+  function ensureView() {
+    if (view) return view;
+    if (!$('acresxReportViewStyles')) document.head.appendChild(node('style', { id: 'acresxReportViewStyles', text: UI_CSS }));
+    const v = {};
+    v.name = node('input', { id: 'acresxReportName', type: 'text', maxlength: '120', autocomplete: 'off', enterkeyhint: 'done', 'aria-describedby': 'acresxReportNameHelp' });
+    v.create = node('button', { id: 'acresxReportCreate', type: 'button', class: 'arv-primary', text: 'Create report' });
+    v.cancel = node('button', { id: 'acresxReportCancel', type: 'button', text: 'Cancel' });
+    v.ask = node('div', { id: 'acresxReportAsk', class: 'arv-ask' }, [
+      node('label', { for: 'acresxReportName', text: 'Reference on the report (optional)' }), v.name, v.create, v.cancel,
+      node('p', { id: 'acresxReportNameHelp', class: 'arv-sub', text: 'Property name, client name or reference ID. It prints on page 1.' })
+    ]);
+    v.title = node('span', { id: 'acresxReportTitle', class: 'arv-title' });
+    v.print = node('button', { id: 'acresxReportPrint', type: 'button', class: 'arv-primary', text: 'Save as PDF / Print' });
+    v.share = node('button', { id: 'acresxReportShare', type: 'button', text: 'Share', hidden: true });
+    v.close = node('button', { id: 'acresxReportClose', type: 'button', text: 'Close' });
+    v.hint = node('p', { id: 'acresxReportHint', class: 'arv-hint', hidden: true });
+    v.actions = node('div', { id: 'acresxReportActions', class: 'arv-actions', hidden: true }, [v.title, v.print, v.share, v.close, v.hint]);
+    v.status = node('div', { id: 'acresxReportStatus', class: 'arv-status', role: 'status', hidden: true });
+    v.pages = node('div', { id: 'acresxReportPages', class: 'arv-pages' });
+    v.root = node('div', { id: VIEW_ID, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Property report' }, [node('div', { class: 'arv-bar' }, [v.ask, v.actions]), v.status, v.pages]);
+    document.body.appendChild(v.root);
+    v.shadow = typeof v.pages.attachShadow === 'function' ? v.pages.attachShadow({ mode: 'open' }) : v.pages;
+
+    v.cancel.addEventListener('click', () => closeReport());
+    v.close.addEventListener('click', () => closeReport());
+    v.create.addEventListener('click', () => { const cb = v.onCreate; v.onCreate = null; if (cb) cb(String(v.name.value || '').trim()); });
+    v.name.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault?.(); v.create.click?.(); } });
+    // Straight from the tap: no await, no timer between the tap and window.print().
+    v.print.addEventListener('click', () => {
+      if (v.docTitle) document.title = v.docTitle; // the saved PDF's file name
+      fitPages();
+      try { window.print(); } catch { showHint(true); }
+    });
+    v.share.addEventListener('click', () => {
+      try { const p = window.navigator.share({ title: v.docTitle || 'AcresX property report', url: v.shareUrl }); p?.catch?.(() => {}); } catch {}
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && v.root.classList.contains('open')) closeReport(); });
+    window.addEventListener?.('beforeprint', () => { if (!v.root.classList.contains('showing')) return; if (v.docTitle) document.title = v.docTitle; fitPages(); });
+    window.addEventListener?.('resize', () => { if (v.root.classList.contains('showing')) scalePages(); });
+    view = v;
+    return v;
+  }
+  function setState(state) {
+    const v = ensureView();
+    v.ask.hidden = state !== 'ask';
+    v.actions.hidden = state !== 'report' && state !== 'message';
+    v.print.hidden = state !== 'report' || !canPrint();
+    v.share.hidden = !(state === 'report' && v.shareUrl && canShare());
+    v.status.hidden = state !== 'loading' && state !== 'message';
+    v.root.classList.add('open');
+    v.root.classList.toggle('showing', state === 'report' || state === 'loading');
+    document.documentElement?.classList?.add('arv-open');
+    return v;
+  }
+  function showHint(printFailed) {
+    const v = ensureView();
+    let text = '';
+    if (!canPrint() || printFailed) text = 'This browser cannot print or save a PDF from here. Open AcresX in Safari or Chrome to save this report.';
+    else if (isIOS()) text = 'On iPhone or iPad: tap Save as PDF / Print, then use Share → Save to Files to keep the PDF. Inside another app’s browser, open this page in Safari first if nothing happens.';
+    v.hint.textContent = text;
+    v.hint.hidden = !text;
+  }
+  function clearPages(v) {
+    v.docTitle = '';
+    v.shadow.innerHTML = '';
+    v.pages.scrollTop = 0;
+  }
+  function pageNodes() { return view ? [...(view.shadow.querySelectorAll?.('.page') || [])] : []; }
+  // The report's page-fit step (FIT above), on the pages in the view.
+  // Measured at full size: the phone zoom rounds heights and would tighten pages that fit.
+  function fitPages() {
+    pageNodes().forEach(p => {
+      const zoom = p.style.zoom;
+      p.style.zoom = '';
+      p.classList.remove('d1', 'd2', 'd3', 'grow');
+      const b = p.querySelector('.page-body');
+      if (b) {
+        const over = () => b.scrollHeight > b.clientHeight + 1;
+        for (const step of ['d1', 'd2', 'd3']) { if (!over()) break; p.classList.add(step); }
+        if (over()) p.classList.add('grow');
+      }
+      p.style.zoom = zoom;
+    });
+  }
+  // Phones: Letter-width pages scaled to the screen (print resets the zoom, see VIEW_CSS).
+  function scalePages() {
+    const pageWidth = 8.5 * 96 + 16;
+    const width = view?.pages.clientWidth || window.innerWidth || pageWidth;
+    const k = Math.min(1, width / pageWidth);
+    pageNodes().forEach(p => { p.style.zoom = k < 1 ? String(Math.floor(k * 1000) / 1000) : ''; });
+  }
+
+  // Generate report: the view with the reference field. onCreate(name) runs on Create report.
+  function askName(suggested, onCreate) {
+    const v = setState('ask');
+    viewSeq++;
+    clearPages(v);
+    v.onCreate = onCreate;
+    v.name.value = suggested || '';
+    v.name.setAttribute('placeholder', suggested || 'e.g. Smith parcel, Client 1042');
+    try { v.name.focus(); } catch {}
+    return v;
+  }
+  // A saved report being fetched: the view opens at once (in the tap) and says so. Returns a
+  // ticket; openReport(html, { ticket }) shows the report only if the view was not closed since.
+  function showLoading(message = 'Loading report…') {
+    const v = setState('loading');
+    clearPages(v);
+    v.status.textContent = message;
+    return ++viewSeq;
+  }
+  function showMessage(message) {
+    const v = ensureView();
+    v.shareUrl = '';
+    setState('message');
+    clearPages(v);
+    v.title.textContent = '';
+    v.hint.hidden = true;
+    v.status.textContent = message;
+    viewSeq++;
+    try { v.close.focus(); } catch {}
+  }
+  // Shows a renderHtml() document in the view. options.shareUrl: a /r/<token> link for Share.
+  function openReport(html, { shareUrl = '', ticket } = {}) {
+    if (ticket !== undefined && ticket !== viewSeq) return false;
+    const v = ensureView();
+    v.shareUrl = shareUrl;
+    v.docTitle = unesc((/<title>([\s\S]*?)<\/title>/.exec(String(html)) || [])[1] || 'AcresX Property Report');
+    if (v.prevTitle === undefined) v.prevTitle = document.title;
+    document.title = v.docTitle; // the saved PDF's file name
+    if (!$('acresxReportPageCss')) document.head.appendChild(node('style', { id: 'acresxReportPageCss', text: PAGE_CSS }));
+    setState('report');
+    v.title.textContent = v.docTitle;
+    showHint(false);
+    v.shadow.innerHTML = viewMarkup(html);
+    v.pages.scrollTop = 0;
+    (v.shadow.querySelectorAll?.('img') || []).forEach(img => img.addEventListener('load', fitPages));
+    fitPages();
+    scalePages();
+    try { v.print.hidden ? v.close.focus() : v.print.focus(); } catch {}
     return true;
+  }
+  // closeReport(ticket) closes only the loading view that ticket belongs to.
+  function closeReport(ticket) {
+    if (typeof ticket === 'number' && ticket !== viewSeq) return;
+    viewSeq++;
+    if (!view) return;
+    const v = view;
+    v.onCreate = null;
+    v.root.classList.remove('open', 'showing');
+    document.documentElement?.classList?.remove('arv-open');
+    clearPages(v);
+    $('acresxReportPageCss')?.remove();
+    if (v.prevTitle !== undefined) { document.title = v.prevTitle; v.prevTitle = undefined; }
+    try { $('generateReportBtn')?.focus(); } catch {}
   }
 
   function makeReport(name) {
@@ -926,12 +1150,10 @@ ${p4}
 
   function askAndGenerate() {
     const data = reportState();
-    if (!data?.parcel) { alert('Analyze a property first.'); return; }
+    if (!data?.parcel) { showMessage('Analyze a property first, then tap Generate report.'); return; }
     const id = identity(data);
     const suggested = id.address || (id.pid ? `Parcel ${id.pid}` : 'Property');
-    const name = window.prompt('Property name, client name, or reference ID:', suggested);
-    if (name === null) return;
-    makeReport(name.trim() || suggested);
+    askName(suggested, name => makeReport(name || suggested));
   }
   function bind() {
     const old = $('generateReportBtn') || document.querySelector('.top-actions button:nth-child(2)');
@@ -947,7 +1169,7 @@ ${p4}
     const attempt = () => { if ($('generateReportBtn') || document.querySelector('.top-actions button:nth-child(2)')) return bind(); if (++tries < 40) setTimeout(attempt, 50); };
     attempt();
   }
-  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment, buildModel, snapshot, renderHtml, openReport };
+  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment, buildModel, snapshot, renderHtml, openReport, showLoading, closeReport, viewMarkup };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindWhenReady);
   else bindWhenReady();
 })();

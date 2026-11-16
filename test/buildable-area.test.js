@@ -344,7 +344,7 @@ function report(data) {
   const h = makeLazyContext({ mappedSqm: 20.63 * SQM_PER_ACRE, last: data });
   for (const f of MODULES) h.run(readPublic(f));
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   return h.opened.at(-1).split('<section class="page ').slice(1);
 }
 

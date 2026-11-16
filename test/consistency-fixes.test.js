@@ -66,7 +66,7 @@ function report(data) {
   const h = makeLazyContext({ mappedSqm: 20 * 4046.86, last: data });
   for (const f of ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'buildable-area.js', 'property-report-v2.js']) h.run(readPublic(f));
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   return { html: h.opened.at(-1), calc: h.context.AcresXScore.calculate() };
 }
 

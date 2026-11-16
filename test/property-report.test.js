@@ -17,10 +17,9 @@ const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js',
 function generate(data, { modules = MODULES, scoreMetric = '', name } = {}) {
   const h = makeLazyContext({ mappedSqm: 20.63 * 4046.8564224, last: data });
   for (const f of modules) h.run(readPublic(f));
-  if (name !== undefined) h.context.prompt = () => name;
   h.el('scoreMetric').textContent = scoreMetric;
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate(name);
   const html = h.opened.at(-1);
   const pages = html.split('<section class="page ').slice(1);
   return { html, pages, h };
@@ -34,7 +33,7 @@ test('three Letter pages plus the cost-assumptions appendix, with "Page N of 4" 
   const { html, pages } = generate(fixture());
   assert.equal(pages.length, 4);
   pages.forEach((p, i) => assert.match(p, new RegExp(`AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${i + 1} of 4`)));
-  assert.match(html, /@page\{size:letter;margin:0\}/);
+  assert.match(html, /break-after:page/, 'one Letter page per section (the @page rule is checked in test/report-view.test.js)');
   assert.match(html, /break-inside:avoid/);
   assert.match(html, /print-color-adjust:exact/, 'backgrounds print, so the score is not faded');
   assert.doesNotMatch(html, /V5/);

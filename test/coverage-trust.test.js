@@ -154,7 +154,7 @@ function report(data) {
   h.context.AcresXCoverage.accept(countyCoverageBody());
   h.el('scoreMetric').textContent = '9.1';
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   const html = h.opened.at(-1);
   return html.split('<section class="page ').slice(1);
 }

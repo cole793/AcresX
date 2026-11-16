@@ -81,7 +81,7 @@ function page(data) {
     card() { h.run('renderSummary()'); return { status: h.el('powerStatus').textContent, grade: h.el('powerGrade').textContent, dot: h.el('powerDot').className }; },
     details() { h.run('renderResults()'); return h.el('results').innerHTML; },
     electric: () => h.run('window.AcresXCostModel.estimate(last)').components.electric,
-    report() { h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} }); return h.opened.at(-1); }
+    report() { h.generate(); return h.opened.at(-1); }
   };
 }
 

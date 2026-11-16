@@ -131,17 +131,19 @@
 
   // ---- Reports page: view, share link (copy, turn off)
 
+  // Opens in the report's in-page view (property-report-v2.js), not a popup: in-app browsers on
+  // phones return null from window.open, so the view opens at once in the tap and fills in when
+  // the saved report arrives.
   async function viewReport(item) {
-    const w = window.open('', '_blank');
-    if (!w) { toast('Allow pop-ups to open the report.'); return; }
-    try { w.document.write('<!doctype html><title>AcresX report</title><p style="font-family:Arial,sans-serif;padding:24px">Loading report…</p>'); } catch {}
-    const r = await api(`/api/reports/${encodeURIComponent(item.id)}`);
     const R = window.AcresXReport;
-    if (!r.ok || !r.data.snapshot || !R?.renderHtml) { try { w.close(); } catch {} toast('That report could not be opened.'); return; }
+    if (!R?.renderHtml || !R?.openReport || !R?.showLoading) { toast('That report could not be opened.'); return; }
+    const ticket = R.showLoading('Loading report…');
+    const r = await api(`/api/reports/${encodeURIComponent(item.id)}`);
+    if (!r.ok || !r.data.snapshot) { R.closeReport?.(ticket); toast('That report could not be opened.'); return; }
     try {
       const html = R.renderHtml(r.data.snapshot, { date: r.data.snapshot.generatedAt });
-      w.document.open(); w.document.write(html); w.document.close();
-    } catch { try { w.close(); } catch {} toast('That report could not be opened.'); }
+      R.openReport(html, { ticket });
+    } catch { R.closeReport?.(ticket); toast('That report could not be opened.'); }
   }
 
   function sharePanel(card, item) {

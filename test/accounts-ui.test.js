@@ -252,6 +252,40 @@ test('report cards from the account get View report and Share link; share create
   assert.match(panel.querySelector('.share-status').textContent, /turned off/);
 });
 
+test('View report opens the in-page report view at once (no popup) and fills it when the saved report arrives', async () => {
+  const p = await page({ routes: { ...SIGNED_IN({ id: 'u1', email: 'j@example.com' }), 'GET /api/reports/r1': { snapshot: { v: 1, generatedAt: '2026-11-14T00:00:00.000Z' } } }, storage: memoryStorage({ 'acresx.accounts.importOffered.u1': 'true' }) });
+  const seen = [];
+  p.ctx.open = () => { throw new Error('window.open must not be used'); };
+  p.ctx.AcresXReport = {
+    showLoading: m => { seen.push(['loading', m]); return 7; },
+    renderHtml: (snap, o) => { seen.push(['render', o.date]); return '<html>report</html>'; },
+    openReport: (html, o) => { seen.push(['open', html, o.ticket]); return true; },
+    closeReport: t => seen.push(['close', t])
+  };
+  const card = p.h.document.createElement('article');
+  const actions = p.h.document.createElement('div'); actions.className = 'library-actions';
+  card.appendChild(actions);
+  p.ctx.AcresXAccounts.decorateReportCard(card, p.ctx.AcresXAccounts.storeFor(REPORTS_KEY).read()[0]);
+  const view = actions.children[0];
+  assert.equal(view.textContent, 'View report');
+  view.listeners.click[0]({ preventDefault() {}, target: view });
+  assert.deepEqual(seen, [['loading', 'Loading report…']], 'the view opens inside the tap, before the fetch answers');
+  await p.clock.flush();
+  assert.deepEqual(seen.slice(1), [['render', '2026-11-14T00:00:00.000Z'], ['open', '<html>report</html>', 7]]);
+});
+
+test('View report: a failed load closes only its own loading view', async () => {
+  const p = await page({ routes: { ...SIGNED_IN({ id: 'u1', email: 'j@example.com' }), 'GET /api/reports/r1': () => ({ status: 500, body: { error: 'x' } }) }, storage: memoryStorage({ 'acresx.accounts.importOffered.u1': 'true' }) });
+  const seen = [];
+  p.ctx.AcresXReport = { showLoading: () => 3, renderHtml: () => '', openReport: () => seen.push('open'), closeReport: t => seen.push(['close', t]) };
+  const card = p.h.document.createElement('article');
+  const actions = p.h.document.createElement('div'); actions.className = 'library-actions';
+  card.appendChild(actions);
+  p.ctx.AcresXAccounts.decorateReportCard(card, p.ctx.AcresXAccounts.storeFor(REPORTS_KEY).read()[0]);
+  await p.click(actions.children[0]);
+  assert.deepEqual(seen, [['close', 3]]);
+});
+
 // ---- Report snapshot and the shared view
 
 function reportContext() {
@@ -294,9 +328,8 @@ for (const [label, data, expect] of [['plain', fixture, null], ['with property t
     assert.equal(R.renderHtml(h.context.AcresXSharedReport.cleanModel(snap), { brand: null, date: snap.generatedAt }), live);
     // The live button path still opens the same report.
     h.context.__acresxLast = data();
-    h.context.prompt = () => 'Smith parcel';
-    h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
-    assert.equal(h.opened.at(-1), live);
+    h.generate('Smith parcel');
+    assert.equal(h.opened.at(-1), R.viewMarkup(live));
   });
 }
 

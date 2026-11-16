@@ -37,9 +37,8 @@ function report({ storage, save, name, modules = MODULES } = {}) {
   else if (storage) h.context.localStorage = storage;
   for (const f of ['report-branding.js', ...modules]) h.run(readPublic(f));
   if (save) assert.equal(h.context.AcresXBranding.save(save).ok, true);
-  if (name !== undefined) h.context.prompt = () => name;
   h.context.__acresxLast = fixture();
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate(name);
   const html = h.opened.at(-1);
   return { html, pages: html.split('<section class="page ').slice(1), h };
 }
@@ -219,7 +218,7 @@ test('no branding module loaded: the report is unchanged', () => {
   const h = makeLazyContext({ mappedSqm: 20.63 * 4046.8564224, last: fixture() });
   for (const f of MODULES) h.run(readPublic(f));
   h.context.__acresxLast = fixture();
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   assert.doesNotMatch(h.opened.at(-1), /Prepared by|Powered by/);
 });
 
@@ -265,7 +264,7 @@ test('a hostile stored logo never reaches an img src in the report (page 1 heade
   for (const f of MODULES) h.run(readPublic(f));
   h.context.AcresXBranding = { load: () => ({}), parts: () => ({ name: 'Jane', brokerage: 'X', preparedBy: 'Jane, X', contact: [], footerContact: [], logo: 'x" onerror="alert(1)' }) };
   h.context.__acresxLast = fixture();
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   const out = h.opened.at(-1);
   assert.match(out, /<img class="agent-logo" src="x&quot; onerror=&quot;alert\(1\)"/);
   assert.match(out, /<img class="agent-logo-sm" src="x&quot; onerror=&quot;alert\(1\)"/);
