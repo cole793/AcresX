@@ -188,7 +188,8 @@ test('report with branding: page 1 "Prepared by", logo and contact; every footer
   assert.match(head, /<div class="agent-contact">\(509\) 555-0100 · jane@example\.com · example\.com · License #12345<\/div>/);
   assert.match(head, /<span class="powered">Powered by AcresX<\/span>/);
   pages.forEach((p, i) => {
-    assert.match(p, new RegExp(`<footer class="foot branded"><span class="foot-agent">Prepared by Jane Example, Example Realty · \\(509\\) 555-0100 · jane@example\\.com · example\\.com</span><span class="foot-right">Powered by AcresX · Screening only · Page ${i + 1} of 4</span></footer>`));
+    // Two lines at most: who (name · brokerage), then the contacts (owner iPhone screenshot 2026-11-16).
+    assert.match(p, new RegExp(`<footer class="foot branded"><span class="foot-agent"><span class="foot-line foot-who">Prepared by Jane Example · Example Realty</span><span class="foot-line foot-contact">\\(509\\) 555-0100 · jane@example\\.com · example\\.com</span></span><span class="foot-right">Powered by AcresX · Screening only · Page ${i + 1} of 4</span></footer>`));
     if (i) assert.match(p, /<header class="mini-head"><img class="agent-logo-sm" src="data:image\/png/);
   });
   // The screening framing is unchanged.
@@ -210,7 +211,7 @@ test('branding without a logo or contact details; a long brokerage name is cappe
   assert.match(pages[0], new RegExp(`Prepared by <strong>Jane Example</strong>, ${cut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</div></div></div>`));
   assert.doesNotMatch(pages[0], /agent-logo|agent-contact/);
   assert.match(pages[1], /<header class="mini-head"><span class="agent-mark">Jane Example, Northwest Rural/);
-  assert.match(pages[1], /<span class="foot-agent">Prepared by Jane Example, Northwest Rural[^<]*<\/span>/);
+  assert.match(pages[1], /<span class="foot-agent"><span class="foot-line foot-who">Prepared by Jane Example · Northwest Rural[^<]*<\/span><\/span><span class="foot-right">/, 'no contacts: the footer has one agent line');
   assert.match(html, /\.head\.branded\{/, 'the branded header has its own styles');
 });
 

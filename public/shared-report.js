@@ -36,15 +36,22 @@
     return m;
   }
 
-  // The report's page-fit step (property-report-v2.js FIT), run from here.
+  // The report's page-fit step (property-report-v2.js FIT), run from here: measured at full size
+  // in the fixed Letter box (.fit-measure); on screen the pages grow instead of clipping.
   function fit() {
     document.querySelectorAll('.page').forEach(p => {
+      const zoom = p.style.zoom;
+      p.style.zoom = '';
       p.classList.remove('d1', 'd2', 'd3', 'grow');
       const b = p.querySelector('.page-body');
-      if (!b) return;
-      const over = () => b.scrollHeight > b.clientHeight + 1;
-      for (const step of ['d1', 'd2', 'd3']) { if (!over()) break; p.classList.add(step); }
-      if (over()) p.classList.add('grow');
+      if (b) {
+        p.classList.add('fit-measure');
+        const over = () => b.scrollHeight > b.clientHeight + 1;
+        for (const step of ['d1', 'd2', 'd3']) { if (!over()) break; p.classList.add(step); }
+        if (over()) p.classList.add('grow');
+        p.classList.remove('fit-measure');
+      }
+      p.style.zoom = zoom;
     });
   }
   // Phones: scale the Letter-size pages to the screen (not when printing).
@@ -70,7 +77,7 @@
     document.title = doc.title || 'Shared property report · AcresX';
     doc.head.querySelectorAll('style').forEach(st => { const n = document.createElement('style'); n.textContent = st.textContent; document.head.appendChild(n); });
     const extra = document.createElement('style');
-    extra.textContent = '.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.shared-note{color:#fff;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-align:left}@media print{.page{zoom:1!important}}';
+    extra.textContent = 'html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.shared-note{color:#fff;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-align:left}@media print{.page{zoom:1!important}}';
     document.head.appendChild(extra);
     document.body.replaceChildren(...[...doc.body.childNodes].map(n => document.importNode(n, true)));
     const bar = document.querySelector('.toolbar');
@@ -94,11 +101,14 @@
     document.querySelectorAll('.map-img').forEach(img => img.addEventListener('error', () => img.closest('.map')?.classList.add('img-error')));
     document.querySelectorAll('.inset img').forEach(img => img.addEventListener('error', () => img.parentElement?.classList.add('img-error')));
     window.addEventListener('load', fit);
+    try { document.fonts?.ready?.then(fit); } catch {}
+    document.querySelectorAll('.page img').forEach(img => { img.addEventListener('load', fit); img.addEventListener('error', fit); });
     window.addEventListener('beforeprint', () => { document.querySelectorAll('.page').forEach(p => { p.style.zoom = ''; }); fit(); });
     window.addEventListener('afterprint', scaleToScreen);
     window.addEventListener('resize', scaleToScreen);
     fit();
     scaleToScreen();
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(fit);
   }
 
   async function main() {

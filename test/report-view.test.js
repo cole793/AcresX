@@ -69,7 +69,7 @@ test('Create report shows exactly the report renderHtml builds (same pages), wit
   assert.doesNotMatch(shown, /<script|class="toolbar"|onclick=/);
   assert.match(shown, /print-color-adjust:exact/);
   assert.match(shown, /\.page\{width:8\.5in;height:11in;/);
-  assert.match(shown, /:host\{display:block;--g:#174f34/, 'the report colors live on the shadow host');
+  assert.match(shown, /:host\{display:block;-webkit-text-size-adjust:100%;text-size-adjust:100%;--g:#174f34/, 'the report colors live on the shadow host');
   assert.match(shown, /\.rv-doc\{margin:0;background:#e6ece8/);
   assert.doesNotMatch(shown, /(^|[}\n])body\{|:root\{|@page/, 'no document-level selectors inside the shadow root');
   assert.equal(s.$('acresxReportAsk').hidden, true);
@@ -129,7 +129,7 @@ test('print CSS hides the app and the toolbar and prints only the report', () =>
   assert.match(print, /#acresxReportView\.open\{position:static!important/);
   assert.match(print, /html\.arv-open,html\.arv-open body\{overflow:visible!important;height:auto!important/, 'the scroll lock does not cut the print to one page');
   assert.match(print, /#acresxReportView \.arv-pages\{overflow:visible!important/);
-  assert.match(s.R.viewMarkup(s.R.renderHtml(s.R.buildModel('x', fixture()))), /@media print\{\.rv-doc\{background:#fff\}\.toolbar\{display:none\}\.page\{margin:0;box-shadow:none\}\}/);
+  assert.match(s.R.viewMarkup(s.R.renderHtml(s.R.buildModel('x', fixture()))), /@media print\{\.rv-doc\{background:#fff;-webkit-text-size-adjust:100%;text-size-adjust:100%\}html\{[^}]*\}\.toolbar\{display:none\}\.page\{margin:0;box-shadow:none;zoom:1!important\}\}/);
   assert.match(s.R.viewMarkup('<body></body>'), /@media print\{\.rv-doc\{padding:0\}\.page\{zoom:1!important\}\}/, 'the phone zoom is reset for printing');
 });
 
@@ -219,4 +219,56 @@ test('the Generate report button has no tap highlight, from the first tap on', (
   assert.equal(s.h.document.head.querySelectorAll('style').filter(n => n.id === 'acresxReportViewStyles').length, 1);
   tapGenerate(s);
   assert.equal(s.h.document.head.querySelectorAll('style').filter(n => n.id === 'acresxReportViewStyles').length, 1, 'not added twice');
+});
+
+// Owner iPhone screenshot (Safari, 2026-11-16): one page-1 paragraph rendered about 3x too large
+// (iOS text autosizing on the zoomed Letter pages), page 1 was cut off mid-card (fixed Letter
+// height with overflow hidden) and the branded footer wrapped to four lines.
+const TSA = '-webkit-text-size-adjust:100%;text-size-adjust:100%';
+test('iOS: text autosizing is off in the report, the in-page view, its shadow root and the shared page', () => {
+  const s = setup();
+  tapGenerate(s); s.$('acresxReportCreate').click();
+  const html = s.R.renderHtml(s.R.buildModel('x', fixture()));
+  assert.ok(html.includes(`*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;${TSA}}`), 'every element of the report document');
+  assert.ok(html.includes(`html{${TSA}}`), 'the report document root');
+  const print = html.slice(html.indexOf('@media print{'));
+  assert.ok(print.includes(TSA), 'and in the print stylesheet');
+  assert.match(print, /\.page\{margin:0;box-shadow:none;zoom:1!important\}/, 'print removes the phone scaling');
+  const shown = s.$('acresxReportPages').shadowRoot.innerHTML;
+  assert.ok(shown.includes(`:host{display:block;${TSA};`), 'the shadow host');
+  assert.ok(shown.includes(`.rv-doc{padding:1px 0 24px;min-height:100%;${TSA}}`), 'the view document wrapper');
+  assert.ok(s.$('acresxReportViewStyles').textContent.includes(`z-index:99995;display:none;flex-direction:column;background:rgba(13,30,20,.45);font-family:Arial,Helvetica,sans-serif;color:#17231c;${TSA}}`), 'the view root in the app page');
+  assert.ok(readPublic('shared-report.html').includes(`html{${TSA}}`), '/r/<token> page before the report loads');
+  assert.ok(readPublic('shared-report.js').includes(`html,body{${TSA}}`), '/r/<token> page once the report is shown');
+});
+
+test('screen view: pages are never clipped (they grow past Letter); the fixed Letter box is only for measuring and print', () => {
+  const s = setup();
+  tapGenerate(s); s.$('acresxReportCreate').click();
+  const shown = s.$('acresxReportPages').shadowRoot.innerHTML;
+  assert.ok(shown.includes('@media screen{.page{height:auto;min-height:11in;overflow:visible}.page-body{flex:1 0 auto;overflow:visible}}'), 'screen: no overflow hidden, height grows');
+  assert.ok(shown.includes('.page.fit-measure{height:11in!important;min-height:0!important;overflow:hidden!important}'), 'the fit is measured in the Letter box');
+  assert.match(shown, /\.page\{width:8\.5in;height:11in;[^}]*overflow:hidden\}/, 'print keeps the fixed Letter page');
+  const screenAt = shown.indexOf('@media screen{.page{'), printAt = shown.indexOf('@media print{');
+  assert.ok(screenAt > 0 && screenAt < printAt, 'the screen rule is media-scoped, so print is unchanged');
+  // The view, the report document and the shared page add the measuring class only while measuring.
+  assert.match(readPublic('property-report-v2.js'), /function fitPages\(\) \{[\s\S]*?p\.classList\.add\('fit-measure'\);[\s\S]*?p\.classList\.remove\('fit-measure'\);/);
+  assert.match(s.R.renderHtml(s.R.buildModel('x', fixture())), /p\.classList\.add\('fit-measure'\)[\s\S]*p\.classList\.remove\('fit-measure'\)/);
+  assert.match(readPublic('shared-report.js'), /p\.classList\.add\('fit-measure'\)[\s\S]*p\.classList\.remove\('fit-measure'\)/);
+});
+
+test('branded footer: two lines at most (name · brokerage, then contacts), each cut with an ellipsis', () => {
+  const s = setup();
+  const brand = { name: 'Alexandra Montgomery-Whitfield', brokerage: 'Tightline Property Brokers', preparedBy: 'Alexandra Montgomery-Whitfield, Tightline Property Brokers', contact: [], footerContact: ['(406) 555-0199', 'alexandra.montgomery-whitfield@tightlinepropertybrokers.com', 'tightlinepropertybrokers-billings-montana.com/agents/alexandra'], logo: '' };
+  const html = s.R.renderHtml(s.R.buildModel('x', fixture()), { brand });
+  const feet = html.match(/<footer class="foot branded">[\s\S]*?<\/footer>/g);
+  assert.equal(feet.length, 4);
+  for (const f of feet) {
+    assert.equal((f.match(/class="foot-line /g) || []).length, 2, 'two lines');
+    assert.match(f, /<span class="foot-line foot-who">Prepared by Alexandra Montgomery-Whitfield · Tightline Property Brokers<\/span>/);
+    assert.match(f, /<span class="foot-line foot-contact">\(406\) 555-0199 · alexandra\.montgomery-whitfield@tightlinepropertybrokers\.com · tightlinepropertybrokers-billings-montana\.com\/agents\/alexandra<\/span>/);
+  }
+  assert.ok(html.includes('.foot-line{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'), 'each line stays one line');
+  assert.match(html, /\.foot\.branded\{[^}]*font-size:6\.6pt/, 'smaller footer type');
+  assert.match(html, /\.foot-right\{flex:none;text-align:right;white-space:nowrap\}/);
 });
