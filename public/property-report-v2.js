@@ -425,7 +425,7 @@
   const brandMark = b => (b.logo ? `<img class="agent-logo-sm" src="${esc(b.logo)}" alt="${esc(b.brokerage || b.name)}">` : `<span class="agent-mark">${esc(b.preparedBy)}</span>`);
   const pageHead = (title, f) => `<header class="mini-head">${f.brand ? brandMark(f.brand) : '<img class="logo-sm" src="/assets/acresx-logo.png" alt="AcresX">'}<div class="mini-title">${eyebrow(title)}<span>${esc(f.address || 'No situs address')} · Parcel ${esc(f.pid || NA)}</span></div></header>`;
   const footer = (n, total, brand) => (brand
-    ? `<footer class="foot branded"><span class="foot-agent">Prepared by ${esc(brand.preparedBy)}${brand.footerContact.length ? ` · ${brand.footerContact.map(esc).join(' · ')}` : ''}</span><span class="foot-right">Powered by AcresX · Screening only · Page ${n} of ${total}</span></footer>`
+    ? `<footer class="foot branded"><span class="foot-agent"><span class="foot-line foot-who">Prepared by ${esc([brand.name, brand.brokerage].filter(Boolean).join(' · ') || brand.preparedBy)}</span>${brand.footerContact.length ? `<span class="foot-line foot-contact">${brand.footerContact.map(esc).join(' · ')}</span>` : ''}</span><span class="foot-right">Powered by AcresX · Screening only · Page ${n} of ${total}</span></footer>`
     : `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`);
 
   // ---- Page 1: buildable acres (screening estimate; feeds only the score's homesite check)
@@ -721,13 +721,16 @@ ${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in th
   const CSS = `
 @page{size:letter;margin:0}
 :root{--g:#174f34;--g2:#1f7a45;--gold:#e5a823;--ink:#17231c;--mut:#5a6a60;--line:#dbe4de;--pale:#f2f6f3;--amber:#9b6411;--amberbg:#fff4de;--red:#a3322a;--redbg:#fdeceb;--greenbg:#e8f4ec}
-*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{margin:0;background:#e6ece8;color:var(--ink);font:9pt/1.38 Arial,Helvetica,sans-serif}
 .toolbar{position:sticky;top:0;z-index:9;background:var(--g);padding:10px 24px;text-align:right}.toolbar button{background:#fff;color:var(--g);border:0;border-radius:8px;padding:9px 15px;font-weight:800;cursor:pointer}
 .page{width:8.5in;height:11in;margin:18px auto;background:#fff;padding:.45in .5in .3in;display:flex;flex-direction:column;box-shadow:0 10px 32px #0002;break-after:page;page-break-after:always;overflow:hidden}
 .page:last-child{break-after:auto;page-break-after:auto}
 .page-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px}
 .page.grow{height:auto;min-height:11in;overflow:visible}.page.grow .page-body{overflow:visible}
+@media screen{.page{height:auto;min-height:11in;overflow:visible}.page-body{flex:1 0 auto;overflow:visible}}
+.page.fit-measure{height:11in!important;min-height:0!important;overflow:hidden!important}.page.fit-measure .page-body{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
 .foot{flex:none;display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:8px;font-size:7pt;color:var(--mut)}
 .eyebrow{font-size:7pt;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--g);display:flex;align-items:center;gap:6px;margin-bottom:6px}.eyebrow:before{content:"";width:14px;height:3px;border-radius:2px;background:var(--gold)}
 .eyebrow.sub{margin-top:8px}
@@ -794,7 +797,7 @@ sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
 .agent-contact{font-size:7.8pt;color:var(--mut);margin-top:2px;overflow-wrap:anywhere}
 .head.branded .head-right{flex:none;display:flex;flex-direction:column;align-items:flex-end}.powered{font-size:6.8pt;color:var(--mut);margin-top:1px}
 .agent-logo-sm{max-height:22px;max-width:1.6in;object-fit:contain}.agent-mark{font-size:8pt;font-weight:800;color:var(--g);max-width:3.6in;overflow-wrap:anywhere}
-.foot.branded{gap:12px}.foot-agent{min-width:0;overflow-wrap:anywhere}.foot-right{flex:none;text-align:right}
+.foot.branded{gap:12px;align-items:flex-start;font-size:6.6pt;line-height:1.35}.foot-agent{flex:1;min-width:0}.foot-line{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.foot-right{flex:none;text-align:right;white-space:nowrap}
 .logo-sm{height:20px}.mini-title{text-align:right;font-size:8pt;color:var(--mut)}.mini-title .eyebrow{justify-content:flex-end;margin-bottom:1px;font-size:8pt}
 .zone-head{display:flex;gap:12px;align-items:center;margin-bottom:6px}
 .zone-code{background:var(--g);color:#fff;font-weight:900;font-size:13pt;border-radius:8px;padding:6px 11px;min-width:56px;text-align:center}
@@ -836,13 +839,19 @@ table{border-collapse:collapse;width:100%}
 .p1.d1 .score-card,.p1.d1 .cost-card{padding:9px 12px}.p1.d1 .flag{padding:6px 9px}.p1.d1 .facts>div{padding:5px 10px}.p1.d1 .buildable{padding:5px 10px}
 .p1.d2 .title h1{font-size:17pt;margin-bottom:5px}.p1.d2 .score-num{font-size:25pt}.p1.d2 .score-row{margin-bottom:3px}.p1.d2 .drivers li{padding:1px 0}.p1.d2 .flags{gap:5px}.p1.d2 .flag{padding:5px 8px}.p1.d2 .agent-logo{max-height:38px}
 .p1.d3 .title h1{font-size:15pt;margin-bottom:3px}.p1.d3 .facts>div{padding:3px 9px}.p1.d3 .facts strong{font-size:9pt}.p1.d3 .flag span,.p1.d3 .cost-card p,.p1.d3 .b-list{font-size:7pt}.p1.d3 .score-why,.p1.d3 .drivers li{font-size:8pt}.p1.d3 .cost-num{font-size:17pt}.p1.d3 .agent-logo{max-height:32px}.p1.d3 .prepared{font-size:10pt}
-@media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none}}
+@media print{body{background:#fff;-webkit-text-size-adjust:100%;text-size-adjust:100%}html{-webkit-text-size-adjust:100%;text-size-adjust:100%}.toolbar{display:none}.page{margin:0;box-shadow:none;zoom:1!important}}
 `;
   // Pages have a fixed Letter height; a page whose content would overflow is tightened in steps
   // (d1-d3), and if it still overflows it grows instead of clipping (no overlap, no cut-off).
+  // The fit is measured in the fixed Letter box (.fit-measure, added only while measuring). On
+  // screen the pages are never clipped (@media screen: height auto, min-height Letter), so content
+  // that gets taller after the fit (late fonts, images, iOS text inflation) pushes the page longer
+  // instead of being cut off; print keeps the fixed Letter pages and the fit steps.
+  // text-size-adjust:100% stops iOS Safari's text autosizing, which inflated single paragraphs on
+  // the zoomed Letter pages (owner iPhone screenshot 2026-11-16: the buildable-area line at ~3x).
   // Page 1 has its own steps (padding, title and score sizes; never the map, whose overlay is drawn
   // for its fixed aspect ratio), so a branded header, a reference and a long brokerage still fit.
-  const FIT = `(function(){function fit(){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('d1','d2','d3','grow');var b=p.querySelector('.page-body');var over=function(){return b.scrollHeight>b.clientHeight+1};var steps=['d1','d2','d3'];for(var i=0;i<steps.length&&over();i++)p.classList.add(steps[i]);if(over())p.classList.add('grow')})}window.__acresxFit=fit;window.addEventListener('load',fit);window.addEventListener('beforeprint',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})();`;
+  const FIT = `(function(){function fit(){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('d1','d2','d3','grow');var b=p.querySelector('.page-body');if(!b)return;p.classList.add('fit-measure');var over=function(){return b.scrollHeight>b.clientHeight+1};var steps=['d1','d2','d3'];for(var i=0;i<steps.length&&over();i++)p.classList.add(steps[i]);if(over())p.classList.add('grow');p.classList.remove('fit-measure')})}window.__acresxFit=fit;window.addEventListener('load',fit);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);window.addEventListener('beforeprint',fit);if(document.readyState!=='loading')fit();else document.addEventListener('DOMContentLoaded',fit)})();`;
 
   // The report is built in two steps so a saved account report or a shared link (/r/<token>)
   // renders with this same code from JSON, never from stored HTML:
@@ -933,12 +942,12 @@ ${p4}
   // Saved account reports (accounts.js viewReport) open in the same view; /r/<token> pages keep
   // their own page (shared-report.js).
   const VIEW_ID = 'acresxReportView';
-  const VIEW_CSS = CSS.replace('@page{size:letter;margin:0}\n', '').replace(':root{', ':host{display:block;').replace('\nbody{', '\n.rv-doc{').replace('@media print{body{', '@media print{.rv-doc{') +
-    '.rv-doc{padding:1px 0 24px;min-height:100%}@media print{.rv-doc{padding:0}.page{zoom:1!important}}\n';
+  const VIEW_CSS = CSS.replace('@page{size:letter;margin:0}\n', '').replace(':root{', ':host{display:block;-webkit-text-size-adjust:100%;text-size-adjust:100%;').replace('\nbody{', '\n.rv-doc{').replace('@media print{body{', '@media print{.rv-doc{') +
+    '.rv-doc{padding:1px 0 24px;min-height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}@media print{.rv-doc{padding:0}.page{zoom:1!important}}\n';
   const PAGE_CSS = '@page{size:letter;margin:0}';
   const UI_CSS = `
 #generateReportBtn{-webkit-tap-highlight-color:transparent}
-#${VIEW_ID}{position:fixed;inset:0;z-index:99995;display:none;flex-direction:column;background:rgba(13,30,20,.45);font-family:Arial,Helvetica,sans-serif;color:#17231c}
+#${VIEW_ID}{position:fixed;inset:0;z-index:99995;display:none;flex-direction:column;background:rgba(13,30,20,.45);font-family:Arial,Helvetica,sans-serif;color:#17231c;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 #${VIEW_ID}.open{display:flex}#${VIEW_ID}.showing{background:#e6ece8}
 html.arv-open,html.arv-open body{overflow:hidden}
 #${VIEW_ID} .arv-bar{flex:none;background:#174f34;color:#fff;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));box-shadow:0 2px 12px #0003}
@@ -1060,7 +1069,8 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   }
   function pageNodes() { return view ? [...(view.shadow.querySelectorAll?.('.page') || [])] : []; }
   // The report's page-fit step (FIT above), on the pages in the view.
-  // Measured at full size: the phone zoom rounds heights and would tighten pages that fit.
+  // Measured at full size in the fixed Letter box (.fit-measure): the phone zoom rounds heights and
+  // would tighten pages that fit. On screen the pages are never clipped either way (see FIT).
   function fitPages() {
     pageNodes().forEach(p => {
       const zoom = p.style.zoom;
@@ -1068,12 +1078,22 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
       p.classList.remove('d1', 'd2', 'd3', 'grow');
       const b = p.querySelector('.page-body');
       if (b) {
+        p.classList.add('fit-measure');
         const over = () => b.scrollHeight > b.clientHeight + 1;
         for (const step of ['d1', 'd2', 'd3']) { if (!over()) break; p.classList.add(step); }
         if (over()) p.classList.add('grow');
+        p.classList.remove('fit-measure');
       }
       p.style.zoom = zoom;
     });
+  }
+  // Fit again once layout settles: after the scaling, when web fonts and images have loaded.
+  let refitQueued = false;
+  function refitSoon() {
+    if (refitQueued) return;
+    refitQueued = true;
+    const run = () => { refitQueued = false; fitPages(); };
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(run); else setTimeout(run, 16);
   }
   // Phones: Letter-width pages scaled to the screen (print resets the zoom, see VIEW_CSS).
   function scalePages() {
@@ -1127,9 +1147,11 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     showHint(false);
     v.shadow.innerHTML = viewMarkup(html);
     v.pages.scrollTop = 0;
-    (v.shadow.querySelectorAll?.('img') || []).forEach(img => img.addEventListener('load', fitPages));
+    (v.shadow.querySelectorAll?.('img') || []).forEach(img => { img.addEventListener('load', refitSoon); img.addEventListener('error', refitSoon); });
     fitPages();
     scalePages();
+    refitSoon();
+    try { document.fonts?.ready?.then(refitSoon); } catch {}
     try { v.print.hidden ? v.close.focus() : v.print.focus(); } catch {}
     return true;
   }
