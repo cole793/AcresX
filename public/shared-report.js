@@ -9,6 +9,10 @@
 // checked against their known values here, and the rendered document is parsed with DOMParser
 // and stripped of <script> elements and on* attributes before it is shown. The print button and
 // the page-fit step that the report normally does inline are attached here instead.
+// Download PDF (public/report-pdf.js, owner bug 2026-11-16: window.print() does nothing on many
+// iPhones) builds the PDF from the same sanitized pages in the background, then shares or
+// downloads the file from the tap. Its libraries are self-hosted (public/vendor/), so the page's
+// CSP (script-src 'self'; connect-src 'self') is unchanged. Print stays on desktop browsers.
 (() => {
   const $ = id => document.getElementById(id);
   const TOKEN = /^\/r\/([A-Za-z0-9_-]{43})\/?$/;
@@ -72,12 +76,17 @@
     return doc;
   }
 
+  const isPhone = () => { const n = window.navigator || {}; return /iP(hone|ad|od)|Android/.test(n.userAgent || '') || (n.platform === 'MacIntel' && n.maxTouchPoints > 1); };
+
+  let pdfStart = null;
   function show(html, generated) {
     const doc = stripActive(new DOMParser().parseFromString(html, 'text/html'));
+    // The PDF is made from the sanitized document (nothing active is left in it).
+    const pdfHtml = `<!doctype html>${doc.documentElement.outerHTML}`;
     document.title = doc.title || 'Shared property report · AcresX';
     doc.head.querySelectorAll('style').forEach(st => { const n = document.createElement('style'); n.textContent = st.textContent; document.head.appendChild(n); });
     const extra = document.createElement('style');
-    extra.textContent = 'html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.shared-note{color:#fff;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-align:left}@media print{.page{zoom:1!important}}';
+    extra.textContent = 'html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.shared-note{color:#fff;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-align:left}.toolbar-buttons{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}.toolbar button{min-height:44px}.toolbar button:disabled{opacity:.7;cursor:progress}.toolbar button.secondary{background:transparent;color:#fff;border:1px solid #ffffff80}.pdf-note{flex:1 1 100%;margin:0;color:#fff;font:700 12px/1.4 Arial,Helvetica,sans-serif;text-align:left}@media print{.page{zoom:1!important}}';
     document.head.appendChild(extra);
     document.body.replaceChildren(...[...doc.body.childNodes].map(n => document.importNode(n, true)));
     const bar = document.querySelector('.toolbar');
@@ -87,15 +96,44 @@
       note.textContent = `Shared report · read-only${generated ? ` · generated ${generated}` : ''} · screening information, verify with the responsible agency`;
       bar.prepend(note);
       const printBtn = bar.querySelector('button');
-      printBtn?.addEventListener('click', () => window.print());
+      const buttons = document.createElement('div');
+      buttons.className = 'toolbar-buttons';
+      if (printBtn) {
+        printBtn.type = 'button';
+        printBtn.id = 'sharedPrint';
+        printBtn.textContent = 'Print';
+        printBtn.className = 'secondary';
+        printBtn.hidden = isPhone() || typeof window.print !== 'function';
+        printBtn.addEventListener('click', () => window.print());
+        printBtn.replaceWith(buttons);
+      }
+      bar.appendChild(buttons);
+      const P = window.AcresXReportPdf;
+      if (P?.controller) {
+        const pdfBtn = document.createElement('button');
+        pdfBtn.type = 'button';
+        pdfBtn.id = 'sharedPdf';
+        const note = document.createElement('p');
+        note.className = 'pdf-note';
+        note.id = 'sharedPdfNote';
+        note.hidden = true;
+        buttons.appendChild(pdfBtn);
+        const pdf = P.controller({ button: pdfBtn, note });
+        pdfBtn.addEventListener('click', () => { pdf.tap(); });
+        bar.appendChild(note);
+        pdfStart = () => pdf.start(pdfHtml, { title: document.title });
+        window.AcresXSharedReport.pdf = pdf;
+      }
+      if (printBtn) buttons.appendChild(printBtn);
       // Phones: the system share sheet with this link (only where the browser has one).
-      if (printBtn && typeof window.navigator?.share === 'function') {
+      if (typeof window.navigator?.share === 'function') {
         const share = document.createElement('button');
         share.type = 'button';
+        share.id = 'sharedShare';
+        share.className = 'secondary';
         share.textContent = 'Share';
-        share.style.marginLeft = '8px';
         share.addEventListener('click', () => { try { window.navigator.share({ title: document.title, url: window.location.href })?.catch?.(() => {}); } catch {} });
-        printBtn.after(share);
+        buttons.appendChild(share);
       }
     }
     document.querySelectorAll('.map-img').forEach(img => img.addEventListener('error', () => img.closest('.map')?.classList.add('img-error')));
@@ -109,6 +147,8 @@
     fit();
     scaleToScreen();
     if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(fit);
+    // In the background from now on, so the file is ready by the time Download PDF is tapped.
+    try { pdfStart?.(); } catch (error) { console.warn('Report PDF not started', error); }
   }
 
   async function main() {

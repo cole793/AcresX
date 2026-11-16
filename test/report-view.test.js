@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { El, makeClock, makeContext, readPublic } from './ui-harness.js';
 
 const fixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
-const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js'];
+const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'report-pdf.js', 'property-report-v2.js'];
 
 function setup({ data = fixture(), navigator = { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' }, print = true, modules = MODULES } = {}) {
   const clock = makeClock();
@@ -101,7 +101,7 @@ test('Cancel closes the view without building or saving a report', () => {
   assert.equal(s.saved.length, 0);
 });
 
-test('Save as PDF / Print calls window.print() straight from the tap, with Letter @page and the report title', () => {
+test('Print (desktop) calls window.print() straight from the tap, with Letter @page and the report title', () => {
   const s = setup();
   tapGenerate(s);
   s.$('acresxReportCreate').click();
@@ -109,7 +109,10 @@ test('Save as PDF / Print calls window.print() straight from the tap, with Lette
   assert.ok(pageCss, '@page rule added while the report is open');
   assert.equal(pageCss.textContent, '@page{size:letter;margin:0}');
   assert.equal(s.$('acresxReportPrint').hidden, false);
-  assert.equal(s.$('acresxReportPrint').textContent, 'Save as PDF / Print');
+  assert.equal(s.$('acresxReportPrint').textContent, 'Print');
+  assert.equal(s.$('acresxReportPdf').hidden, false, 'Download PDF is the primary button');
+  const actions = s.$('acresxReportActions').children.map(c => c.id);
+  assert.ok(actions.indexOf('acresxReportPdf') < actions.indexOf('acresxReportPrint'), 'Download PDF comes before Print');
   s.$('acresxReportPrint').click();
   assert.deepEqual(s.printed, ['Parcel 23123.9051 — AcresX Property Report'], 'printed synchronously, titled for the PDF file name');
   s.$('acresxReportClose').click();
@@ -133,11 +136,13 @@ test('print CSS hides the app and the toolbar and prints only the report', () =>
   assert.match(s.R.viewMarkup('<body></body>'), /@media print\{\.rv-doc\{padding:0\}\.page\{zoom:1!important\}\}/, 'the phone zoom is reset for printing');
 });
 
-test('iPhone: the toolbar says how to keep the PDF; a browser without window.print gets a pointer instead of a dead button', () => {
+test('iPhone: the toolbar says how to keep the PDF; a browser without window.print still has Download PDF, not a dead button', () => {
   const ios = setup({ navigator: { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148' } });
   tapGenerate(ios); ios.$('acresxReportCreate').click();
   assert.equal(ios.$('acresxReportHint').hidden, false);
-  assert.match(ios.$('acresxReportHint').textContent, /tap Save as PDF \/ Print, then use Share → Save to Files/);
+  assert.match(ios.$('acresxReportHint').textContent, /tap Download PDF, then choose Save to Files/);
+  assert.equal(ios.$('acresxReportPrint').hidden, true, 'phones do not get the print button (window.print is unreliable there)');
+  assert.equal(ios.$('acresxReportPdf').hidden, false);
 
   const desktop = setup();
   tapGenerate(desktop); desktop.$('acresxReportCreate').click();
@@ -147,7 +152,14 @@ test('iPhone: the toolbar says how to keep the PDF; a browser without window.pri
   delete noPrint.ctx.print;
   tapGenerate(noPrint); noPrint.$('acresxReportCreate').click();
   assert.equal(noPrint.$('acresxReportPrint').hidden, true);
-  assert.match(noPrint.$('acresxReportHint').textContent, /Open AcresX in Safari or Chrome/);
+  assert.equal(noPrint.$('acresxReportPdf').hidden, false);
+  assert.equal(noPrint.$('acresxReportHint').hidden, true);
+
+  const neither = setup({ print: false, modules: MODULES.filter(m => m !== 'report-pdf.js') });
+  delete neither.ctx.print;
+  tapGenerate(neither); neither.$('acresxReportCreate').click();
+  assert.equal(neither.$('acresxReportPdf').hidden, true);
+  assert.match(neither.$('acresxReportHint').textContent, /Open AcresX in Safari or Chrome/);
 });
 
 test('Share appears only with a share link and navigator.share, and shares that link', () => {
@@ -252,7 +264,7 @@ test('screen view: pages are never clipped (they grow past Letter); the fixed Le
   const screenAt = shown.indexOf('@media screen{.page{'), printAt = shown.indexOf('@media print{');
   assert.ok(screenAt > 0 && screenAt < printAt, 'the screen rule is media-scoped, so print is unchanged');
   // The view, the report document and the shared page add the measuring class only while measuring.
-  assert.match(readPublic('property-report-v2.js'), /function fitPages\(\) \{[\s\S]*?p\.classList\.add\('fit-measure'\);[\s\S]*?p\.classList\.remove\('fit-measure'\);/);
+  assert.match(readPublic('property-report-v2.js'), /function fitNodes\(nodes\) \{[\s\S]*?p\.classList\.add\('fit-measure'\);[\s\S]*?p\.classList\.remove\('fit-measure'\);/);
   assert.match(s.R.renderHtml(s.R.buildModel('x', fixture())), /p\.classList\.add\('fit-measure'\)[\s\S]*p\.classList\.remove\('fit-measure'\)/);
   assert.match(readPublic('shared-report.js'), /p\.classList\.add\('fit-measure'\)[\s\S]*p\.classList\.remove\('fit-measure'\)/);
 });

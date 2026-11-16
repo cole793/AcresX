@@ -929,16 +929,20 @@ ${p4}
   //   before (renderHtml) and saves it to the account when signed in (accounts.js reportGenerated).
   // - The pages render into a shadow root, so the report CSS and the app CSS cannot touch each
   //   other; the markup is renderHtml's body without its toolbar and inline script.
-  // - The toolbar's "Save as PDF / Print" calls window.print() straight from the tap. While the
-  //   view is open, @media print hides everything on the page but the report, and @page sets US
-  //   Letter with no margin, so the print is the same Letter pages as before. The page-fit step
-  //   (FIT above) runs here on open, when images load and before printing.
+  // - "Download PDF" (primary, first) saves a real PDF file built in the browser
+  //   (public/report-pdf.js, owner bug 2026-11-16: on a real iPhone window.print() did nothing).
+  //   The PDF is generated in the background as soon as the report is shown; the tap then hands
+  //   the ready file to the share sheet (phones) or downloads it, with nothing awaited first.
+  // - "Print" (secondary, desktop only: phones use Download PDF, so nothing there depends on
+  //   window.print) calls window.print() straight from the tap. While the view is open, @media
+  //   print hides everything on the page but the report, and @page sets US Letter with no margin,
+  //   so the print is the same Letter pages as before. The page-fit step (FIT above) runs here on
+  //   open, when images load and before printing.
   // - "Share" shows only when the view was given a share link and the browser has navigator.share.
   // - While the view is open the page title is the report's title (the saved PDF's file name);
   //   beta-labels.js does not overwrite it then (html.arv-open), and Close restores it.
   // - Phones see the Letter pages scaled to the screen width (CSS zoom, reset for printing).
-  // - iPhone/iPad get a hint: Save as PDF / Print, then Share -> Save to Files; a browser without
-  //   window.print gets "open this page in Safari or Chrome" instead of a dead button.
+  // - iPhone/iPad get a hint: Download PDF, then Save to Files in the share sheet.
   // Saved account reports (accounts.js viewReport) open in the same view; /r/<token> pages keep
   // their own page (shared-report.js).
   const VIEW_ID = 'acresxReportView';
@@ -958,6 +962,7 @@ html.arv-open,html.arv-open body{overflow:hidden}
 #${VIEW_ID} .arv-title{flex:1 1 160px;min-width:0;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #${VIEW_ID} button{min-height:44px;border:1px solid #ffffff80;border-radius:9px;padding:0 14px;background:transparent;color:#fff;font:800 14px Arial,Helvetica,sans-serif;cursor:pointer}
 #${VIEW_ID} button.arv-primary{background:#fff;color:#174f34;border-color:#fff}
+#${VIEW_ID} button:disabled{opacity:.7;cursor:progress}
 #${VIEW_ID} .arv-hint{flex:1 1 100%;margin:0;font-size:12px;line-height:1.4;opacity:.9}
 #${VIEW_ID} [hidden]{display:none!important}
 #${VIEW_ID} .arv-status{margin:24px auto;max-width:480px;background:#fff;border-radius:12px;padding:18px 20px;font-size:15px}
@@ -980,6 +985,8 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   const isIOS = () => { try { const n = window.navigator || {}; return /iP(hone|ad|od)/.test(n.userAgent || '') || (n.platform === 'MacIntel' && n.maxTouchPoints > 1); } catch { return false; } };
   const canPrint = () => typeof window.print === 'function';
   const canShare = () => { try { return typeof window.navigator?.share === 'function'; } catch { return false; } };
+  const isPhone = () => { try { return isIOS() || /Android/i.test(window.navigator?.userAgent || ''); } catch { return false; } };
+  const pdfTools = () => window.AcresXReportPdf || null;
 
   function node(tag, props = {}, kids = []) {
     const n = document.createElement(tag);
@@ -1012,21 +1019,26 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
       node('p', { id: 'acresxReportNameHelp', class: 'arv-sub', text: 'Property name, client name or reference ID. It prints on page 1.' })
     ]);
     v.title = node('span', { id: 'acresxReportTitle', class: 'arv-title' });
-    v.print = node('button', { id: 'acresxReportPrint', type: 'button', class: 'arv-primary', text: 'Save as PDF / Print' });
+    v.pdf = node('button', { id: 'acresxReportPdf', type: 'button', class: 'arv-primary', text: 'Preparing PDF…' });
+    v.print = node('button', { id: 'acresxReportPrint', type: 'button', text: 'Print' });
     v.share = node('button', { id: 'acresxReportShare', type: 'button', text: 'Share', hidden: true });
     v.close = node('button', { id: 'acresxReportClose', type: 'button', text: 'Close' });
     v.hint = node('p', { id: 'acresxReportHint', class: 'arv-hint', hidden: true });
-    v.actions = node('div', { id: 'acresxReportActions', class: 'arv-actions', hidden: true }, [v.title, v.print, v.share, v.close, v.hint]);
+    v.pdfNote = node('p', { id: 'acresxReportPdfNote', class: 'arv-hint arv-pdf-note', hidden: true });
+    v.actions = node('div', { id: 'acresxReportActions', class: 'arv-actions', hidden: true }, [v.title, v.pdf, v.print, v.share, v.close, v.pdfNote, v.hint]);
     v.status = node('div', { id: 'acresxReportStatus', class: 'arv-status', role: 'status', hidden: true });
     v.pages = node('div', { id: 'acresxReportPages', class: 'arv-pages' });
     v.root = node('div', { id: VIEW_ID, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Property report' }, [node('div', { class: 'arv-bar' }, [v.ask, v.actions]), v.status, v.pages]);
     document.body.appendChild(v.root);
     v.shadow = typeof v.pages.attachShadow === 'function' ? v.pages.attachShadow({ mode: 'open' }) : v.pages;
+    v.pdfCtl = pdfTools()?.controller?.({ button: v.pdf, note: v.pdfNote }) || null;
 
     v.cancel.addEventListener('click', () => closeReport());
     v.close.addEventListener('click', () => closeReport());
     v.create.addEventListener('click', () => { const cb = v.onCreate; v.onCreate = null; if (cb) cb(String(v.name.value || '').trim()); });
     v.name.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault?.(); v.create.click?.(); } });
+    // Straight from the tap: the PDF already exists, so share/download runs with nothing awaited.
+    v.pdf.addEventListener('click', () => { v.pdfCtl?.tap(); });
     // Straight from the tap: no await, no timer between the tap and window.print().
     v.print.addEventListener('click', () => {
       if (v.docTitle) document.title = v.docTitle; // the saved PDF's file name
@@ -1046,7 +1058,9 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     const v = ensureView();
     v.ask.hidden = state !== 'ask';
     v.actions.hidden = state !== 'report' && state !== 'message';
-    v.print.hidden = state !== 'report' || !canPrint();
+    v.pdf.hidden = state !== 'report' || !v.pdfCtl;
+    v.print.hidden = state !== 'report' || !canPrint() || isPhone();
+    if (v.pdf.hidden) v.pdfNote.hidden = true;
     v.share.hidden = !(state === 'report' && v.shareUrl && canShare());
     v.status.hidden = state !== 'loading' && state !== 'message';
     v.root.classList.add('open');
@@ -1057,22 +1071,26 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   function showHint(printFailed) {
     const v = ensureView();
     let text = '';
-    if (!canPrint() || printFailed) text = 'This browser cannot print or save a PDF from here. Open AcresX in Safari or Chrome to save this report.';
-    else if (isIOS()) text = 'On iPhone or iPad: tap Save as PDF / Print, then use Share → Save to Files to keep the PDF. Inside another app’s browser, open this page in Safari first if nothing happens.';
+    if (printFailed) text = 'This browser cannot print from here. Use Download PDF to save the report.';
+    else if (!v.pdfCtl && !canPrint()) text = 'This browser cannot print or save a PDF from here. Open AcresX in Safari or Chrome to save this report.';
+    else if (isIOS() && v.pdfCtl) text = 'On iPhone or iPad: tap Download PDF, then choose Save to Files (or Mail, Messages) to keep the PDF.';
     v.hint.textContent = text;
     v.hint.hidden = !text;
   }
   function clearPages(v) {
+    try { v.pdfCtl?.cancel(); } catch {}
     v.docTitle = '';
     v.shadow.innerHTML = '';
     v.pages.scrollTop = 0;
   }
   function pageNodes() { return view ? [...(view.shadow.querySelectorAll?.('.page') || [])] : []; }
-  // The report's page-fit step (FIT above), on the pages in the view.
+  // The report's page-fit step (FIT above), on the pages in the view (fitPages) or on the PDF's
+  // offscreen copy of them (report-pdf.js calls fitNodes).
   // Measured at full size in the fixed Letter box (.fit-measure): the phone zoom rounds heights and
   // would tighten pages that fit. On screen the pages are never clipped either way (see FIT).
-  function fitPages() {
-    pageNodes().forEach(p => {
+  function fitPages() { fitNodes(pageNodes()); }
+  function fitNodes(nodes) {
+    [...(nodes || [])].forEach(p => {
       const zoom = p.style.zoom;
       p.style.zoom = '';
       p.classList.remove('d1', 'd2', 'd3', 'grow');
@@ -1106,6 +1124,7 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   // Generate report: the view with the reference field. onCreate(name) runs on Create report.
   function askName(suggested, onCreate) {
     const v = setState('ask');
+    preloadPdf();
     viewSeq++;
     clearPages(v);
     v.onCreate = onCreate;
@@ -1118,6 +1137,7 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   // ticket; openReport(html, { ticket }) shows the report only if the view was not closed since.
   function showLoading(message = 'Loading report…') {
     const v = setState('loading');
+    preloadPdf();
     clearPages(v);
     v.status.textContent = message;
     return ++viewSeq;
@@ -1133,6 +1153,8 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     viewSeq++;
     try { v.close.focus(); } catch {}
   }
+  // The PDF libraries load when a report view opens, not with the app (report-pdf.js preload).
+  function preloadPdf() { try { pdfTools()?.preload?.(); } catch {} }
   // Shows a renderHtml() document in the view. options.shareUrl: a /r/<token> link for Share.
   function openReport(html, { shareUrl = '', ticket } = {}) {
     if (ticket !== undefined && ticket !== viewSeq) return false;
@@ -1152,7 +1174,9 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     scalePages();
     refitSoon();
     try { document.fonts?.ready?.then(refitSoon); } catch {}
-    try { v.print.hidden ? v.close.focus() : v.print.focus(); } catch {}
+    // The PDF starts now, in the background, so it is ready by the time the button is tapped.
+    try { v.pdfCtl?.start(html, { title: v.docTitle }); } catch (error) { console.warn('Report PDF not started', error); }
+    try { (v.print.hidden ? v.close : v.print).focus(); } catch {} // Download PDF is disabled until ready
     return true;
   }
   // closeReport(ticket) closes only the loading view that ticket belongs to.
@@ -1202,7 +1226,7 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     const attempt = () => { if ($('generateReportBtn') || document.querySelector('.top-actions button:nth-child(2)')) return bind(); if (++tries < 40) setTimeout(attempt, 50); };
     attempt();
   }
-  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment, buildModel, snapshot, renderHtml, openReport, showLoading, closeReport, viewMarkup };
+  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment, buildModel, snapshot, renderHtml, openReport, showLoading, closeReport, viewMarkup, fitNodes };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindWhenReady);
   else bindWhenReady();
 })();
