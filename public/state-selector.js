@@ -80,6 +80,9 @@
     updateBetaLabels();
   }
 
+  // Each state's county names (public/deep-link.js checks a link's county against them).
+  window.AcresXStateSelector = { counties: state => [...(state === 'MT' ? MT_COUNTIES : state === 'ID' ? ID_COUNTIES : state === 'WA' ? WA_COUNTIES : [])] };
+
   stateEl.addEventListener('change', populateCounties);
   populateCounties();
   // The registry arrives after first paint: regroup the list, keeping the chosen county.

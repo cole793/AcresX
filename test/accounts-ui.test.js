@@ -365,7 +365,7 @@ test('shared view: values used as class names are checked, so a tampered snapsho
 
 test('/r/ pages and new modules are wired: accounts.js injected before browser-fallback, shared page loads its scripts', () => {
   const index = readFileSync(new URL('../src/index.js', import.meta.url), 'utf8');
-  assert.match(index, /'accounts','browser-fallback'\]/);
+  assert.match(index, /'accounts',(?:'[a-z-]+',)*'browser-fallback'\]/);
   const html = readPublic('shared-report.html');
   for (const s of ['report-branding.js', 'public-utilities.js', 'property-tax.js', 'property-report-v2.js', 'shared-report.js']) assert.match(html, new RegExp(`<script src="/${s.replace('.', '\\.')}"></script>`));
   assert.doesNotMatch(html.replace(/<script src="[^"]+"><\/script>/g, ''), /<script/i, 'no inline script (the CSP would block it)');
