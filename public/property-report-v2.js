@@ -1195,11 +1195,12 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   function preloadPdf() { try { pdfTools()?.preload?.(); } catch {} }
   // Shows a renderHtml() document in the view. options.shareUrl: a /r/<token> link for Share.
   // options.browserUrl: the full https deep link that reopens this report (Open in Safari).
+  // Anything else is ignored (http is accepted on localhost only, for `wrangler dev`).
   function openReport(html, { shareUrl = '', ticket, browserUrl = '' } = {}) {
     if (ticket !== undefined && ticket !== viewSeq) return false;
     const v = ensureView();
     v.shareUrl = shareUrl;
-    v.browserUrl = /^https:\/\//.test(browserUrl || '') ? browserUrl : '';
+    v.browserUrl = /^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/.test(browserUrl || '') ? browserUrl : ''; // http only for local dev
     v.docTitle = unesc((/<title>([\s\S]*?)<\/title>/.exec(String(html)) || [])[1] || 'AcresX Property Report');
     if (v.prevTitle === undefined) v.prevTitle = document.title;
     document.title = v.docTitle; // the saved PDF's file name

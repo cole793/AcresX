@@ -330,8 +330,13 @@ test('Home Screen app with a report that has no link (a saved report): no Safari
   assert.match(s.$('acresxReportPdf').className, /arv-primary/);
   assert.equal(s.$('acresxReportHint').textContent, "Home Screen apps on iPhone can't save files. Open AcresX in Safari to save this report as a PDF.");
   // A non-https link is never used.
-  s.R.openReport(s.R.renderHtml(s.R.buildModel('Saved', fixture())), { browserUrl: 'javascript:alert(1)' });
-  assert.equal(s.$('acresxReportSafari').hidden, true);
+  for (const browserUrl of ['javascript:alert(1)', 'http://evil.example/?state=WA', '//evil.example/', '/?state=WA&county=Spokane&parcel=1&report=1']) {
+    s.R.openReport(s.R.renderHtml(s.R.buildModel('Saved', fixture())), { browserUrl });
+    assert.equal(s.$('acresxReportSafari').hidden, true, browserUrl);
+  }
+  // Local dev (wrangler dev) runs on http://127.0.0.1 or localhost.
+  s.R.openReport(s.R.renderHtml(s.R.buildModel('Saved', fixture())), { browserUrl: 'http://127.0.0.1:8787/?state=WA&county=Spokane&parcel=1&report=1' });
+  assert.equal(s.$('acresxReportSafari').hidden, false);
 });
 
 test('without deep-link.js the report view works as before', async () => {
