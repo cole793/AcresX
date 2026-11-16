@@ -81,7 +81,8 @@
     let doc = String(html)
       .replace(/<script\b[\s\S]*?<\/script>/gi, '')
       .replace(/<div class="toolbar">[\s\S]*?<\/div>/, '')
-      .replace(/\son[a-z]+="[^"]*"/gi, '')
+      // Inside tags only; double-quoted, single-quoted and unquoted values.
+      .replace(/<[a-z][^>]*>/gi, tag => tag.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+)/gi, ''))
       .replace(/<img(?![^>]*\bcrossorigin=)([^>]*\bsrc="https?:\/\/)/gi, '<img crossorigin="anonymous"$1');
     const css = `<style>${STAGE_CSS}</style>`;
     doc = /<\/head>/i.test(doc) ? doc.replace(/<\/head>/i, `${css}</head>`) : css + doc;
@@ -94,6 +95,9 @@
     frameEl.setAttribute('aria-hidden', 'true');
     frameEl.setAttribute('tabindex', '-1');
     frameEl.setAttribute('title', 'PDF render');
+    // No scripts can run in it (belt and braces with the strip above); allow-same-origin lets this
+    // page write the document and html2canvas read it.
+    frameEl.setAttribute('sandbox', 'allow-same-origin');
     frameEl.style.cssText = `position:fixed;left:-${PAGE_W * 12}px;top:0;width:${PAGE_W}px;height:${PAGE_H}px;border:0;pointer-events:none`;
     $doc().body.appendChild(frameEl);
     const doc = frameEl.contentDocument || frameEl.contentWindow?.document;

@@ -285,3 +285,22 @@ test('shared page (/r/<token>): Download PDF from the sanitized document, Print 
   const accounts = readFileSync(new URL('../src/services/accounts.js', import.meta.url), 'utf8');
   assert.match(accounts, /"script-src 'self'", "style-src 'self' 'unsafe-inline'",\n\s*"img-src 'self' data: https:\/\/server\.arcgisonline\.com", "connect-src 'self'"/);
 });
+
+test('stage hardening: the render iframe is sandboxed (no scripts) and every inline handler form is stripped', async () => {
+  const s = setup();
+  const frames = [];
+  const make = s.h.document.createElement;
+  s.h.document.createElement = tag => { const el = make(tag); if (tag === 'iframe') frames.push(el); return el; };
+  await s.open();
+  await s.settle();
+  assert.equal(frames.length, 1);
+  assert.equal(frames[0].getAttribute('sandbox'), 'allow-same-origin', 'scripts blocked; this page can still write and read it');
+  const doc = s.P.stageDocument(`<html><head></head><body><img src="https://server.arcgisonline.com/x" onerror="a()"><img src='/a.png' onload='b()'><div onclick=c() class="k">on=text stays</div><svg><g ONMOUSEOVER = "d()" onfocus=e></g></svg><script>f()</script><p>Based on="x" in text</p></body></html>`);
+  assert.doesNotMatch(doc, /<[^>]*\son[a-z]+\s*=[^>]*>/i, "no handler attribute left in any tag");
+  assert.doesNotMatch(doc.split("<body>")[1], /a\(\)|b\(\)|c\(\)|d\(\)|onfocus|f\(\)/);
+  assert.match(doc, /<img crossorigin="anonymous" src="https:\/\/server\.arcgisonline\.com\/x">/);
+  assert.match(doc, /<img src='\/a\.png'>/);
+  assert.match(doc, /<div class="k">on=text stays<\/div>/, 'text content is left alone');
+  assert.match(doc, /<p>Based on="x" in text<\/p>/);
+  assert.match(doc, /<g><\/g>/);
+});
