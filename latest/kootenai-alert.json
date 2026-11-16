@@ -1,19 +1,197 @@
 {
-  "runId": "43752184568",
+  "runId": "43974575941",
   "county": "Kootenai",
-  "alerting": false,
-  "aboveThreshold": false,
-  "changed": false,
-  "title": "Validation: Kootenai — 0 layers broken",
-  "body": "The scheduled county validation for Kootenai, ID found broken layers (run 2026-11-15T19:24:00.380Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43752184568\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 0, still broken 0, recovered 0, newly unavailable 0.\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-15T19:24:00.380Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43752184568\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 0, still broken 0, recovered 0, newly unavailable 0.\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-15T19:24:00.380Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43752184568\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n",
+  "alerting": true,
+  "aboveThreshold": true,
+  "changed": true,
+  "title": "Validation: Kootenai — 3 layers broken",
+  "body": "The scheduled county validation for Kootenai, ID found broken layers (run 2026-11-16T22:55:27.899Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43974575941\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Parcel | 7 of 12 | broken for 7 of 12 parcels in this run | 0L8210010030 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 015270010070 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 48N03W312100 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 0K245001002B | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 49N03W324950 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 007740020050 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 0153400A001A | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| Soil | 5 of 12 | broken for 5 of 12 parcels in this run | C72150030040 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 47N02W035500 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 0K2660010030 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 47N02W040800 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | C72150040140 | error | USDA soil service returned 502 with an invalid response. |\n| Zoning | 4 of 12 | broken for 4 of 12 parcels in this run | 0L8210010030 | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n|  |  |  | 015270010070 | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n|  |  |  | C72150030040 | mismatch | zoning.code: expected \"R-12\", got null; zoning.jurisdiction: expected \"City of Coeur d'Alene\", got null |\n|  |  |  | 0K2660010030 | error | timeout after 30s |\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Flood: 2 of 12 (0L8210010030, 015270010070)\n- Power: 1 of 12 (47N02W035500)\n- Public water/sewer: 1 of 12 (0L8210010030)\n- Assessment: 2 of 12 (0L8210010030, 015270010070)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 22, still broken 0, recovered 0, newly unavailable 2.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0L8210010030 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 0L8210010030 | Flood | ok | mismatch | flood.high: expected false, got null |\n| 0L8210010030 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"not\\_found\", got null; publicUtilities.sewer: expected \"not\\_found\", got null |\n| 0L8210010030 | Zoning | ok | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n| 0L8210010030 | Assessment | ok | mismatch | assessment.propertyClass: expected \"515\", got null |\n| 015270010070 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 015270010070 | Flood | ok | mismatch | flood.high: expected false, got null |\n| 015270010070 | Zoning | ok | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n| 015270010070 | Assessment | ok | mismatch | assessment.propertyClass: expected \"537\", got null |\n| C72150030040 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| C72150030040 | Zoning | ok | mismatch | zoning.code: expected \"R-12\", got null; zoning.jurisdiction: expected \"City of Coeur d'Alene\", got null |\n| 47N02W035500 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 47N02W035500 | Power | ok | error | request failed: fetch failed |\n| 48N03W312100 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 0K245001002B | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 49N03W324950 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 007740020050 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 0K2660010030 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 0K2660010030 | Zoning | ok | error | timeout after 30s |\n| 0153400A001A | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 47N02W040800 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| C72150040140 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0K2660010030 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 0K2660010030 | Zoning rules | ok | unavailable | not requested: no zoning code returned \\(the browser skips this call too\\) |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-16T22:55:27.899Z: Parcel 7 of 12, Soil 5 of 12, Zoning 4 of 12.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43974575941\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Parcel | 7 of 12 | broken for 7 of 12 parcels in this run | 0L8210010030 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 015270010070 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 48N03W312100 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 0K245001002B | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 49N03W324950 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 007740020050 | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n|  |  |  | 0153400A001A | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| Soil | 5 of 12 | broken for 5 of 12 parcels in this run | C72150030040 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 47N02W035500 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 0K2660010030 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 47N02W040800 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | C72150040140 | error | USDA soil service returned 502 with an invalid response. |\n| Zoning | 4 of 12 | broken for 4 of 12 parcels in this run | 0L8210010030 | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n|  |  |  | 015270010070 | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n|  |  |  | C72150030040 | mismatch | zoning.code: expected \"R-12\", got null; zoning.jurisdiction: expected \"City of Coeur d'Alene\", got null |\n|  |  |  | 0K2660010030 | error | timeout after 30s |\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Flood: 2 of 12 (0L8210010030, 015270010070)\n- Power: 1 of 12 (47N02W035500)\n- Public water/sewer: 1 of 12 (0L8210010030)\n- Assessment: 2 of 12 (0L8210010030, 015270010070)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 22, still broken 0, recovered 0, newly unavailable 2.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0L8210010030 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 0L8210010030 | Flood | ok | mismatch | flood.high: expected false, got null |\n| 0L8210010030 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"not\\_found\", got null; publicUtilities.sewer: expected \"not\\_found\", got null |\n| 0L8210010030 | Zoning | ok | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n| 0L8210010030 | Assessment | ok | mismatch | assessment.propertyClass: expected \"515\", got null |\n| 015270010070 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 015270010070 | Flood | ok | mismatch | flood.high: expected false, got null |\n| 015270010070 | Zoning | ok | mismatch | zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null |\n| 015270010070 | Assessment | ok | mismatch | assessment.propertyClass: expected \"537\", got null |\n| C72150030040 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| C72150030040 | Zoning | ok | mismatch | zoning.code: expected \"R-12\", got null; zoning.jurisdiction: expected \"City of Coeur d'Alene\", got null |\n| 47N02W035500 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 47N02W035500 | Power | ok | error | request failed: fetch failed |\n| 48N03W312100 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 0K245001002B | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 49N03W324950 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 007740020050 | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 0K2660010030 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 0K2660010030 | Zoning | ok | error | timeout after 30s |\n| 0153400A001A | Parcel | ok | error | HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled |\n| 47N02W040800 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| C72150040140 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0K2660010030 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 0K2660010030 | Zoning rules | ok | unavailable | not requested: no zoning code returned \\(the browser skips this call too\\) |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-16T22:55:27.899Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43974575941\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/kootenai-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Flood: 2 of 12 (0L8210010030, 015270010070)\n- Power: 1 of 12 (47N02W035500)\n- Public water/sewer: 1 of 12 (0L8210010030)\n- Assessment: 2 of 12 (0L8210010030, 015270010070)\n",
   "decision": {
-    "alerting": false,
-    "aboveThreshold": false,
-    "alertLayers": [],
+    "alerting": true,
+    "aboveThreshold": true,
+    "alertLayers": [
+      {
+        "layer": "parcel",
+        "label": "Parcel",
+        "count": 7,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "0L8210010030",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          },
+          {
+            "parcelId": "015270010070",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          },
+          {
+            "parcelId": "48N03W312100",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          },
+          {
+            "parcelId": "0K245001002B",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          },
+          {
+            "parcelId": "49N03W324950",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          },
+          {
+            "parcelId": "007740020050",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          },
+          {
+            "parcelId": "0153400A001A",
+            "status": "error",
+            "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+          }
+        ],
+        "reason": "broken for 7 of 12 parcels in this run"
+      },
+      {
+        "layer": "soil",
+        "label": "Soil",
+        "count": 5,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "C72150030040",
+            "status": "error",
+            "detail": "USDA soil service returned 502 with an invalid response."
+          },
+          {
+            "parcelId": "47N02W035500",
+            "status": "error",
+            "detail": "USDA soil service returned 502 with an invalid response."
+          },
+          {
+            "parcelId": "0K2660010030",
+            "status": "error",
+            "detail": "USDA soil service returned 502 with an invalid response."
+          },
+          {
+            "parcelId": "47N02W040800",
+            "status": "error",
+            "detail": "USDA soil service returned 502 with an invalid response."
+          },
+          {
+            "parcelId": "C72150040140",
+            "status": "error",
+            "detail": "USDA soil service returned 502 with an invalid response."
+          }
+        ],
+        "reason": "broken for 5 of 12 parcels in this run"
+      },
+      {
+        "layer": "zoning",
+        "label": "Zoning",
+        "count": 4,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "0L8210010030",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null"
+          },
+          {
+            "parcelId": "015270010070",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null"
+          },
+          {
+            "parcelId": "C72150030040",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"R-12\", got null; zoning.jurisdiction: expected \"City of Coeur d'Alene\", got null"
+          },
+          {
+            "parcelId": "0K2660010030",
+            "status": "error",
+            "detail": "timeout after 30s"
+          }
+        ],
+        "reason": "broken for 4 of 12 parcels in this run"
+      }
+    ],
     "watchLayers": [],
-    "belowThreshold": [],
+    "belowThreshold": [
+      {
+        "layer": "flood",
+        "label": "Flood",
+        "count": 2,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "0L8210010030",
+            "status": "mismatch",
+            "detail": "flood.high: expected false, got null"
+          },
+          {
+            "parcelId": "015270010070",
+            "status": "mismatch",
+            "detail": "flood.high: expected false, got null"
+          }
+        ]
+      },
+      {
+        "layer": "power",
+        "label": "Power",
+        "count": 1,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "47N02W035500",
+            "status": "error",
+            "detail": "request failed: fetch failed"
+          }
+        ]
+      },
+      {
+        "layer": "publicUtilities",
+        "label": "Public water/sewer",
+        "count": 1,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "0L8210010030",
+            "status": "mismatch",
+            "detail": "publicUtilities.water: expected \"not_found\", got null; publicUtilities.sewer: expected \"not_found\", got null"
+          }
+        ]
+      },
+      {
+        "layer": "assessment",
+        "label": "Assessment",
+        "count": 2,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "0L8210010030",
+            "status": "mismatch",
+            "detail": "assessment.propertyClass: expected \"515\", got null"
+          },
+          {
+            "parcelId": "015270010070",
+            "status": "mismatch",
+            "detail": "assessment.propertyClass: expected \"537\", got null"
+          }
+        ]
+      }
+    ],
     "minParcels": 3,
     "comparable": true,
     "reason": null
@@ -21,9 +199,179 @@
   "changes": {
     "comparable": true,
     "reason": null,
-    "newlyBroken": [],
+    "newlyBroken": [
+      {
+        "parcelId": "0L8210010030",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "0L8210010030",
+        "layer": "flood",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "flood.high: expected false, got null"
+      },
+      {
+        "parcelId": "0L8210010030",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "publicUtilities.water: expected \"not_found\", got null; publicUtilities.sewer: expected \"not_found\", got null"
+      },
+      {
+        "parcelId": "0L8210010030",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null"
+      },
+      {
+        "parcelId": "0L8210010030",
+        "layer": "assessment",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "assessment.propertyClass: expected \"515\", got null"
+      },
+      {
+        "parcelId": "015270010070",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "015270010070",
+        "layer": "flood",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "flood.high: expected false, got null"
+      },
+      {
+        "parcelId": "015270010070",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"RURAL\", got null; zoning.jurisdiction: expected \"Kootenai County\", got null"
+      },
+      {
+        "parcelId": "015270010070",
+        "layer": "assessment",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "assessment.propertyClass: expected \"537\", got null"
+      },
+      {
+        "parcelId": "C72150030040",
+        "layer": "soil",
+        "was": "ok",
+        "now": "error",
+        "detail": "USDA soil service returned 502 with an invalid response."
+      },
+      {
+        "parcelId": "C72150030040",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"R-12\", got null; zoning.jurisdiction: expected \"City of Coeur d'Alene\", got null"
+      },
+      {
+        "parcelId": "47N02W035500",
+        "layer": "soil",
+        "was": "ok",
+        "now": "error",
+        "detail": "USDA soil service returned 502 with an invalid response."
+      },
+      {
+        "parcelId": "47N02W035500",
+        "layer": "power",
+        "was": "ok",
+        "now": "error",
+        "detail": "request failed: fetch failed"
+      },
+      {
+        "parcelId": "48N03W312100",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "0K245001002B",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "49N03W324950",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "007740020050",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "0K2660010030",
+        "layer": "soil",
+        "was": "ok",
+        "now": "error",
+        "detail": "USDA soil service returned 502 with an invalid response."
+      },
+      {
+        "parcelId": "0K2660010030",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "error",
+        "detail": "timeout after 30s"
+      },
+      {
+        "parcelId": "0153400A001A",
+        "layer": "parcel",
+        "was": "ok",
+        "now": "error",
+        "detail": "HTTP 502: Idaho parcel sources failed for Kootenai: Kootenai County parcel layer timed out after 8s; Idaho parcel service request cancelled"
+      },
+      {
+        "parcelId": "47N02W040800",
+        "layer": "soil",
+        "was": "ok",
+        "now": "error",
+        "detail": "USDA soil service returned 502 with an invalid response."
+      },
+      {
+        "parcelId": "C72150040140",
+        "layer": "soil",
+        "was": "ok",
+        "now": "error",
+        "detail": "USDA soil service returned 502 with an invalid response."
+      }
+    ],
     "stillBroken": [],
     "recovered": [],
-    "newlyUnavailable": []
+    "newlyUnavailable": [
+      {
+        "parcelId": "0K2660010030",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "0K2660010030",
+        "layer": "zoningRules",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "not requested: no zoning code returned (the browser skips this call too)"
+      }
+    ]
   }
 }
