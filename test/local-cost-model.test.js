@@ -560,7 +560,7 @@ test('the printable report shows the same lines with sources and dates', () => {
   const h = makeLazyContext({ mappedSqm: 1000, last: data });
   for (const f of ['cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'acreage.js', 'property-report-v2.js']) h.run(readPublic(f));
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   const html = h.opened.at(-1);
   assert.match(html, /<strong>Power \(Avista line extension\)<\/strong><sup class="ref">\[\d+(, \d+)*\]<\/sup><\/td><td><span class="tag fee">Published fee<\/span>/);
   assert.match(html, /<li value="\d+">Avista Utilities, Washington Schedule 51 \(Tariff WN U-28\), as of 2026-05-15/);

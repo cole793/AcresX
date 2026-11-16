@@ -161,7 +161,7 @@ test('the printable report shows public water/sewer and keeps the private well d
   h.context.__acresxLast = data;
   h.context.__acresxGeneralCostEstimate = () => ({ low: 1, high: 2, components: { well: { low: 3000, high: 15000, label: 'Water connection', basis: 'fees vary' } } });
   h.el('wellMetric').textContent = '420 ft est.';
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   const html = h.opened.at(-1);
   assert.match(html, /Public water: likely available — City of Coeur d(&#39;|')Alene/);
   assert.match(html, /If a private well were needed/);

@@ -39,6 +39,11 @@ class El {
   }
   querySelector(sel) { for (const e of this.walk()) if (sel.split(',').some(s => e.matches(s))) return e; return null; }
   querySelectorAll(sel) { return [...this.walk()].filter(e => sel.split(',').some(s => e.matches(s))); }
+  // What the in-page report view (property-report-v2.js) touches.
+  setAttribute() {} focus() {}
+  get classList() { const el = this; const list = () => el.className.split(/\s+/).filter(Boolean); return { add: (...c) => { el.className = [...new Set([...list(), ...c])].join(' '); }, remove: (...c) => { el.className = list().filter(x => !c.includes(x)).join(' '); }, contains: c => list().includes(c), toggle: (c, on) => { el.className = (on ? [...new Set([...list(), c])] : list().filter(x => x !== c)).join(' '); } }; }
+  // The view writes the report into a shadow root; each write is recorded.
+  attachShadow() { const writes = this.shadowWrites = []; return { set innerHTML(html) { if (html) writes.push(String(html)); }, querySelectorAll: () => [] }; }
 }
 
 function page() {
@@ -51,10 +56,9 @@ function page() {
     getElementById: id => [...head.walk(), ...body.walk()].find(e => e.id === id) || null,
     querySelector: sel => body.querySelector(sel)
   };
-  const opened = [];
   const window = {
-    prompt: () => 'Test property',
-    open: () => ({ document: { write: html => opened.push(html), close() {} } })
+    prompt: () => { throw new Error('window.prompt must not be used'); },
+    open: () => { throw new Error('window.open must not be used for the report'); }
   };
   const context = vm.createContext({ window, document, console, URL, URLSearchParams, alert() {}, setTimeout, requestAnimationFrame: fn => fn() });
   vm.runInContext(assessmentSource, context);
@@ -64,7 +68,8 @@ function page() {
   const report = data => {
     window.__acresxLast = data;
     document.getElementById('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
-    return opened.at(-1);
+    document.getElementById('acresxReportCreate').listeners.click({ preventDefault() {} });
+    return document.getElementById('acresxReportPages').shadowWrites.at(-1);
   };
   return { window, document, fact, report, A: window.AcresXAssessment, T: window.AcresXPropertyTax };
 }

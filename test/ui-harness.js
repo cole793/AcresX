@@ -72,6 +72,9 @@ export class El {
   replaceWith(other) { const p = this.parentNode; if (!p) return; p.insertBefore(other, this); this.remove(); }
   set innerHTML(html) { this.children.forEach(c => { c.parentNode = null; }); this.children = []; this._html = String(html); this._text = String(html).replace(/<[^>]*>/g, ''); }
   get innerHTML() { return this._html; }
+  cloneNode() { const c = new El(this.tagName, this.ownerDocument); c.id = this.id; c.className = this.className; c.dataset = { ...this.dataset }; c.attrs = { ...this.attrs }; c._text = this.textContent; return c; }
+  attachShadow() { this.shadowRoot = new El('#shadow-root', this.ownerDocument); return this.shadowRoot; }
+  click() { for (const fn of this.listeners.click || []) fn({ preventDefault() {}, stopPropagation() {}, target: this }); }
   get textContent() { return this._text + this.children.map(c => c.textContent).join(''); }
   set textContent(v) { this.children.forEach(c => { c.parentNode = null; }); this.children = []; this._html = ''; this._text = String(v); }
   addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
@@ -211,36 +214,70 @@ export function makeContext({ body = [], clock, fetch, extra = {}, autoIds = fal
 
 // ---- Lazy fake DOM ----
 
-function fakeElement(id, registry) {
+// Elements created with document.createElement register under their id once one is set, so a
+// test can find the report view's controls with h.el(id). attachShadow() returns a root whose
+// innerHTML writes are recorded in `opened` (what the report view shows).
+function fakeElement(id, registry, opened = []) {
+  let elId = id, classes = '';
   const el = {
-    id, textContent: '', innerHTML: '', className: '', hidden: false, value: undefined, listeners: {}, style: {},
+    get id() { return elId; },
+    set id(v) { elId = String(v); if (elId) registry.set(elId, el); },
+    get className() { return classes; }, set className(v) { classes = String(v); },
+    textContent: '', innerHTML: '', hidden: false, value: undefined, listeners: {}, style: {}, attrs: {},
+    classList: {
+      add: (...c) => { classes = [...new Set([...classes.split(/\s+/).filter(Boolean), ...c])].join(' '); },
+      remove: (...c) => { classes = classes.split(/\s+/).filter(x => x && !c.includes(x)).join(' '); },
+      contains: c => classes.split(/\s+/).includes(c),
+      toggle(c, force) { const on = force === undefined ? !this.contains(c) : Boolean(force); if (on) this.add(c); else this.remove(c); return on; }
+    },
     addEventListener(type, fn) { this.listeners[type] = fn; },
+    setAttribute(k, v) { this.attrs[k] = String(v); }, getAttribute(k) { return this.attrs[k] ?? null; }, removeAttribute(k) { delete this.attrs[k]; },
     querySelector() { return null; }, querySelectorAll() { return []; },
-    insertAdjacentElement() {}, appendChild(c) { return c; }, scrollIntoView() {},
-    cloneNode() { return fakeElement(this.id, registry); },
+    insertAdjacentElement() {}, appendChild(c) { return c; }, remove() {}, focus() {}, scrollIntoView() {},
+    click() { this.listeners.click?.({ preventDefault() {}, stopPropagation() {} }); },
+    attachShadow() {
+      const root = fakeElement('', registry, opened);
+      let html = '';
+      Object.defineProperty(root, 'innerHTML', { get: () => html, set: v => { html = String(v); if (html) opened.push(html); } });
+      return root;
+    },
+    cloneNode() { return fakeElement(this.id, registry, opened); },
     replaceWith(other) { registry.set(other.id || this.id, other); }
   };
   return el;
 }
 
+const TAP = { preventDefault() {}, stopPropagation() {} };
+
 // mappedSqm: what turf.area returns (null -> outline area unavailable).
+// h.generate(name): tap Generate report, type `name` in the reference field (leave the suggested
+// one when undefined), tap Create report. The report the view shows lands in h.opened.
 export function makeLazyContext({ mappedSqm = null, last = null } = {}) {
   const registry = new Map();
-  const getElementById = id => { if (!registry.has(id)) registry.set(id, fakeElement(id, registry)); return registry.get(id); };
+  const opened = [];
+  const getElementById = id => { if (!registry.has(id)) registry.set(id, fakeElement(id, registry, opened)); return registry.get(id); };
   const document = {
-    readyState: 'complete', head: fakeElement('head', registry), body: fakeElement('body', registry),
-    addEventListener() {}, createElement: () => fakeElement('', registry), getElementById, querySelector: () => null, querySelectorAll: () => []
+    readyState: 'complete', title: 'AcresX', head: fakeElement('head', registry, opened), body: fakeElement('body', registry, opened),
+    addEventListener() {}, createElement: () => fakeElement('', registry, opened), getElementById, querySelector: () => null, querySelectorAll: () => []
   };
   const layer = { addTo() { return this; }, removeFrom() {}, getBounds: () => ({ isValid: () => false }) };
   const L = { map: () => ({ fitBounds() {}, invalidateSize() {} }), tileLayer: () => layer, geoJSON: () => layer };
   const turf = { area: () => (mappedSqm == null ? 0 : mappedSqm), centroid: () => ({ geometry: { coordinates: [-116.6, 47.3] } }) };
-  const opened = [];
+  const printed = [];
   const context = vm.createContext({
     document, L, turf, last, console, alert() {}, setTimeout: fn => fn(), requestAnimationFrame: fn => fn(),
-    prompt: () => 'Test property', open: () => ({ document: { write: html => opened.push(html), close() {} } })
+    print: () => printed.push(true),
+    prompt: () => { throw new Error('window.prompt must not be used'); },
+    open: () => { throw new Error('window.open must not be used for the report'); }
   });
   context.window = context;
-  return { context, run: source => vm.runInContext(source, context), el: getElementById, opened };
+  const generate = name => {
+    getElementById('generateReportBtn').listeners.click(TAP);
+    if (name !== undefined) getElementById('acresxReportName').value = name;
+    getElementById('acresxReportCreate').listeners.click(TAP);
+    return opened.at(-1);
+  };
+  return { context, run: source => vm.runInContext(source, context), el: getElementById, opened, printed, generate };
 }
 
 export function acresToSqm(acres) { return acres * SQ_M_PER_ACRE; }
@@ -279,8 +316,7 @@ export function renderReport({ data, mappedSqm, dir }) {
   try { h.run(readPublic('acreage.js', dir)); } catch (e) { if (e.code !== 'ENOENT') throw e; }
   h.run(readPublic('property-report-v2.js', dir));
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
-  return h.opened.at(-1);
+  return h.generate();
 }
 
 // renderSummary from public/index.html (plus the helpers it calls), with `last` as given.

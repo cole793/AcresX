@@ -55,7 +55,7 @@ function report(data, shownScore) {
   for (const f of ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'buildable-area.js', 'property-report-v2.js']) h.run(readPublic(f));
   h.el('scoreMetric').textContent = shownScore ?? '';
   h.context.__acresxLast = data;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   const html = h.opened.at(-1);
   const text = html.replace(/<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ');
   const scoreCard = /<article class="score-card[\s\S]*?<\/article>/.exec(html)?.[0] || '';

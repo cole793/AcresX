@@ -79,7 +79,17 @@
       note.className = 'shared-note';
       note.textContent = `Shared report · read-only${generated ? ` · generated ${generated}` : ''} · screening information, verify with the responsible agency`;
       bar.prepend(note);
-      bar.querySelector('button')?.addEventListener('click', () => window.print());
+      const printBtn = bar.querySelector('button');
+      printBtn?.addEventListener('click', () => window.print());
+      // Phones: the system share sheet with this link (only where the browser has one).
+      if (printBtn && typeof window.navigator?.share === 'function') {
+        const share = document.createElement('button');
+        share.type = 'button';
+        share.textContent = 'Share';
+        share.style.marginLeft = '8px';
+        share.addEventListener('click', () => { try { window.navigator.share({ title: document.title, url: window.location.href })?.catch?.(() => {}); } catch {} });
+        printBtn.after(share);
+      }
     }
     document.querySelectorAll('.map-img').forEach(img => img.addEventListener('error', () => img.closest('.map')?.classList.add('img-error')));
     document.querySelectorAll('.inset img').forEach(img => img.addEventListener('error', () => img.parentElement?.classList.add('img-error')));

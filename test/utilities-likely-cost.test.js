@@ -62,7 +62,7 @@ function report(last) {
   h.context.setInterval = () => 0; // mls-description-scanner.js polls the page
   for (const f of ['mls-description-scanner.js', 'flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'buildable-area.js', 'property-report-v2.js']) h.run(readPublic(f));
   h.context.__acresxLast = last;
-  h.el('generateReportBtn').listeners.click({ preventDefault() {}, stopPropagation() {} });
+  h.generate();
   const html = h.opened.at(-1);
   const text = html.replace(/<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ');
   return { html, text, page3: text.slice(text.indexOf('Costs & next steps')) };

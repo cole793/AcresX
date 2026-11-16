@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import { listingSearchProviders } from '../src/services/listing-search-status.js';
 import { mapKootenaiParcel, KC_PROPERTY_SEARCH } from '../src/counties/kootenai-parcels.js';
-import { makeLazyContext, makeContext, makeClock, makeFetch, readPublic, acresToSqm } from './ui-harness.js';
+import { El, makeLazyContext, makeContext, makeClock, makeFetch, readPublic, acresToSqm } from './ui-harness.js';
 
 const square = { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] };
 const CADASTRAL = 'https://svc.mt.gov/msl/cadastral/?page=PropertyDetails&geocode=03072527101010000';
@@ -124,6 +124,19 @@ test('beta label: no state yet -> Northwest; follows a later state change', () =
   select.value = 'ID';
   select.listeners.change.forEach(fn => fn());
   assert.equal(read().version, 'AcresX Idaho beta');
+});
+
+test('beta label: leaves the page title alone while the report view is open (html.arv-open), so the PDF keeps the report name', () => {
+  const { page, read } = labelPage('MT');
+  page.document.documentElement = new El('html', page.document);
+  page.document.documentElement.classList.add('arv-open');
+  page.document.title = 'Parcel 1 — AcresX Property Report';
+  page.ctx.AcresXBetaLabel.apply();
+  assert.equal(read().title, 'Parcel 1 — AcresX Property Report');
+  assert.equal(read().version, 'AcresX Montana beta', 'the other labels still update');
+  page.document.documentElement.classList.remove('arv-open');
+  page.ctx.AcresXBetaLabel.apply();
+  assert.equal(read().title, 'AcresX | Montana Land Intelligence');
 });
 
 test('no script writes its own version label any more', () => {
