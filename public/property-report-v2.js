@@ -943,6 +943,10 @@ ${p4}
   //   beta-labels.js does not overwrite it then (html.arv-open), and Close restores it.
   // - Phones see the Letter pages scaled to the screen width (CSS zoom, reset for printing).
   // - iPhone/iPad get a hint: Download PDF, then Save to Files in the share sheet.
+  // - iPhone/iPad Home Screen app (standalone mode, public/deep-link.js needsBrowser): it cannot
+  //   save files, so "Open in Safari to save PDF" (a target=_blank link to the full https deep
+  //   link that reopens this report) is the primary action, with "Copy link" and a short
+  //   explanation; Download PDF stays, secondary. Owner finding 2026-11-16.
   // Saved account reports (accounts.js viewReport) open in the same view; /r/<token> pages keep
   // their own page (shared-report.js).
   const VIEW_ID = 'acresxReportView';
@@ -963,11 +967,12 @@ html.arv-open,html.arv-open body{overflow:hidden}
 #${VIEW_ID} button{min-height:44px;border:1px solid #ffffff80;border-radius:9px;padding:0 14px;background:transparent;color:#fff;font:800 14px Arial,Helvetica,sans-serif;cursor:pointer}
 #${VIEW_ID} button.arv-primary{background:#fff;color:#174f34;border-color:#fff}
 #${VIEW_ID} button:disabled{opacity:.7;cursor:progress}
+#${VIEW_ID} a.arv-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;border:1px solid #fff;border-radius:9px;padding:0 14px;background:#fff;color:#174f34;font:800 14px Arial,Helvetica,sans-serif;text-decoration:none;-webkit-tap-highlight-color:transparent}
 #${VIEW_ID} .arv-hint{flex:1 1 100%;margin:0;font-size:12px;line-height:1.4;opacity:.9}
 #${VIEW_ID} [hidden]{display:none!important}
 #${VIEW_ID} .arv-status{margin:24px auto;max-width:480px;background:#fff;border-radius:12px;padding:18px 20px;font-size:15px}
 #${VIEW_ID} .arv-pages{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-@media(max-width:600px){#${VIEW_ID} .arv-bar{padding-left:12px;padding-right:12px}#${VIEW_ID} .arv-actions button,#${VIEW_ID} .arv-ask button{flex:1 1 auto;padding:0 10px}#${VIEW_ID} .arv-ask input{flex-basis:100%}#${VIEW_ID} .arv-title{flex-basis:100%}}
+@media(max-width:600px){#${VIEW_ID} .arv-bar{padding-left:12px;padding-right:12px}#${VIEW_ID} .arv-actions a.arv-link{flex:1 1 100%}#${VIEW_ID} .arv-actions button,#${VIEW_ID} .arv-ask button{flex:1 1 auto;padding:0 10px}#${VIEW_ID} .arv-ask input{flex-basis:100%}#${VIEW_ID} .arv-title{flex-basis:100%}}
 @media print{
 html.arv-open body>*:not(#${VIEW_ID}){display:none!important}
 html.arv-open,html.arv-open body{overflow:visible!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;display:block!important}
@@ -987,6 +992,15 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   const canShare = () => { try { return typeof window.navigator?.share === 'function'; } catch { return false; } };
   const isPhone = () => { try { return isIOS() || /Android/i.test(window.navigator?.userAgent || ''); } catch { return false; } };
   const pdfTools = () => window.AcresXReportPdf || null;
+  const deepLink = () => window.AcresXDeepLink || null;
+  const needsBrowser = () => { try { return Boolean(deepLink()?.needsBrowser?.()); } catch { return false; } };
+  const STANDALONE_TEXT = "Home Screen apps on iPhone can't save files. Open in Safari reopens this report there; tap Download PDF in Safari. Report branding saved in this Home Screen app may need re-entering in Safari";
+  function standaloneText(hasLink) {
+    let signedIn = false;
+    try { signedIn = Boolean(window.AcresXAccounts?.state?.signedIn); } catch {}
+    const branding = signedIn ? ' (sign in there too and it follows your account).' : '.';
+    return hasLink ? `${STANDALONE_TEXT}${branding}` : "Home Screen apps on iPhone can't save files. Open AcresX in Safari to save this report as a PDF.";
+  }
 
   function node(tag, props = {}, kids = []) {
     const n = document.createElement(tag);
@@ -1023,9 +1037,12 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     v.print = node('button', { id: 'acresxReportPrint', type: 'button', text: 'Print' });
     v.share = node('button', { id: 'acresxReportShare', type: 'button', text: 'Share', hidden: true });
     v.close = node('button', { id: 'acresxReportClose', type: 'button', text: 'Close' });
+    v.safari = node('a', { id: 'acresxReportSafari', class: 'arv-link', href: '/', target: '_blank', rel: 'noopener', hidden: true, text: 'Open in Safari to save PDF' });
+    v.copy = node('button', { id: 'acresxReportCopy', type: 'button', text: 'Copy link', hidden: true });
     v.hint = node('p', { id: 'acresxReportHint', class: 'arv-hint', hidden: true });
     v.pdfNote = node('p', { id: 'acresxReportPdfNote', class: 'arv-hint arv-pdf-note', hidden: true });
-    v.actions = node('div', { id: 'acresxReportActions', class: 'arv-actions', hidden: true }, [v.title, v.pdf, v.print, v.share, v.close, v.pdfNote, v.hint]);
+    v.copyNote = node('p', { id: 'acresxReportCopyNote', class: 'arv-hint', role: 'status', hidden: true });
+    v.actions = node('div', { id: 'acresxReportActions', class: 'arv-actions', hidden: true }, [v.title, v.safari, v.copy, v.pdf, v.print, v.share, v.close, v.pdfNote, v.copyNote, v.hint]);
     v.status = node('div', { id: 'acresxReportStatus', class: 'arv-status', role: 'status', hidden: true });
     v.pages = node('div', { id: 'acresxReportPages', class: 'arv-pages' });
     v.root = node('div', { id: VIEW_ID, role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Property report' }, [node('div', { class: 'arv-bar' }, [v.ask, v.actions]), v.status, v.pages]);
@@ -1045,6 +1062,7 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
       fitPages();
       try { window.print(); } catch { showHint(true); }
     });
+    v.copy.addEventListener('click', () => copyLink(v));
     v.share.addEventListener('click', () => {
       try { const p = window.navigator.share({ title: v.docTitle || 'AcresX property report', url: v.shareUrl }); p?.catch?.(() => {}); } catch {}
     });
@@ -1062,6 +1080,13 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     v.print.hidden = state !== 'report' || !canPrint() || isPhone();
     if (v.pdf.hidden) v.pdfNote.hidden = true;
     v.share.hidden = !(state === 'report' && v.shareUrl && canShare());
+    // Home Screen app on iPhone: Open in Safari first, Download PDF second.
+    const toSafari = state === 'report' && Boolean(v.browserUrl) && needsBrowser();
+    v.safari.hidden = !toSafari;
+    v.copy.hidden = !toSafari;
+    if (toSafari) v.safari.setAttribute('href', v.browserUrl);
+    v.pdf.className = toSafari ? '' : 'arv-primary';
+    if (!toSafari) v.copyNote.hidden = true;
     v.status.hidden = state !== 'loading' && state !== 'message';
     v.root.classList.add('open');
     v.root.classList.toggle('showing', state === 'report' || state === 'loading');
@@ -1073,9 +1098,22 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     let text = '';
     if (printFailed) text = 'This browser cannot print from here. Use Download PDF to save the report.';
     else if (!v.pdfCtl && !canPrint()) text = 'This browser cannot print or save a PDF from here. Open AcresX in Safari or Chrome to save this report.';
+    else if (needsBrowser()) text = standaloneText(!v.safari.hidden);
     else if (isIOS() && v.pdfCtl) text = 'On iPhone or iPad: tap Download PDF, then choose Save to Files (or Mail, Messages) to keep the PDF.';
     v.hint.textContent = text;
     v.hint.hidden = !text;
+  }
+  // Copy link: the clipboard when it is allowed; otherwise the link is shown to copy by hand.
+  function copyLink(v) {
+    const url = v.browserUrl;
+    if (!url) return;
+    const say = text => { v.copyNote.textContent = text; v.copyNote.hidden = false; };
+    const manual = () => say(`Copy this link and open it in Safari: ${url}`);
+    try {
+      const p = window.navigator?.clipboard?.writeText?.(url);
+      if (!p) { manual(); return; }
+      Promise.resolve(p).then(() => say('Link copied. Paste it into Safari to save the PDF.'), manual);
+    } catch { manual(); }
   }
   function clearPages(v) {
     try { v.pdfCtl?.cancel(); } catch {}
@@ -1156,10 +1194,12 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
   // The PDF libraries load when a report view opens, not with the app (report-pdf.js preload).
   function preloadPdf() { try { pdfTools()?.preload?.(); } catch {} }
   // Shows a renderHtml() document in the view. options.shareUrl: a /r/<token> link for Share.
-  function openReport(html, { shareUrl = '', ticket } = {}) {
+  // options.browserUrl: the full https deep link that reopens this report (Open in Safari).
+  function openReport(html, { shareUrl = '', ticket, browserUrl = '' } = {}) {
     if (ticket !== undefined && ticket !== viewSeq) return false;
     const v = ensureView();
     v.shareUrl = shareUrl;
+    v.browserUrl = /^https:\/\//.test(browserUrl || '') ? browserUrl : '';
     v.docTitle = unesc((/<title>([\s\S]*?)<\/title>/.exec(String(html)) || [])[1] || 'AcresX Property Report');
     if (v.prevTitle === undefined) v.prevTitle = document.title;
     document.title = v.docTitle; // the saved PDF's file name
@@ -1196,12 +1236,27 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     try { $('generateReportBtn')?.focus(); } catch {}
   }
 
-  function makeReport(name) {
+  // options.save false: not saved to the account (a deep link reopening a report made elsewhere).
+  function makeReport(name, { save = true } = {}) {
     const model = buildModel(name);
     model.generatedAt = new Date().toISOString();
-    if (!openReport(renderHtml(model))) return;
+    let browserUrl = '';
+    try { browserUrl = deepLink()?.reportLink?.(name) || ''; } catch {}
+    if (!openReport(renderHtml(model), { browserUrl })) return;
+    if (!save) return;
     // Signed in (public/accounts.js): the report is also saved to the account. Signed out: nothing.
     try { window.AcresXAccounts?.reportGenerated?.(model, snapshot); } catch (error) { console.warn('Report not saved to the account', error); }
+  }
+  // The report for the analyzed property with reference `ref` (or the suggested one), straight to
+  // the report view: public/deep-link.js, for report=1 links.
+  function createReport(ref, { save = true } = {}) {
+    const data = reportState();
+    if (!data?.parcel) { showMessage('Analyze a property first, then tap Generate report.'); return false; }
+    const id = identity(data);
+    const suggested = id.address || (id.pid ? `Parcel ${id.pid}` : 'Property');
+    preloadPdf();
+    makeReport(String(ref || '').trim() || suggested, { save });
+    return true;
   }
 
   function askAndGenerate() {
@@ -1226,7 +1281,7 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     const attempt = () => { if ($('generateReportBtn') || document.querySelector('.top-actions button:nth-child(2)')) return bind(); if (++tries < 40) setTimeout(attempt, 50); };
     attempt();
   }
-  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, assessment, buildModel, snapshot, renderHtml, openReport, showLoading, closeReport, viewMarkup, fitNodes };
+  window.AcresXReport = { gatherFacts, costEstimate, costTag, range, titleCase, makeReport, createReport, assessment, buildModel, snapshot, renderHtml, openReport, showLoading, closeReport, viewMarkup, fitNodes };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindWhenReady);
   else bindWhenReady();
 })();

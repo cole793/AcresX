@@ -17,7 +17,9 @@ const vendorFile = name => readFileSync(new URL(`../public/vendor/${name}`, impo
 
 function setup({ ua = DESKTOP, share, canShare = () => true, libs = true, failCanvas = false } = {}) {
   const clock = makeClock();
-  const log = { printed: [], shared: [], canvases: [], pdfs: [], stages: [], anchors: [], urls: [], revoked: [] };
+  const allAnchors = [];
+  // Download anchors only: the report view's "Open in Safari" link (Home Screen app) is an <a> too.
+  const log = { printed: [], shared: [], canvases: [], pdfs: [], stages: [], get anchors() { return allAnchors.filter(a => a.id !== 'acresxReportSafari'); }, urls: [], revoked: [] };
   class FakeURL extends URL {
     static createObjectURL(blob) { log.urls.push(blob); return `blob:acresx/${log.urls.length}`; }
     static revokeObjectURL(u) { log.revoked.push(u); }
@@ -57,7 +59,7 @@ function setup({ ua = DESKTOP, share, canShare = () => true, libs = true, failCa
       const remove = el.remove.bind(el);
       el.remove = () => { stage.removed = true; remove(); };
     }
-    if (tag === 'a') { log.anchors.push(el); el.click = () => { el.clicked = true; }; }
+    if (tag === 'a') { allAnchors.push(el); el.click = () => { el.clicked = true; }; }
     return el;
   };
   if (libs) {
