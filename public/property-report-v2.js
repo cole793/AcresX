@@ -925,6 +925,8 @@ ${p4}
   //   Letter with no margin, so the print is the same Letter pages as before. The page-fit step
   //   (FIT above) runs here on open, when images load and before printing.
   // - "Share" shows only when the view was given a share link and the browser has navigator.share.
+  // - While the view is open the page title is the report's title (the saved PDF's file name);
+  //   beta-labels.js does not overwrite it then (html.arv-open), and Close restores it.
   // - Phones see the Letter pages scaled to the screen width (CSS zoom, reset for printing).
   // - iPhone/iPad get a hint: Save as PDF / Print, then Share -> Save to Files; a browser without
   //   window.print gets "open this page in Safari or Chrome" instead of a dead button.
@@ -935,6 +937,7 @@ ${p4}
     '.rv-doc{padding:1px 0 24px;min-height:100%}@media print{.rv-doc{padding:0}.page{zoom:1!important}}\n';
   const PAGE_CSS = '@page{size:letter;margin:0}';
   const UI_CSS = `
+#generateReportBtn{-webkit-tap-highlight-color:transparent}
 #${VIEW_ID}{position:fixed;inset:0;z-index:99995;display:none;flex-direction:column;background:rgba(13,30,20,.45);font-family:Arial,Helvetica,sans-serif;color:#17231c}
 #${VIEW_ID}.open{display:flex}#${VIEW_ID}.showing{background:#e6ece8}
 html.arv-open,html.arv-open body{overflow:hidden}
@@ -981,11 +984,16 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     return n;
   }
 
+  // Added when the button is bound (so the tap-highlight rule applies to the first tap) and
+  // again, if needed, when the view is first built.
+  function addViewStyles() {
+    if (!$('acresxReportViewStyles')) document.head.appendChild(node('style', { id: 'acresxReportViewStyles', text: UI_CSS }));
+  }
   let view = null;
   let viewSeq = 0; // bumped on every open/close; a slow saved-report load checks it (showLoading)
   function ensureView() {
     if (view) return view;
-    if (!$('acresxReportViewStyles')) document.head.appendChild(node('style', { id: 'acresxReportViewStyles', text: UI_CSS }));
+    addViewStyles();
     const v = {};
     v.name = node('input', { id: 'acresxReportName', type: 'text', maxlength: '120', autocomplete: 'off', enterkeyhint: 'done', 'aria-describedby': 'acresxReportNameHelp' });
     v.create = node('button', { id: 'acresxReportCreate', type: 'button', class: 'arv-primary', text: 'Create report' });
@@ -1137,6 +1145,8 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     clearPages(v);
     $('acresxReportPageCss')?.remove();
     if (v.prevTitle !== undefined) { document.title = v.prevTitle; v.prevTitle = undefined; }
+    // beta-labels.js leaves the title alone while the view is open; bring it up to date now.
+    try { window.AcresXBetaLabel?.apply?.(); } catch {}
     try { $('generateReportBtn')?.focus(); } catch {}
   }
 
@@ -1163,6 +1173,7 @@ html.arv-open,html.arv-open body{overflow:visible!important;height:auto!importan
     b.disabled = false;
     old.replaceWith(b);
     b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); askAndGenerate(); });
+    try { addViewStyles(); } catch {}
   }
   function bindWhenReady() {
     let tries = 0;

@@ -12,7 +12,7 @@ import { El, makeClock, makeContext, readPublic } from './ui-harness.js';
 const fixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
 const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js'];
 
-function setup({ data = fixture(), navigator = { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' }, print = true } = {}) {
+function setup({ data = fixture(), navigator = { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' }, print = true, modules = MODULES } = {}) {
   const clock = makeClock();
   const printed = [], shared = [], saved = [];
   const h = makeContext({
@@ -32,7 +32,7 @@ function setup({ data = fixture(), navigator = { userAgent: 'Mozilla/5.0 (X11; L
   h.document.documentElement = new El('html', h.document);
   h.document.title = 'AcresX | Washington Land Intelligence';
   h.ctx.__acresxLast = data;
-  for (const f of MODULES) h.run(readPublic(f), f);
+  for (const f of modules) h.run(readPublic(f), f);
   if (navigator.share === true) h.ctx.navigator.share = arg => { shared.push(arg); return Promise.resolve(); };
   const $ = id => h.document.getElementById(id);
   return { h, ctx: h.ctx, $, printed, shared, saved, clock, R: h.ctx.AcresXReport };
@@ -193,4 +193,30 @@ test('saved reports: showLoading opens the view at once; a report that arrives a
   tapGenerate(s);
   s.R.closeReport(t1);
   assert.ok(s.$('acresxReportView').classList.contains('open'));
+});
+
+test('the saved PDF is named after the report: dashboard re-renders (beta-labels.js) do not reset the title while the view is open', () => {
+  const s = setup({ modules: ['beta-labels.js', ...MODULES] });
+  const labelTitle = s.h.document.title;
+  assert.equal(labelTitle, 'AcresX | Northwest Land Intelligence', 'beta-labels.js owns the page title');
+  tapGenerate(s);
+  s.$('acresxReportCreate').click();
+  assert.equal(s.h.document.title, 'Parcel 23123.9051 — AcresX Property Report');
+  s.ctx.AcresXBetaLabel.apply(); // what every renderSummary() runs while layers keep arriving
+  assert.equal(s.h.document.title, 'Parcel 23123.9051 — AcresX Property Report');
+  s.$('acresxReportPrint').click();
+  assert.deepEqual(s.printed, ['Parcel 23123.9051 — AcresX Property Report']);
+  s.$('acresxReportClose').click();
+  assert.equal(s.h.document.title, labelTitle, 'Close hands the title back to beta-labels.js');
+  s.ctx.AcresXBetaLabel.apply();
+  assert.equal(s.h.document.title, labelTitle);
+});
+
+test('the Generate report button has no tap highlight, from the first tap on', () => {
+  const s = setup();
+  const css = s.$('acresxReportViewStyles')?.textContent || '';
+  assert.match(css, /#generateReportBtn\{-webkit-tap-highlight-color:transparent\}/, 'added when the button is bound, before any tap');
+  assert.equal(s.h.document.head.querySelectorAll('style').filter(n => n.id === 'acresxReportViewStyles').length, 1);
+  tapGenerate(s);
+  assert.equal(s.h.document.head.querySelectorAll('style').filter(n => n.id === 'acresxReportViewStyles').length, 1, 'not added twice');
 });

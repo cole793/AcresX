@@ -18,8 +18,11 @@
     if (note && note.textContent !== text) note.textContent = text;
     doc.querySelectorAll('.sidebar .version').forEach(el => { const v = `AcresX ${text}`; if (el.textContent !== v) el.textContent = v; });
     doc.querySelectorAll('.topbar .eyebrow').forEach(el => { if (el.textContent !== text) el.textContent = text; });
+    // While the in-page report view is open (property-report-v2.js, html.arv-open) the title is
+    // the report's, so a saved PDF is named after the report; the view calls apply() on Close.
+    const reportOpen = Boolean(doc.documentElement?.classList?.contains('arv-open'));
     const title = `AcresX | ${stateName(code) || 'Northwest'} Land Intelligence`;
-    if (doc.title !== title) doc.title = title;
+    if (!reportOpen && doc.title !== title) doc.title = title;
   }
 
   root.AcresXBetaLabel = { label, stateName, apply };
