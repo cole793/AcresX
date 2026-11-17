@@ -1,15 +1,17 @@
 // Road access, the `roadAccess` part of POST /api/cost-context (src/services/cost-context.js):
 // straight-line distance from the parcel's interior point to the nearest mapped road centerline
 // (and to the nearest public one), for the driveway line of the development-cost estimate (public/local-cost-model.js).
-// Counties with an official road layer are configured in src/counties/*-roads.js; any other
-// county answers { available: false, status: 'not_configured' }.
+// Counties with an official road layer are configured in src/counties/*-roads.js (Spokane,
+// Kootenai, Yellowstone, Gallatin); any other county answers { available: false, status: 'not_configured' }.
 //
 // lookupRoadAccess({ state, county, lat, lon }) (lat/lon: the parcel's interior point, the same
 // point the browser sends to /api/zoning-permits) answers:
-//   { available: true, status: 'found', distanceFt, road: { name, kind, public },
+//   { available: true, status: 'found', distanceFt, road: { name, kind, public, ownership? },
 //     nearestPublic: { distanceFt, road } | null (none within searchedFt), searchedFt, method, source }
 //   { available: true, status: 'none_within', distanceFt: null, nearestPublic: null, searchedFt, method, source }
 //   { available: false, status: 'not_configured' | 'source_unavailable' | 'invalid_location', error? }
+// ownership ('public' | 'private' | 'unknown', Montana counties) tells a road mapped as private
+// from one whose public status the county has not mapped; both have public: false.
 // distanceFt is to the nearest road of any kind (public or private), which is what a driveway
 // most likely connects to.
 // A failed layer makes the whole answer unavailable (a partial answer could name a farther road),
@@ -19,6 +21,8 @@ import { arcgisQuery } from '../shared/upstream.js';
 import { nearestDistanceFt } from '../utilities/avista-distribution.js';
 import { SPOKANE_ROADS } from '../counties/spokane-roads.js';
 import { KOOTENAI_ROADS } from '../counties/kootenai-roads.js';
+import { YELLOWSTONE_ROADS } from '../counties/yellowstone-roads.js';
+import { GALLATIN_ROADS } from '../counties/gallatin-roads.js';
 
 // Search rings, nearest first. The first ring with any road gives the nearest road of any kind;
 // the search goes on until a public road is found or the rings run out.
@@ -26,7 +30,7 @@ export const ROAD_SEARCH_RINGS_FT = [330, 1320, 2640];
 const RECORD_LIMIT = 1000;
 export const ROAD_METHOD = 'Straight line from the parcel interior point (assumed homesite) to the nearest mapped road centerline (public or private). Not a surveyed driveway route.';
 
-const CONFIGS = [SPOKANE_ROADS, KOOTENAI_ROADS];
+const CONFIGS = [SPOKANE_ROADS, KOOTENAI_ROADS, YELLOWSTONE_ROADS, GALLATIN_ROADS];
 export function roadConfig(state, county) {
   const s = String(state || '').toUpperCase().trim();
   const c = String(county || '').replace(/\s+County$/i, '').trim().toLowerCase();

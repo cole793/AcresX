@@ -9,6 +9,7 @@
 // Avista allowance) fails here.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { makeClock, makeContext, makeLazyContext, readPublic } from './ui-harness.js';
 import worker from '../src/index.js';
 import { configureUpstream } from '../src/shared/upstream.js';
@@ -16,6 +17,8 @@ import { lookupRoadAccess, roadConfig } from '../src/services/road-access.js';
 import { lookupWria, WA_WRIA_LAYER } from '../src/states/washington/wria.js';
 import { KOOTENAI_ROADS_LAYER } from '../src/counties/kootenai-roads.js';
 import { SPOKANE_ENGINEERING_STREETS, SPOKANE_PUBLIC_SAFETY_STREETS } from '../src/counties/spokane-roads.js';
+import { YELLOWSTONE_ROADS_LAYER, describeYellowstoneRoad } from '../src/counties/yellowstone-roads.js';
+import { GALLATIN_ROADS_LAYER, describeGallatinRoad } from '../src/counties/gallatin-roads.js';
 
 const square = { type: 'Polygon', coordinates: [[[-117.4, 47.6], [-117.399, 47.6], [-117.399, 47.601], [-117.4, 47.601], [-117.4, 47.6]]] };
 const STATE = { Spokane: 'WA', Stevens: 'WA', Kootenai: 'ID', Gallatin: 'MT', Yellowstone: 'MT' };
@@ -456,7 +459,7 @@ test('Montana permits: no county building permit; DLI electrical + plumbing + co
 test('Montana driveway and site work: MDT district bid prices per cubic yard', () => {
   // 12 ft x 0.5 ft / 27 = 2/9 cy/ft of crushed base and 2/9 cy/ft of excavation.
   const mt = (agg, exc) => (agg + exc) * 2 / 9;
-  // No county road map in Montana yet: /api/cost-context answers not_configured -> 100-500 ft.
+  // /api/cost-context answering not_configured (no road map) -> the labeled 100-500 ft range.
   const y = estimate({ county: 'Yellowstone', road: { available: false, status: 'not_configured' } }).components.driveway;
   assert.deepEqual([y.low, y.high], [Math.round(100 * mt(50, 16.53)), Math.round(500 * mt(65, 22))]);
   assert.match(y.basis, /no county road map is connected for this county yet/);
@@ -627,8 +630,108 @@ test('road access: Spokane asks both street layers; a failed layer makes the ans
   stub({ [KOOTENAI_ROADS_LAYER]: json({ features: [] }) });
   const none = await lookupRoadAccess({ state: 'ID', county: 'Kootenai', lat: LAT, lon: LON });
   assert.deepEqual([none.status, none.distanceFt, none.searchedFt], ['none_within', null, 2640]);
-  assert.equal(roadConfig('MT', 'Gallatin'), null);
-  assert.equal((await lookupRoadAccess({ state: 'MT', county: 'Gallatin', lat: LAT, lon: LON })).status, 'not_configured');
+  assert.equal(roadConfig('MT', 'Missoula'), null);
+  assert.equal((await lookupRoadAccess({ state: 'WA', county: 'Stevens', lat: LAT, lon: LON })).status, 'not_configured');
+});
+
+// ---- Montana road centerlines (owner request 2026-11-17): Yellowstone and Gallatin County layers,
+// replayed from test/fixtures/montana-roads.json (recorded live, road fields and geometry only).
+const MT_ROADS = JSON.parse(readFileSync(new URL('./fixtures/montana-roads.json', import.meta.url), 'utf8'));
+function replay(layerUrl, rec) {
+  const byRing = new Map(rec.rings.map(r => [r.ring, r.features]));
+  return stub({ [layerUrl]: ring => json({ features: byRing.get(ring) || [] }) });
+}
+
+test('road access: Yellowstone nearest road from the county layer (recorded), public dedicated street', async () => {
+  const rec = MT_ROADS.yellowstone;
+  const calls = replay(YELLOWSTONE_ROADS_LAYER, rec);
+  const r = await lookupRoadAccess({ state: 'MT', county: 'Yellowstone County', lat: rec.lat, lon: rec.lon });
+  assert.deepEqual([r.available, r.status, r.distanceFt, r.searchedFt], [true, 'found', 553, 1320]);
+  assert.deepEqual(r.road, { name: 'CREST VIEW DR', kind: 'local road, dedicated public right-of-way', public: true, ownership: 'public' });
+  assert.equal(r.nearestPublic.distanceFt, 553);
+  assert.equal(r.source.url, YELLOWSTONE_ROADS_LAYER);
+  // A public road in the 1,320 ft ring ends the search there.
+  assert.deepEqual(calls.map(c => c.ring), [330, 1320]);
+  assert.equal(calls[0].where, "LIFESTAT = 'ACTIVE' AND Rd_Symbl IN (2,3,4,5,10)");
+});
+
+test('road access: Gallatin nearest road has no mapped public status; the nearest public road is a county road (recorded)', async () => {
+  const rec = MT_ROADS.gallatin;
+  const calls = replay(GALLATIN_ROADS_LAYER, rec);
+  const r = await lookupRoadAccess({ state: 'MT', county: 'Gallatin', lat: rec.lat, lon: rec.lon });
+  assert.deepEqual([r.status, r.distanceFt, r.searchedFt], ['found', 430, 2640]);
+  assert.deepEqual(r.road, { name: 'SKY RIDGE DR', kind: 'road, public status not mapped', public: false, ownership: 'unknown' });
+  assert.deepEqual([r.nearestPublic.distanceFt, r.nearestPublic.road.name, r.nearestPublic.road.kind], [2112, 'NASH RD', 'county road']);
+  assert.deepEqual(calls.map(c => c.ring), [330, 1320, 2640]);
+  assert.match(calls[0].where, /CLASSIFICATION <> 'Interstate'/);
+  assert.match(calls[0].where, /CONDITION <> 'DRIVEWAY'/);
+});
+
+test('road access: Montana no road within range (recorded) and upstream failure', async () => {
+  const rec = MT_ROADS.yellowstoneNoRoad;
+  replay(YELLOWSTONE_ROADS_LAYER, rec);
+  const none = await lookupRoadAccess({ state: 'MT', county: 'Yellowstone', lat: rec.lat, lon: rec.lon });
+  assert.deepEqual([none.available, none.status, none.distanceFt, none.nearestPublic, none.searchedFt], [true, 'none_within', null, null, 2640]);
+  stub({ [GALLATIN_ROADS_LAYER]: new Response('down', { status: 503 }) });
+  const down = await lookupRoadAccess({ state: 'MT', county: 'Gallatin', lat: 45.6, lon: -111.0 });
+  assert.deepEqual([down.available, down.status], [false, 'source_unavailable']);
+  stub({ [YELLOWSTONE_ROADS_LAYER]: json({ error: { code: 500, message: 'Unable to complete operation.' } }) });
+  const bad = await lookupRoadAccess({ state: 'MT', county: 'Yellowstone', lat: 45.7, lon: -108.5 });
+  assert.deepEqual([bad.available, bad.status], [false, 'source_unavailable']);
+});
+
+test('Montana road field mappings: public, private and unmapped ownership', () => {
+  const y = a => describeYellowstoneRoad(a);
+  assert.deepEqual(y({ STRLABEL: 'WOOD ROSE DR', Rd_Symbl: 10, RDCLASS: 'STREETS', OWNER: 'PRIVATE' }), { name: 'WOOD ROSE DR', kind: 'private road', public: false, ownership: 'private' });
+  assert.deepEqual(y({ STRLABEL: 'HILLCREST RD', Rd_Symbl: 4, RDCLASS: 'MINOR ARTERIAL', OWNER: 'COUNTY' }), { name: 'HILLCREST RD', kind: 'minor arterial', public: true, ownership: 'public' });
+  assert.equal(y({ Rd_Symbl: 5, RDCLASS: 'STREETS', OWNER: 'COUNTY' }).kind, 'county road');
+  assert.equal(y({ Rd_Symbl: 5, RDCLASS: 'STREETS', OWNER: 'BILLINGS' }).kind, 'city street (Billings)');
+  assert.equal(y({ Rd_Symbl: 2, RDCLASS: 'US HWY', OWNER: 'STATE' }).kind, 'US highway');
+  // A private easement, and owners whose public status the county does not state.
+  assert.deepEqual([y({ Rd_Symbl: 5, OWNER: 'PRIVATE ESMT' }).kind, y({ Rd_Symbl: 5, OWNER: 'PRIVATE ESMT' }).ownership], ['private easement road', 'private']);
+  assert.deepEqual([y({ Rd_Symbl: 5, OWNER: 'UPPE' }).public, y({ Rd_Symbl: 5, OWNER: 'UPPE' }).ownership], [false, 'unknown']);
+  // Rd_Symbl 10 is a private road whatever the owner says.
+  assert.equal(y({ Rd_Symbl: 10, OWNER: 'DEDICATED' }).public, false);
+  const g = a => describeGallatinRoad(a);
+  assert.deepEqual(g({ ROADNAME_CONCAT: 'GOLDEN EAGLE DR', OWNERSHIP: 'PUBLIC', MAINTENANCE: 'PRIVATE' }), { name: 'GOLDEN EAGLE DR', kind: 'public road, privately maintained', public: true, ownership: 'public' });
+  assert.deepEqual(g({ DIRPRE: 'N', ROADNAME: 'ROUSE', ROADTYPE: 'AVE', OWNERSHIP: 'BOZEMAN', MAINTENANCE: 'BOZEMAN' }), { name: 'N ROUSE AVE', kind: 'city street (Bozeman)', public: true, ownership: 'public' });
+  assert.equal(g({ OWNERSHIP: 'FEDERAL', MAINTENANCE: 'FEDERAL' }).kind, 'federal road (e.g. Forest Service)');
+  assert.equal(g({ OWNERSHIP: 'COUNTY', MAINTENANCE: 'COUNTY' }).kind, 'county road');
+  assert.deepEqual([g({ OWNERSHIP: 'PRIVATE' }).kind, g({ OWNERSHIP: 'PRIVATE' }).ownership], ['private road', 'private']);
+  for (const o of ['TBD', 'OUT OF COUNTY', '', null]) assert.deepEqual([g({ OWNERSHIP: o }).public, g({ OWNERSHIP: o }).ownership], [false, 'unknown']);
+  assert.ok(roadConfig('MT', 'Yellowstone') && roadConfig('MT', 'gallatin county'));
+});
+
+test('Montana driveway line: measured length from the county road map, the same formula and labels as Spokane', async () => {
+  const mt = (agg, exc) => (agg + exc) * 2 / 9;
+  // Yellowstone (recorded): 553 ft to a public street.
+  replay(YELLOWSTONE_ROADS_LAYER, MT_ROADS.yellowstone);
+  const yr = await lookupRoadAccess({ state: 'MT', county: 'Yellowstone', lat: MT_ROADS.yellowstone.lat, lon: MT_ROADS.yellowstone.lon });
+  const y = estimate({ county: 'Yellowstone', road: yr }).components.driveway;
+  assert.deepEqual([y.low, y.high, y.lengthFt, y.confidence], [Math.round(553 * mt(50, 16.53)), Math.round(553 * mt(65, 22)), 553, 'Moderate']);
+  assert.match(y.basis, /^553 ft straight line from the parcel interior point \(assumed homesite\) to CREST VIEW DR \(local road, dedicated public right-of-way\) on the county's road centerline map\. Driveway 553 ft x/);
+  assert.match(y.basis, /MDT Billings District low bids/);
+  assert.ok(y.sources.some(s => s.url === YELLOWSTONE_ROADS_LAYER));
+  // Gallatin (recorded): the nearest road's public status is not mapped; the public road is named.
+  replay(GALLATIN_ROADS_LAYER, MT_ROADS.gallatin);
+  const gr = await lookupRoadAccess({ state: 'MT', county: 'Gallatin', lat: MT_ROADS.gallatin.lat, lon: MT_ROADS.gallatin.lon });
+  const g = estimate({ county: 'Gallatin', road: gr }).components.driveway;
+  assert.deepEqual([g.low, g.high, g.lengthFt], [Math.round(430 * mt(68, 20)), Math.round(430 * mt(75, 24)), 430]);
+  assert.match(g.basis, /430 ft straight line .* to SKY RIDGE DR \(road, public status not mapped\) on the county's road centerline map\. The nearest public road is NASH RD at 2,112 ft\. The nearest road's public status is not mapped: a private road or easement likely serves this parcel; verify access\. Driveway 430 ft x/);
+  // A road mapped as private keeps Spokane's wording.
+  const p = estimate({ county: 'Gallatin', road: PRIVATE_ROAD(240, 2482) }).components.driveway;
+  assert.match(p.basis, /The nearest road is private: a private road or easement likely serves this parcel; verify access\. Driveway 240 ft/);
+  // No road within 2,640 ft (recorded), then the county map down: Spokane's labeled ranges.
+  replay(YELLOWSTONE_ROADS_LAYER, MT_ROADS.yellowstoneNoRoad);
+  const nr = await lookupRoadAccess({ state: 'MT', county: 'Yellowstone', lat: MT_ROADS.yellowstoneNoRoad.lat, lon: MT_ROADS.yellowstoneNoRoad.lon });
+  const n = estimate({ county: 'Yellowstone', road: nr }).components.driveway;
+  assert.deepEqual([n.low, n.high], [Math.round(100 * mt(50, 16.53)), Math.round(1500 * mt(65, 22))]);
+  assert.match(n.basis, /^No mapped road within 2,640 ft of the parcel interior point/);
+  stub({ [YELLOWSTONE_ROADS_LAYER]: new Response('down', { status: 503 }) });
+  const dr = await lookupRoadAccess({ state: 'MT', county: 'Yellowstone', lat: 45.7, lon: -108.5 });
+  const d = estimate({ county: 'Yellowstone', road: dr }).components.driveway;
+  assert.deepEqual([d.low, d.high, d.lengthFt], [Math.round(100 * mt(50, 16.53)), Math.round(500 * mt(65, 22)), null]);
+  assert.match(d.basis, /^The county road map did not answer; range for a 100-500 ft driveway/);
 });
 
 test('POST /api/cost-context: road access plus the WRIA in Washington; degrades per part', async () => {
