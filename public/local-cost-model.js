@@ -429,6 +429,8 @@
       const L = Math.max(0, Number(ra.distanceFt));
       const road = ra.road || {};
       const isPrivate = road.public === false;
+      // Not public: mapped as private, or (ownership 'unknown', Montana) its public status is not mapped.
+      const notPublic = road.ownership === 'unknown' ? ` The nearest road's public status is not mapped: ${PRIVATE}.` : ` The nearest road is private: ${PRIVATE}.`;
       const pub = ra.nearestPublic;
       const named = `${road.name || 'the nearest road'}${road.kind ? ` (${road.kind})` : ''}`;
       const pubText = isPrivate ? (pub ? ` The nearest public road is ${pub.road?.name || 'unnamed'} at ${fmt(pub.distanceFt)} ft.` : ` No public road within ${fmt(ra.searchedFt || 0)} ft.`) : '';
@@ -436,10 +438,10 @@
       if (L <= d.longFt) {
         const len = Math.max(L, d.minFt);
         const minText = len > L ? ` Driveway ${fmt(len)} ft (minimum allowance)` : ` Driveway ${fmt(len)} ft`;
-        return range(len, len, `${where}${isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ''}${minText}`, 'Moderate', len);
+        return range(len, len, `${where}${isPrivate ? notPublic : ''}${minText}`, 'Moderate', len);
       }
       const hi = Math.min(L, d.maxFt);
-      const capped = L > d.maxFt ? ` Capped at ${fmt(d.maxFt)} ft: ${PRIVATE}.` : isPrivate ? ` The nearest road is private: ${PRIVATE}.` : ' Verify the access route.';
+      const capped = L > d.maxFt ? ` Capped at ${fmt(d.maxFt)} ft: ${PRIVATE}.` : isPrivate ? notPublic : ' Verify the access route.';
       return range(d.unknownLengthFt.low, hi, `${where} That is long for a driveway, so the range is ${fmt(d.unknownLengthFt.low)} ft to ${fmt(hi)} ft.${capped}`, 'Low', null);
     }
     if (ra?.available && ra.status === 'none_within') {
@@ -519,7 +521,7 @@
   }
 
   // ---- Cost context: road access + watershed (/api/cost-context follow-up, local counties only;
-  // Montana has no road layer connected yet, so its road access answers not_configured)
+  // all four have a county road centerline layer: src/counties/*-roads.js)
 
   let contextRequestId = 0;
   function parcelPoint(parcel) {

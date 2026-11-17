@@ -549,7 +549,7 @@
     const ra = f.road;
     if (ra?.available && ra.status === 'found') {
       const priv = ra.road?.public === false;
-      card('Access / driveway', priv ? 'verify' : 'good', priv ? 'Private road' : 'Public road', [`${Math.round(ra.distanceFt).toLocaleString('en-US')} ft to ${ra.road?.name || 'the nearest road'}${ra.road?.kind ? ` (${ra.road.kind})` : ''}`, priv ? (ra.nearestPublic ? `Nearest public road: ${ra.nearestPublic.road?.name || 'unnamed'} at ${Math.round(ra.nearestPublic.distanceFt).toLocaleString('en-US')} ft; confirm a recorded easement` : 'No public road nearby; confirm a recorded easement') : 'Straight-line distance, not a surveyed driveway route'], [S.add(ra.source?.name, { url: ra.source?.url, date: '' })]);
+      card('Access / driveway', priv ? 'verify' : 'good', priv ? (ra.road?.ownership === 'unknown' ? 'Road status not mapped' : 'Private road') : 'Public road', [`${Math.round(ra.distanceFt).toLocaleString('en-US')} ft to ${ra.road?.name || 'the nearest road'}${ra.road?.kind ? ` (${ra.road.kind})` : ''}`, priv ? (ra.nearestPublic ? `Nearest public road: ${ra.nearestPublic.road?.name || 'unnamed'} at ${Math.round(ra.nearestPublic.distanceFt).toLocaleString('en-US')} ft; confirm a recorded easement` : 'No public road nearby; confirm a recorded easement') : 'Straight-line distance, not a surveyed driveway route'], [S.add(ra.source?.name, { url: ra.source?.url, date: '' })]);
     } else if (ra?.available && ra.status === 'none_within') card('Access / driveway', 'risk', 'No road nearby', [`No mapped road within ${Math.round(ra.searchedFt || 0).toLocaleString('en-US')} ft`, 'Confirm legal access before buying']);
     else card('Access / driveway', 'verify', NA, ['Road access was not measured for this county']);
     // Flood
