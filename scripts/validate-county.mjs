@@ -76,7 +76,7 @@ export const READ_ONLY_ROUTES = new Set([
 export const RESO_LOOKUP_KEYS = new Set(['parcelId', 'address', 'lat', 'lon']);
 
 // The browser only asks for zoning rules in these counties (public/zoning-potential.js:51).
-const ZONING_RULES_COUNTIES = /^(spokane|stevens|yellowstone|kootenai)$/i;
+const ZONING_RULES_COUNTIES = /^(spokane|stevens|yellowstone|kootenai|gallatin)$/i;
 
 // Owner, taxpayer and mailing fields are never requested (the Worker strips them from answers,
 // but the harness doesn't ask for them in the first place).
@@ -622,6 +622,8 @@ export async function validateParcel(entry, { state, county, baseUrl, fetchImpl,
   else layers.zoningRules = interpretLayer('zoningRules', await call('/api/zoning-rules', {
     county: zoningData.county || parcelCounty, zoneCode, zoneName: zoningData.zoning.name || '',
     jurisdiction: zoningData.jurisdiction || zoningData.permitJurisdiction?.name || '',
+    // Gallatin County rules are per zoning district (public/zoning-potential.js sends it too).
+    ...(/^gallatin$/i.test(rulesCounty) ? { district: zoningData.zoning.district || zoningData.source?.attributes?.DISTRICT_N || '' } : {}),
     uga: Boolean(zoningData.urbanGrowthArea?.intersects),
     developmentAgreement: zoningData.zoning.developmentAgreement || zoningData.comprehensivePlan?.developmentAgreement || ''
   }));

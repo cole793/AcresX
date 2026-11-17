@@ -1,0 +1,551 @@
+{
+  "note": "Every distinct DISTRICT_N / INNERZONE / ZONED combination on Gallatin County GIS County_Zoning_Districts/FeatureServer/42, read live (read-only, groupByFieldsForStatistics) on 2026-11-17. No owner or personal fields exist on this layer.",
+  "source": "https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42",
+  "values": [
+    {
+      "DISTRICT_N": "BEAR CANYON",
+      "INNERZONE": "M-1",
+      "ZONED": "COMMERCIAL - LIGHT MANUFACTURING"
+    },
+    {
+      "DISTRICT_N": "BEAR CANYON",
+      "INNERZONE": "NC",
+      "ZONED": "NEIGHBORHOOD COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "BEAR CANYON",
+      "INNERZONE": "PLI",
+      "ZONED": "PUBLIC LAND & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "BEAR CANYON",
+      "INNERZONE": "R-1",
+      "ZONED": "R-1 RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "BEAR CANYON",
+      "INNERZONE": "R-5",
+      "ZONED": "R-5 RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "BEAR CANYON",
+      "INNERZONE": "R-5s",
+      "ZONED": "R-5s RESIDENTIAL (slopes > 15%)"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "CC",
+      "ZONED": "COMMUNITY COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "CF",
+      "ZONED": "COMMUNITY FACILITIES"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "CI",
+      "ZONED": "COMMERCIAL & INDUSTRIAL MIXED USE"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "CR",
+      "ZONED": "COMMUNITY RECREATION"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "MC",
+      "ZONED": "MEADOW CENTER"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "OSP",
+      "ZONED": "OPEN SPACE PRESERVE"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "PL",
+      "ZONED": "PUBLIC LANDS"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "R",
+      "ZONED": "RESORT"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "R-MF-3500",
+      "ZONED": "RESIDENTIAL MULTI FAMILY 3,500"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "R-MF-6500",
+      "ZONED": "RESIDENTIAL MULTI FAMILY 6,500"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "R-SF-11000",
+      "ZONED": "RESIDENTIAL SINGLE FAMILY 11,000"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "R-SF-7500",
+      "ZONED": "RESIDENTIAL SINGLE FAMILY 7,500"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RB",
+      "ZONED": "RECREATIONAL BUSINESS"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RC-SF-1",
+      "ZONED": "RESIDENTIAL CLUSTER SINGLE FAMILY 1"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RC-SF-10",
+      "ZONED": "RESIDENTIAL CLUSTER SINGLE FAMILY 10"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RC-SF-2.5",
+      "ZONED": "RESIDENTIAL CLUSTER SINGLE FAMILY 2.5"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RC-SF-20",
+      "ZONED": "RESIDENTIAL CLUSTER SINGLE FAMILY 20"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RC-SF-40",
+      "ZONED": "RESIDENTIAL CLUSTER SINGLE FAMILY 40"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "RC-SF-5",
+      "ZONED": "RESIDENTIAL CLUSTER SINGLE FAMILY 5"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "ROAD",
+      "ZONED": "ROAD"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "TCC",
+      "ZONED": "TOWN CENTER COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "BIG SKY",
+      "INNERZONE": "TCR",
+      "ZONED": "TOWN CENTER RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "BOZEMAN PASS",
+      "INNERZONE": "AR-40",
+      "ZONED": "AGRICULTURAL AND RURAL RESIDENTIAL 40"
+    },
+    {
+      "DISTRICT_N": "BOZEMAN PASS",
+      "INNERZONE": "AR-80",
+      "ZONED": "AGRICULTURAL AND RURAL RESIDENTIAL 80"
+    },
+    {
+      "DISTRICT_N": "BOZEMAN PASS",
+      "INNERZONE": "PL-640",
+      "ZONED": "PUBLIC LANDS"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "AEPD10",
+      "ZONED": "AGRICULTURE EXCLUSIVE (PUD 10)"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "AEPD20",
+      "ZONED": "AGRICULTURE EXCLUSIVE (PUD 20)"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "B-2",
+      "ZONED": "BASE AREA BUSINESS"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "B-3",
+      "ZONED": "RECREATIONAL BUSINESS"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "B-4",
+      "ZONED": "BASE AREA RECREATION & FORESTRY"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "PLI",
+      "ZONED": "PUBLIC LANDS & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "BRIDGER CANYON",
+      "INNERZONE": "RF-PD-20",
+      "ZONED": "RECREATION & FORESTRY (PUD 20)"
+    },
+    {
+      "DISTRICT_N": "EAST GALLATIN",
+      "INNERZONE": "AR",
+      "ZONED": "AGRICULTURAL & RURAL RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "EAST GALLATIN",
+      "INNERZONE": "C",
+      "ZONED": "COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "EAST GALLATIN",
+      "INNERZONE": "NC",
+      "ZONED": "NEIGHBORHOOD COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "C",
+      "ZONED": "COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "LDRR/A",
+      "ZONED": "LOW DENSITY RURAL RESIDENTIAL & AGRICULTURAL"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "MU",
+      "ZONED": "MIXED USE"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "NC",
+      "ZONED": "NEIGHBORHOOD COMMERICAL"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "PLI",
+      "ZONED": "PUBLIC LANDS & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "RR/A",
+      "ZONED": "RURAL RESIDENTIAL & AGRICULTURAL"
+    },
+    {
+      "DISTRICT_N": "FOUR CORNERS",
+      "INNERZONE": "RR/A",
+      "ZONED": "RURAL RESIDENTIAL AND AGRICULTURAL"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY",
+      "INNERZONE": "UNZ",
+      "ZONED": "UNZONED"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "AS",
+      "ZONED": "AGRICULTURE SUBURBAN"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "M-I",
+      "ZONED": "MANUFACTURING AND INDUSTRIAL"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "N-S",
+      "ZONED": "NEIGHBORHOOD SERVICE"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "PLI",
+      "ZONED": "PUBLIC LANDS & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "R-MH",
+      "ZONED": "RESIDENTIAL-MANUFACTURED HOME"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "RMH",
+      "ZONED": "SINGLE-HOUSEHOLD MOBILE HOME"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "RO",
+      "ZONED": "RESIDENTIAL OFFICE"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "RS",
+      "ZONED": "RESIDENTIAL SUBURBAN"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "RS",
+      "ZONED": "RESIDENTIAL SUBURBAN COUNTRY ESTATES"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "RX-HD",
+      "ZONED": "RESIDENTIAL EXISTING HIGH DENSITY"
+    },
+    {
+      "DISTRICT_N": "GALLATIN COUNTY / BOZEMAN AREA",
+      "INNERZONE": "RX-MD",
+      "ZONED": "RESIDENTIAL EXISTING MEDIUM DENSITY"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "C",
+      "ZONED": "COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "COS-X",
+      "ZONED": "EXISTING RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "HLE",
+      "ZONED": "HEBGEN LAKE ESTATES"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "PL",
+      "ZONED": "PUBLIC LANDS"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "PUD-X",
+      "ZONED": "EXISTING PLANNED UNIT DEVELOPMENT"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "R-10",
+      "ZONED": "RESIDENTIAL 10"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "R-5",
+      "ZONED": "RESIDENTIAL 5"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "RD",
+      "ZONED": "RESOURCE DEVELOPMENT"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "ROAD",
+      "ZONED": "ROAD"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "RP",
+      "ZONED": "RAINBOW POINT"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "RX",
+      "ZONED": "EXISTING RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "HEBGEN LAKE",
+      "INNERZONE": "WATER",
+      "ZONED": "WATER"
+    },
+    {
+      "DISTRICT_N": "HYALITE",
+      "INNERZONE": "R-X",
+      "ZONED": "RESIDENTIAL (EXISTING RESIDENTIAL SUBDIVISION)"
+    },
+    {
+      "DISTRICT_N": "HYALITE",
+      "INNERZONE": "RR-10",
+      "ZONED": "RURAL RESIDENTIAL (ONE SINGLE FAMILY DWELLING PER 10 ACRES)"
+    },
+    {
+      "DISTRICT_N": "HYALITE",
+      "INNERZONE": "RR-5",
+      "ZONED": "RURAL RESIDENTIAL (ONE SINGLE FAMILY DWELLING PER 5 ACRES)"
+    },
+    {
+      "DISTRICT_N": "MIDDLE COTTONWOOD",
+      "INNERZONE": "AR",
+      "ZONED": "AGRICULTURAL & RURAL RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "MIDDLE COTTONWOOD",
+      "INNERZONE": "NR",
+      "ZONED": "NATURAL RESOURCES"
+    },
+    {
+      "DISTRICT_N": "NORTH GALLATIN",
+      "INNERZONE": "NGC",
+      "ZONED": "NORTH GALLATIN CANYON"
+    },
+    {
+      "DISTRICT_N": "REESE CREEK",
+      "INNERZONE": "AR-80",
+      "ZONED": "AGRICULTURAL & RURAL RESIDENTIAL (ONE DWELLING PER 80 ACRES)"
+    },
+    {
+      "DISTRICT_N": "REESE CREEK",
+      "INNERZONE": "PL",
+      "ZONED": "PUBLIC LANDS"
+    },
+    {
+      "DISTRICT_N": "REESE CREEK",
+      "INNERZONE": "RR-40",
+      "ZONED": "RURAL RESIDENTIAL (ONE DWELLING PER 40 ACRES)"
+    },
+    {
+      "DISTRICT_N": "REESE CREEK",
+      "INNERZONE": "RW-160",
+      "ZONED": "RURAL RESIDENTIAL & WILDLIFE CORRIDOR (ONE DWELLING PER 160 ACRES)"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "APT",
+      "ZONED": "APARTMENTS"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "B-3",
+      "ZONED": "COMMUNITY BUSINESS"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "PLI",
+      "ZONED": "PUBLIC LANDS & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "R-2",
+      "ZONED": "RESIDENTIAL-SINGLE FAMILY, MEDIUM DENSITY"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "R-MH",
+      "ZONED": "RESIDENTIAL-MANUFACTURED HOME"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "R-TH",
+      "ZONED": "RESIDENTIAL-MEDIUM DENSITY TOWNHOUSE"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "ROAD",
+      "ZONED": "ROAD"
+    },
+    {
+      "DISTRICT_N": "RIVER ROCK",
+      "INNERZONE": "STG",
+      "ZONED": "STORAGE FACILITIES / GARAGES"
+    },
+    {
+      "DISTRICT_N": "SOUTH COTTONWOOD CANYON",
+      "INNERZONE": "AR",
+      "ZONED": "AGRICULTURAL & RURAL RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "SOUTH GALLATIN",
+      "INNERZONE": "CC",
+      "ZONED": "CANYON COMMERCIAL"
+    },
+    {
+      "DISTRICT_N": "SOUTH GALLATIN",
+      "INNERZONE": "CR",
+      "ZONED": "CANYON RESIDENTIAL - MEDIUM DENSITY"
+    },
+    {
+      "DISTRICT_N": "SOUTH GALLATIN",
+      "INNERZONE": "PL",
+      "ZONED": "PUBLIC LANDS"
+    },
+    {
+      "DISTRICT_N": "SOUTH GALLATIN",
+      "INNERZONE": "RF",
+      "ZONED": "RECREATION & FORESTRY"
+    },
+    {
+      "DISTRICT_N": "SPRINGHILL",
+      "INNERZONE": "AR",
+      "ZONED": "AGRICULTURAL & RURAL RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "SPRINGHILL",
+      "INNERZONE": "CFI",
+      "ZONED": "COMMUNITY FACILITIES & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "SPRINGHILL",
+      "INNERZONE": "PL",
+      "ZONED": "PUBLIC LANDS"
+    },
+    {
+      "DISTRICT_N": "SYPES CANYON 1",
+      "INNERZONE": "PLI",
+      "ZONED": "PUBLIC LANDS & INSTITUTIONS"
+    },
+    {
+      "DISTRICT_N": "SYPES CANYON 1",
+      "INNERZONE": "RS-1",
+      "ZONED": "RESIDENTIAL SUBURBAN - 1 ACRE"
+    },
+    {
+      "DISTRICT_N": "SYPES CANYON 1",
+      "INNERZONE": "RS-10",
+      "ZONED": "RESIDENTIAL SUBURBAN - 10 ACRE"
+    },
+    {
+      "DISTRICT_N": "SYPES CANYON 2",
+      "INNERZONE": "AS-10",
+      "ZONED": "AGRICULTURE SUBURBAN -10 ACRE"
+    },
+    {
+      "DISTRICT_N": "SYPES CANYON 2",
+      "INNERZONE": "RS-2.5",
+      "ZONED": "RESIDENTIAL SUBURBAN - 2.5 ACRE"
+    },
+    {
+      "DISTRICT_N": "TRAIL CREEK",
+      "INNERZONE": "AR-20",
+      "ZONED": "AGRICULTURAL RESIDENTIAL SINGLE FAMILY, ONE DWELLING PER 20 ACRES"
+    },
+    {
+      "DISTRICT_N": "TRAIL CREEK",
+      "INNERZONE": "PUD",
+      "ZONED": "PLANNED UNIT DEVELOPMENT"
+    },
+    {
+      "DISTRICT_N": "WHEATLAND HILLS",
+      "INNERZONE": "RS-1",
+      "ZONED": "RESIDENTIAL SUBURBAN - 1 ACRE"
+    },
+    {
+      "DISTRICT_N": "ZONING DISTRICT 1",
+      "INNERZONE": "R",
+      "ZONED": "GENERAL RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "ZONING DISTRICT 1",
+      "INNERZONE": "SRR",
+      "ZONED": "SEMI-RURAL RESIDENTIAL"
+    },
+    {
+      "DISTRICT_N": "ZONING DISTRICT 6",
+      "INNERZONE": "RS-10",
+      "ZONED": "RESIDENTIAL SUBURBAN"
+    }
+  ]
+}
