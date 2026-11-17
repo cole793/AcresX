@@ -22,14 +22,17 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
   Actions is the only deploy path. PR #1 (Cloudflare autoconfig) closed unmerged.
 - Production: `main`, deployed to Cloudflare by `.github/workflows/deploy-cloudflare.yml` on every
   push. As of Oct 2026, every push to `main` is first gated by `npm run check`.
-- Coverage: Spokane (WA), Kootenai (ID), Gallatin and Yellowstone (MT).
+- Coverage: Spokane and Stevens (WA), Kootenai (ID), Gallatin and Yellowstone (MT). Level 3:
+  Spokane, Stevens, Kootenai, Yellowstone. Level 2: Gallatin.
+- Accounts (#75) are merged but OFF: `/api/me` answers `enabled:false` until the D1 tables exist
+  and `RESEND_API_KEY` is set (see "Waiting on the owner").
 - Tests: offline smoke tests in `test/` (see `testing.md`).
 
 ## Open work
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/stevens-level-3` | see git | (none yet) | Stevens to level 3; delete public/spokane-cost-model.js; awaiting verifier |
+| (none) | | | All gap-report PRs through #80 are merged. |
 
 Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
 HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
@@ -47,6 +50,26 @@ Merged 2026-11-09 to 11-11 (owner-approved, all deploys succeeded): #46, #48, #4
 Merged 2026-11-12 to 11-13 (owner-approved, all deploys succeeded): #53 validation results
 publish resilience, #54 Kootenai + Yellowstone to level 3, #55 local Spokane/Kootenai
 development-cost model, #56 Spokane Valley backup zoning source.
+
+Merged 2026-11-13 to 11-16 (each owner-approved; every deploy succeeded): #57-#59 Stevens level 3,
+cost file cleanup, LinkedIn revert; #60 report redesign (4 pages, dashboard cost card); #61 FEMA
+flood share; #62 Montana local costs; #63 buildable acres; #64 flood share in production (FEMA
+403s requests without a User-Agent; Esri fallback); #65 Spokane level 3; #66 coverage badge,
+grouped county lists, honest chips, existing-structure note; #67 consistency (one well depth,
+flood-share/buildable-aware score, septic uses measured slope); #68 power line distance (HIFLD
+transmission, Flathead Electric layers, osm-power browser fallback); #69 phone layout, overview
+card, listing card; #70 address + map-click search; #71 OSM distance guard (<=1,000 ft only);
+#72 report co-branding + Settings; #73 missing layers excluded from the score (Incomplete /
+Provisional); #74 property tax (treasurer pages; Kootenai levy estimate); #75 accounts (email
+magic link, D1 migration 0002, share links; OFF until setup); #76 "likely" utilities priced as
+well+septic, Yellowstone city limits from MapServer/30, MT permits by city limits; #77 in-page
+report view (no prompt/popup); #78 iOS text-size-adjust + no clipped pages; #79 Download PDF
+(self-hosted html2canvas 1.4.1 + jsPDF 4.2.1); #80 iPhone Home Screen app: Open in Safari +
+deep links (`?state=&county=&parcel=&report=1`).
+
+Product gap report (2026-11-14): all 16 gaps closed except accounts setup (owner steps).
+
+Yearly chore: replace `src/counties/kootenai-levy-2026.js` each fall when Kootenai certifies levies.
 
 ## County report card (checklist score)
 
@@ -78,6 +101,16 @@ artifact upload failed (fixed on `claude/validation-publish-resilience`).
 
 ## Waiting on the owner
 
+- Accounts: add **Account → D1 → Edit** to the Cloudflare token stored as GitHub secret
+  `CLOUDFLARE_API_TOKEN` (the 2026-11-15 run of "Apply D1 migrations" failed with code 7403),
+  then the lead reruns the workflow (owner approved running it on 2026-11-15). Then: Resend
+  account, verify acresx.info DNS, set Cloudflare secret `RESEND_API_KEY` on the `acresx` Worker.
+- `SERPER_API_KEY` is not set in production, so web listing search is skipped (optional).
+- Utility outreach for distribution line data (Avista written OK, Inland Power, Kootenai
+  Electric, NorthWestern, co-ops; City of Cheney; Spokane County GIS "Power and Gas" layer).
+- City of Spokane / Spokane Valley zoning code pages; contractor quotes per county; Billings and
+  Bozeman city fee schedules.
+
 - Upload the ChatGPT history export for project context.
 - Note: the session network is now open (owner allowed all domains on 2026-10-26).
 - Live domain names (realtor test site, landing page), for `PRODUCT.md`.
@@ -107,6 +140,11 @@ Each entry: date, the exact action approved.
 - 2026-11-12 to 11-13: merges #53, #54, #55 and #56, each owner-approved; all deploys succeeded.
 - 2026-11-13: owner signed off Stevens (0231200, 2342700)
 - 2026-11-13: owner approved deleting public/spokane-cost-model.js
+- 2026-11-15: owner approved all product-gap merges ("Approval on all gap merges"); kept the
+  23123.9051 score with the explanation line; yes to accounts (#14) including the D1 schema
+  change, sign-in by email link (Resend); approved running the D1 migration workflow.
+- 2026-11-16: the auto-mode permission check blocked a merge under the blanket approval, so each
+  merge again gets its own Approve button. Merges #78-#80 approved that way.
 
 ## Next steps (offered, not approved)
 
