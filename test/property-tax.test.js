@@ -13,7 +13,7 @@ import { parseYellowstoneTax, montanaBillYear, yellowstoneTaxUrl } from '../src/
 import { parseGallatinTax, gallatinTaxId, GALLATIN_TAX_LABELS } from '../src/counties/gallatin-tax.js';
 import { estimateKootenaiTax, KOOTENAI_TAX_NOTE } from '../src/counties/kootenai-tax.js';
 import { KOOTENAI_LEVY_RATES_2026, kootenaiTagKey, kootenaiLevyRate } from '../src/counties/kootenai-levy-2026.js';
-import { PROPERTY_TAX_CACHE_PREFIX } from '../src/services/property-tax.js';
+import { PROPERTY_TAX_CACHE_PREFIX, TAX_LINK_HOSTS, taxLinkUrl, taxAnswer } from '../src/services/property-tax.js';
 
 const FIXTURES = new URL('./fixtures/tax/', import.meta.url);
 const page = name => readFileSync(new URL(name, FIXTURES), 'utf8');
@@ -277,4 +277,17 @@ test('pages carrying owner data: the answer holds none of it', async t => {
     assert.equal(body.available, true, request.county);
     assert.doesNotMatch(JSON.stringify(body), /PLACEHOLDER|owner|mailing|receipt|grantor/i, request.county);
   }
+});
+
+test('tax links: the Worker keeps only https links on the county tax hosts (same list as the page)', () => {
+  const page = readFileSync(new URL('../public/property-tax.js', import.meta.url), 'utf8');
+  const pageHosts = [...page.match(/const HOSTS = new Set\(\[([^\]]*)\]/)[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
+  assert.deepEqual([...TAX_LINK_HOSTS].sort(), pageHosts.sort(), 'public/property-tax.js HOSTS and the server list agree');
+  for (const host of TAX_LINK_HOSTS) assert.equal(taxLinkUrl(`https://${host}/x?y=1`), `https://${host}/x?y=1`, host);
+  for (const bad of ['http://cp.spokanecounty.org/SCOUT', 'https://evil.example/SCOUT', 'https://cp.spokanecounty.org.evil.example/', 'https://user:pw@cp.spokanecounty.org/',
+    'https://cp.spokanecounty.org:8443/', 'javascript:alert(1)', 'not a url', '', null, undefined]) assert.equal(taxLinkUrl(bad), undefined, String(bad));
+  const ids = { state: 'WA', county: 'Spokane', parcelId: '23123.9051' };
+  assert.equal(taxAnswer(ids, { status: 'not_found', link: { label: 'View tax bill', url: 'https://evil.example/bill' } }).link, null);
+  assert.deepEqual(taxAnswer(ids, { status: 'not_found', link: { label: 'View tax bill on Spokane County SCOUT', url: 'https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=23123.9051' } }).link,
+    { label: 'View tax bill on Spokane County SCOUT', url: 'https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=23123.9051' });
 });
