@@ -24,6 +24,8 @@
 //   soil.septic carries the slope used, the limits found and the context line. Without terrain
 //   the soil map slope is kept (as before). USDA screening only; a site evaluation sets the
 //   system type.
+//   BACKUP_LABEL / sourceLabel(soil): the source line shown on the septic card and its details
+//   when the soil answer came from the Esri SSURGO backup (src/services/soils.js, soil.backup).
 (function (root) {
   const finite = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
 
@@ -153,7 +155,11 @@
     return f === 'favorable' ? 92 : f === 'limited' ? 38 : 66;
   }
 
-  root.AcresXSeptic = { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, classify, soilSlopeRange, assess, apply, score };
+  // The soil answer came from the backup (USDA Soil Data Access was down): say so where it shows.
+  const BACKUP_LABEL = 'Source: USDA SSURGO via Esri (backup — USDA service unavailable)';
+  const sourceLabel = soil => (soil?.available && soil.backup ? BACKUP_LABEL : '');
+
+  root.AcresXSeptic = { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, BACKUP_LABEL, sourceLabel, classify, soilSlopeRange, assess, apply, score };
 
   // The land answer is graded once, as it arrives, so the card, the detail tab, the score, the
   // cost model and the report all read the same septic grade (progressive-loading.js looks the
