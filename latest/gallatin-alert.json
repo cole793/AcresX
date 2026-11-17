@@ -1,101 +1,30 @@
 {
-  "runId": "43974575941",
+  "runId": "44183637837",
   "county": "Gallatin",
-  "alerting": true,
-  "aboveThreshold": true,
+  "alerting": false,
+  "aboveThreshold": false,
   "changed": true,
-  "title": "Validation: Gallatin — 1 layer broken",
-  "body": "The scheduled county validation for Gallatin, MT found broken layers (run 2026-11-16T22:55:28.542Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43974575941\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Soil | 12 of 12 | broken for 12 of 12 parcels in this run | 06079621201790000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06079611101010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06069818101020000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06079801358210000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06069905302080000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06069624301010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06033804413010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06033908402700000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06110827101470000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06101033302010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06042734301530000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06079812230210000 | error | USDA soil service returned 502 with an invalid response. |\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Property tax: 1 of 12 (06069905302080000)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 13, still broken 0, recovered 0, newly unavailable 1.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06079611101010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06069818101020000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06079801358210000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Property tax | ok | error | request failed: fetch failed |\n| 06069624301010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06033804413010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06033908402700000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06110827101470000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06101033302010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06042734301530000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06079812230210000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06069905302080000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-16T22:55:28.542Z: Soil 12 of 12.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43974575941\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Soil | 12 of 12 | broken for 12 of 12 parcels in this run | 06079621201790000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06079611101010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06069818101020000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06079801358210000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06069905302080000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06069624301010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06033804413010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06033908402700000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06110827101470000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06101033302010000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06042734301530000 | error | USDA soil service returned 502 with an invalid response. |\n|  |  |  | 06079812230210000 | error | USDA soil service returned 502 with an invalid response. |\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Property tax: 1 of 12 (06069905302080000)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 13, still broken 0, recovered 0, newly unavailable 1.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06079611101010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06069818101020000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06079801358210000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Property tax | ok | error | request failed: fetch failed |\n| 06069624301010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06033804413010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06033908402700000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06110827101470000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06101033302010000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06042734301530000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n| 06079812230210000 | Soil | ok | error | USDA soil service returned 502 with an invalid response. |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06069905302080000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-16T22:55:28.542Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/43974575941\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Property tax: 1 of 12 (06069905302080000)\n",
+  "title": "Validation: Gallatin — 0 layers broken",
+  "body": "The scheduled county validation for Gallatin, MT found broken layers (run 2026-11-17T21:48:44.194Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 1 of 12 (06110827101470000)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 1, still broken 0, recovered 13, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06110827101470000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06079611101010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06069818101020000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06079801358210000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Property tax | error | ok | request failed: fetch failed |\n| 06069624301010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06033804413010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06033908402700000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06110827101470000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06101033302010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06042734301530000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06079812230210000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-17T21:48:44.194Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 1 of 12 (06110827101470000)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 1, still broken 0, recovered 13, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06110827101470000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06079611101010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06069818101020000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06079801358210000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06069905302080000 | Property tax | error | ok | request failed: fetch failed |\n| 06069624301010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06033804413010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06033908402700000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06110827101470000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06101033302010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06042734301530000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 06079812230210000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-17T21:48:44.194Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 1 of 12 (06110827101470000)\n",
   "decision": {
-    "alerting": true,
-    "aboveThreshold": true,
-    "alertLayers": [
-      {
-        "layer": "soil",
-        "label": "Soil",
-        "count": 12,
-        "total": 12,
-        "previousCount": 0,
-        "parcels": [
-          {
-            "parcelId": "06079621201790000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06079611101010000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06069818101020000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06079801358210000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06069905302080000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06069624301010000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06033804413010000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06033908402700000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06110827101470000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06101033302010000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06042734301530000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          },
-          {
-            "parcelId": "06079812230210000",
-            "status": "error",
-            "detail": "USDA soil service returned 502 with an invalid response."
-          }
-        ],
-        "reason": "broken for 12 of 12 parcels in this run"
-      }
-    ],
+    "alerting": false,
+    "aboveThreshold": false,
+    "alertLayers": [],
     "watchLayers": [],
     "belowThreshold": [
       {
-        "layer": "tax",
-        "label": "Property tax",
+        "layer": "wetlands",
+        "label": "Wetlands",
         "count": 1,
         "total": 12,
         "previousCount": 0,
         "parcels": [
           {
-            "parcelId": "06069905302080000",
+            "parcelId": "06110827101470000",
             "status": "error",
-            "detail": "request failed: fetch failed"
+            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
           }
         ]
       }
@@ -109,107 +38,107 @@
     "reason": null,
     "newlyBroken": [
       {
-        "parcelId": "06079621201790000",
-        "layer": "soil",
+        "parcelId": "06110827101470000",
+        "layer": "wetlands",
         "was": "ok",
         "now": "error",
+        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+      }
+    ],
+    "stillBroken": [],
+    "recovered": [
+      {
+        "parcelId": "06079621201790000",
+        "layer": "soil",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06079611101010000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06069818101020000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06079801358210000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06069905302080000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06069905302080000",
         "layer": "tax",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "request failed: fetch failed"
       },
       {
         "parcelId": "06069624301010000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06033804413010000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06033908402700000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06110827101470000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06101033302010000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06042734301530000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       },
       {
         "parcelId": "06079812230210000",
         "layer": "soil",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "USDA soil service returned 502 with an invalid response."
       }
     ],
-    "stillBroken": [],
-    "recovered": [],
-    "newlyUnavailable": [
-      {
-        "parcelId": "06069905302080000",
-        "layer": "publicUtilities",
-        "was": "ok",
-        "now": "unavailable",
-        "detail": "water unavailable; sewer unavailable"
-      }
-    ]
+    "newlyUnavailable": []
   }
 }

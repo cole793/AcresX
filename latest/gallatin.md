@@ -1,24 +1,24 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-16T22:55:28.542Z
-- Parcels: 12, with an error or mismatch: 12
-- Layer results: ok 139, unavailable 40, error 13, mismatch 0, skipped 0
+- Run: 2026-11-17T21:48:44.194Z
+- Parcels: 12, with an error or mismatch: 1
+- Layer results: ok 152, unavailable 39, error 1, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 06079621201790000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06079611101010000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06069818101020000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06079801358210000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06069905302080000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | ok | error | unavailable |
-| 06069624301010000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06033804413010000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06033908402700000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06110827101470000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06101033302010000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06042734301530000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06079812230210000 | ok | ok | unavailable | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
+| 06079621201790000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079611101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06069818101020000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079801358210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06069905302080000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06069624301010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06033804413010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06033908402700000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06110827101470000 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06101033302010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06042734301530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079812230210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
 
 ## Parcel details
 
@@ -29,9 +29,9 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Parcel**: ok. parcel 06079621201790000, 19.34 ac (mapped) [parcelId=06079621201790000, acres=19.34, lat=45.649725, lon=-111.360764, acresSource=mapped outline]
 - **Wells**: ok. 109 well record(s), 5 of nearest 5 report depth [wellCount=109, nearestDepthsCount=5, nearestMi=0.04, medianDepthFt=540]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 2.1%, max 4.7% [gradePct=2.1, maxGradePct=4.7, reliefFt=39, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=14.9, partial=false]
+- **Soil**: ok. favorable (Amsterdam-Quagle silt loams, 4 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Amsterdam-Quagle silt loams, 4 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=6, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 2.5%, max 4.8% [gradePct=2.5, maxGradePct=4.8, reliefFt=45, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 5.2% [cellCount=16, avgSlopePct=5.2, maxSlopePct=7.8, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -50,9 +50,9 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Parcel**: ok. parcel 06079611101010000, 316.97 ac (mapped) [parcelId=06079611101010000, acres=316.97, address=11070 LITTLE HOLLAND RD, MANHATTAN, MT 59741, lat=45.679787, lon=-111.315607, acresSource=mapped outline]
 - **Wells**: ok. 113 well record(s), 5 of nearest 5 report depth [wellCount=113, nearestDepthsCount=5, nearestMi=0.37, medianDepthFt=163]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 2.8%, max 5.1% [gradePct=2.8, maxGradePct=5.1, reliefFt=203, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.3% [cellCount=16, avgSlopePct=5.3, maxSlopePct=11.4, partial=false]
+- **Soil**: ok. limited (Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=30, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 3%, max 6.2% [gradePct=3, maxGradePct=6.2, reliefFt=199, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 5.7% [cellCount=16, avgSlopePct=5.7, maxSlopePct=13.2, partial=false]
 - **Flood**: ok. zones X, D (via FEMA NFHL) [high=false, intersects=true, zones=X; D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -71,8 +71,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel 
 - **Parcel**: ok. parcel 06069818101020000, 2.97 ac (mapped) [parcelId=06069818101020000, acres=2.97, address=15230 COTTONWOOD RD, BOZEMAN, MT 59715, lat=45.583371, lon=-111.153633, acresSource=mapped outline]
 - **Wells**: ok. 426 well record(s), 5 of nearest 5 report depth [wellCount=426, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=40]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 3.4%, max 8.6% [gradePct=3.4, maxGradePct=8.6, reliefFt=19, sampleCount=9]
+- **Soil**: ok. favorable (Hyalite-Beaverton complex, 0 to 4 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Hyalite-Beaverton complex, 0 to 4 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=2, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 3.6%, max 6.2% [gradePct=3.6, maxGradePct=6.2, reliefFt=25, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.1% [cellCount=16, avgSlopePct=5.1, maxSlopePct=7.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=0.7]
@@ -92,9 +92,9 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Parcel**: ok. parcel 06079801358210000, 0.1 ac (mapped) [parcelId=06079801358210000, acres=0.1, address=759 N 15TH AVE, lat=45.687373, lon=-111.056939, acresSource=mapped outline]
 - **Wells**: ok. 1505 well record(s), 5 of nearest 5 report depth [wellCount=1505, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=42]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
+- **Soil**: ok. limited (Blossberg loam, 0 to 2 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Blossberg loam, 0 to 2 percent slopes, hydrologicGroup=B/D, drainage=Poorly drained, soilSlopePct=1, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
 - **Terrain**: ok. avg grade 1.3%, max 3.1% [gradePct=1.3, maxGradePct=3.1, reliefFt=3, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=10, partial=false]
+- **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=1.7, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -113,18 +113,18 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county pa
 - **Parcel**: ok. parcel 06069905302080000, 9.88 ac (mapped) [parcelId=06069905302080000, acres=9.88, address=SKYRIDGE DR, BOZEMAN, MT 59715, lat=45.599921, lon=-111.016656, acresSource=mapped outline]
 - **Wells**: ok. 555 well record(s), 5 of nearest 5 report depth [wellCount=555, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=228]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
+- **Soil**: ok. limited (Bavdark loam, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Bavdark loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
 - **Terrain**: ok. avg grade 10.6%, max 20% [gradePct=10.6, maxGradePct=20, reliefFt=171, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15.1% [cellCount=16, avgSlopePct=15.1, maxSlopePct=23.1, partial=false]
+- **Slope grid**: ok. 16 cells, avg 15% [cellCount=16, avgSlopePct=15, maxSlopePct=21.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC [providers=NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
+- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. RR-10 (Gallatin County) · overlays: none mapped [code=RR-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $1,228,455, no tax amount [assessedValue=1228455, landValue=1228455, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
-- **Property tax**: error. request failed: fetch failed
+- **Property tax**: ok. billed 2026 tax $9,208.96 [taxTotal=9208.96, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06069624301010000 (no locality, 158.98 ac)
@@ -134,10 +134,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Parcel**: ok. parcel 06069624301010000, 159.05 ac (mapped) [parcelId=06069624301010000, acres=159.05, lat=45.558556, lon=-111.305016, acresSource=mapped outline]
 - **Wells**: ok. 11 well record(s), 5 of nearest 5 report depth [wellCount=11, nearestDepthsCount=5, nearestMi=1.59, medianDepthFt=524]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 13.2%, max 22.3% [gradePct=13.2, maxGradePct=22.3, reliefFt=654, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22.4% [cellCount=16, avgSlopePct=22.4, maxSlopePct=30.6, partial=false]
-- **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
+- **Soil**: ok. moderate (Bangtail-Adel loams, 4 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Bangtail-Adel loams, 4 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 13.4%, max 22.2% [gradePct=13.4, maxGradePct=22.2, reliefFt=663, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=30.9, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=0.8]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -155,9 +155,9 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Parcel**: ok. parcel 06033804413010000, 3.33 ac (mapped) [parcelId=06033804413010000, acres=3.33, address=WILDERNESS RIDGE TRL, BIG SKY, MT 59716, lat=45.246655, lon=-111.36022, acresSource=mapped outline]
 - **Wells**: ok. 246 well record(s), 5 of nearest 5 report depth [wellCount=246, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=1058]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 9.8%, max 19% [gradePct=9.8, maxGradePct=19, reliefFt=113, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 16.2% [cellCount=16, avgSlopePct=16.2, maxSlopePct=25.6, partial=false]
+- **Soil**: ok. limited (Yellowmule-Ouselfal complex, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Yellowmule-Ouselfal complex, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 9%, max 21% [gradePct=9, maxGradePct=21, reliefFt=112, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 15.9% [cellCount=16, avgSlopePct=15.9, maxSlopePct=36.1, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -174,10 +174,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improved lot near Big Sky / Gallatin Gateway (R-SF-11000); returned an empty zone code before the fix.
 
 - **Parcel**: ok. parcel 06033908402700000, 0.42 ac (mapped) [parcelId=06033908402700000, acres=0.42, address=16 BEARTOOTH RD, GALLATIN GATEWAY, MT 59730, lat=45.238616, lon=-111.253517, acresSource=mapped outline]
-- **Wells**: ok. 313 well record(s), 5 of nearest 5 report depth [wellCount=313, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=202]
+- **Wells**: ok. 313 well record(s), 5 of nearest 5 report depth [wellCount=313, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=115]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 1.3%, max 2.6% [gradePct=1.3, maxGradePct=2.6, reliefFt=4, sampleCount=9]
+- **Soil**: ok. favorable (Bridger loam, 2 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Bridger loam, 2 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=5, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 1.6%, max 2.9% [gradePct=1.6, maxGradePct=2.9, reliefFt=5, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 2.3% [cellCount=16, avgSlopePct=2.3, maxSlopePct=3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -197,11 +197,11 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Parcel**: ok. parcel 06110827101470000, 19.8 ac (mapped) [parcelId=06110827101470000, acres=19.8, address=170 HOSS RIDGE RD, MANHATTAN, MT 59741, lat=45.90107, lon=-111.335438, acresSource=mapped outline]
 - **Wells**: ok. 149 well record(s), 5 of nearest 5 report depth [wellCount=149, nearestDepthsCount=5, nearestMi=0.1, medianDepthFt=500]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
-- **Terrain**: ok. avg grade 6.6%, max 14.7% [gradePct=6.6, maxGradePct=14.7, reliefFt=115, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.1% [cellCount=16, avgSlopePct=14.1, maxSlopePct=35.6, partial=false]
+- **Soil**: ok. moderate (Amesha loam, 8 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Amesha loam, 8 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=12, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Terrain**: ok. avg grade 6.2%, max 15% [gradePct=6.2, maxGradePct=15, reliefFt=118, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=35.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -218,7 +218,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 - **Parcel**: ok. parcel 06101033302010000, 74.68 ac (mapped) [parcelId=06101033302010000, acres=74.68, lat=45.790464, lon=-111.239659, acresSource=mapped outline]
 - **Wells**: ok. 1580 well record(s), 5 of nearest 5 report depth [wellCount=1580, nearestDepthsCount=5, nearestMi=0.17, medianDepthFt=73]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
+- **Soil**: ok. favorable (Beaverell loam, 0 to 2 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Beaverell loam, 0 to 2 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=1, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
 - **Terrain**: ok. avg grade 0.5%, max 0.7% [gradePct=0.5, maxGradePct=0.7, reliefFt=20, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
@@ -239,7 +239,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Parcel**: ok. parcel 06042734301530000, 2.76 ac (mapped) [parcelId=06042734301530000, acres=2.76, address=OUTLOOK TRL, lat=45.266901, lon=-111.344732, acresSource=mapped outline]
 - **Wells**: ok. 316 well record(s), 5 of nearest 5 report depth [wellCount=316, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=140]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
+- **Soil**: ok. limited (Lonniebee-Cowood complex, 35 to 60 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Lonniebee-Cowood complex, 35 to 60 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=48, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
 - **Terrain**: ok. avg grade 9.6%, max 19.5% [gradePct=9.6, maxGradePct=19.5, reliefFt=127, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=34.7, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
@@ -258,11 +258,11 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was "No mapped zoning district", now City of Bozeman zoning (R-2). Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): Bozeman COB_Utilities Wastewater_Utility/MapServer/8 collector 3.3 m and Water_Utility/MapServer/6 distribution main 12.0 m from the outline; inside Bozeman city limits (layer 267).
 
 - **Parcel**: ok. parcel 06079812230210000, 0.26 ac (mapped) [parcelId=06079812230210000, acres=0.26, address=518 N 17TH AVE, lat=45.685405, lon=-111.059186, acresSource=mapped outline]
-- **Wells**: ok. 1476 well record(s), 5 of nearest 5 report depth [wellCount=1476, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=42]
+- **Wells**: ok. 1476 well record(s), 5 of nearest 5 report depth [wellCount=1476, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=44]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
-- **Soil**: error. USDA soil service returned 502 with an invalid response.
+- **Soil**: ok. moderate (Urban land) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Urban land, soilSlopePct=0, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
 - **Terrain**: ok. avg grade 2.5%, max 3.8% [gradePct=2.5, maxGradePct=3.8, reliefFt=3, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=6.8, partial=false]
+- **Slope grid**: ok. 16 cells, avg 1.4% [cellCount=16, avgSlopePct=1.4, maxSlopePct=1.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
@@ -271,7 +271,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Zoning**: ok. R-2 (City of Bozeman) · overlays: none mapped [code=R-2, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
 - **Assessment**: ok. assessed $742,800, no tax amount [assessedValue=742800, landValue=302880, improvementValue=439920, taxPresent=false, source=Montana Cadastral / ORION integration]
-- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
+- **Property tax**: unavailable. not_found: iTax lists no tax bill for this parcel. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.
