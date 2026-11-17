@@ -40,7 +40,9 @@
   // buffer" swatches in the report), so the stage draws the same stripes as SVG tiles.
   const hatch = (bg, fg, w, slash) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><rect width='8' height='8' fill='${bg}'/><path d='${slash ? 'M-2,2L2,-2M0,8L8,0M6,10L10,6' : 'M-2,6L2,10M0,0L8,8M6,-2L10,2'}' stroke='${fg}' stroke-width='${w}'/></svg>`)}")`;
   const STAGE_CSS = 'html,body{margin:0!important;padding:0!important;background:#fff!important}.toolbar{display:none!important}.page{margin:0 0 16px!important;box-shadow:none!important;zoom:1!important}' +
-    `.b-bar .c{background:${hatch('#e8a59e', '#c0392b', 3, true)}!important}.map-tag i.c{background:${hatch('#f0c2bd', '#c0392b', 2.2, true)}!important}.map-tag i.b{background:${hatch('#f6dfb0', '#d39a2a', 2.2, false)}!important}`;
+    `.b-bar .c{background:${hatch('#e8a59e', '#c0392b', 3, true)}!important}.map-tag i.c{background:${hatch('#f0c2bd', '#c0392b', 2.2, true)}!important}.map-tag i.b{background:${hatch('#f6dfb0', '#d39a2a', 2.2, false)}!important}` +
+    // The calm look (property-report-v2.js CALM_CSS) draws the same stripes in its muted colors.
+    `.page.calm .b-bar .c{background:${hatch('#efd9d0', '#c98a74', 3, true)}!important}.page.calm .map-tag i.c{background:${hatch('#ecd3ca', '#b05e46', 2.2, true)}!important}.page.calm .map-tag i.b{background:${hatch('#f1e3c4', '#c0943a', 2.2, false)}!important}`;
 
   const $doc = () => window.document;
   const ua = () => { try { return window.navigator || {}; } catch { return {}; } };
