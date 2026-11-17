@@ -163,7 +163,7 @@ test('a report link selects state and county, fills the parcel, runs the search 
   await s.clock.advance(3000);
   assert.equal(viewOpen(s), true, 'opened once the sections settled');
   assert.equal(s.$('acresxReportAsk').hidden, true);
-  assert.match(reportShown(s), /<div><span>Reference<\/span><strong>Smith parcel<\/strong>/);
+  assert.match(reportShown(s), /<p class="c-sub">[^<]*(<span class="sep">·<\/span> )?Reference: Smith parcel<\/p>/);
   assert.equal(s.$('acresxReportPdf').textContent, 'Preparing PDF…', 'the PDF starts building');
   assert.deepEqual(s.log.saved, [], 'not saved to the account again');
   assert.equal(s.log.submits, 1, 'nothing else runs');
@@ -181,7 +181,7 @@ test('a report link with no ref opens the report with the suggested name, as Gen
   await s.clock.advance(10000);
   assert.equal(viewOpen(s), true);
   assert.match(reportShown(s), /<section class="page /);
-  assert.doesNotMatch(reportShown(s), /<span>Reference<\/span>/, 'the suggested name is not printed as a reference (as with Generate report)');
+  assert.doesNotMatch(reportShown(s), /Reference: /, 'the suggested name is not printed as a reference (as with Generate report)');
 });
 
 test('the report opens after 90 s even if a section never settles', async () => {

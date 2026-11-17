@@ -414,7 +414,7 @@ test('report: the flood card and key finding give the measured share instead of 
   data.flood = measuredAnswer([zA(67.1, 13.85), zX(32.9, 6.78)]);
   const after = report(data);
   assert.doesNotMatch(after, /Mapped share of the parcel not measured/);
-  assert.match(after, /High-risk flood zone on the parcel Zone A on 67% of parcel \(13\.8 ac\); rest zone X \(6\.8 ac\)/, 'key finding');
+  assert.match(after, /High-risk flood zone on the parcel — Zone A on 67% of parcel \(13\.8 ac\); rest zone X \(6\.8 ac\)/, 'key finding');
   assert.match(after, /Zone A on 67% of parcel \(13\.8 ac\); rest zone X \(6\.8 ac\)\. Map estimate; a floodplain determination confirms where the line falls\./, 'flood card');
   assert.match(after, /Get a floodplain determination/, 'next steps keep the verify framing');
 });

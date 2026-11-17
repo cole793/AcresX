@@ -339,7 +339,7 @@ test('a shared report carries the agent branding and its generation date', () =>
   const model = R.buildModel('Smith parcel', fixture());
   const snap = JSON.parse(JSON.stringify(R.snapshot({ ...model, generatedAt: '2026-03-04T12:00:00.000Z' })));
   const html = R.renderHtml(snap, { brand: B.parts(B.normalize({ name: 'Jane Example', brokerage: 'Example Realty', phone: '(509) 555-0100' })), date: snap.generatedAt });
-  assert.match(html, /Prepared by <strong>Jane Example<\/strong>, Example Realty/);
+  assert.match(html, /<p class="prepared">Prepared by Jane Example, Example Realty<\/p>/);
   assert.match(html, /Powered by AcresX/);
   assert.match(html, /Generated March 4, 2026/);
   assert.match(html, /Verify material findings/);
@@ -359,8 +359,8 @@ test('shared view: values used as class names are checked, so a tampered snapsho
   const html = R.renderHtml(S.cleanModel(snap), { brand: null, date: snap.generatedAt });
   assert.ok(!html.includes('<script>alert'), 'no injected script element');
   assert.ok(!html.includes('<img src=x'), 'text is escaped');
-  assert.match(html, /class="flag verify"/);
-  assert.match(html, /band-na/);
+  assert.match(html, /<li class="verify"><i class="dot verify"><\/i>/);
+  assert.match(html, /tile t-score band-na/);
 });
 
 test('/r/ pages and new modules are wired: accounts.js injected before browser-fallback, shared page loads its scripts', () => {

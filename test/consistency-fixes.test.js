@@ -158,8 +158,8 @@ test('report page 1 prints the dashboard score and the same "why" line', () => {
   const shown = d.$('scoreMetric').textContent;
   assert.equal(d.page.document.querySelector('.score-why').textContent, '6.8 ac remain outside the flood zone');
   const { html } = report(data);
-  assert.match(html, new RegExp(`<div class="score-num">${shown.replace('.', '\\.')}<`));
-  assert.match(html, /<p class="score-why">6\.8 ac remain outside the flood zone<\/p>/);
+  assert.match(html, new RegExp(`<div class="t-num">${shown.replace('.', '\\.')}<`));
+  assert.match(html, /<p class="t-why">6\.8 ac remain outside the flood zone\.<\/p>/);
 });
 
 test('the score updates when the buildable-area answer arrives', async () => {

@@ -58,7 +58,8 @@ function report(data, shownScore) {
   h.generate();
   const html = h.opened.at(-1);
   const text = html.replace(/<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ');
-  const scoreCard = /<article class="score-card[\s\S]*?<\/article>/.exec(html)?.[0] || '';
+  // Page 1 score tile + page 2 "About the score" section.
+  const scoreCard = (/<article class="tile t-score[\s\S]*?<\/article>/.exec(html)?.[0] || '') + (/<section class="c-sec block"><h2>About the score<\/h2>[\s\S]*?<\/section>/.exec(html)?.[0] || '');
   return { html, text, scoreCard, calc: h.context.AcresXScore.calculate() };
 }
 
@@ -96,18 +97,18 @@ test('report page 1 matches the dashboard: same score, "Incomplete" label, "not 
   const data = withoutSoilTerrain(fixture());
   const dash = dashboard(withoutSoilTerrain(fixture()));
   const r = report(data, dash.score);
-  assert.match(r.scoreCard, new RegExp(`<div class="score-num">${dash.score.replace('.', '\\.')}<small>/10`));
-  assert.match(r.scoreCard, /<p class="score-incomplete">Incomplete — 5 of 7 factors measured<\/p>/);
-  assert.match(r.scoreCard, new RegExp(`<div class="score-rating">${dash.calc.rating}</div>`));
+  assert.match(r.scoreCard, new RegExp(`<div class="t-num">${dash.score.replace('.', '\\.')}<small>/10`));
+  assert.match(r.scoreCard, /<p class="t-flag">Incomplete — 5 of 7 factors measured<\/p>/);
+  assert.match(r.scoreCard, new RegExp(`<p class="t-label"><i class="dot \\w+"></i>${dash.calc.rating}</p>`));
   assert.match(r.text, /Soil not checked \(USDA soil service didn't answer\) — try again/);
   assert.match(r.text, /Terrain not checked \(USGS elevation service didn't answer\) — try again/);
   assert.doesNotMatch(r.text, /Soil data not available for septic screening|Terrain not measured/);
-  assert.match(r.scoreCard, /<li class="missing"><b>\?<\/b>Soil not checked/, 'shown as not checked, not as a red warning');
+  assert.match(r.scoreCard, /<li class="missing"><i class="dot verify"><\/i><p>Soil not checked/, 'shown as not checked, not as a red warning');
   // Key findings: one amber "not checked" line.
   assert.match(r.text, /Not checked: soil, terrain — try again/);
   // The complete report has neither.
   const full = report(fixture(), dashboard(fixture()).score);
-  assert.doesNotMatch(full.scoreCard, /score-incomplete|not checked/);
+  assert.doesNotMatch(full.scoreCard, /t-flag|not checked/);
   assert.equal(r.calc.score.toFixed(1), dash.score);
 });
 
@@ -122,8 +123,8 @@ test('fewer than 4 measured factors: the score is Provisional on the dashboard a
   assert.match(dash.missing, /Flood \(FEMA flood map service timed out\)/);
   assert.match(dash.missing, /too few factors for a firm rating/);
   const r = report(data, dash.score);
-  assert.match(r.scoreCard, /score-card band-na/);
-  assert.match(r.scoreCard, /<div class="score-rating">Provisional<\/div>/);
+  assert.match(r.scoreCard, /tile t-score band-na/);
+  assert.match(r.scoreCard, /<p class="t-label"><i class="dot na"><\/i>Provisional<\/p>/);
   assert.match(r.scoreCard, /Incomplete — 3 of 7 factors measured/);
   assert.match(r.text, /Flood not checked \(FEMA flood map service timed out\) — try again/);
 });

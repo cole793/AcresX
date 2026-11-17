@@ -170,12 +170,6 @@ export function makeFetch(clock, routes) {
   return { fetch, calls };
 }
 
-// The report look the page-level tests render (public/property-report-v2.js reportTheme). The
-// markup assertions in the existing report tests are written for the classic look, so the harness
-// asks for it; test/report-calm.test.js covers the calm look. REPORT_THEME=calm npm test runs every
-// report test against the calm look instead.
-export const REPORT_THEME = process.env.REPORT_THEME || 'classic';
-
 // A vm context with window === the global, the fake DOM and the clock.
 // autoIds: getElementById(id) creates a missing element (in a div#autoIds at the end of body),
 // for running page code that writes into many ids the test does not care about (the real
@@ -211,7 +205,6 @@ export function makeContext({ body = [], clock, fetch, extra = {}, autoIds = fal
     alert() {},
     location: { pathname: '/', search: '', hash: '', assign() {} },
     scrollTo() {},
-    AcresXReportTheme: REPORT_THEME,
     ...extra
   };
   ctx.window = ctx;
@@ -273,7 +266,6 @@ export function makeLazyContext({ mappedSqm = null, last = null } = {}) {
   const printed = [];
   const context = vm.createContext({
     document, L, turf, last, console, alert() {}, setTimeout: fn => fn(), requestAnimationFrame: fn => fn(),
-    AcresXReportTheme: REPORT_THEME,
     print: () => printed.push(true),
     prompt: () => { throw new Error('window.prompt must not be used'); },
     open: () => { throw new Error('window.open must not be used for the report'); }

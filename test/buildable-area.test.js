@@ -348,31 +348,34 @@ function report(data) {
   return h.opened.at(-1).split('<section class="page ').slice(1);
 }
 
-test('report page 1: the buildable estimate, its breakdown and the shaded map', () => {
+test('report: buildable acres on page 1 with the shaded map, the breakdown on page 2', () => {
   const data = reportFixture();
   data.buildableArea = SAMPLE;
-  const [p1, p2] = report(data);
-  assert.match(p1, /About 6\.6 of 20\.6 acres buildable/);
-  assert.match(p1, /Removed: FEMA high-risk flood zone A <b>13\.8 ac<\/b> \(67\.1%\) · Mapped wetlands \(NWI \+ Spokane County\) <b>2\.4 ac<\/b>/);
-  assert.match(p1, /May also be restricted:<\/b> mapped wetland buffers \(190\/250 ft, Spokane County\) 1\.2 ac \(5\.8%\) — the buffer that applies depends on a wetland delineation\./);
+  const [p1, p2, p3] = report(data);
+  assert.match(p1, /<h3>Buildable acres<\/h3><div class="t-num">6\.6<small> of 20\.6 ac<\/small><\/div><p class="t-label">About 32\.1% of the parcel<\/p>/);
+  assert.match(p2, /About 6\.6 of 20\.6 acres buildable/);
+  assert.match(p2, /Removed: FEMA high-risk flood zone A <b>13\.8 ac<\/b> \(67\.1%\) · Mapped wetlands \(NWI \+ Spokane County\) <b>2\.4 ac<\/b>/);
+  assert.match(p2, /May also be restricted:<\/b> mapped wetland buffers \(190\/250 ft, Spokane County\) 1\.2 ac \(5\.8%\) — the buffer that applies depends on a wetland delineation\./);
   assert.match(p1, /<path class="buf" d="M[^"]+" fill="url\(#bufHatch\)"/);
   assert.match(p1, /wetland buffer \(not removed\)/);
   assert.match(p1, /1 mapped wetland feature · 5\.1% of parcel/, 'the key finding keeps its NWI-only source');
-  assert.match(p1, /overlaps counted once \(10\.5 ac\)/);
-  assert.match(p1, /Not counted: Slopes over 30%/);
-  assert.match(p1, /Screening estimate, not a survey\. Wetland buffers depend on a delineation; setbacks and easements not included\./);
+  assert.match(p2, /overlaps counted once \(10\.5 ac\)/);
+  assert.match(p2, /Not counted: Slopes over 30%/);
+  assert.match(p2, /Screening estimate, not a survey\. Wetland buffers depend on a delineation; setbacks and easements not included\./);
   assert.match(p1, /<path class="keep" d="M/);
   assert.match(p1, /<path class="cut" d="M[^"]+" fill="url\(#cutHatch\)"/);
   assert.match(p1, /buildable estimate/);
-  assert.doesNotMatch(p2, /acres buildable/, 'page 1 only');
+  assert.doesNotMatch(p1, /Removed: FEMA/, 'the breakdown is on page 2 only');
+  assert.doesNotMatch(p3, /acres buildable/);
 });
 
-test('report page 1 without an estimate: "Not measured", no shading, same score', () => {
+test('report without an estimate: "Not measured", no shading, same score', () => {
   const data = reportFixture();
-  const [p1] = report(data);
-  assert.match(p1, /Buildable area · screening estimate[\s\S]*Not measured/);
+  const [p1, p2] = report(data);
+  assert.match(p1, /<h3>Buildable acres<\/h3><div class="t-num t-na">Not measured<\/div>/);
+  assert.match(p2, /Buildable area · screening estimate[\s\S]*Not measured/);
   assert.doesNotMatch(p1, /<path class="keep"/);
   const withB = reportFixture(); withB.buildableArea = SAMPLE;
-  const score = html => /<div class="score-num">([^<]*)/.exec(html)[1];
+  const score = html => /<div class="t-num">([^<]*)/.exec(html)[1];
   assert.equal(score(report(withB)[0]), score(p1), 'ample buildable area (6.6 ac) adds no penalty, so the score is the same');
 });
