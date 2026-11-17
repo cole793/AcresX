@@ -281,9 +281,13 @@ export const interpret = {
   },
   soil(data) {
     const soil = data.soil || {};
-    if (soil.available) return ok(`${soil.feasibility || 'unclassified'} (${soil.mapUnit || 'map unit n/a'})`, {
+    // source: who answered (USDA Soil Data Access, or the Esri SSURGO copy when SDA was down;
+    // src/services/soils.js). backup: true for the Esri answer. A backup answer is still ok (the
+    // soil layer answered) and is marked in the detail so a daily run shows SDA was down.
+    if (soil.available) return ok(`${soil.feasibility || 'unclassified'} (${soil.mapUnit || 'map unit n/a'})${soil.backup ? ' [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]' : ''}`, {
       feasibility: soil.feasibility || null, mapUnit: soil.mapUnit || null, hydrologicGroup: soil.hydrologicGroup || null,
-      drainage: soil.drainage || null, soilSlopePct: round(soil.soilSlopePct)
+      drainage: soil.drainage || null, soilSlopePct: round(soil.soilSlopePct),
+      source: text(soil.source) || null, backup: soil.backup === true
     });
     if (soil.error) return fail(text(soil.error));
     return unavailable(text(soil.note || soil.label) || 'no soil data at parcel center');

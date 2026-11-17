@@ -74,6 +74,21 @@ test('every layer is ok when the API returns usable data', async () => {
   assert.deepEqual(result.layers.utility.values.providers, ['Kootenai Electric Cooperative']);
 });
 
+test('soil: the answer\'s source is recorded; a backup answer is ok and marked', () => {
+  const soil = data => interpretLayer('soil', { ok: true, httpStatus: 200, data: { available: true, soil: data, terrain: { available: true, gradePct: 3 } } });
+  const primary = soil({ available: true, feasibility: 'favorable', mapUnit: 'Rathdrum silt loam', source: 'USDA NRCS Soil Data Access' });
+  assert.equal(primary.status, 'ok');
+  assert.equal(primary.values.source, 'USDA NRCS Soil Data Access');
+  assert.equal(primary.values.backup, false);
+  assert.doesNotMatch(primary.detail, /backup/);
+  const backup = soil({ available: true, feasibility: 'favorable', mapUnit: 'Rathdrum silt loam', backup: true, source: 'USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)' });
+  assert.equal(backup.status, 'ok', 'the soil layer answered: not an error');
+  assert.equal(backup.values.backup, true);
+  assert.equal(backup.values.source, 'USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)');
+  assert.equal(backup.detail, 'favorable (Rathdrum silt loam) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]');
+  assert.equal(soil({ available: true, feasibility: 'moderate' }).values.source, null, 'older answers had no source');
+});
+
 test('browser request sequence and bodies are mirrored', async () => {
   globalThis.fetch = stubFetch(happyResponses());
   await run();
