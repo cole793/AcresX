@@ -2,8 +2,9 @@
 //
 // One tiny read-only request per target, all in parallel, each bounded by 10 s (no retry),
 // through the shared client (so each probe is also a Workers Logs line). ArcGIS servers get
-// <server>/rest/info?f=json (a few hundred bytes); USDA SDA gets a one-row catalog query; EPQS one
-// point; 3DEP one getSamples point (the call terrain and slope depend on). No secrets, no writes,
+// <server>/rest/info?f=json (a few hundred bytes); USDA SDA gets a one-row catalog query; its Esri
+// SSURGO backup one point query; EPQS one point; 3DEP one getSamples point (the call terrain and
+// slope depend on). No secrets, no writes,
 // no owner data. Answer:
 //   { checkedAt, results: [{ host, name, ok, status, ms, error }] }   (Cache-Control: no-store)
 // A target with slowMs that answers but takes longer than that stays ok: true, with
@@ -11,6 +12,7 @@
 // Cheap enough to call by hand; the app does not call it. Answers are reused for 60 s (below).
 import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
+import { ESRI_SSURGO_LAYER } from './soils.js';
 
 export const HEALTH_TIMEOUT_MS = 10000;
 // Terrain and slope gave up on getSamples after 6 s before 2026-11-02; above this it is "slow".
@@ -42,6 +44,19 @@ export const HEALTH_TARGETS = [
   {
     name: 'USDA Soil Data Access', url: 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest', method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: 'SELECT TOP 1 areasymbol FROM sacatalog', format: 'JSON' })
+  },
+  // Soil backup (src/services/soils.js): one point query of the layer itself, as the backup asks
+  // it (its server is also the flood backup's, probed above by /rest/info).
+  {
+    name: 'Esri USA Soils Map Units (soil backup)',
+    url: `${ESRI_SSURGO_LAYER}/query?${new URLSearchParams({
+      f: 'json', where: '1=1', geometry: '-117.4,47.6', geometryType: 'esriGeometryPoint', inSR: '4326',
+      spatialRel: 'esriSpatialRelIntersects', outFields: 'MUKEY', returnGeometry: 'false'
+    })}`,
+    arcgis: true,
+    validate: data => {
+      if (!data?.features?.[0]?.attributes?.MUKEY) throw new Error('soil layer returned no map unit');
+    }
   },
   arcgisInfo('USFWS NWI wetlands', 'https://fwspublicservices.wim.usgs.gov/wetlandsmapservice'),
   arcgisInfo('Esri GeometryServer (wetlands clip)', 'https://utility.arcgisonline.com/ArcGIS'),

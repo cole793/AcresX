@@ -519,7 +519,8 @@
     }
     // Septic / soil
     const soil = f.soil;
-    const sref = soil.available ? S.add('USDA NRCS Soil Data Access (SSURGO)', { date: '' }) : null;
+    // A backup answer (src/services/soils.js) names its own source, the Esri Living Atlas copy.
+    const sref = soil.available ? (soil.backup && soil.source ? S.add(soil.source, { url: soil.sourceUrl, date: soil.vintage || '' }) : S.add('USDA NRCS Soil Data Access (SSURGO)', { date: '' })) : null;
     const soilLine = soil.available ? [soil.mapUnit || soil.component, soil.drainage, soil.hydrologicGroup ? `hydrologic group ${soil.hydrologicGroup}` : ''].filter(Boolean).join(' · ') : 'Soil data not available';
     if (f.sewer) card('Sewer', 'good', 'Public sewer', [`${f.sewer.basis}${f.sewer.asOf ? ` (map as of ${f.sewer.asOf})` : ''}`, soil.available ? `If a septic system were needed: ${soilLine}` : ''], [S.add(f.sewer.source?.name, { url: f.sewer.source?.url, date: '' }), sref]);
     else card('Septic / soil', !soil.available ? 'verify' : soil.feasibility === 'favorable' ? 'good' : soil.feasibility === 'limited' ? 'risk' : 'verify', !soil.available ? NA : soil.feasibility === 'favorable' ? 'Favorable' : soil.feasibility === 'limited' ? 'Limited' : 'Moderate', [soilLine, `${soil.septic?.context ? `${soil.septic.context}${soil.septic.limits?.length ? `; limited by ${soil.septic.limits.join(', ')}` : ''}. ` : ''}USDA screening only; a site evaluation sets the system type`], [sref]);

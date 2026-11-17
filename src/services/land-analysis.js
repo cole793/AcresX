@@ -231,7 +231,7 @@ export async function handleLandAnalysis(request, env, ctx) {
   };
 
   const [soilResult, terrainResult, landCoverResult] = await Promise.allSettled([
-    soilAt(center.lon, center.lat),
+    soilAt(center.lon, center.lat, { ctx }),
     cachedLayer(TERRAIN_CACHE_PREFIX, geometry, ctx, terrainAnalysis),
     cachedLayer(CANOPY_CACHE_PREFIX, geometry, ctx, landCoverAnalysis)
   ]);

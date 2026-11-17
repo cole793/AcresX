@@ -171,7 +171,7 @@
     if (soil.available) {
       const soilNote = document.getElementById('soilNote');
       const soilStatus = document.getElementById('soilStatus');
-      const details = ['USDA NRCS Soil Survey', soil.drainage || '', soil.hydrologicGroup ? `Group ${soil.hydrologicGroup}` : ''].filter(Boolean);
+      const details = [soil.backup ? 'USDA SSURGO via Esri Living Atlas (backup)' : 'USDA NRCS Soil Survey', soil.drainage || '', soil.hydrologicGroup ? `Group ${soil.hydrologicGroup}` : ''].filter(Boolean);
       if (soilNote) soilNote.textContent = details.join(' · ');
       if (soilStatus) soilStatus.textContent = `${soil.component || soil.mapUnit || 'Mapped soil'} · Preliminary septic screening`;
     }
