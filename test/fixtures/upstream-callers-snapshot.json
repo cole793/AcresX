@@ -29,12 +29,12 @@
   },
   "soils: HTTP 500 with an error body": {
     "output": {
-      "error": "USDA soil service: SDA overloaded"
+      "error": "USDA soil service: SDA overloaded; backup (Esri SSURGO copy): Esri SSURGO soil layer returned 500"
     }
   },
   "soils: invalid JSON": {
     "output": {
-      "error": "USDA soil service returned 200 with an invalid response."
+      "error": "USDA soil service returned 200 with an invalid response.; backup (Esri SSURGO copy): Esri SSURGO soil layer returned invalid JSON"
     }
   },
   "existing-well: strong parcel match": {

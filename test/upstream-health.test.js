@@ -21,7 +21,10 @@ const jsonResponse = (body, status = 200) => new Response(JSON.stringify(body), 
 // The 3DEP probe is a one-point getSamples (live shape, 2026-11-02); other ArcGIS probes read info.
 const isGetSamples = url => url.includes('elevation.nationalmap.gov') && url.includes('/getSamples');
 const samplesAnswer = () => jsonResponse({ samples: [{ location: { x: -117.4, y: 47.6, spatialReference: { wkid: 4326 } }, locationId: 0, value: '595.761047363', rasterId: 117132, resolution: 1 }] });
-const healthy = url => (isGetSamples(url) ? samplesAnswer() : jsonResponse({ currentVersion: 11 }));
+// The soil backup probe is one point query of the Esri SSURGO layer (live shape, 2026-11-17).
+const isSoilBackup = url => url.includes('/USA_Soils_Map_Units/FeatureServer/0/query');
+const soilBackupAnswer = () => jsonResponse({ objectIdFieldName: 'OBJECTID', features: [{ attributes: { MUKEY: '85974' } }] });
+const healthy = url => (isGetSamples(url) ? samplesAnswer() : isSoilBackup(url) ? soilBackupAnswer() : jsonResponse({ currentVersion: 11 }));
 
 test('upstream health: probes every target once in parallel and reports per-host results', async () => {
   stubFetch(url => {
@@ -30,6 +33,7 @@ test('upstream health: probes every target once in parallel and reports per-host
     if (url.includes('sdmdataaccess')) return jsonResponse({ Table: [['TX299']] });
     if (url.includes('epqs')) return jsonResponse({ value: 1900 });
     if (isGetSamples(url)) return samplesAnswer();
+    if (isSoilBackup(url)) return jsonResponse({ features: [] });
     return jsonResponse({ currentVersion: 11.3 });
   });
   const response = await worker.fetch(new Request('https://acresx.test/api/upstream-health'), { ASSETS: { fetch: async () => new Response('') } }, { waitUntil() {} });
@@ -49,6 +53,11 @@ test('upstream health: probes every target once in parallel and reports per-host
   assert.equal(byHost['hazards.fema.gov'].ok, true);
   assert.equal(byHost['hazards.fema.gov'].status, 200);
   assert.deepEqual([byHost['elevation.nationalmap.gov'].ok, byHost['elevation.nationalmap.gov'].error], [true, null]);
+  // The soil backup is probed with a real point query; an answer with no map unit is a failure.
+  const soilBackup = body.results.find(r => r.name === 'Esri USA Soils Map Units (soil backup)');
+  assert.equal(soilBackup.host, 'services5.arcgis.com');
+  assert.deepEqual([soilBackup.ok, soilBackup.error], [false, 'invalid: soil layer returned no map unit']);
+  assert.ok(calls.some(c => isSoilBackup(c.url) && new URL(c.url).searchParams.get('geometryType') === 'esriGeometryPoint'));
   for (const host of ['hazards.fema.gov', 'sdmdataaccess.sc.egov.usda.gov', 'elevation.nationalmap.gov', 'fwspublicservices.wim.usgs.gov',
     'services3.arcgis.com', 'map.kcgov.us', 'gis.idwr.idaho.gov', 'gis.stevenscountywa.gov', 'gismo.spokanecounty.org', 'gis.cdaid.org',
     'gis.postfalls.gov', 'services.arcgis.com', 'gis.dnrc.mt.gov', 'services1.arcgis.com', 'arcgis.spokanevalley.org', 'services6.arcgis.com']) assert.ok(byHost[host], `probes ${host}`);

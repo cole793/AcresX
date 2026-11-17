@@ -243,3 +243,30 @@ test('"Retry missing layers" re-runs the settled sections behind the missing fac
   assert.equal(S.status('land'), 'pending');
   assert.equal(asks.Wetlands.length, 1);
 });
+
+// Soil backup (src/services/soils.js): when USDA Soil Data Access is down, the Esri Living Atlas
+// SSURGO copy answers with the same fields. Live, for this parcel, it gave the same values as SDA.
+const withBackupSoil = data => ({
+  ...data,
+  land: { ...data.land, soil: {
+    ...data.land.soil, source: 'USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)', backup: true,
+    fallbackFrom: 'USDA soil service returned 502 with an invalid response.', septicRating: 'Very limited', slopeRangePct: { low: 3, high: 15 },
+    sourceUrl: 'https://services5.arcgis.com/7weheFjxuNkGGiZi/arcgis/rest/services/USA_Soils_Map_Units/FeatureServer/0', vintage: 'gSSURGO, published December 2025'
+  } }
+});
+
+test('soil backup answer: scored like the SDA answer (complete score), and the report names the backup source', () => {
+  const full = dashboard(fixture());
+  const backup = dashboard(withBackupSoil(fixture()));
+  assert.equal(backup.calc.completeness.complete, true);
+  assert.equal(backup.calc.score, full.calc.score);
+  assert.equal(backup.calc.factors.soil.score, full.calc.factors.soil.score);
+  assert.equal(backup.score, full.score);
+  assert.equal(backup.cost, full.cost, 'cost model unchanged');
+  const r = report(withBackupSoil(fixture()), backup.score);
+  assert.match(r.text, /USDA SSURGO via Esri Living Atlas \(backup; USDA Soil Data Access unavailable\)/);
+  assert.doesNotMatch(r.text, /USDA NRCS Soil Data Access \(SSURGO\)/);
+  const sda = report(fixture(), full.score);
+  assert.match(sda.text, /USDA NRCS Soil Data Access \(SSURGO\)/);
+  assert.doesNotMatch(sda.text, /Esri Living Atlas \(backup/);
+});

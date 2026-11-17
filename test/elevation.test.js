@@ -334,9 +334,10 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   assert.equal(body.terrain.available, false);
   assert.equal(body.landCover.available, false);
   assert.equal(body.soil.available, false);
-  // Soil: one attempt plus the shared client's one retry on a network error.
+  // Soil: one attempt plus the shared client's one retry on a network error, then the same for
+  // the Esri SSURGO backup (src/services/soils.js; unknown to this stub, so it fails too).
   // Terrain: 2 getSamples + 9 identify + 9 EPQS + 1 terrain tile (one tile covers this parcel).
-  assert.equal(calls.length, 2 + (2 + 9 + 9 + 1) + (2 + CANOPY_FALLBACK_MAX_POINTS));
+  assert.equal(calls.length, 2 + 2 + (2 + 9 + 9 + 1) + (2 + CANOPY_FALLBACK_MAX_POINTS));
   assert.ok(calls.length < 40, `land-analysis worst case made ${calls.length} requests`);
 
   calls = [];

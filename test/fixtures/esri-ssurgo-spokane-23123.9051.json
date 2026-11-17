@@ -1,0 +1,126 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryType": "esriGeometryPolygon",
+ "spatialReference": {
+  "wkid": 102100,
+  "latestWkid": 3857
+ },
+ "fields": [
+  {
+   "name": "MUKEY",
+   "type": "esriFieldTypeString",
+   "alias": "Mapunit Key",
+   "sqlType": "sqlTypeOther",
+   "length": 30,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "muname",
+   "type": "esriFieldTypeString",
+   "alias": "Mapunit Name",
+   "sqlType": "sqlTypeOther",
+   "length": 200,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "compname",
+   "type": "esriFieldTypeString",
+   "alias": "Component Name",
+   "sqlType": "sqlTypeOther",
+   "length": 60,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "comppct_r",
+   "type": "esriFieldTypeSmallInteger",
+   "alias": "Component Percentage - Representative Value",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "drclassdcd",
+   "type": "esriFieldTypeString",
+   "alias": "Drainage Class - Dominant Condition",
+   "sqlType": "sqlTypeOther",
+   "length": 30,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "hydgrpdcd",
+   "type": "esriFieldTypeString",
+   "alias": "Hydrologic Group - Dominant Condition",
+   "sqlType": "sqlTypeOther",
+   "length": 5,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "slopegraddcp",
+   "type": "esriFieldTypeDouble",
+   "alias": "Slope Gradient - Dominant Component",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "slope_r",
+   "type": "esriFieldTypeSmallInteger",
+   "alias": "Slope Gradient - Representative Value",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "slope_l",
+   "type": "esriFieldTypeSmallInteger",
+   "alias": "Slope Gradient - Low Value",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "slope_h",
+   "type": "esriFieldTypeSmallInteger",
+   "alias": "Slope Gradient - High Value",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "engstafdcd",
+   "type": "esriFieldTypeString",
+   "alias": "Rating for Septic Tank Absorption Fields - Dominant Condition",
+   "sqlType": "sqlTypeOther",
+   "length": 20,
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "MUKEY": "85981",
+    "muname": "Stutler-Springdale complex, 3 to 15 percent slopes",
+    "compname": "Stutler",
+    "comppct_r": 55,
+    "drclassdcd": "Well drained",
+    "hydgrpdcd": "B",
+    "slopegraddcp": 4,
+    "slope_r": 4,
+    "slope_l": 3,
+    "slope_h": 15,
+    "engstafdcd": "Very limited"
+   }
+  }
+ ]
+}
