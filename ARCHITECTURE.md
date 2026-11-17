@@ -61,7 +61,7 @@ Per-parcel caches (validated answers only): Kootenai assessor per PIN, found rec
 
 ### `services/soils.js`
 USDA NRCS Soil Data Access integration and soil-feasibility classification. The spatial lookup uses `SDA_Get_Mukey_from_intersection_with_WktWgs84` as a table-valued function.
-When SDA has an outage (HTTP 5xx, timeout, network error, non-JSON page) it asks a backup, Esri Living Atlas "USA Soils Map Units" (a hosted copy of USDA gSSURGO, Dec 2025 edition), with one point query, and maps it to the same answer shape and grade; the answer's `source` names the backup and it carries `backup: true`. Backup answers are cached for one day; SDA is always asked first. If both fail, only the soil layer is unavailable.
+When SDA has an outage (HTTP 5xx, timeout, network error, non-JSON page) it asks a backup, Esri Living Atlas "USA Soils Map Units" (a hosted copy of USDA gSSURGO, Dec 2025 edition), with one point query, and maps it to the same answer shape and grade; the answer's `source` names the backup and it carries `backup: true`. SDA answers are cached for 30 days and backup answers for one day (`caches.default`, keyed by the point rounded to about 1 m; failures never); on an SDA cache miss SDA is always asked before the backup cache. If both fail, only the soil layer is unavailable.
 
 ### `shared/edge-cache.js`
 `caches.default` helpers keyed by a SHA-256 of the parcel geometry rounded to 6 decimals. Each helper is a no-op where `caches` is undefined (Node tests), and cache errors never fail a lookup.

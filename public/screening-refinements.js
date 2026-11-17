@@ -206,7 +206,10 @@
     if (grade) grade.textContent = f === 'favorable' ? 'Favorable' : f === 'limited' ? 'Limited' : 'Moderate';
     if (dot) dot.className = `traffic-dot ${f === 'favorable' ? 'green' : f === 'limited' ? 'red' : 'amber'}`;
     if (status) status.textContent = [soil.component || soil.mapUnit || 'Mapped soil', soil.drainage, soil.hydrologicGroup ? `Group ${soil.hydrologicGroup}` : '', sx.limits.length ? `limited by ${sx.limits.join(', ')}` : ''].filter(Boolean).join(' · ');
-    if (note) note.textContent = `${sx.context}. ${sx.note}`;
+    // The card's last word on the note (ui-polish.js writes it first); public-utilities.js may
+    // prefix it. A backup soil answer (soil.backup) names its source here so the label survives.
+    const source = window.AcresXSeptic?.sourceLabel?.(soil) || '';
+    if (note) note.textContent = [`${sx.context}. ${sx.note}`, source].filter(Boolean).join(' ');
   }
 
   // The buildability score: 7 factors (0-100) weighted by WEIGHTS, shown /10, then the

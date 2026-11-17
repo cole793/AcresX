@@ -171,7 +171,9 @@
     if (soil.available) {
       const soilNote = document.getElementById('soilNote');
       const soilStatus = document.getElementById('soilStatus');
-      const details = [soil.backup ? 'USDA SSURGO via Esri Living Atlas (backup)' : 'USDA NRCS Soil Survey', soil.drainage || '', soil.hydrologicGroup ? `Group ${soil.hydrologicGroup}` : ''].filter(Boolean);
+      // screening-refinements.js (loaded later) replaces this note with the septic context and
+      // keeps the backup source label (window.AcresXSeptic.sourceLabel) at its end.
+      const details = [soil.backup ? (window.AcresXSeptic?.BACKUP_LABEL || 'Source: USDA SSURGO via Esri (backup — USDA service unavailable)') : 'USDA NRCS Soil Survey', soil.drainage || '', soil.hydrologicGroup ? `Group ${soil.hydrologicGroup}` : ''].filter(Boolean);
       if (soilNote) soilNote.textContent = details.join(' · ');
       if (soilStatus) soilStatus.textContent = `${soil.component || soil.mapUnit || 'Mapped soil'} · Preliminary septic screening`;
     }
@@ -216,6 +218,20 @@
     if (!root) return;
     const searchedAddress = typeof last !== 'undefined' ? last?.evidence?.searchedAddress : '';
     root.innerHTML = `<div class="notice"><strong>No Active Listing Found for this property.</strong><br>No public listing matched the parcel strongly enough to present as property context.</div>${searchedAddress ? `<div class="notice"><strong>Address searched:</strong> ${esc(searchedAddress)}</div>` : ''}<div class="notice">This is common for privately owned, off-market, recently removed, or not-yet-indexed land.</div>`;
+  }
+
+  // Septic & soil details (index.html renderResults): a backup soil answer names its source.
+  function polishSoilDetails() {
+    if (typeof activeTab === 'undefined' || activeTab !== 'soil' || typeof last === 'undefined') return;
+    const root = document.getElementById('results');
+    if (!root) return;
+    root.querySelectorAll('.soil-backup-source').forEach(el => el.remove());
+    const label = window.AcresXSeptic?.sourceLabel?.(last?.land?.soil);
+    if (!label) return;
+    const note = document.createElement('div');
+    note.className = 'notice soil-backup-source';
+    note.textContent = label;
+    root.appendChild(note);
   }
 
   function polishPowerDetails() {
@@ -301,6 +317,7 @@
     renderResults = function (...args) {
       const result = baseRenderResults.apply(this, args);
       polishListingDetails();
+      polishSoilDetails();
       polishPowerDetails();
       return result;
     };

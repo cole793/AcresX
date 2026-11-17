@@ -40,6 +40,15 @@ const statewideBase = {
 // levy rate, since the treasurer site blocks automated lookups). Checked live on one or two
 // parcels per county, not yet by the daily validation run (the tax layer is in it from this
 // change on); move to 'validated' after clean runs.
+// tax, 2026-11-17: re-derived from the daily runs since 2026-11-15 (validation-results branch,
+// history/2026-11-15 run 43752184568 and history/2026-11-16 run 43974575941, the last two
+// published). 'validated' where the tax layer was clean in both (no parcel with a tax error,
+// mismatch or skip, and ok on at least 10 of 12):
+//   Spokane  10 ok, 2 unavailable both runs (43341.0110 and 57302.9016: SCOUT gave no amount)
+//   Stevens  11 ok + 1 not_found (8974701); then 10 ok, 1 not_found, 1 unavailable (2214900:
+//            the property search refused the automated lookup)
+// Still 'partial' (2026-11-16 not clean): Kootenai (7 of 12 skipped, parcel lookup failed),
+// Gallatin (06069905302080000: request failed), Yellowstone (03113519316050000: HTTP 503).
 const overrides = {
   'WA:Spokane': {
     level: 3,
@@ -48,7 +57,7 @@ const overrides = {
     checklistScore: 79,
     checklistScoreDate: '2026-11-03',
     notes: 'Level 3 (checklist section 7): two consecutive clean live validation runs (0 parcels with an error or mismatch) on 2026-11-13 (run 43502221467) and 2026-11-14 (run 43628378292; 165 ok, 15 unavailable: listing on 12 parcels, zoning rules on 3). Owner signed off on 2026-11-11 after comparing 35204.2729 and 57344.0125 with the county sources. Zoning rules are missing for 3 of 12 parcels (City of Spokane R1, Spokane Valley R-3, Cheney R-1); no tax amount.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'partial'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'validated',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Yellowstone': {
     level: 3,
@@ -85,7 +94,7 @@ const overrides = {
     checklistScore: 78,
     checklistScoreDate: '2026-11-07',
     notes: 'Level 3 (checklist section 7): clean live validation runs (0 parcels with an error or mismatch) on 2026-11-11 (run 43094606201, clean in the job log; not published because of the artifact outage fixed by PR #53) and 2026-11-12 (run 43304774155, 0 failed, published on validation-results). Daily check enabled. Hand-checked expected values on more than 3 parcels in validation/counties/stevens.json. Owner signed off on 2026-11-13 ("Stevens checks look good") after checking 0231200 (City of Chewelah, R1) and 2342700 (rural, AR-10, designated forest) against the county sources.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'validated'}
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'validated',zoning:'validated',zoningRules:'validated'}
   }
 };
 

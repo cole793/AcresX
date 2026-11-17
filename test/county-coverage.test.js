@@ -2,7 +2,8 @@
 // live validation runs of 2026-11-03 (Kootenai and Yellowstone: level 3 from the 2026-11-09 to 11-11
 // daily runs plus the owner's 2026-11-12 sign-off; Stevens: level 3 from the 2026-11-11 and 11-12
 // daily runs plus the owner's 2026-11-13 sign-off; Spokane: level 3 from the 2026-11-13 and 11-14 daily
-// runs plus the owner's sign-off on its demo parcels). A change to a level, date, score or capability must change this
+// runs plus the owner's sign-off on its demo parcels). Property tax: 'validated' for Spokane and
+// Stevens from the 2026-11-15 and 11-16 daily runs (tax clean in both); 'partial' elsewhere. A change to a level, date, score or capability must change this
 // test too, so it shows up in review instead of slipping in with an unrelated edit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +18,7 @@ const EXPECTED = {
   },
   'WA:Spokane': {
     level: 3, priority: 1, lastValidated: '2026-11-14', checklistScore: 79, checklistScoreDate: '2026-11-03',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: P }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: V, zoning: V, zoningRules: P }
   },
   'MT:Yellowstone': {
     level: 3, priority: 1, lastValidated: '2026-11-11', checklistScore: 80, checklistScoreDate: '2026-11-03',
@@ -29,7 +30,7 @@ const EXPECTED = {
   },
   'WA:Stevens': {
     level: 3, priority: 2, lastValidated: '2026-11-12', checklistScore: 78, checklistScoreDate: '2026-11-07',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: V }
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: V, zoning: V, zoningRules: V }
   }
 };
 

@@ -84,33 +84,6 @@
     refreshLibraryIfOpen();
   }
 
-  function metric(label, value) { if (!value || value === '—') return ''; return `<div class="report-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`; }
-  function section(title, body) { return `<section class="report-section"><h2>${esc(title)}</h2>${body}</section>`; }
-
-  async function generateReport() {
-    const item = currentState(); if (!item) return toast('Analyze a property first.');
-    const name = await askName({title:'Generate report',description:'Add a client name, property nickname, or internal reference ID for this report.',action:'Generate report'});
-    if (!name) return;
-    const address = text('parcelTitle') && text('parcelTitle') !== '—' ? text('parcelTitle') : item.address;
-    const subtitle = text('parcelAddress');
-    const reportSections = [
-      section('Property Overview', `<div class="report-grid">${metric('Property Reference',name)}${metric('Address',address)}${metric('County',text('countyFact') || item.county)}${metric('Parcel ID',text('parcelFact') || item.parcelId)}${metric('Acreage',item.acreage)}${metric('Buildability Score',item.score)}</div>`),
-      section('Development Screening', `<div class="report-grid">${metric('Well Feasibility',text('waterGrade'))}${metric('Well Depth',text('wellMetric'))}${metric('Septic Feasibility',text('soilGrade'))}${metric('Soil',text('soilMetric'))}${metric('Power',text('utilityMetric'))}${metric('Site-Work',text('slopeGrade'))}${metric('Average Grade',text('slopeMetric'))}</div>`),
-      section('Land & Hazard Screening', `<div class="report-grid">${metric('Flood Screening',text('floodGrade') || text('floodStatus'))}${metric('Wetland Screening',text('wetlandGrade') || text('wetlandStatus'))}${metric('Zoning',text('zoningMetric'))}</div>`),
-      section('Development Notes', `<p>${esc(text('scoreNote') || 'Preliminary public-record screening.')}</p><p><strong>Likely permits:</strong> Building, septic, well, access and critical-area approvals may apply depending on the project and jurisdiction.</p>`)
-    ].join('');
-
-    const w = window.open('', '_blank');
-    if (!w) return toast('Allow pop-ups to generate the report.');
-    const reportEntry={id:`${Date.now()}-${Math.random().toString(36).slice(2,7)}`,name,...item,generatedAt:new Date().toISOString()};
-    const reports=read(REPORTS_KEY); reports.unshift(reportEntry); write(REPORTS_KEY,reports.slice(0,100)); refreshLibraryIfOpen();
-
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(name)} — AcresX Property Report</title><style>
-      *{box-sizing:border-box}body{margin:0;background:#eef3ef;color:#18251e;font-family:Arial,sans-serif;line-height:1.45}.report{max-width:940px;margin:30px auto;background:#fff;padding:42px 48px 38px;border-radius:16px;box-shadow:0 18px 55px rgba(24,62,40,.08)}.head{display:grid;grid-template-columns:minmax(0,1fr) 155px;align-items:start;gap:36px;border-bottom:2px solid #185b3a;padding-bottom:22px;margin-bottom:24px}.brand{font-size:29px;font-weight:900;letter-spacing:-.03em;color:#185b3a}.kicker{margin-top:3px;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#4a7e63}.reference{font-size:12px;font-weight:800;color:#185b3a;margin-top:12px}.head h1{font-size:26px;line-height:1.12;letter-spacing:-.025em;margin:5px 0 7px}.muted{color:#65736b;font-size:11.5px;line-height:1.45}.score{padding:15px 16px;border:1px solid #d9e4dc;border-radius:12px;background:#f7faf8;font-size:34px;line-height:1;font-weight:900;color:#185b3a;text-align:left}.score small{display:block;margin-top:8px;font-size:9px;line-height:1.2;color:#65736b;letter-spacing:.09em;text-transform:uppercase}.report-section{margin:22px 0;break-inside:avoid}.report-section h2{margin:0 0 10px;font-size:15px;line-height:1.25;border-bottom:1px solid #dce5df;padding-bottom:7px}.report-section p{margin:7px 0;font-size:12px;line-height:1.5;color:#3f5047}.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}.report-metric{min-height:62px;padding:10px 12px;border:1px solid #e0e8e2;border-radius:9px;background:#fbfcfb;break-inside:avoid}.report-metric span{display:block;font-size:8.5px;font-weight:800;line-height:1.25;letter-spacing:.09em;text-transform:uppercase;color:#738078}.report-metric strong{display:block;margin-top:5px;font-size:13.5px;line-height:1.3;overflow-wrap:anywhere}.disclaimer{margin-top:24px;padding:13px 15px;border:1px solid #dfe7e1;border-radius:9px;background:#f5f8f6;font-size:9.5px;line-height:1.45;color:#65736b}.actions{max-width:940px;margin:20px auto;display:flex;justify-content:flex-end}.actions button{border:0;border-radius:9px;background:#185b3a;color:white;padding:12px 18px;font-weight:800;cursor:pointer}@media print{body{background:#fff}.actions{display:none}.report{margin:0;max-width:none;padding:20px 26px;box-shadow:none;border-radius:0}.head{gap:28px;margin-bottom:18px;padding-bottom:17px}.report-section{margin:16px 0}.report-grid{gap:7px 10px}.report-metric{min-height:55px;padding:8px 10px}.disclaimer{margin-top:18px}@page{margin:.42in}}@media(max-width:650px){.report{margin:0;padding:24px;border-radius:0;box-shadow:none}.report-grid{grid-template-columns:1fr}.head{display:block}.score{margin-top:18px;max-width:180px}}
-    </style></head><body><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><main class="report"><div class="head"><div><div class="brand">AcresX</div><div class="kicker">Property Development Screening Report</div><div class="reference">${esc(name)}</div><h1>${esc(address)}</h1><div class="muted">${esc(subtitle)} · ${esc(item.county)} County · Parcel ${esc(item.parcelId)}</div></div><div class="score">${esc(item.score || '—')}<small>Buildability score</small></div></div>${reportSections}<div class="disclaimer"><strong>Preliminary screening only.</strong> AcresX compiles public-record and mapped data to support early land research. Results are not a survey, wetland delineation, septic design, title report, utility availability confirmation, zoning determination, engineering analysis, or guarantee of development approval. Verify findings with the applicable county, agencies, utilities, licensed professionals, and recorded CCRs/HOA documents before purchase or development.</div><div class="muted" style="margin-top:14px">Generated ${esc(new Date().toLocaleString())}</div></main></body></html>`);
-    w.document.close();
-  }
-
   function ensureLibraryView(){
     let view=$('propertyLibraryView'); if(view)return view;
     const main=document.querySelector('.workspace main'); if(!main)return null;

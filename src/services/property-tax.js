@@ -49,8 +49,19 @@ const STATE_LINKS = {
 const finite = v => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
 const shortText = (v, max = 200) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : undefined);
 const httpsUrl = v => { try { const u = new URL(String(v)); return u.protocol === 'https:' ? u.href : undefined; } catch { return undefined; } };
+// The tax bill link is kept only for https pages on these county/state tax hosts (the same list
+// public/property-tax.js checks before showing it), with no user info or port.
+export const TAX_LINK_HOSTS = Object.freeze(['cp.spokanecounty.org', 'propertysearch.trueautomation.com', 'id-kootenai.publicaccessnow.com',
+  'www.kcgov.us', 'www.yellowstonecountymt.gov', 'itax.gallatin.mt.gov', 'revenue.mt.gov']);
+const TAX_LINK_HOST_SET = new Set(TAX_LINK_HOSTS);
+export function taxLinkUrl(value) {
+  try {
+    const u = new URL(String(value ?? ''));
+    return u.protocol === 'https:' && TAX_LINK_HOST_SET.has(u.hostname) && !u.username && !u.password && !u.port ? u.href : undefined;
+  } catch { return undefined; }
+}
 function cleanLink(link) {
-  const url = httpsUrl(link?.url), label = shortText(link?.label, 120);
+  const url = taxLinkUrl(link?.url), label = shortText(link?.label, 120);
   return url && label ? { label, url } : null;
 }
 

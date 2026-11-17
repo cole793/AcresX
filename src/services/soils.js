@@ -10,8 +10,11 @@
 //     feasibility, source }  (+ backup answers: backup, fallbackFrom, septicRating, slopeRangePct,
 //     sourceUrl, vintage)
 // If both fail, soilAt throws (the soil layer only; land-analysis.js reports it unavailable).
-// Backup answers are cached for a day (Cache API, keyed by the rounded point), so an SDA outage
-// does not send every repeat lookup to Esri; SDA is always asked first, so a recovery shows at once.
+// Caching (Cache API, keyed by the point rounded to 5 decimals, about 1 m): an SDA answer is kept
+// for 30 days, like the terrain and canopy answers (SSURGO changes yearly). A backup answer is
+// kept for a day only, under its own prefix, so an SDA outage does not send every repeat lookup to
+// Esri; on an SDA cache miss SDA is always asked before the backup cache, so a recovery shows at
+// once. Failures (outages, "no map unit", 4xx) are never cached.
 import { upstreamJson, cachedJson } from '../shared/upstream.js';
 
 const USDA_SOIL_URL = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
@@ -43,6 +46,10 @@ export const SOIL_TOTAL_BUDGET_MS = 26000;
 export const SOIL_BACKUP_MIN_MS = 2000;
 export const SOIL_BACKUP_CACHE_PREFIX = 'https://acresx.internal/cache/soil-backup/v1/';
 export const SOIL_BACKUP_CACHE_TTL_SECONDS = 24 * 60 * 60;
+export const SOIL_CACHE_PREFIX = 'https://acresx.internal/cache/soil/v1/';
+export const SOIL_CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
+// ~1 m: the same parcel center gives the same key.
+const pointKey = (x, y) => ({ x: Math.round(x * 1e5) / 1e5, y: Math.round(y * 1e5) / 1e5 });
 // Was one 20 s attempt (headers only). Now 12 s + one retry at 8 s, both covering the body, so the
 // worst case stays about 20 s.
 export const SOIL_TIMEOUT_MS = 12000;
@@ -85,7 +92,9 @@ export async function soilAt(lon, lat, { ctx } = {}) {
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Valid longitude and latitude are required for USDA soil screening.');
   const started = Date.now();
   try {
-    return await sdaSoilAt(x, y);
+    return await cachedJson(SOIL_CACHE_PREFIX, pointKey(x, y), SOIL_CACHE_TTL_SECONDS, () => sdaSoilAt(x, y), {
+      isValid: answer => answer?.available === true && answer.backup !== true && answer.source === SDA_SOURCE, ctx
+    });
   } catch (error) {
     if (!isSdaOutage(error?.upstream || error)) throw error;
     const remaining = SOIL_TOTAL_BUDGET_MS - (Date.now() - started);
@@ -209,9 +218,7 @@ async function queryBackup(x, y, remaining) {
 }
 
 function backupSoilAt(x, y, remaining, ctx) {
-  // ~1 m: the same parcel center gives the same key.
-  const key = { x: Math.round(x * 1e5) / 1e5, y: Math.round(y * 1e5) / 1e5 };
-  return cachedJson(SOIL_BACKUP_CACHE_PREFIX, key, SOIL_BACKUP_CACHE_TTL_SECONDS, () => queryBackup(x, y, remaining), {
+  return cachedJson(SOIL_BACKUP_CACHE_PREFIX, pointKey(x, y), SOIL_BACKUP_CACHE_TTL_SECONDS, () => queryBackup(x, y, remaining), {
     isValid: answer => answer?.available === true && answer.backup === true, ctx
   });
 }
