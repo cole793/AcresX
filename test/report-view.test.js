@@ -284,3 +284,10 @@ test('branded footer: two lines at most (name · brokerage, then contacts), each
   assert.match(html, /\.foot\{[^}]*font-size:7\.5pt/, 'smaller footer type');
   assert.match(html, /\.foot-right\{flex:none;text-align:right;white-space:nowrap\}/);
 });
+
+test('property-actions.js no longer carries the old window.open report (askName stays for Save property)', () => {
+  const src = readPublic('property-actions.js');
+  assert.doesNotMatch(src, /function generateReport\(|window\.open\(|document\.write\(/);
+  assert.match(src, /function askName\(/, 'Save property still asks for a name');
+  assert.match(src, /askName\(\{title:'Save property'/);
+});
