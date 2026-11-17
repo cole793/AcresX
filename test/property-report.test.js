@@ -127,9 +127,9 @@ test('key findings: at most 5 on page 1, one status dot each, risks first', () =
     'verify: Access is by a private road', 'verify: Overlapping power territories',
     'good: Zoning allows a home (RT)'
   ]);
-  // The facts behind them are all on the page (6 findings; the 6th, low slope, is a site condition on page 2).
+  // The 6th finding opens page 2.
   assert.equal(h.context.AcresXReport.gatherFacts(fixture()).findings.length, 6);
-  assert.match(pages[1], /<span class="chip good">Low slope<\/span>/);
+  assert.match(pages[1], /<h2>More findings<\/h2><ul class="kf"><li class="good"><i class="dot good"><\/i><p><strong>Low slope<\/strong><span class="kf-d"> — 0\.3% average grade<\/span>/);
   assert.match(pages[0], /<span class="kf-d"> — Nearest road Blasted Ln is private; confirm a recorded easement\.<\/span>/);
 });
 

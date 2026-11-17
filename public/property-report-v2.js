@@ -7,7 +7,7 @@
 //           mapped wetland buffers hatched ochre: shown, not removed), three "at a glance" tiles
 //           (buildability score with its one-line why, buildable acres, site cost range) and at
 //           most 5 key findings with a small status dot.
-//   Page 2  Site details: about the score (why, top drivers), the buildable-area breakdown, site
+//   Page 2  Site details: any further key findings, about the score (why, top drivers), the buildable-area breakdown, site
 //           conditions (water, septic, public water/sewer, power, access, flood, wetlands, terrain)
 //           as label/value rows.
 //   Page 3  Zoning & records: zoning in plain words + permitted uses, overlays, assessor values
@@ -656,6 +656,9 @@ ${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in th
   const PAGE_NO = { summary: 1, details: 2, zoning: 3, costs: 4, assumptions: 5 };
   const sec = (title, body, cls = '') => `<section class="c-sec block${cls ? ` ${cls}` : ''}"><h2>${esc(title)}</h2>${body}</section>`;
   const dot = level => `<i class="dot ${esc(level)}"></i>`;
+  // Page 1 lists at most this many key findings; the rest open page 2.
+  const PAGE1_FINDINGS = 5;
+  const findingList = list => `<ul class="kf">${list.map(x => `<li class="${esc(x.level)}">${dot(x.level)}<p><strong>${esc(x.title)}</strong>${x.detail ? `<span class="kf-d"> — ${esc(x.detail)}</span>` : ''}</p></li>`).join('')}</ul>`;
 
   function summaryHeader(b) {
     const right = `<div class="c-head-right"><span>Property report</span><span>Generated ${esc(generatedOn())}</span>${b ? '<span class="powered">Powered by AcresX</span>' : ''}</div>`;
@@ -684,10 +687,8 @@ ${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in th
     // The city line only when it names a city: "MT" or "MT 59101" alone repeats the state above.
     const city = f.place && !/^[A-Z]{2}(\s+\d{5}(-\d{4})?)?$/.test(f.place) ? f.place : '';
     const sub = [city, refName ? `Reference: ${refName}` : ''].filter(Boolean).map(esc).join(' <span class="sep">·</span> ');
-    const top = f.findings.slice(0, 5);
-    const list = top.length
-      ? `<ul class="kf">${top.map(x => `<li class="${esc(x.level)}">${dot(x.level)}<p><strong>${esc(x.title)}</strong>${x.detail ? `<span class="kf-d"> — ${esc(x.detail)}</span>` : ''}</p></li>`).join('')}</ul>`
-      : `<p class="muted">Key findings not available.</p>`;
+    const top = f.findings.slice(0, PAGE1_FINDINGS);
+    const list = top.length ? findingList(top) : `<p class="muted">Key findings not available.</p>`;
     return `<section class="page p1"><div class="page-body">
 ${summaryHeader(f.brand)}
 <div class="c-title"><h1>${esc(f.address || 'No situs address')}</h1><p class="c-meta">${meta}</p>${sub ? `<p class="c-sub">${sub}</p>` : ''}${f.acreage.note ? `<p class="c-sub acreage-note">${esc(f.acreage.note)}</p>` : ''}</div>
@@ -714,7 +715,10 @@ ${sec('Key findings', list, 'c-findings')}
   }
 
   function page2(data, f, score, S) {
+    // Findings past page 1's five are listed here, so every finding prints somewhere.
+    const more = f.findings.slice(PAGE1_FINDINGS);
     return `<section class="page p2"><div class="page-body">${pageHead('Site details', f)}
+${more.length ? sec('More findings', findingList(more), 'c-findings') : ''}
 ${sec('About the score', scoreBlock(score))}
 ${sec('Buildable area · screening estimate', buildableBlock(data.buildableArea))}
 ${sec('Site conditions', siteCards(data, f, S))}
@@ -888,7 +892,7 @@ table{border-collapse:collapse;width:100%}
 /* Fit steps: tighten spacing first, then text, before a page is allowed to grow. */
 .d1 .page-body{--gap:16px}.d1 .site{padding:6px 0}.d1 .checklist li{padding:4px 0}.d1 .notes li{padding:7px 0}.d1 .c-sec>h2{margin-bottom:8px}
 .d2 .page-body{--gap:13px;--fs-body:10pt;--fs-small:9pt;--fs-cap:8pt}.d2 .site{padding:5px 0}.d2 .uses td{padding:3px 8px 3px 0}.d2 .costs td{padding:5px 8px 5px 0}
-.d3 .page-body{--gap:11px;--fs-body:9.5pt;--fs-small:8.6pt;--fs-cap:7.6pt}.d3 .site p,.d3 .notes p{line-height:1.42}.d3 .c-sec>h2{margin-bottom:6px;padding-bottom:4px}
+.d3 .page-body{--gap:11px;--fs-body:9.5pt;--fs-small:8.6pt;--fs-cap:7.6pt}.d3 .site{padding:4px 0}.d3 .kf li{padding:2px 0}.d3 .site p,.d3 .notes p{line-height:1.42}.d3 .c-sec>h2{margin-bottom:6px;padding-bottom:4px}
 .p1 .page-body{--gap:16px}.p1 .kf li{padding:3.5px 0}.p1.d1 .page-body{--gap:14px}.p1.d1 .tile{padding:10px 14px}.p1.d1 .kf li{padding:3px 0}
 .p1.d2 .c-title h1{font-size:18pt}.p1.d2 .t-num{font-size:21pt}.p1.d2 .t-num.t-range{font-size:14pt}.p1.d2 .c-head .agent-logo{max-height:26px}
 .p1.d3 .c-title h1{font-size:16pt}.p1.d3 .tile{padding:10px 12px}.p1.d3 .kf li{padding:3px 0}

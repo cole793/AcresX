@@ -118,6 +118,24 @@ test('every fact lands on a page: findings, site conditions, cost lines, checkli
   assert.match(pages[5], /Preliminary screening only\.<\/strong> AcresX compiles public records/);
 });
 
+test('findings past the first 5 open page 2 ("More findings"), so every finding prints', () => {
+  const h = context();
+  const R = h.context.AcresXReport;
+  const model = R.buildModel('x');
+  const levels = ['risk', 'risk', 'verify', 'verify', 'verify', 'good', 'good'];
+  model.f = { ...model.f, findings: levels.map((level, i) => ({ level, title: `Finding number ${i + 1}`, detail: `Detail ${i + 1}` })) };
+  const pages = R.renderHtml(model, { brand: null }).split('<section class="page ').slice(1);
+  const titles = p => [...p.matchAll(/<li class="(\w+)"><i class="dot \1"><\/i><p><strong>(Finding number \d)<\/strong>/g)].map(m => m[2]);
+  assert.deepEqual(titles(pages[0]), ['Finding number 1', 'Finding number 2', 'Finding number 3', 'Finding number 4', 'Finding number 5']);
+  assert.match(pages[1], /<section class="c-sec block c-findings"><h2>More findings<\/h2><ul class="kf">/);
+  assert.deepEqual(titles(pages[1]), ['Finding number 6', 'Finding number 7']);
+  for (const x of model.f.findings) assert.ok(titles(pages[0] + pages[1]).includes(x.title), x.title);
+  assert.match(pages[1], /Detail 7/);
+  // Five or fewer: no "More findings" section.
+  model.f.findings = model.f.findings.slice(0, 5);
+  assert.doesNotMatch(R.renderHtml(model, { brand: null }), /More findings/);
+});
+
 test('page 1 second line names a city only: no stray state code after "County, State"', () => {
   const mt = fixture();
   Object.assign(mt.parcel.properties, { _stateCode: 'MT', _countyDisplay: 'Yellowstone', _stateDisplay: 'Montana', SITUS_CITY_NM: '', SITUS_ZIP_NR: '' });
