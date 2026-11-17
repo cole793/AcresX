@@ -13,6 +13,7 @@ import {
 } from '../src/services/elevation.js';
 import { TCC_SERVICE, CANOPY_FALLBACK_MAX_POINTS, TERRAIN_CACHE_PREFIX, CANOPY_CACHE_PREFIX } from '../src/services/land-analysis.js';
 import { SLOPE_CACHE_PREFIX } from '../src/services/slope-grid.js';
+import { SOIL_CACHE_PREFIX } from '../src/services/soils.js';
 import { TERRAIN_TILES_URL } from '../src/services/terrain-tiles.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8'));
@@ -355,7 +356,8 @@ test('cache: successes are reused, keyed per layer by rounded geometry', async (
   await landAnalysis();
   await slopeGrid();
   const keys = [...store.keys()];
-  assert.equal(keys.length, 3);
+  assert.equal(keys.length, 4);
+  assert.ok(keys.some(k => k.startsWith(SOIL_CACHE_PREFIX)), 'the USDA SDA soil answer (30 days, src/services/soils.js)');
   assert.ok(keys.some(k => k.startsWith(TERRAIN_CACHE_PREFIX)));
   assert.ok(keys.some(k => k.startsWith(CANOPY_CACHE_PREFIX)));
   assert.ok(keys.some(k => k.startsWith(SLOPE_CACHE_PREFIX)));
@@ -364,7 +366,7 @@ test('cache: successes are reused, keyed per layer by rounded geometry', async (
   stubFetch();
   const land = (await landAnalysis()).body;
   const slope = (await slopeGrid()).body;
-  assert.deepEqual(calls.map(c => c.kind), ['soil'], 'only soil goes upstream on a cache hit');
+  assert.deepEqual(calls.map(c => c.kind), [], 'nothing goes upstream on a cache hit (soil is cached too)');
   assert.deepEqual(land.terrain, terrainSnap);
   assert.deepEqual(land.landCover, batched.landAnalysis.landCover);
   assert.deepEqual(slope, slopeSnap);
@@ -382,7 +384,8 @@ test('cache: failures, fallbacks and partial answers are never stored', async ()
   stubFetch({ '3dep': fail, tcc: fail });
   await landAnalysis();
   await slopeGrid();
-  assert.equal(store.size, 0, 'fallback answers are not cached');
+  const notSoil = () => [...store.keys()].filter(k => !k.startsWith(SOIL_CACHE_PREFIX));
+  assert.deepEqual(notSoil(), [], 'fallback answers are not cached');
 
   stubFetch({ '3dep': call => {
     const answer = recordedSamples('3dep', call.body);
@@ -395,7 +398,7 @@ test('cache: failures, fallbacks and partial answers are never stored', async ()
   } });
   await landAnalysis();
   await slopeGrid();
-  assert.equal(store.size, 0, 'terrain failure and partial canopy/slope answers are not cached');
+  assert.deepEqual(notSoil(), [], 'terrain failure and partial canopy/slope answers are not cached');
 });
 
 test('cache guard: works without caches and when the cache throws', async () => {
