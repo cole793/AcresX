@@ -313,9 +313,10 @@
     const marketLand = Number.isFinite(result.marketLandValue) && !Number.isFinite(result.landValue)
       ? ` · Market land value ${money(result.marketLandValue)}` : '';
     const exemptionNote = result.exemption ? ` · Exemption: ${escapeText(result.exemption)}` : '';
-    const tax = result.taxAmount === undefined ? ''
-      : Number.isFinite(result.taxAmount) ? ` · Tax amount ${money(result.taxAmount)}`
-        : ` · Tax amount Not available${result.taxAmountNote ? ` (${escapeText(result.taxAmountNote.replace(/\.$/, ''))})` : ''}`;
+    // A missing tax amount is no longer called out here ("Tax amount Not available (Not published
+    // in the county GIS…)"): the Property tax card (/api/property-tax, property-tax.js) answers it.
+    // The API still sends taxAmount / taxAmountNote unchanged.
+    const tax = Number.isFinite(result.taxAmount) ? ` · Tax amount ${money(result.taxAmount)}` : '';
     const exemption = Number.isFinite(result.homeownerExemption) && result.homeownerExemption > 0
       ? ` · Homeowner exemption ${money(result.homeownerExemption)}`
       : '';

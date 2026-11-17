@@ -267,7 +267,7 @@ const spokaneForest = {
 };
 const spokaneCounty = record => ({ available: true, state: 'WA', county: 'Spokane', parcelId: record.parcelNumber, records: [{ PID_NUM: record.parcelNumber, land_value: record.marketLandValue }], countyRecords: [record] });
 
-test('overview: Spokane fills assessed, land, year and the property class as a tax category, with exemption, tax amount and the SCOUT link', () => {
+test('overview: Spokane fills assessed, land, year and the property class as a tax category, with exemption and the SCOUT link (no stale tax-amount note)', () => {
   const { A, fact, document } = page();
   A.renderAssessment(A.normalize(spokaneCounty(spokaneRecord)));
   assert.equal(fact('overviewAssessorValue'), '$589,000');
@@ -276,7 +276,7 @@ test('overview: Spokane fills assessed, land, year and the property class as a t
   assert.equal(fact('overviewAssessorClass'), '11 – Single Unit');
   assert.equal(document.getElementById('overviewAssessorClassWrap').querySelector('small.assessor-class-note').textContent, 'Tax category, not zoning');
   assert.equal(document.getElementById('propertyAssessmentSource').innerHTML,
-    '<strong>Assessment source:</strong> Spokane County Assessor · Improvements $479,000 (assessed total minus land value) · Exemption: Personal exemption applied (details on SCOUT) ($512,534 exempt) · Net taxable $76,466 · Market value $589,000 · Not in a current-use program · Tax amount Not available (Not published in the county GIS. The SCOUT page lists the tax bill). Assessor values are informational and are not the current tax bill. <a href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=35234.0602" target="_blank" rel="noopener">View on Spokane County SCOUT ↗</a>');
+    '<strong>Assessment source:</strong> Spokane County Assessor · Improvements $479,000 (assessed total minus land value) · Exemption: Personal exemption applied (details on SCOUT) ($512,534 exempt) · Net taxable $76,466 · Market value $589,000 · Not in a current-use program. Assessor values are informational and are not the current tax bill. <a href="https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=35234.0602" target="_blank" rel="noopener">View on Spokane County SCOUT ↗</a>');
 });
 
 test('overview: Spokane current-use land shows "Not available" for land value and the market land value instead, never $0', () => {
@@ -287,7 +287,8 @@ test('overview: Spokane current-use land shows "Not available" for land value an
   assert.equal(fact('overviewAssessorClass'), '88 – Designated Forest Lnd');
   const source = document.getElementById('propertyAssessmentSource').innerHTML;
   assert.ok(!source.includes('$0'), source);
-  assert.match(source, /Spokane County Assessor · Market land value \$283,740 · Net taxable \$99,910 · Designated forest land \(RCW 84\.33\) · Tax amount Not available/);
+  assert.match(source, /Spokane County Assessor · Market land value \$283,740 · Net taxable \$99,910 · Designated forest land \(RCW 84\.33\)\. The land is assessed/);
+  assert.doesNotMatch(source, /Tax amount|Not published in the county GIS/, 'the Property tax card covers the tax bill');
   assert.match(source, /does not split it into land and improvements/);
 });
 
