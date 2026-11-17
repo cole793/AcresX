@@ -1,17 +1,21 @@
-// Printable property report (owner redesign 2026-11-13: "too crowded" -> 3 US Letter pages, plus
-// an appendix page with the cost assumptions when the cost lines carry them).
+// Printable property report. Owner redesigns: 2026-11-13 ("too crowded": Letter pages plus a cost
+// appendix) and 2026-11-17 (realtors: "content great, layout hard to read, page 1 overwhelming"),
+// the calm layout: more space, larger type, a muted palette, page 1 a summary only.
 //
-//   Page 1  Summary: header (address, parcel, county/state, acres, date), parcel map with scale bar,
-//           north arrow and location inset (buildable area shaded green, removed area hatched
-//           red, mapped wetland buffers hatched amber: shown, not removed), the buildable-acres screening estimate, buildability score with its top 3
-//           drivers, the cost range, and 4-6 color-coded key findings.
-//   Page 2  Site & zoning: zoning in plain words + permitted uses, overlays, site cards (water,
-//           septic, public water/sewer, power, access, flood, wetlands, terrain), assessor values,
-//           and a listing only when one matched.
-//   Page 3  Costs & next steps: cost table (line, range, confidence tag) with a total equal to the
-//           page-1 range, a "before you buy" checklist, numbered sources with dates.
-//   Page 4  Appendix: how each cost line was estimated (the cost model's basis text), with the
-//           same source numbers as page 3.
+//   Page 1  Summary: light header, address + one facts line, parcel map with scale bar, north arrow
+//           and location inset (buildable area shaded sage, removed area hatched terracotta,
+//           mapped wetland buffers hatched ochre: shown, not removed), three "at a glance" tiles
+//           (buildability score with its one-line why, buildable acres, site cost range) and at
+//           most 5 key findings with a small status dot.
+//   Page 2  Site details: any further key findings, about the score (why, top drivers), the buildable-area breakdown, site
+//           conditions (water, septic, public water/sewer, power, access, flood, wetlands, terrain)
+//           as label/value rows.
+//   Page 3  Zoning & records: zoning in plain words + permitted uses, overlays, assessor values
+//           and tax line, and a listing only when one matched.
+//   Page 4  Costs & next steps: what the total sums, the cost table (line, confidence tag, range)
+//           with a total equal to the page-1 range, a "before you buy" checklist.
+//   Page 5  Cost assumptions: how each cost line was estimated (only when the lines carry it).
+//   Last    Sources: the county coverage line, numbered sources with dates, the screening limits.
 //
 // One source per number:
 // - Score: the dashboard's (#scoreMetric, painted by screening-refinements.js); drivers from the
@@ -65,7 +69,7 @@
 
   function reportState() { try { return window.__acresxLast || (typeof last !== 'undefined' ? last : null); } catch { return window.__acresxLast || null; } }
 
-  // ---- Sources: one numbered list for the whole report (page 3).
+  // ---- Sources: one numbered list for the whole report (last page).
   function sourceList() {
     const list = [], index = new Map();
     const add = (name, { url = '', date = '', verified = true } = {}) => {
@@ -399,18 +403,21 @@
     const keepPath = shaded && buildable.geometry ? geoPath(buildable.geometry, toXY) : '';
     const cutPath = shaded && buildable.removedGeometry ? geoPath(buildable.removedGeometry, toXY) : '';
     const bufPath = shaded && buildable.bufferGeometry ? geoPath(buildable.bufferGeometry, toXY) : '';
-    const shading = keepPath || cutPath ? `<defs><pattern id="cutHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)"><rect width="9" height="9" fill="rgba(192,57,43,.22)"/><rect width="3.5" height="9" fill="rgba(192,57,43,.85)"/></pattern><pattern id="bufHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(-45)"><rect width="9" height="9" fill="rgba(240,190,90,.2)"/><rect width="3" height="9" fill="rgba(211,154,42,.9)"/></pattern></defs>${keepPath ? `<path class="keep" d="${keepPath}" fill="rgba(47,138,88,.5)"/>` : ''}${cutPath ? `<path class="cut" d="${cutPath}" fill="url(#cutHatch)"/>` : ''}${bufPath ? `<path class="buf" d="${bufPath}" fill="url(#bufHatch)"/>` : ''}` : '';
+    // The layers in the muted status colors (sage, terracotta, ochre).
+    const mc = { cutBg: 'rgba(164,81,59,.18)', cut: 'rgba(176,94,70,.8)', bufBg: 'rgba(196,154,60,.16)', buf: 'rgba(192,148,58,.85)', keep: 'rgba(111,154,126,.45)' };
+    const shading = keepPath || cutPath ? `<defs><pattern id="cutHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)"><rect width="9" height="9" fill="${mc.cutBg}"/><rect width="3.5" height="9" fill="${mc.cut}"/></pattern><pattern id="bufHatch" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(-45)"><rect width="9" height="9" fill="${mc.bufBg}"/><rect width="3" height="9" fill="${mc.buf}"/></pattern></defs>${keepPath ? `<path class="keep" d="${keepPath}" fill="${mc.keep}"/>` : ''}${cutPath ? `<path class="cut" d="${cutPath}" fill="url(#cutHatch)"/>` : ''}${bufPath ? `<path class="buf" d="${bufPath}" fill="url(#bufHatch)"/>` : ''}` : '';
     const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${b.join(',')}&bboxSR=4326&imageSR=4326&size=1000,${Math.round(1000 * H / W)}&format=jpg&f=image`;
     const ftPerPx = bw * 364000 / W; // 1 degree of latitude is about 364,000 ft
     const s = niceScale(ftPerPx, 150);
     const insetW = 0.36, insetH = insetW * 120 / 160; // degrees of latitude, about 25 x 19 miles
     const ib = [cx - insetW / k / 2, cy - insetH / 2, cx + insetW / k / 2, cy + insetH / 2];
+    const ink = '#2f3437';
     const insetUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/export?bbox=${ib.join(',')}&bboxSR=4326&imageSR=4326&size=320,240&format=png&f=image`;
     return `<figure class="map"><img class="map-img" src="${url}" alt="Satellite image of the parcel" onerror="this.closest('.map').classList.add('img-error')">
 <svg class="map-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${shading}<polygon points="${pts}"/></svg>
 <svg class="map-deco" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-<g transform="translate(36,38)"><circle r="21" fill="#fff" fill-opacity=".92"/><path d="M0,-16 L6,2 L0,-1 L-6,2 Z" fill="#17231c"/><text y="15" text-anchor="middle" font-size="10" font-weight="800" fill="#17231c">N</text></g>
-<g transform="translate(18,${H - 30})"><rect x="-6" y="-9" width="${(s.px + 60).toFixed(0)}" height="22" rx="5" fill="#fff" fill-opacity=".92"/><rect x="0" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#17231c"/><rect x="${(s.px / 2).toFixed(1)}" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#fff" stroke="#17231c" stroke-width="1"/><text x="${(s.px + 6).toFixed(1)}" y="6" font-size="12" font-weight="700" fill="#17231c">${esc(s.label)}</text></g>
+<g transform="translate(36,38)"><circle r="21" fill="#fff" fill-opacity=".92"/><path d="M0,-16 L6,2 L0,-1 L-6,2 Z" fill="${ink}"/><text y="15" text-anchor="middle" font-size="10" font-weight="600" fill="${ink}">N</text></g>
+<g transform="translate(18,${H - 30})"><rect x="-6" y="-9" width="${(s.px + 60).toFixed(0)}" height="22" rx="5" fill="#fff" fill-opacity=".92"/><rect x="0" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="${ink}"/><rect x="${(s.px / 2).toFixed(1)}" y="0" width="${(s.px / 2).toFixed(1)}" height="5" fill="#fff" stroke="${ink}" stroke-width="1"/><text x="${(s.px + 6).toFixed(1)}" y="6" font-size="12" font-weight="600" fill="${ink}">${esc(s.label)}</text></g>
 </svg>
 <div class="map-tag">Parcel boundary approximate${keepPath || cutPath ? ` · <i class="k"></i>buildable estimate <i class="c"></i>removed${bufPath ? ' <i class="b"></i>wetland buffer (not removed)' : ''}` : ''}</div>
 <div class="inset"><img src="${insetUrl}" alt="Location map" onerror="this.parentElement.classList.add('img-error')"><span class="inset-dot"></span><span class="inset-label">Location</span></div>
@@ -428,73 +435,34 @@
     ? `<footer class="foot branded"><span class="foot-agent"><span class="foot-line foot-who">Prepared by ${esc([brand.name, brand.brokerage].filter(Boolean).join(' · ') || brand.preparedBy)}</span>${brand.footerContact.length ? `<span class="foot-line foot-contact">${brand.footerContact.map(esc).join(' · ')}</span>` : ''}</span><span class="foot-right">Powered by AcresX · Screening only · Page ${n} of ${total}</span></footer>`
     : `<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${n} of ${total}</span></footer>`);
 
-  // ---- Page 1: buildable acres (screening estimate; feeds only the score's homesite check)
+  // ---- Buildable acres (screening estimate; feeds only the score's homesite check)
 
   const buildableMeasured = b => Boolean(b) && (b.status === 'measured' || b.status === 'partial') && num(b.buildableAcres) != null;
-  function buildableBlock(b) {
+  // The buildable-area facts (page 1 tile, page 2 breakdown).
+  function buildableParts(b) {
     const B = window.AcresXBuildable;
     const fa = (a, ref) => (B ? B.fmtAcres(a, ref) : (num(ref ?? a) >= 10 ? Number(a).toFixed(1) : Number(a).toFixed(2)));
-    if (!buildableMeasured(b)) {
-      const why = !b ? 'The buildable-area estimate had not loaded when this report was generated.' : ((b.notes || [])[0] || 'The constraint layers did not answer.');
-      return `<section class="buildable block">${eyebrow('Buildable area · screening estimate')}<div class="b-row"><strong class="b-num">Not measured</strong><p class="b-list">${esc(why)}</p></div></section>`;
-    }
+    if (!buildableMeasured(b)) return { measured: false, why: !b ? 'The buildable-area estimate had not loaded when this report was generated.' : ((b.notes || [])[0] || 'The constraint layers did not answer.') };
     const keep = Math.max(0, Math.min(100, num(b.buildablePct) ?? 0));
     const removed = (b.removed || []).map(r => `${esc(r.reason)} <b>${esc(fa(r.acres, b.parcelAcres))} ac</b> (${esc(num(r.pct) ?? 0)}%)`);
     if (num(b.overlapAcres) >= 0.01) removed.push(`overlaps counted once (${esc(fa(b.overlapAcres, b.parcelAcres))} ac)`);
     const missing = (b.layers || []).filter(l => l.status === 'unavailable' || l.status === 'not_mapped').map(l => l.label || l.key);
-    const head = `About ${fa(b.buildableAcres, b.parcelAcres)} of ${fa(b.parcelAcres)} acres buildable`;
-    return `<section class="buildable block">${eyebrow('Buildable area · screening estimate')}<div class="b-row"><strong class="b-num">${esc(head)}</strong><div class="b-bar"><span class="k" style="width:${keep}%"></span><span class="c" style="width:${100 - keep}%"></span></div><span class="b-pct">${esc(keep)}%</span></div>
-<p class="b-list">${removed.length ? `Removed: ${removed.join(' · ')}.` : 'No mapped flood zone, wetland or steep slope removed.'}${missing.length ? ` Not counted: ${esc(missing.join(', '))}.` : ''}${(b.layers || []).some(l => l.key === 'buffer') ? '' : ' Wetland buffers not mapped here.'}</p>
-${(b.mayAlsoRestrict || []).map(r => `<p class="b-maybe"><b>May also be restricted:</b> ${esc(String(r.reason).replace(/^Mapped/, 'mapped'))} ${esc(fa(r.acres, b.parcelAcres))} ac (${esc(num(r.pct) ?? 0)}%) — the buffer that applies depends on a wetland delineation.</p>`).join('')}
-<p class="b-note">${esc(b.disclaimer || '')} Verify with the responsible agency.</p></section>`;
+    return {
+      measured: true, keep, acres: fa(b.buildableAcres, b.parcelAcres), parcelAcres: fa(b.parcelAcres),
+      head: `About ${fa(b.buildableAcres, b.parcelAcres)} of ${fa(b.parcelAcres)} acres buildable`,
+      list: `${removed.length ? `Removed: ${removed.join(' · ')}.` : 'No mapped flood zone, wetland or steep slope removed.'}${missing.length ? ` Not counted: ${esc(missing.join(', '))}.` : ''}${(b.layers || []).some(l => l.key === 'buffer') ? '' : ' Wetland buffers not mapped here.'}`,
+      maybe: (b.mayAlsoRestrict || []).map(r => `<b>May also be restricted:</b> ${esc(String(r.reason).replace(/^Mapped/, 'mapped'))} ${esc(fa(r.acres, b.parcelAcres))} ac (${esc(num(r.pct) ?? 0)}%) — the buffer that applies depends on a wetland delineation.`),
+      note: `${esc(b.disclaimer || '')} Verify with the responsible agency.`
+    };
   }
-
   // ---- Page 1
 
-  // One line under the header: "Validated county" / "Partially validated" / "Limited coverage …".
-  const coverageLine = c => (c ? `<p class="coverage cov-${esc(c.tier)}"><b>${esc(c.label)}</b>${esc(c.summary)}</p>` : '');
-
   const generatedOn = () => reportNow().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  function headerP1(b) {
-    if (!b) return `<header class="head"><img class="logo" src="/assets/acresx-logo.png" alt="AcresX"><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(generatedOn())}</span></div></header>`;
-    return `<header class="head branded"><div class="agent">${b.logo ? `<img class="agent-logo" src="${esc(b.logo)}" alt="${esc(b.brokerage || b.name)}">` : ''}<div class="agent-text"><div class="prepared">Prepared by <strong>${esc(b.name)}</strong>${b.brokerage ? `, ${esc(b.brokerage)}` : ''}</div>${b.contact.length ? `<div class="agent-contact">${b.contact.map(esc).join(' · ')}</div>` : ''}</div></div><div class="head-right">${eyebrow('Property report')}<span>Generated ${esc(generatedOn())}</span><span class="powered">Powered by AcresX</span></div></header>`;
-  }
   function brandParts() {
     try { const B = window.AcresXBranding; return B ? B.parts(B.load()) : null; } catch { return null; }
   }
 
-  function page1(data, f, score, name) {
-    const parcel = data.parcel || {};
-    const cost = f.cost;
-    const refName = name && ![f.address, `Parcel ${f.pid}`, f.pid, 'Property'].includes(name) ? name : '';
-    const drivers = score.drivers.length
-      ? `<ul class="drivers">${score.drivers.map(d => (d.missing ? `<li class="missing"><b>?</b>${esc(d.text)}</li>` : `<li class="${d.good ? 'good' : 'risk'}"><b>${d.good ? '✓' : '⚠'}</b>${esc(d.text)}</li>`)).join('')}</ul>`
-      : `<p class="muted">Score drivers not available.</p>`;
-    const flags = f.findings.length
-      ? `<div class="flags">${f.findings.map(x => `<div class="flag ${x.level}"><b>${x.level === 'good' ? '✓' : x.level === 'risk' ? '!' : '?'}</b><div><strong>${esc(x.title)}</strong>${x.detail ? `<span>${esc(x.detail)}</span>` : ''}</div></div>`).join('')}</div>`
-      : `<p class="muted">Key findings not available.</p>`;
-    return `<section class="page p1"><div class="page-body">
-${headerP1(f.brand)}
-${coverageLine(f.coverage)}<div class="title">
-<h1>${esc(f.address || 'No situs address')}</h1>
-<div class="facts">
-<div><span>Parcel</span><strong>${esc(f.pid || NA)}</strong></div>
-<div><span>Location</span><strong>${esc([f.county ? `${f.county} County` : '', f.stateName].filter(Boolean).join(', ') || NA)}</strong>${f.place ? `<small>${esc(f.place)}</small>` : ''}</div>
-<div class="fact-size"><span>Parcel size</span><strong>${esc(f.acreage.text || NA)}</strong>${f.acreage.note ? `<small class="acreage-note">${esc(f.acreage.note)}</small>` : ''}</div>
-${refName ? `<div><span>Reference</span><strong>${esc(refName)}</strong></div>` : ''}
-</div></div>
-${parcelMap(parcel, data.buildableArea)}
-${buildableBlock(data.buildableArea)}
-<div class="hero">
-<article class="score-card band-${score.band}">${eyebrow('Buildability score')}<div class="score-row"><div class="score-num">${esc(score.value || '—')}<small>${score.value ? '/10' : ''}</small></div><div class="score-rating">${esc(score.rating || NA)}</div></div>${score.incomplete ? `<p class="score-incomplete">${esc(score.incomplete)}</p>` : ''}${score.why ? `<p class="score-why">${esc(score.why)}</p>` : ''}${drivers}</article>
-<article class="cost-card">${eyebrow('Site development cost')}<div class="cost-num">${cost ? esc(range(cost.low, cost.high)) : NA}</div><p>${cost ? `Midpoint about ${esc(kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2))}. Sum of ${cost.lines.length} lines: ${esc(cost.lines.map(l => String(l.label).replace(/\s*\(.*\)$/, '').toLowerCase()).join(', '))} (page 3). ${cost.local ? 'Local prices where sourced.' : 'Generic regional ranges.'} ${cost.missingNote ? `${esc(cost.missingNote)} ` : ''}` : 'Cost inputs were not available when this report was generated. '}Screening estimate, not a quote.</p></article>
-</div>
-<section class="block">${eyebrow('Key findings')}${flags}</section>
-<p class="disclaimer">Screening information from public records. Verify material findings with the responsible agency, utility or licensed professional before relying on them.</p>
-</div>${footer(1, f.pages, f.brand)}</section>`;
-  }
-
-  // ---- Page 2
+  // ---- Section blocks (pages 2-4)
 
   const USE_LABELS = { permitted: 'Permitted', limited: 'With standards', conditional: 'Conditional review', not_permitted: 'Not permitted' };
   function zoningBlock(f, S) {
@@ -643,25 +611,8 @@ ${buildableBlock(data.buildableArea)}
     const rec = listing.best || listing.match || null;
     if (!rec) return '';
     const bits = [rec.status || rec.standardStatus || rec.StandardStatus, num(rec.listPrice) != null ? `List ${usd(rec.listPrice)}` : '', num(rec.daysOnMarket) != null ? `${rec.daysOnMarket} days on market` : '', rec.listingId ? `MLS ${rec.listingId}` : ''].filter(Boolean);
-    return `<section class="block">${eyebrow('Listing')}<p class="listing"><strong>${esc(bits.join(' · ') || 'Listing match')}</strong><span>Listing claims are unverified context and do not affect the buildability score.</span></p></section>`;
+    return `<section class="c-sec block"><h2>Listing</h2><p class="listing"><strong>${esc(bits.join(' · ') || 'Listing match')}</strong><span>Listing claims are unverified context and do not affect the buildability score.</span></p></section>`;
   }
-
-  function page2(data, f, S) {
-    const z = f.zdp;
-    const acres = f.acreage.official;
-    const density = String(z.density || '');
-    const densityWarning = Number.isFinite(acres) && /10 acres?/i.test(density) && acres < 10
-      ? `<p class="warn-note"><strong>County verification recommended:</strong> Parcel area is ${esc(f.acreage.officialText)}, while the screening references ${esc(density)}. Confirm legal lot status and density exceptions with the county.</p>` : '';
-    return `<section class="page p2"><div class="page-body">${pageHead('Site & zoning', f)}
-<section class="block">${eyebrow('Zoning')}${zoningBlock(f, S)}${densityWarning}</section>
-<section class="block">${eyebrow('Overlays')}${overlayBlock(f, S)}</section>
-<section class="block">${eyebrow('Site conditions')}${siteCards(data, f, S)}</section>
-<section class="block">${eyebrow('Assessor record')}${assessorBlock(f, S, data)}</section>
-${listingBlock(data)}
-</div>${footer(2, f.pages, f.brand)}</section>`;
-  }
-
-  // ---- Page 3
 
   function costBlock(f, S, notes) {
     const c = f.cost;
@@ -674,7 +625,7 @@ ${listingBlock(data)}
       return `<tr><td><strong>${esc(l.label)}</strong>${S.mark(refs)}</td><td><span class="tag ${tag.cls}">${esc(tag.text)}</span></td><td class="amt">${esc(range(l.low, l.high))}</td></tr>${alt}`;
     }).join('');
     return `<table class="costs"><thead><tr><th>Line</th><th>Confidence</th><th class="amt">Range</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2">Total (matches page 1)</td><td class="amt">${esc(range(c.low, c.high))}</td></tr></tfoot></table>
-${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in the estimate or the score.</p>` : ''}<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.pages > 3 ? `<p class="pointer">How each line was estimated: appendix, page ${f.pages}.</p>` : ''}`;
+${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in the estimate or the score.</p>` : ''}<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.appendixPage ? `<p class="pointer">How each line was estimated: appendix, page ${f.appendixPage}.</p>` : ''}`;
   }
 
   function checklist(data, f) {
@@ -696,149 +647,255 @@ ${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in th
     return `<ol class="checklist">${items.slice(0, 7).map(([h, t]) => `<li><p><strong>${esc(h)}.</strong> ${esc(t)}</p></li>`).join('')}</ol>`;
   }
 
-  function page3(data, f, S, notes) {
-    const costs = costBlock(f, S, notes);
-    const host = u => { try { return new URL(u).host; } catch { return ''; } };
-    const sources = S.list.map((s, i) => `<li value="${i + 1}">${esc(s.name)}${s.date ? `, ${esc(s.date)}` : ''}${s.verified === false ? ' (unverified)' : ''}${host(s.url) ? ` <span class="url">${esc(host(s.url))}</span>` : ''}</li>`).join('');
-    return `<section class="page p3"><div class="page-body">${pageHead('Costs & next steps', f)}
-<section class="block">${eyebrow('Site development cost')}${costs}</section>
-<section class="block">${eyebrow('Before you buy')}${checklist(data, f)}</section>
-<section class="small">${eyebrow('Sources')}<p class="muted src-note">Map and record layers were read when this report was generated (${esc(today())}); cost sources show their effective date.</p>${sources ? `<ol class="sources">${sources}</ol>` : '<p class="muted">No sources recorded.</p>'}
-<p class="limits"><strong>Preliminary screening only.</strong> AcresX compiles public records and third-party data. It is not a survey, appraisal, title report, wetland delineation, septic design, utility availability confirmation, zoning determination or engineering analysis, and does not guarantee development approval. Parcel boundaries and mapped features are approximate. Cost estimates are planning ranges, not bids. Verify material findings with the responsible agency, utility, licensed professional and title provider.</p></section>
+  const host = u => { try { return new URL(u).host; } catch { return ''; } };
+  const sourceItems = S => S.list.map((s, i) => `<li value="${i + 1}">${esc(s.name)}${s.date ? `, ${esc(s.date)}` : ''}${s.verified === false ? ' (unverified)' : ''}${host(s.url) ? ` <span class="url">${esc(host(s.url))}</span>` : ''}</li>`).join('');
+  const LIMITS = 'AcresX compiles public records and third-party data. It is not a survey, appraisal, title report, wetland delineation, septic design, utility availability confirmation, zoning determination or engineering analysis, and does not guarantee development approval. Parcel boundaries and mapped features are approximate. Cost estimates are planning ranges, not bids. Verify material findings with the responsible agency, utility, licensed professional and title provider.';
+
+  // ---- Pages. The section blocks above (zoning, overlays, site conditions, assessor, costs,
+  // checklist) are shared; the stylesheet (CSS) lays them out as plain sections with hairlines.
+  const PAGE_NO = { summary: 1, details: 2, zoning: 3, costs: 4, assumptions: 5 };
+  const sec = (title, body, cls = '') => `<section class="c-sec block${cls ? ` ${cls}` : ''}"><h2>${esc(title)}</h2>${body}</section>`;
+  const dot = level => `<i class="dot ${esc(level)}"></i>`;
+  // Page 1 lists at most this many key findings; the rest open page 2.
+  const PAGE1_FINDINGS = 5;
+  const findingList = list => `<ul class="kf">${list.map(x => `<li class="${esc(x.level)}">${dot(x.level)}<p><strong>${esc(x.title)}</strong>${x.detail ? `<span class="kf-d"> — ${esc(x.detail)}</span>` : ''}</p></li>`).join('')}</ul>`;
+
+  function summaryHeader(b) {
+    const right = `<div class="c-head-right"><span>Property report</span><span>Generated ${esc(generatedOn())}</span>${b ? '<span class="powered">Powered by AcresX</span>' : ''}</div>`;
+    if (!b) return `<header class="c-head"><img class="logo" src="/assets/acresx-logo.png" alt="AcresX">${right}</header>`;
+    return `<header class="c-head branded"><div class="agent">${b.logo ? `<img class="agent-logo" src="${esc(b.logo)}" alt="${esc(b.brokerage || b.name)}">` : ''}<div class="agent-text"><p class="prepared">Prepared by ${esc(b.name)}${b.brokerage ? `, ${esc(b.brokerage)}` : ''}</p>${b.contact.length ? `<p class="agent-contact">${b.contact.map(c => `<span class="ct">${esc(c)}</span>`).join(' · ')}</p>` : ''}</div></div>${right}</header>`;
+  }
+
+  function tiles(data, f, score) {
+    const bx = buildableParts(data.buildableArea);
+    const cost = f.cost;
+    const scoreTile = `<article class="tile t-score band-${score.band}"><h3>Buildability score</h3><div class="t-num">${esc(score.value || '—')}${score.value ? '<small>/10</small>' : ''}</div><p class="t-label">${score.value ? dot(score.band) : ''}${esc(score.rating || NA)}</p>${score.incomplete ? `<p class="t-flag">${esc(score.incomplete)}</p>` : ''}${score.why ? `<p class="t-why">${esc(sentence(score.why))}</p>` : ''}</article>`;
+    const acresTile = bx.measured
+      ? `<article class="tile t-acres"><h3>Buildable acres</h3><div class="t-num">${esc(bx.acres)}<small> of ${esc(bx.parcelAcres)} ac</small></div><p class="t-label">About ${esc(bx.keep)}% of the parcel</p><p class="t-why">Screening estimate after mapped flood, wetland and steep-slope areas. Breakdown on page ${PAGE_NO.details}.</p></article>`
+      : `<article class="tile t-acres"><h3>Buildable acres</h3><div class="t-num t-na">Not measured</div><p class="t-why">${esc(bx.why)}</p></article>`;
+    const mid = cost ? kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2) : '';
+    const costTile = cost
+      ? `<article class="tile t-cost"><h3>Site development cost</h3><div class="t-num t-range">${esc(range(cost.low, cost.high))}</div><p class="t-label">Midpoint about ${esc(mid)}</p><p class="t-why">Screening estimate, not a quote. ${cost.lines.length} cost lines on page ${PAGE_NO.costs}.</p></article>`
+      : `<article class="tile t-cost"><h3>Site development cost</h3><div class="t-num t-na">${NA}</div><p class="t-why">Cost inputs were not available when this report was generated. Screening estimate, not a quote.</p></article>`;
+    return `<div class="tiles">${scoreTile}${acresTile}${costTile}</div>`;
+  }
+
+  function page1(data, f, score, name) {
+    const refName = name && ![f.address, `Parcel ${f.pid}`, f.pid, 'Property'].includes(name) ? name : '';
+    const where = [f.county ? `${f.county} County` : '', f.stateName].filter(Boolean).join(', ');
+    const meta = [esc(`Parcel ${f.pid || NA}`), esc(where || NA), f.acreage.text ? `<span class="c-acres">${esc(f.acreage.text)}</span>` : ''].filter(Boolean).join(' <span class="sep">·</span> ');
+    // The city line only when it names a city: "MT" or "MT 59101" alone repeats the state above.
+    const city = f.place && !/^[A-Z]{2}(\s+\d{5}(-\d{4})?)?$/.test(f.place) ? f.place : '';
+    const sub = [city, refName ? `Reference: ${refName}` : ''].filter(Boolean).map(esc).join(' <span class="sep">·</span> ');
+    const top = f.findings.slice(0, PAGE1_FINDINGS);
+    const list = top.length ? findingList(top) : `<p class="muted">Key findings not available.</p>`;
+    return `<section class="page p1"><div class="page-body">
+${summaryHeader(f.brand)}
+<div class="c-title"><h1>${esc(f.address || 'No situs address')}</h1><p class="c-meta">${meta}</p>${sub ? `<p class="c-sub">${sub}</p>` : ''}${f.acreage.note ? `<p class="c-sub acreage-note">${esc(f.acreage.note)}</p>` : ''}</div>
+${parcelMap(data.parcel || {}, data.buildableArea)}
+${tiles(data, f, score)}
+${sec('Key findings', list, 'c-findings')}
+<p class="disclaimer">Screening information from public records. Verify material findings with the responsible agency, utility or licensed professional before relying on them. Details, sources and next steps are on pages ${PAGE_NO.details}–${f.pages}.</p>
+</div>${footer(1, f.pages, f.brand)}</section>`;
+  }
+
+  function scoreBlock(score) {
+    const drivers = score.drivers.length
+      ? `<ul class="c-list drivers">${score.drivers.map(d => (d.missing ? `<li class="missing">${dot('verify')}<p>${esc(d.text)}</p></li>` : `<li class="${d.good ? 'good' : 'risk'}">${dot(d.good ? 'good' : 'risk')}<p>${esc(d.text)}</p></li>`)).join('')}</ul>`
+      : `<p class="muted">Score drivers not available.</p>`;
+    const head = score.value ? `<p class="c-lead"><strong>${esc(score.value)} of 10</strong> · ${esc(score.rating || NA)}${score.incomplete ? ` · <span class="c-flag">${esc(score.incomplete)}</span>` : ''}</p>` : `<p class="c-lead">${esc(score.rating || 'Score not available')}</p>`;
+    return `${head}${score.why ? `<p>${esc(sentence(score.why))}</p>` : ''}<p class="c-cap">What moved the score most</p>${drivers}`;
+  }
+
+  function buildableBlock(b) {
+    const x = buildableParts(b);
+    if (!x.measured) return `<div class="buildable"><p class="c-lead"><strong>Not measured</strong></p><p class="b-list">${esc(x.why)}</p></div>`;
+    return `<div class="buildable"><div class="b-row"><p class="b-num">${esc(x.head)}</p><div class="b-bar"><span class="k" style="width:${x.keep}%"></span><span class="c" style="width:${100 - x.keep}%"></span></div><span class="b-pct">${esc(x.keep)}%</span></div>
+<p class="b-list">${x.list}</p>${x.maybe.map(m => `<p class="b-maybe">${m}</p>`).join('')}<p class="b-note">${x.note}</p></div>`;
+  }
+
+  function page2(data, f, score, S) {
+    // Findings past page 1's five are listed here, so every finding prints somewhere.
+    const more = f.findings.slice(PAGE1_FINDINGS);
+    return `<section class="page p2"><div class="page-body">${pageHead('Site details', f)}
+${more.length ? sec('More findings', findingList(more), 'c-findings') : ''}
+${sec('About the score', scoreBlock(score))}
+${sec('Buildable area · screening estimate', buildableBlock(data.buildableArea))}
+${sec('Site conditions', siteCards(data, f, S))}
+</div>${footer(2, f.pages, f.brand)}</section>`;
+  }
+
+  function page3(data, f, S) {
+    const z = f.zdp, acres = f.acreage.official, density = String(z.density || '');
+    const densityWarning = Number.isFinite(acres) && /10 acres?/i.test(density) && acres < 10
+      ? `<p class="warn-note">${dot('verify')}<span><strong>County verification recommended.</strong> Parcel area is ${esc(f.acreage.officialText)}, while the screening references ${esc(density)}. Confirm legal lot status and density exceptions with the county.</span></p>` : '';
+    return `<section class="page p3"><div class="page-body">${pageHead('Zoning & records', f)}
+${sec('Zoning', `${zoningBlock(f, S)}${densityWarning}`)}
+${sec('Overlays', overlayBlock(f, S))}
+${sec('Assessor record', assessorBlock(f, S, data))}
+${listingBlock(data)}
 </div>${footer(3, f.pages, f.brand)}</section>`;
   }
 
-  // ---- Page 4 (appendix): how each cost line was estimated. Source numbers match page 3.
-  function appendix(f, notes) {
-    return `<section class="page p4"><div class="page-body">${pageHead('Appendix: cost assumptions', f)}
-<section>${eyebrow('How each cost line was estimated')}<p class="muted">The formula, inputs and assumptions behind each line of the cost table on page 3. Bracketed numbers refer to the sources on page 3. Screening estimate, not a quote.</p></section>
-<ol class="notes">${notes.join('')}</ol>
+  function page4(data, f, S, notes) {
+    const c = f.cost;
+    const intro = c ? `<p class="c-intro">The total is the sum of ${c.lines.length} lines: ${esc(c.lines.map(l => String(l.label).replace(/\s*\(.*\)$/, '').toLowerCase()).join(', '))}. ${c.local ? 'Local prices where sourced.' : 'Generic regional ranges.'}${c.missingNote ? ` ${esc(c.missingNote)}` : ''}</p>` : '';
+    return `<section class="page p4"><div class="page-body">${pageHead('Costs & next steps', f)}
+${sec('Site development cost', `${intro}${costBlock(f, S, notes)}`)}
+${sec('Before you buy', checklist(data, f))}
 </div>${footer(4, f.pages, f.brand)}</section>`;
+  }
+
+  function assumptionsPage(f, notes) {
+    return `<section class="page p5"><div class="page-body">${pageHead('Cost assumptions', f)}
+${sec('How each cost line was estimated', `<p class="muted">The formula, inputs and assumptions behind each line of the cost table on page ${PAGE_NO.costs}. Bracketed numbers refer to the sources on page ${f.pages}. Screening estimate, not a quote.</p><ol class="notes">${notes.join('')}</ol>`)}
+</div>${footer(PAGE_NO.assumptions, f.pages, f.brand)}</section>`;
+  }
+
+  function sourcesPage(f, S) {
+    const sources = sourceItems(S);
+    return `<section class="page p${f.pages}"><div class="page-body">${pageHead('Sources', f)}
+${sec('Sources', `<p class="muted src-note">Map and record layers were read when this report was generated (${esc(today())}); cost sources show their effective date.</p>${sources ? `<ol class="sources">${sources}</ol>` : '<p class="muted">No sources recorded.</p>'}`, 'small')}
+${sec('About this report', `${f.coverage ? `<p class="coverage cov-${esc(f.coverage.tier)}"><b>${esc(f.coverage.label)}.</b> ${esc(f.coverage.summary)}</p>` : ''}<p class="limits"><strong>Preliminary screening only.</strong> ${LIMITS}</p>`)}
+</div>${footer(f.pages, f.pages, f.brand)}</section>`;
   }
 
   // ---- Document
 
+  // Tokens (text colors pass WCAG AA on white and on --tint: ink 12.6:1, ink-2 6.2:1,
+  // ink-3 4.9:1, accent 6.5:1, risk 5.5:1, caution 5.6:1). Status colors are used for small dots,
+  // left ticks and tag text only, never as large fills.
   const CSS = `
 @page{size:letter;margin:0}
-:root{--g:#174f34;--g2:#1f7a45;--gold:#e5a823;--ink:#17231c;--mut:#5a6a60;--line:#dbe4de;--pale:#f2f6f3;--amber:#9b6411;--amberbg:#fff4de;--red:#a3322a;--redbg:#fdeceb;--greenbg:#e8f4ec}
+:root{--ink:#2f3437;--ink-2:#5c6266;--ink-3:#6b7176;--rule:#e4e6e3;--rule-2:#d5d8d4;--tint:#f6f6f3;--accent:#466552;--risk:#a4513b;--caution:#7f6420;--good:#466552;--risk-dot:#b5644c;--caution-dot:#c0943a;--good-dot:#6f9a7e;--na-dot:#a7aca8;--fs-title:21pt;--fs-h2:12.5pt;--fs-body:10.5pt;--fs-small:9.5pt;--fs-cap:8.5pt;--gap:20px}
 *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{margin:0;background:#e6ece8;color:var(--ink);font:9pt/1.38 Arial,Helvetica,sans-serif}
-.toolbar{position:sticky;top:0;z-index:9;background:var(--g);padding:10px 24px;text-align:right}.toolbar button{background:#fff;color:var(--g);border:0;border-radius:8px;padding:9px 15px;font-weight:800;cursor:pointer}
-.page{width:8.5in;height:11in;margin:18px auto;background:#fff;padding:.45in .5in .3in;display:flex;flex-direction:column;box-shadow:0 10px 32px #0002;break-after:page;page-break-after:always;overflow:hidden}
+body{margin:0;background:#eceeeb;color:var(--ink);font:400 var(--fs-body)/1.5 "Helvetica Neue",Helvetica,Arial,sans-serif}
+.toolbar{position:sticky;top:0;z-index:9;background:#fff;border-bottom:1px solid var(--rule);padding:10px 24px;text-align:right}.toolbar button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 15px;font-weight:600;cursor:pointer}
+.page{width:8.5in;height:11in;margin:18px auto;background:#fff;padding:.55in .65in .4in;display:flex;flex-direction:column;box-shadow:0 6px 24px #0001;break-after:page;page-break-after:always;overflow:hidden}
 .page:last-child{break-after:auto;page-break-after:auto}
-.page-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+.page-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:var(--gap);font-size:var(--fs-body)}
 .page.grow{height:auto;min-height:11in;overflow:visible}.page.grow .page-body{overflow:visible}
 @media screen{.page{height:auto;min-height:11in;overflow:visible}.page-body{flex:1 0 auto;overflow:visible}}
 .page.fit-measure{height:11in!important;min-height:0!important;overflow:hidden!important}.page.fit-measure .page-body{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
-.foot{flex:none;display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:8px;font-size:7pt;color:var(--mut)}
-.eyebrow{font-size:7pt;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--g);display:flex;align-items:center;gap:6px;margin-bottom:6px}.eyebrow:before{content:"";width:14px;height:3px;border-radius:2px;background:var(--gold)}
-.eyebrow.sub{margin-top:8px}
 h1,h2,h3,p{margin:0}
-.muted{color:var(--mut);font-size:7.5pt}
-sup.ref{font-size:6pt;color:var(--mut);margin-left:2px;font-weight:400}
+strong,b{font-weight:600}
+.muted{color:var(--ink-2);font-size:var(--fs-small)}
+sup.ref{font-size:6.5pt;color:var(--ink-3);margin-left:2px;font-weight:400}
 .block{break-inside:avoid}
-.head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--g);padding-bottom:8px}
-.logo{height:30px}.head-right{text-align:right;font-size:8pt;color:var(--mut)}.head-right .eyebrow{justify-content:flex-end;margin-bottom:2px}
-.coverage{font-size:7.4pt;line-height:1.35;color:var(--mut);margin-top:-4px}.coverage b{display:inline-block;margin-right:7px;border-radius:999px;padding:2px 8px;font-size:7pt;font-weight:800}
-.cov-validated b{background:var(--greenbg);color:var(--g2)}.cov-partial b{background:#e7eef8;color:#2b5283}.cov-limited b{background:var(--amberbg);color:var(--amber)}
-.title h1{font-size:20pt;line-height:1.1;letter-spacing:-.01em;color:var(--ink);margin-bottom:8px}
-.facts{display:flex;gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.facts>div{flex:1;padding:7px 12px;border-left:1px solid var(--line)}.facts>div:first-child{padding-left:0;border-left:0}
-.facts span,.assessor span{display:block;font-size:6.5pt;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
-.facts strong{display:block;font-size:10pt;margin-top:2px}.facts small,.assessor small{display:block;font-size:7pt;color:var(--mut);margin-top:1px}
-.facts .acreage-note{color:var(--amber)}
-.map{position:relative;margin:0;width:100%;aspect-ratio:800/330;border-radius:10px;overflow:hidden;background:#dfe7e1;border:1px solid var(--line);flex:none}
+.c-sec>h2{font-size:var(--fs-h2);font-weight:600;color:var(--ink);line-height:1.3;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:var(--fs-cap);font-weight:400;color:var(--ink-2);letter-spacing:.01em}
+.dot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:var(--na-dot);vertical-align:1px}
+.dot.risk,.dot.poor{background:var(--risk-dot)}.dot.verify,.dot.fair{background:var(--caution-dot)}.dot.good{background:var(--good-dot)}
+/* Header and footer */
+.c-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.c-head .logo{height:22px;opacity:.9}
+.c-head .agent{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.c-head .agent-logo{max-height:30px;max-width:1.5in;object-fit:contain;flex:none}.agent-text{min-width:0}
+.prepared{font-size:var(--fs-small);color:var(--ink);overflow-wrap:anywhere}
+.agent-contact{font-size:var(--fs-cap);color:var(--ink-2);margin-top:1px;overflow-wrap:anywhere}
+.agent-contact .ct{display:inline-block;max-width:100%}
+.c-head-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;font-size:var(--fs-cap);color:var(--ink-2);line-height:1.4}.c-head-right span:first-child{color:var(--ink)}
+.powered{color:var(--ink-3)}
+.mini-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.logo-sm{height:16px;opacity:.9}.agent-logo-sm{max-height:20px;max-width:1.4in;object-fit:contain}.agent-mark{font-size:var(--fs-cap);color:var(--ink-2);max-width:3.6in;overflow-wrap:anywhere}
+.mini-title{text-align:right;font-size:var(--fs-cap);color:var(--ink-2);line-height:1.4}.mini-title .eyebrow{font-size:var(--fs-small);color:var(--ink);font-weight:600}
+.foot{flex:none;display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--rule);padding-top:8px;margin-top:14px;font-size:7.5pt;line-height:1.4;color:var(--ink-3)}
+.foot.branded{align-items:flex-start}.foot-agent{flex:1;min-width:0}.foot-line{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.foot-right{flex:none;text-align:right;white-space:nowrap}
+/* Page 1 */
+.c-title h1{font-size:var(--fs-title);font-weight:600;line-height:1.15;letter-spacing:-.005em;color:var(--ink);margin-bottom:4px}
+.c-meta{font-size:var(--fs-body);color:var(--ink-2)}.c-sub{font-size:var(--fs-small);color:var(--ink-3);margin-top:1px}.sep{color:var(--rule-2);margin:0 3px}
+.acreage-note{color:var(--caution)}
+.map{position:relative;margin:0;width:100%;aspect-ratio:800/330;border-radius:6px;overflow:hidden;background:#e9ece8;flex:none}
 .map-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .map-svg,.map-deco{position:absolute;inset:0;width:100%;height:100%}
-.map-svg polygon{fill:rgba(229,168,35,.16);stroke:var(--gold);stroke-width:3.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}
-.map-tag i{display:inline-block;width:9px;height:7px;border-radius:2px;margin:0 3px 0 6px;vertical-align:0}.map-tag i.k{background:rgba(47,138,88,.7)}.map-tag i.c{background:repeating-linear-gradient(135deg,#c0392b 0 2px,#f0c2bd 2px 4px)}.map-tag i.b{background:repeating-linear-gradient(45deg,#d39a2a 0 2px,#f6dfb0 2px 4px)}
-.b-maybe{font-size:7.6pt;color:#33443a;margin-top:2px;line-height:1.35}.b-maybe b{color:var(--amber)}
-.buildable{border:1px solid var(--line);border-left:4px solid var(--g2);border-radius:8px;padding:7px 11px}.buildable .eyebrow{margin-bottom:3px}
-.b-row{display:flex;align-items:center;gap:10px}.b-num{font-size:12pt;font-weight:900;color:var(--g);white-space:nowrap}
-.b-bar{flex:1;display:flex;height:8px;border-radius:999px;overflow:hidden;background:#eef2ef}.b-bar .k{background:#2f8a58}.b-bar .c{background:repeating-linear-gradient(135deg,#c0392b 0 3px,#e8a59e 3px 6px)}
-.b-pct{font-size:8pt;font-weight:800;color:var(--g2)}
-.b-list{font-size:7.6pt;color:#33443a;margin-top:3px;line-height:1.35}.b-list b{color:var(--red)}.b-note{font-size:6.8pt;color:var(--mut);margin-top:2px}
-.map-tag{position:absolute;left:70px;top:12px;background:#ffffffeb;border-radius:6px;padding:4px 7px;font-size:6.5pt;font-weight:800;color:var(--ink)}
-.inset{position:absolute;right:10px;top:10px;width:1.55in;height:1.16in;border:2px solid #fff;border-radius:6px;overflow:hidden;box-shadow:0 2px 8px #0004;background:#eef2ee}
-.inset img{width:100%;height:100%;object-fit:cover;display:block}.inset-dot{position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#d0362b;border:2px solid #fff;box-shadow:0 0 0 1px #0005}
-.inset-label{position:absolute;left:4px;bottom:3px;font-size:6pt;font-weight:800;background:#ffffffe0;border-radius:3px;padding:1px 4px}
+.map-svg polygon{fill:rgba(255,255,255,.06);stroke:#fbf7ec;stroke-width:2.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.map-tag{position:absolute;left:70px;top:12px;background:#ffffffeb;border-radius:5px;padding:4px 8px;font-size:7pt;font-weight:400;color:var(--ink)}
+.map-tag i{display:inline-block;width:9px;height:7px;border-radius:2px;margin:0 3px 0 6px;vertical-align:0}.map-tag i.k{background:rgba(111,154,126,.75)}.map-tag i.c{background:repeating-linear-gradient(135deg,#b05e46 0 2px,#ecd3ca 2px 4px)}.map-tag i.b{background:repeating-linear-gradient(45deg,#c0943a 0 2px,#f1e3c4 2px 4px)}
+.inset{position:absolute;right:10px;top:10px;width:1.45in;height:1.09in;border:2px solid #fff;border-radius:5px;overflow:hidden;box-shadow:0 1px 5px #0003;background:#eef0ed}
+.inset img{width:100%;height:100%;object-fit:cover;display:block}.inset-dot{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--risk-dot);border:2px solid #fff;box-shadow:0 0 0 1px #0004}
+.inset-label{position:absolute;left:4px;bottom:3px;font-size:6.5pt;background:#ffffffe0;border-radius:3px;padding:1px 4px}
 .inset.img-error img{display:none}
-.map-credit{position:absolute;right:6px;bottom:5px;background:#ffffffe0;border-radius:4px;padding:2px 5px;font-size:5.8pt;color:#333}
-.map-error{display:none;position:absolute;inset:0;place-items:center;color:var(--mut)}.map.img-error .map-error{display:grid}.map.img-error .map-img{display:none}
-.map-missing{display:grid;place-items:center;color:var(--mut);aspect-ratio:3/1}
-.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
-.score-card,.cost-card{border-radius:10px;padding:12px 14px;border:1px solid var(--line);background:var(--pale)}
-.score-row{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
-.score-num{font-size:30pt;font-weight:900;line-height:1;letter-spacing:-.02em}.score-num small{font-size:11pt;font-weight:700;margin-left:2px;color:var(--mut)}
-.score-rating{font-size:11pt;font-weight:800}
-.score-why{font-size:8.5pt;margin:0 0 6px;color:var(--ink);font-weight:600}
-.band-good{background:var(--greenbg);border-color:#b9dcc6}.band-good .score-num,.band-good .score-rating{color:var(--g2)}
-.band-fair{background:var(--amberbg);border-color:#efd6a6}.band-fair .score-num,.band-fair .score-rating{color:var(--amber)}
-.band-poor{background:var(--redbg);border-color:#efc3bf}.band-poor .score-num,.band-poor .score-rating{color:var(--red)}
-.drivers{list-style:none;margin:0;padding:0}.drivers li{display:flex;gap:7px;padding:3px 0;font-size:8.5pt;font-weight:600;color:var(--ink)}
-.drivers b{width:12px;flex:none;text-align:center}.drivers li.good b{color:var(--g2)}.drivers li.risk b{color:var(--red)}.drivers li.missing{color:var(--mut)}.drivers li.missing b{color:var(--amber)}
-.score-incomplete{font-size:8.5pt;margin:0 0 4px;color:var(--amber);font-weight:800}
-.cost-card{background:#fff;border:1px solid var(--line);border-top:4px solid var(--gold)}
-.cost-num{font-size:20pt;font-weight:900;color:var(--g);line-height:1.1;margin:2px 0 6px;letter-spacing:-.01em}
-.cost-card p{font-size:8pt;color:var(--mut)}
-.flags{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.flag{display:flex;gap:9px;align-items:flex-start;border-radius:8px;padding:8px 10px;border-left:4px solid}
-.flag b{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:9pt}
-.flag strong{display:block;font-size:9pt}.flag span{display:block;font-size:7.5pt;color:var(--mut);margin-top:1px}
-.flag.risk{background:var(--redbg);border-color:var(--red)}.flag.risk b{background:var(--red)}
-.flag.verify{background:var(--amberbg);border-color:#d39a2a}.flag.verify b{background:#c98a17}
-.flag.good{background:var(--greenbg);border-color:var(--g2)}.flag.good b{background:var(--g2)}
-.disclaimer{font-size:7.5pt;color:var(--mut);margin-top:auto}
-.mini-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--g);padding-bottom:7px}
-.head.branded{align-items:center;gap:14px}.agent{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
-.agent-logo{max-height:44px;max-width:2.1in;object-fit:contain;flex:none}.agent-text{min-width:0}
-.prepared{font-size:11pt;line-height:1.2;color:var(--ink);overflow-wrap:anywhere}.prepared strong{color:var(--g)}
-.agent-contact{font-size:7.8pt;color:var(--mut);margin-top:2px;overflow-wrap:anywhere}
-.head.branded .head-right{flex:none;display:flex;flex-direction:column;align-items:flex-end}.powered{font-size:6.8pt;color:var(--mut);margin-top:1px}
-.agent-logo-sm{max-height:22px;max-width:1.6in;object-fit:contain}.agent-mark{font-size:8pt;font-weight:800;color:var(--g);max-width:3.6in;overflow-wrap:anywhere}
-.foot.branded{gap:12px;align-items:flex-start;font-size:6.6pt;line-height:1.35}.foot-agent{flex:1;min-width:0}.foot-line{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.foot-right{flex:none;text-align:right;white-space:nowrap}
-.logo-sm{height:20px}.mini-title{text-align:right;font-size:8pt;color:var(--mut)}.mini-title .eyebrow{justify-content:flex-end;margin-bottom:1px;font-size:8pt}
-.zone-head{display:flex;gap:12px;align-items:center;margin-bottom:6px}
-.zone-code{background:var(--g);color:#fff;font-weight:900;font-size:13pt;border-radius:8px;padding:6px 11px;min-width:56px;text-align:center}
-.zone-head strong{font-size:12pt;color:var(--ink)}.zone-head span{display:block;font-size:8pt;color:var(--mut)}
-.plain{font-size:9pt;margin-bottom:6px}
+.map-credit{position:absolute;right:6px;bottom:5px;background:#ffffffe0;border-radius:4px;padding:2px 5px;font-size:6pt;color:#444}
+.map-error{display:none;position:absolute;inset:0;place-items:center;color:var(--ink-2)}.map.img-error .map-error{display:grid}.map.img-error .map-img{display:none}
+.map-missing{display:grid;place-items:center;color:var(--ink-2);aspect-ratio:3/1;background:var(--tint)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.tile{background:var(--tint);border-radius:8px;padding:12px 16px 13px;min-width:0}
+.tile h3{font-size:var(--fs-small);font-weight:400;color:var(--ink-2);margin-bottom:6px}
+.t-num{font-size:24pt;font-weight:600;line-height:1.1;color:var(--ink);letter-spacing:-.01em}.t-num small{font-size:var(--fs-body);font-weight:400;color:var(--ink-2);margin-left:2px;letter-spacing:0}
+.t-num.t-range{font-size:15.5pt;line-height:1.35;white-space:nowrap}.t-num.t-na{font-size:15pt;color:var(--ink-2)}
+.t-label{display:flex;align-items:center;gap:7px;font-size:var(--fs-body);color:var(--ink);margin-top:4px}
+.t-flag{font-size:var(--fs-cap);color:var(--caution);margin-top:3px}
+.t-why{font-size:var(--fs-cap);line-height:1.45;color:var(--ink-2);margin-top:6px}
+.kf,.c-list{list-style:none;margin:0;padding:0}
+.kf li,.c-list li{display:flex;gap:10px;align-items:baseline;padding:4px 0}.kf li+li{border-top:1px solid var(--rule)}
+.kf .dot,.c-list .dot{transform:translateY(-1px)}
+.kf strong{font-weight:600;color:var(--ink)}.kf-d{color:var(--ink-2);font-size:var(--fs-small)}
+.disclaimer{font-size:var(--fs-cap);color:var(--ink-3);margin-top:auto}
+/* Page 2 */
+.c-lead{font-size:var(--fs-body);color:var(--ink);margin-bottom:2px}.c-lead strong{font-size:13pt}
+.c-flag{color:var(--caution)}
+.c-cap{font-size:var(--fs-cap);color:var(--ink-2);margin:8px 0 0}
+.c-list li{padding:3px 0}.drivers{display:grid;grid-template-columns:1fr 1fr;column-gap:24px}
+.coverage{font-size:var(--fs-small);color:var(--ink-2);margin-bottom:8px}.coverage b{font-weight:600;color:var(--ink)}
+.buildable .b-row{display:flex;align-items:center;gap:14px;margin-bottom:6px}.b-num{font-size:var(--fs-body);font-weight:600;white-space:nowrap}
+.b-bar{flex:1;display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--rule)}.b-bar .k{background:var(--good-dot)}.b-bar .c{background:repeating-linear-gradient(135deg,#c98a74 0 3px,#efd9d0 3px 6px)}
+.b-pct{font-size:var(--fs-small);color:var(--ink-2)}
+.b-list,.b-maybe{font-size:var(--fs-small);color:var(--ink-2);line-height:1.5}.b-list b{font-weight:600;color:var(--ink)}.b-maybe{margin-top:3px}.b-maybe b{font-weight:600;color:var(--caution)}
+.b-note{font-size:var(--fs-cap);color:var(--ink-3);margin-top:4px}
+.sites{display:block}
+.site{display:grid;grid-template-columns:1.75in 1fr;column-gap:18px;padding:7px 0;border-top:1px solid var(--rule);break-inside:avoid}.site:first-child{border-top:0;padding-top:0}
+.site-top{grid-column:1;grid-row:1 / span 3;display:flex;flex-direction:column;gap:2px}
+.site h3{font-size:var(--fs-body);font-weight:600;color:var(--ink)}
+.site p{grid-column:2;font-size:var(--fs-small);color:var(--ink);line-height:1.5}.site p+p{color:var(--ink-2);margin-top:1px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-cap);color:var(--ink-2);font-weight:400;white-space:nowrap}
+.chip:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--na-dot)}
+.chip.good:before{background:var(--good-dot)}.chip.verify:before{background:var(--caution-dot)}.chip.risk:before{background:var(--risk-dot)}.chip.risk{color:var(--risk)}
+/* Page 3 */
+.zone-head{display:flex;gap:16px;align-items:baseline;margin-bottom:8px}
+.zone-code{font-size:15pt;font-weight:600;color:var(--accent);min-width:0}
+.zone-head strong{font-size:var(--fs-body);font-weight:600}.zone-head span{display:block;font-size:var(--fs-small);color:var(--ink-2)}
+.plain{font-size:var(--fs-body);margin-bottom:10px}
 table{border-collapse:collapse;width:100%}
-.uses td{padding:3px 6px 3px 0;border-bottom:1px solid var(--line);font-size:8pt}.uses td.st{color:var(--mut);font-size:7.5pt;padding-right:14px;white-space:nowrap}
-.uses i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#a9b2ac}.uses i.permitted{background:var(--g2)}.uses i.limited,.uses i.conditional{background:#d08b25}.uses i.not_permitted{background:var(--red)}
-.overlays{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
-.overlays li{font-size:8pt;padding:3px 0;border-bottom:1px solid var(--line);break-inside:avoid}.overlays em{font-style:normal;font-weight:700;color:var(--amber)}.overlays span{display:block;font-size:7.3pt;color:var(--mut)}
-.sites{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.site{border:1px solid var(--line);border-radius:8px;padding:7px 10px;break-inside:avoid;background:#fff}
-.site-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px}.site h3{font-size:9pt;color:var(--g)}
-.site p{font-size:7.8pt;color:#33443a;line-height:1.35}
-.chip{font-size:6.8pt;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap}
-.chip.good{background:var(--greenbg);color:var(--g2)}.chip.verify{background:var(--amberbg);color:var(--amber)}.chip.risk{background:var(--redbg);color:var(--red)}
-.assessor{display:grid;grid-template-columns:repeat(auto-fit,minmax(1.3in,1fr));gap:7px;margin-bottom:4px}
-.assessor>div{background:var(--pale);border-radius:8px;padding:7px 10px}.assessor strong{display:block;font-size:10.5pt;margin-top:2px;color:var(--ink)}
-.listing strong{display:block;font-size:9pt}.listing span{display:block;font-size:7.5pt;color:var(--mut)}
-.warn-note{margin-top:6px;background:var(--amberbg);border-left:3px solid #d39a2a;border-radius:4px;padding:6px 9px;font-size:8pt}
-.costs th{font-size:6.8pt;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);text-align:left;border-bottom:2px solid var(--g);padding:4px 6px 4px 0}
-.costs td{padding:5px 6px 5px 0;border-bottom:1px solid var(--line);font-size:9pt;vertical-align:top}
-.costs .amt{text-align:right;white-space:nowrap;padding-right:0}.costs td.amt{font-weight:800;color:var(--g)}
-.costs tfoot td{border-top:2px solid var(--g);border-bottom:0;font-weight:900;font-size:10.5pt;padding-top:7px}.costs tfoot td.amt{color:var(--g);font-size:11pt}
-.costs tr{break-inside:avoid}.costs tr.alt td{font-size:7.8pt;color:var(--mut);padding-top:0;border-bottom:1px solid var(--line)}.listing-note{font-size:8pt;color:var(--amber);font-weight:700;margin:6px 0 0}
-.tag{font-size:7pt;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap}.tag.fee{background:var(--greenbg);color:var(--g2)}.tag.local{background:#e7eef8;color:#2b5283}.tag.estimate{background:var(--amberbg);color:var(--amber)}
-.checklist{margin:0;padding:0;list-style:none;counter-reset:c;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
-.checklist li{counter-increment:c;display:flex;gap:8px;font-size:8pt;line-height:1.33;break-inside:avoid;color:#33443a}.checklist li:before{content:counter(c);flex:none;width:17px;height:17px;border-radius:4px;border:1.5px solid var(--g);color:var(--g);font-weight:800;font-size:7.5pt;display:grid;place-items:center}
-.checklist strong{color:var(--g)}
-.small .sources{margin:0;padding-left:16px;font-size:6.6pt;line-height:1.32;color:#3d4c43;columns:2;column-gap:18px}.src-note{font-size:6.5pt;margin-bottom:3px}
-.sources li{break-inside:avoid;margin-bottom:1px}
-.pointer{font-size:8pt;font-weight:700;color:var(--g);margin-top:4px}
-.notes{margin:0;padding:0;list-style:none}.notes li{break-inside:avoid;border-bottom:1px solid var(--line);padding:8px 0}
-.notes li strong{font-size:9.5pt;color:var(--g)}.notes .amt-note{float:right;font-weight:800;color:var(--g)}.notes p{font-size:8pt;line-height:1.45;color:#33443a;margin-top:3px}.sources .url{color:var(--mut);white-space:nowrap}
-.limits{font-size:6.5pt;color:var(--mut);margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
-.d1 .page-body{gap:9px}.d1 .checklist li{font-size:7.6pt}.d1 .costs td{padding:4px 6px 4px 0}.d1 .site p,.d1 .uses td{font-size:7.4pt}.d1 .small .sources{font-size:6.3pt}.d1 .notes p{font-size:7.6pt}
-.d2 .page-body{gap:7px}.d2 .checklist li{font-size:7.3pt}.d2 .checklist{gap:4px 14px}.d2 .site{padding:5px 8px}.d2 .uses td{padding:2px 6px 2px 0}.d2 .small .sources{font-size:6pt}.d2 .notes p{font-size:7.2pt}.d2 .notes li{padding:6px 0}.d2 .flag{padding:6px 9px}
-.d3 .site p,.d3 .uses td,.d3 .overlays li{font-size:7pt}.d3 .small .sources{font-size:5.7pt}.d3 .notes p{font-size:6.8pt}.d3 .costs td{padding:4px 6px 4px 0}
-.p1.d1 .score-card,.p1.d1 .cost-card{padding:9px 12px}.p1.d1 .flag{padding:6px 9px}.p1.d1 .facts>div{padding:5px 10px}.p1.d1 .buildable{padding:5px 10px}
-.p1.d2 .title h1{font-size:17pt;margin-bottom:5px}.p1.d2 .score-num{font-size:25pt}.p1.d2 .score-row{margin-bottom:3px}.p1.d2 .drivers li{padding:1px 0}.p1.d2 .flags{gap:5px}.p1.d2 .flag{padding:5px 8px}.p1.d2 .agent-logo{max-height:38px}
-.p1.d3 .title h1{font-size:15pt;margin-bottom:3px}.p1.d3 .facts>div{padding:3px 9px}.p1.d3 .facts strong{font-size:9pt}.p1.d3 .flag span,.p1.d3 .cost-card p,.p1.d3 .b-list{font-size:7pt}.p1.d3 .score-why,.p1.d3 .drivers li{font-size:8pt}.p1.d3 .cost-num{font-size:17pt}.p1.d3 .agent-logo{max-height:32px}.p1.d3 .prepared{font-size:10pt}
+.uses td{padding:4px 8px 4px 0;border-bottom:1px solid var(--rule);font-size:var(--fs-small)}.uses td.st{color:var(--ink-2);font-size:var(--fs-cap);padding-right:18px;white-space:nowrap}
+.uses i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;background:var(--na-dot)}.uses i.permitted{background:var(--good-dot)}.uses i.limited,.uses i.conditional{background:var(--caution-dot)}.uses i.not_permitted{background:var(--risk-dot)}
+.overlays{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.overlays li{font-size:var(--fs-small);padding:6px 0;border-bottom:1px solid var(--rule);break-inside:avoid}.overlays strong{font-weight:600}.overlays em{font-style:normal;color:var(--caution)}.overlays span{display:block;font-size:var(--fs-cap);color:var(--ink-2)}
+.assessor{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-bottom:6px}
+.assessor>div{display:grid;grid-template-columns:1.35in 1fr;column-gap:12px;padding:6px 0;border-bottom:1px solid var(--rule)}
+.assessor span{grid-column:1;font-size:var(--fs-small);color:var(--ink-2)}.assessor strong{grid-column:2;font-size:var(--fs-body);font-weight:600}.assessor small{grid-column:2;font-size:var(--fs-cap);color:var(--ink-3)}
+.listing strong{display:block;font-weight:600}.listing span{display:block;font-size:var(--fs-small);color:var(--ink-2)}
+.warn-note{display:flex;gap:10px;align-items:baseline;margin-top:10px;font-size:var(--fs-small);color:var(--ink)}
+/* Page 4 */
+.c-intro{font-size:var(--fs-small);color:var(--ink-2);margin-bottom:10px}
+.costs th{font-size:var(--fs-cap);font-weight:400;color:var(--ink-2);text-align:left;border-bottom:1px solid var(--rule-2);padding:4px 8px 6px 0}
+.costs td{padding:7px 8px 7px 0;border-bottom:1px solid var(--rule);font-size:var(--fs-body);vertical-align:top}
+.costs td strong{font-weight:400}
+.costs .amt{text-align:right;white-space:nowrap;padding-right:0}.costs td.amt{font-weight:600;color:var(--ink)}
+.costs tfoot td{border-top:1px solid var(--rule-2);border-bottom:0;font-weight:600;padding-top:9px}.costs tfoot td.amt{font-size:11.5pt}
+.costs tr{break-inside:avoid}.costs tr.alt td{font-size:var(--fs-cap);color:var(--ink-2);padding-top:0}
+.listing-note{font-size:var(--fs-small);color:var(--caution);margin:8px 0 0}
+.costs+p,.costs~p.muted{margin-top:10px}
+.tag{font-size:var(--fs-cap);color:var(--ink-2);white-space:nowrap}.tag.estimate{color:var(--caution)}.tag.fee,.tag.local{color:var(--accent)}
+.pointer{font-size:var(--fs-small);color:var(--accent);margin-top:6px}
+.checklist{margin:0;padding:0;list-style:none;counter-reset:c}
+.checklist li{counter-increment:c;display:flex;gap:12px;font-size:var(--fs-small);line-height:1.5;padding:6px 0;border-top:1px solid var(--rule);break-inside:avoid}.checklist li:first-child{border-top:0;padding-top:0}
+.checklist li:before{content:counter(c);flex:none;width:16px;color:var(--accent);font-weight:600}
+.checklist strong{font-weight:600;color:var(--ink)}
+/* Page 5 */
+.notes{margin:0;padding:0;list-style:none}.notes li{break-inside:avoid;border-bottom:1px solid var(--rule);padding:9px 0}.notes li:last-child{border-bottom:0}
+.notes li strong{font-size:var(--fs-body);font-weight:600}.notes .amt-note{float:right;font-weight:600}.notes p{font-size:var(--fs-small);line-height:1.5;color:var(--ink-2);margin-top:3px}
+.c-sec .muted+.notes{margin-top:8px}
+.small .sources{margin:0;padding-left:18px;font-size:var(--fs-cap);line-height:1.45;color:var(--ink-2);columns:2;column-gap:24px}.src-note{font-size:var(--fs-cap);margin-bottom:6px}
+.sources li{break-inside:avoid;margin-bottom:2px}.sources .url{color:var(--ink-3);white-space:nowrap}
+.limits{font-size:var(--fs-small);color:var(--ink-2)}.limits strong{color:var(--ink-2)}
+/* Fit steps: tighten spacing first, then text, before a page is allowed to grow. */
+.d1 .page-body{--gap:16px}.d1 .site{padding:6px 0}.d1 .checklist li{padding:4px 0}.d1 .notes li{padding:7px 0}.d1 .c-sec>h2{margin-bottom:8px}
+.d2 .page-body{--gap:13px;--fs-body:10pt;--fs-small:9pt;--fs-cap:8pt}.d2 .site{padding:5px 0}.d2 .uses td{padding:3px 8px 3px 0}.d2 .costs td{padding:5px 8px 5px 0}
+.d3 .page-body{--gap:11px;--fs-body:9.5pt;--fs-small:8.6pt;--fs-cap:7.6pt}.d3 .site{padding:4px 0}.d3 .kf li{padding:2px 0}.d3 .site p,.d3 .notes p{line-height:1.42}.d3 .c-sec>h2{margin-bottom:6px;padding-bottom:4px}
+.p1 .page-body{--gap:16px}.p1 .kf li{padding:3.5px 0}.p1.d1 .page-body{--gap:14px}.p1.d1 .tile{padding:10px 14px}.p1.d1 .kf li{padding:3px 0}
+.p1.d2 .c-title h1{font-size:18pt}.p1.d2 .t-num{font-size:21pt}.p1.d2 .t-num.t-range{font-size:14pt}.p1.d2 .c-head .agent-logo{max-height:26px}
+.p1.d3 .c-title h1{font-size:16pt}.p1.d3 .tile{padding:10px 12px}.p1.d3 .kf li{padding:3px 0}
 @media print{body{background:#fff;-webkit-text-size-adjust:100%;text-size-adjust:100%}html{-webkit-text-size-adjust:100%;text-size-adjust:100%}.toolbar{display:none}.page{margin:0;box-shadow:none;zoom:1!important}}
 `;
   // Pages have a fixed Letter height; a page whose content would overflow is tightened in steps
@@ -895,24 +952,26 @@ table{border-collapse:collapse;width:100%}
   function renderHtml(model, { brand, date } = {}) {
     const data = model.data || {};
     const f = { ...model.f };
-    // A fourth page (appendix) when the cost lines carry their assumptions; every footer says "of N".
-    f.pages = f.cost?.lines?.some(l => l.basis) ? 4 : 3;
+    const hasNotes = Boolean(f.cost?.lines?.some(l => l.basis));
+    // Five pages, six with the cost-assumptions page (sources are always last). Every footer says
+    // "of N".
+    f.pages = hasNotes ? 6 : 5;
+    f.appendixPage = hasNotes ? PAGE_NO.assumptions : 0;
     f.brand = brand === undefined ? brandParts() : brand;
     const score = model.score;
     renderDate = date || null;
     try {
       const S = sourceList();
-      const p1 = page1(data, f, score, model.name);
-      const p2 = page2(data, f, S);
       const notes = [];
-      const p3 = page3(data, f, S, notes);
-      const p4 = f.pages > 3 ? appendix(f, notes) : '';
+      // In page order: sources are numbered as pages 2-4 cite them; page 4 fills `notes`.
+      const p1 = page1(data, f, score, model.name);
+      const p2 = page2(data, f, score, S);
+      const p3 = page3(data, f, S);
+      const p4 = page4(data, f, S, notes);
+      const pages = [p1, p2, p3, p4, notes.length ? assumptionsPage(f, notes) : '', sourcesPage(f, S)].filter(Boolean);
       const docTitle = `${f.address || `Parcel ${f.pid}`} — AcresX Property Report`;
       return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div>
-${p1}
-${p2}
-${p3}
-${p4}
+${pages.join('\n')}
 <script>${FIT}</script></body></html>`;
     } finally { renderDate = null; }
   }
@@ -950,8 +1009,9 @@ ${p4}
   // Saved account reports (accounts.js viewReport) open in the same view; /r/<token> pages keep
   // their own page (shared-report.js).
   const VIEW_ID = 'acresxReportView';
-  const VIEW_CSS = CSS.replace('@page{size:letter;margin:0}\n', '').replace(':root{', ':host{display:block;-webkit-text-size-adjust:100%;text-size-adjust:100%;').replace('\nbody{', '\n.rv-doc{').replace('@media print{body{', '@media print{.rv-doc{') +
+  const viewCss = css => css.replace('@page{size:letter;margin:0}\n', '').replace(':root{', ':host{display:block;-webkit-text-size-adjust:100%;text-size-adjust:100%;').replace('\nbody{', '\n.rv-doc{').replace('@media print{body{', '@media print{.rv-doc{') +
     '.rv-doc{padding:1px 0 24px;min-height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}@media print{.rv-doc{padding:0}.page{zoom:1!important}}\n';
+  const VIEW_CSS = viewCss(CSS);
   const PAGE_CSS = '@page{size:letter;margin:0}';
   const UI_CSS = `
 #generateReportBtn{-webkit-tap-highlight-color:transparent}

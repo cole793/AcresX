@@ -159,24 +159,24 @@ function report(data) {
   return html.split('<section class="page ').slice(1);
 }
 
-test('report page 1 (limited county): coverage line, "Excellent · limited data", improvements finding', () => {
+test('report (limited county): coverage line on the last page, "Excellent · limited data", improvements finding', () => {
   const d = spokane();
   d.parcel.properties = { ...d.parcel.properties, _stateCode: 'MT', _countyDisplay: 'Flathead', _stateDisplay: 'Montana', COUNTY_NM: 'Flathead' };
   d.propertyAssessment = flathead().propertyAssessment;
   const pages = report(d);
-  assert.equal(pages.length, 4, 'still 3 pages plus the appendix');
+  assert.equal(pages.length, 6, 'five pages plus the cost assumptions');
   const p1 = pages[0];
-  assert.match(p1, new RegExp(`<p class="coverage cov-limited"><b>${LIMITED}</b>`));
-  assert.match(p1, /<div class="score-rating">Excellent · limited data<\/div><\/div><p class="score-why">[^<]+<\/p>/, "the limited-data rating and the score why line both print");
-  assert.match(p1, /<div class="flag verify"><b>\?<\/b><div><strong>Assessor lists improvements \(\$191,160\)<\/strong>/);
-  assert.equal((p1.match(/<div class="flag /g) || []).length <= 6, true, 'still at most 6 key findings');
+  assert.match(pages[5], new RegExp(`<p class="coverage cov-limited"><b>${LIMITED}.</b> `));
+  assert.match(p1, /<p class="t-label"><i class="dot good"><\/i>Excellent · limited data<\/p><p class="t-why">[^<]+<\/p>/, "the limited-data rating and the score why line both print");
+  assert.match(p1, /<li class="verify"><i class="dot verify"><\/i><p><strong>Assessor lists improvements \(\$191,160\)<\/strong>/);
+  assert.equal((p1.split('<ul class="kf">')[1].split('</ul>')[0].match(/<li /g) || []).length <= 5, true, 'at most 5 key findings on page 1');
 });
 
-test('report page 1 (Spokane): "Validated county", no improvements finding', () => {
-  const p1 = report(spokane())[0];
-  assert.match(p1, /<p class="coverage cov-validated"><b>Validated county<\/b>/);
-  assert.match(p1, /<div class="score-rating">Excellent<\/div>/);
-  assert.doesNotMatch(p1, /Assessor lists improvements/);
+test('report (Spokane): "Validated county", no improvements finding', () => {
+  const pages = report(spokane());
+  assert.match(pages.at(-1), /<p class="coverage cov-validated"><b>Validated county\.<\/b> /);
+  assert.match(pages[0], /<p class="t-label"><i class="dot \w+"><\/i>Excellent<\/p>/);
+  assert.doesNotMatch(pages.join(''), /Assessor lists improvements/);
 });
 
 // ---- County dropdown

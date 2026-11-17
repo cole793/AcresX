@@ -138,21 +138,21 @@ test('Download PDF: generated in the background as soon as the report is shown, 
   assert.equal(s.log.stages.length, 1);
   const stage = s.log.stages[0];
   assert.equal(stage.removed, true, 'the offscreen iframe is removed after rendering');
-  assert.equal((stage.html.match(/<section class="page /g) || []).length, 4);
+  assert.equal((stage.html.match(/<section class="page /g) || []).length, 6);
   assert.doesNotMatch(stage.html, /<script|onerror=|onclick=|class="toolbar"/);
   assert.match(stage.html, /<img crossorigin="anonymous" class="map-img" src="https:\/\/server\.arcgisonline\.com\//);
   assert.match(stage.html, /<div class="inset"><img crossorigin="anonymous" src="https:\/\/server\.arcgisonline\.com\//);
   assert.match(stage.html, /\.page\{margin:0 0 16px!important;box-shadow:none!important;zoom:1!important\}/);
   assert.match(stage.html, /<style>\.page\{width:8\.5in;height:11in;|\.page\{width:8\.5in;height:11in;/, 'the report CSS, unchanged');
   // Canvas and PDF settings.
-  assert.equal(s.log.canvases.length, 4);
+  assert.equal(s.log.canvases.length, 6);
   for (const c of s.log.canvases) { assert.equal(c.opts.scale, 2); assert.equal(c.opts.useCORS, true); assert.equal(c.opts.allowTaint, false); assert.equal(c.type, 'image/jpeg'); }
-  assert.deepEqual(s.log.canvases.map(c => c.q), [0.85, 0.92, 0.92, 0.92], 'page 1 (map) at 0.85, text pages at 0.92');
+  assert.deepEqual(s.log.canvases.map(c => c.q), [0.85, 0.92, 0.92, 0.92, 0.92, 0.92], 'page 1 (map) at 0.85, text pages at 0.92');
   const [pdf] = s.log.pdfs;
   assert.deepEqual(JSON.parse(JSON.stringify(pdf.opts)), { orientation: 'portrait', unit: 'in', format: 'letter', compress: true });
-  assert.equal(pdf.pages, 4);
+  assert.equal(pdf.pages, 6);
   assert.deepEqual(pdf.addPageArgs, ['letter', 'portrait']);
-  assert.deepEqual(pdf.images.map(i => [i.fmt, i.x, i.y, i.w, i.h]), Array(4).fill(['JPEG', 0, 0, 8.5, 11]));
+  assert.deepEqual(pdf.images.map(i => [i.fmt, i.x, i.y, i.w, i.h]), Array(6).fill(['JPEG', 0, 0, 8.5, 11]));
   assert.equal(pdf.props.title, 'Parcel 23123.9051 — AcresX Property Report');
 });
 

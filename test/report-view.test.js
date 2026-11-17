@@ -64,13 +64,13 @@ test('Create report shows exactly the report renderHtml builds (same pages), wit
   const expected = s.R.renderHtml(model);
   assert.equal(shown, s.R.viewMarkup(expected));
   assert.ok(shown.endsWith(`<div class="rv-doc">${pagesOf(expected)}</div>`), 'the page markup is renderHtml\'s, unchanged');
-  assert.equal((shown.match(/<section class="page /g) || []).length, 4);
-  assert.match(shown, /<div><span>Reference<\/span><strong>Smith parcel<\/strong>/);
+  assert.equal((shown.match(/<section class="page /g) || []).length, 6);
+  assert.match(shown, /Reference: Smith parcel<\/p>/);
   assert.doesNotMatch(shown, /<script|class="toolbar"|onclick=/);
   assert.match(shown, /print-color-adjust:exact/);
   assert.match(shown, /\.page\{width:8\.5in;height:11in;/);
-  assert.match(shown, /:host\{display:block;-webkit-text-size-adjust:100%;text-size-adjust:100%;--g:#174f34/, 'the report colors live on the shadow host');
-  assert.match(shown, /\.rv-doc\{margin:0;background:#e6ece8/);
+  assert.match(shown, /:host\{display:block;-webkit-text-size-adjust:100%;text-size-adjust:100%;--ink:#2f3437/, 'the report colors live on the shadow host');
+  assert.match(shown, /\.rv-doc\{margin:0;background:#eceeeb/);
   assert.doesNotMatch(shown, /(^|[}\n])body\{|:root\{|@page/, 'no document-level selectors inside the shadow root');
   assert.equal(s.$('acresxReportAsk').hidden, true);
   assert.equal(s.$('acresxReportActions').hidden, false);
@@ -85,8 +85,8 @@ test('an empty reference keeps the suggested one; Enter in the field creates the
   s.$('acresxReportName').value = '';
   for (const fn of s.$('acresxReportName').listeners.keydown) fn({ key: 'Enter', preventDefault() {} });
   const shown = s.$('acresxReportPages').shadowRoot.innerHTML;
-  assert.equal((shown.match(/<section class="page /g) || []).length, 4);
-  assert.doesNotMatch(shown, /<span>Reference<\/span>/, 'the suggested name is the parcel itself, so no separate reference line (as before)');
+  assert.equal((shown.match(/<section class="page /g) || []).length, 6);
+  assert.doesNotMatch(shown, /Reference: /, 'the suggested name is the parcel itself, so no separate reference line (as before)');
   assert.equal(s.saved[0].name, 'Parcel 23123.9051');
 });
 
@@ -194,7 +194,7 @@ test('saved reports: showLoading opens the view at once; a report that arrives a
   assert.ok(s.$('acresxReportView').classList.contains('open'));
   assert.equal(s.$('acresxReportStatus').textContent, 'Loading report…');
   assert.equal(s.R.openReport(html, { ticket }), true);
-  assert.match(s.$('acresxReportPages').shadowRoot.innerHTML, /<strong>Saved<\/strong>/);
+  assert.match(s.$('acresxReportPages').shadowRoot.innerHTML, /Reference: Saved<\/p>/);
 
   const late = s.R.showLoading();
   s.$('acresxReportClose').click();
@@ -274,13 +274,13 @@ test('branded footer: two lines at most (name · brokerage, then contacts), each
   const brand = { name: 'Alexandra Montgomery-Whitfield', brokerage: 'Tightline Property Brokers', preparedBy: 'Alexandra Montgomery-Whitfield, Tightline Property Brokers', contact: [], footerContact: ['(406) 555-0199', 'alexandra.montgomery-whitfield@tightlinepropertybrokers.com', 'tightlinepropertybrokers-billings-montana.com/agents/alexandra'], logo: '' };
   const html = s.R.renderHtml(s.R.buildModel('x', fixture()), { brand });
   const feet = html.match(/<footer class="foot branded">[\s\S]*?<\/footer>/g);
-  assert.equal(feet.length, 4);
+  assert.equal(feet.length, 6);
   for (const f of feet) {
     assert.equal((f.match(/class="foot-line /g) || []).length, 2, 'two lines');
     assert.match(f, /<span class="foot-line foot-who">Prepared by Alexandra Montgomery-Whitfield · Tightline Property Brokers<\/span>/);
     assert.match(f, /<span class="foot-line foot-contact">\(406\) 555-0199 · alexandra\.montgomery-whitfield@tightlinepropertybrokers\.com · tightlinepropertybrokers-billings-montana\.com\/agents\/alexandra<\/span>/);
   }
   assert.ok(html.includes('.foot-line{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'), 'each line stays one line');
-  assert.match(html, /\.foot\.branded\{[^}]*font-size:6\.6pt/, 'smaller footer type');
+  assert.match(html, /\.foot\{[^}]*font-size:7\.5pt/, 'smaller footer type');
   assert.match(html, /\.foot-right\{flex:none;text-align:right;white-space:nowrap\}/);
 });

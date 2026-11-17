@@ -73,8 +73,8 @@ test('storage that throws: the page still works, branding is kept for this page 
   }
   // A report still generates, with the in-memory branding.
   const { pages } = report({ storage: 'throw', save: JANE });
-  assert.equal(pages.length, 4);
-  assert.match(pages[0], /Prepared by <strong>Jane Example<\/strong>, Example Realty/);
+  assert.equal(pages.length, 6);
+  assert.match(pages[0], /<p class="prepared">Prepared by Jane Example, Example Realty<\/p>/);
 });
 
 test('a failed write never falls back to an older stored copy', () => {
@@ -164,42 +164,43 @@ test('branding text is HTML-escaped in the report and the Settings preview', () 
   const { html } = report({ storage: memoryStorage(), save: evil });
   const body = html.replace(/<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, '');
   assert.doesNotMatch(body, /<img src=x|onerror=alert\(1\)>|"Sons" <b>|<i>9/);
-  assert.match(body, /Prepared by <strong>&lt;img src=x onerror=alert\(1\)&gt;<\/strong>, Smith &amp; &quot;Sons&quot; &lt;b&gt;/);
-  assert.match(body, /License #&lt;i&gt;9&lt;\/i&gt;/);
+  assert.match(body, /Prepared by &lt;img src=x onerror=alert\(1\)&gt;, Smith &amp; &quot;Sons&quot; &lt;b&gt;<\/p>/);
+  assert.match(body, /<span class="ct">License #&lt;i&gt;9&lt;\/i&gt;<\/span>/);
 });
 
 // ---- Report
 
 test('report without branding: AcresX header and footers as before, no "Prepared by"', () => {
   const { pages, html } = report({ storage: memoryStorage() });
-  assert.equal(pages.length, 4);
-  assert.match(pages[0], /<header class="head"><img class="logo" src="\/assets\/acresx-logo.png" alt="AcresX">/);
-  pages.forEach((p, i) => assert.match(p, new RegExp(`<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${i + 1} of 4</span></footer>`)));
+  assert.equal(pages.length, 6);
+  assert.match(pages[0], /<header class="c-head"><img class="logo" src="\/assets\/acresx-logo.png" alt="AcresX">/);
+  pages.forEach((p, i) => assert.match(p, new RegExp(`<footer class="foot"><span>AcresX · Preliminary property intelligence · Verify material findings</span><span>Page ${i + 1} of 6</span></footer>`)));
   assert.doesNotMatch(html, /Prepared by|Powered by AcresX/);
 });
 
 test('report with branding: page 1 "Prepared by", logo and contact; every footer carries the agent; AcresX as "Powered by"', () => {
   const plain = report({ storage: memoryStorage() });
   const { pages } = report({ storage: memoryStorage(), save: { ...JANE, license: '12345', logo: PNG }, name: 'Smith family' });
-  assert.equal(pages.length, 4);
-  const head = /<header class="head branded">[\s\S]*?<\/header>/.exec(pages[0])[0];
+  assert.equal(pages.length, 6);
+  const head = /<header class="c-head branded">[\s\S]*?<\/header>/.exec(pages[0])[0];
   assert.match(head, /<img class="agent-logo" src="data:image\/png;base64,[^"]+" alt="Example Realty">/);
-  assert.match(head, /Prepared by <strong>Jane Example<\/strong>, Example Realty/);
-  assert.match(head, /<div class="agent-contact">\(509\) 555-0100 · jane@example\.com · example\.com · License #12345<\/div>/);
+  assert.match(head, /<p class="prepared">Prepared by Jane Example, Example Realty<\/p>/);
+  // Each contact wraps as a whole (a license number never splits at its hyphen).
+  assert.match(head, /<p class="agent-contact"><span class="ct">\(509\) 555-0100<\/span> · <span class="ct">jane@example\.com<\/span> · <span class="ct">example\.com<\/span> · <span class="ct">License #12345<\/span><\/p>/);
   assert.match(head, /<span class="powered">Powered by AcresX<\/span>/);
   pages.forEach((p, i) => {
     // Two lines at most: who (name · brokerage), then the contacts (owner iPhone screenshot 2026-11-16).
-    assert.match(p, new RegExp(`<footer class="foot branded"><span class="foot-agent"><span class="foot-line foot-who">Prepared by Jane Example · Example Realty</span><span class="foot-line foot-contact">\\(509\\) 555-0100 · jane@example\\.com · example\\.com</span></span><span class="foot-right">Powered by AcresX · Screening only · Page ${i + 1} of 4</span></footer>`));
+    assert.match(p, new RegExp(`<footer class="foot branded"><span class="foot-agent"><span class="foot-line foot-who">Prepared by Jane Example · Example Realty</span><span class="foot-line foot-contact">\\(509\\) 555-0100 · jane@example\\.com · example\\.com</span></span><span class="foot-right">Powered by AcresX · Screening only · Page ${i + 1} of 6</span></footer>`));
     if (i) assert.match(p, /<header class="mini-head"><img class="agent-logo-sm" src="data:image\/png/);
   });
   // The screening framing is unchanged.
   assert.match(pages[0], /Verify material findings with the responsible agency, utility or licensed professional/);
-  assert.match(pages[2], /Preliminary screening only\./);
+  assert.match(pages[5], /Preliminary screening only\./);
   // The client / reference name typed when generating prints on page 1.
-  assert.match(pages[0], /<div><span>Reference<\/span><strong>Smith family<\/strong><\/div>/);
+  assert.match(pages[0], /Reference: Smith family<\/p>/);
   // Same score and costs as the unbranded report.
-  const score = p => /<div class="score-num">([^<]+)<small>/.exec(p)[1];
-  const cost = p => /<div class="cost-num">([^<]+)<\/div>/.exec(p)[1];
+  const score = p => /<div class="t-num">([^<]+)<small>/.exec(p)[1];
+  const cost = p => /<div class="t-num t-range">([^<]+)<\/div>/.exec(p)[1];
   assert.equal(score(pages[0]), score(plain.pages[0]));
   assert.equal(cost(pages[0]), cost(plain.pages[0]));
 });
@@ -208,11 +209,12 @@ test('branding without a logo or contact details; a long brokerage name is cappe
   const brokerage = 'Northwest Rural Land & Ranch Properties of the Inland Empire, Eastern Washington and North Idaho Division Office';
   const { pages, html } = report({ storage: memoryStorage(), save: { name: 'Jane Example', brokerage } });
   const cut = brokerage.slice(0, 100).trim().replace(/&/g, '&amp;');
-  assert.match(pages[0], new RegExp(`Prepared by <strong>Jane Example</strong>, ${cut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</div></div></div>`));
+  assert.match(pages[0], new RegExp(`<p class="prepared">Prepared by Jane Example, ${cut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</p></div></div>`));
   assert.doesNotMatch(pages[0], /agent-logo|agent-contact/);
   assert.match(pages[1], /<header class="mini-head"><span class="agent-mark">Jane Example, Northwest Rural/);
   assert.match(pages[1], /<span class="foot-agent"><span class="foot-line foot-who">Prepared by Jane Example · Northwest Rural[^<]*<\/span><\/span><span class="foot-right">/, 'no contacts: the footer has one agent line');
-  assert.match(html, /\.head\.branded\{/, 'the branded header has its own styles');
+  assert.match(html, /\.c-head \.agent-logo\{/, 'the branded header has its own styles');
+  assert.match(html, /\.prepared\{[^}]*overflow-wrap:anywhere/, 'a long brokerage wraps instead of overflowing');
 });
 
 test('no branding module loaded: the report is unchanged', () => {
@@ -241,7 +243,7 @@ test('the sidebar Settings item is enabled and the module is injected before bro
   assert.equal(list.at(-1), 'browser-fallback');
 });
 
-test('a hostile stored logo never reaches an img src in the report (page 1 header or page 2-4 mini headers)', () => {
+test('a hostile stored logo never reaches an img src in the report (page 1 header or the later mini headers)', () => {
   const hostile = [
     'data:image/png;base64,AAAA" onerror="alert(1)',
     'javascript:alert(1)',
@@ -255,7 +257,7 @@ test('a hostile stored logo never reaches an img src in the report (page 1 heade
     const storage = memoryStorage({ [KEY]: JSON.stringify({ ...JANE, website: 'https://example.com', logo }) });
     const { pages, html } = report({ storage });
     const body = html.replace(/<style>[\s\S]*?<\/style>|<script>[\s\S]*?<\/script>/g, '');
-    assert.match(pages[0], /Prepared by <strong>Jane Example<\/strong>/, 'the rest of the branding still applies');
+    assert.match(pages[0], /<p class="prepared">Prepared by Jane Example, Example Realty<\/p>/, 'the rest of the branding still applies');
     assert.doesNotMatch(body, /agent-logo/, `no logo img for ${logo.slice(0, 40)}`);
     assert.doesNotMatch(body, /javascript:|onerror="alert|onload='alert|<script>alert|image\/svg|text\/html/);
     for (const p of pages.slice(1)) assert.match(p, /<header class="mini-head"><span class="agent-mark">Jane Example, Example Realty<\/span>/);
