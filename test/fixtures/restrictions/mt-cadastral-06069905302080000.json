@@ -1,0 +1,19 @@
+{
+ "_note": "Montana Cadastral FeatureServer/0 by PARCELID, live 2026-11-17.",
+ "features": [
+  {
+   "attributes": {
+    "PARCELID": "06069905302080000",
+    "COUNTYCD": 6,
+    "LegalDescriptionShort": "S05, T03 S, R06 E, C.O.S. 1103K, PARCEL 8A-2, ACRES 10.001",
+    "Subdivision": null,
+    "CertificateOfSurvey": "1103K",
+    "PropAccess": "",
+    "PropertyCardLink": "https://svc.mt.gov/msl/cadastral/?page=PropertyDetails&geocode=06069905302080000",
+    "Township": "03 S",
+    "Range": "06 E",
+    "Section": "05"
+   }
+  }
+ ]
+}

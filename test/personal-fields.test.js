@@ -152,6 +152,10 @@ const CASES = [
     [`public-utilities ${county}`, post('/api/public-utilities', { state, county, ...parcel }), b => { assert.equal(b.available, true); assert.ok(b.sources.length > 0); }]),
   ...[['WA', 'Spokane'], ['ID', 'Kootenai']].map(([state, county]) =>
     [`cost-context ${county}`, post('/api/cost-context', { state, county, ...point }), b => assert.equal(b.roadAccess.available, true)]),
+  // /api/recorded-restrictions: every layer answers with the planted owner fields next to the plat
+  // fields; the answer and its cache entry must hold none of them.
+  ...[['WA', 'Spokane', SPOKANE_PARCEL], ['WA', 'Stevens', STEVENS_PARCEL], ['ID', 'Kootenai', PARCEL], ['MT', 'Gallatin', MT_PARCEL], ['MT', 'Yellowstone', MT_PARCEL], ['MT', 'Madison', MT_PARCEL]].map(([state, county, id]) =>
+    [`recorded-restrictions ${county}`, post('/api/recorded-restrictions', { state, county, ...parcel, parcelId: id, legal: 'TEST PLAT, LT 1 BLK 1' }), b => { assert.equal(b.available, true); assert.ok(b.sources.length > 0); }]),
   ['buildable-area', post('/api/buildable-area', { state: 'WA', county: 'Spokane', ...parcel })],
   ['land-analysis', post('/api/land-analysis', parcel)],
   ['slope-grid', post('/api/slope-grid', parcel)],

@@ -1,0 +1,11 @@
+{
+ "_note": "Stevens RealPropertyParcels_Public/MapServer/0 PARCELN + legal_desc, live 2026-11-17.",
+ "features": [
+  {
+   "attributes": {
+    "PARCELN": "0434200",
+    "legal_desc": "MINES PATENTED SURVEY #1179 DIAMOND CROWN 13.71 ACRES, ls co rd &"
+   }
+  }
+ ]
+}

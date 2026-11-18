@@ -31,6 +31,7 @@ import { handleCountyCoverage } from './services/county-coverage.js';
 import { handleListingSearchStatus } from './services/listing-search-status.js';
 import { handleAddressSearch } from './services/address-search.js';
 import { handleAccounts } from './services/accounts.js';
+import { handleRecordedRestrictions } from './services/recorded-restrictions.js';
 import { json } from './shared/http.js';
 import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
@@ -77,6 +78,7 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   if(url.pathname==='/api/property-tax-test'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(url.pathname==='/api/property-assessment'&&request.method==='POST')return await handlePropertyTaxTest(request);
   if(url.pathname==='/api/property-tax'&&request.method==='POST')return await handlePropertyTax(request,env,ctx);
+  if(url.pathname==='/api/recorded-restrictions'&&request.method==='POST')return await handleRecordedRestrictions(request,env,ctx);
   if(request.method==='POST'&&url.pathname==='/api/parcel-search')return await handleParcelSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/address-search')return await handleAddressSearch(request);
   if(request.method==='POST'&&url.pathname==='/api/well-search')return await handleWellSearch(request);

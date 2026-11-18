@@ -74,7 +74,8 @@ const degradeCases = [
   ['/api/zoning-permits', { county: 'Gallatin', ...point }],
   ['/api/zoning-permits', { county: 'Kootenai', ...point }],
   ['/api/existing-well', { state: 'MT', ...point }],
-  ['/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: '47174.9017' }]
+  ['/api/property-assessment', { state: 'WA', county: 'Spokane', parcelId: '47174.9017' }],
+  ['/api/recorded-restrictions', { state: 'MT', county: 'Yellowstone', parcelId: '03092732390050000', ...point }]
 ];
 
 for (const [path, body] of degradeCases) {
