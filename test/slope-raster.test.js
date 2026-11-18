@@ -20,6 +20,7 @@ import { buildableFromLayers } from '../src/services/buildable-area.js';
 import { ringsFromGeometry } from '../src/shared/polygon-coverage.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { ELEVATION_IMAGE_SERVICE, configureElevation } from '../src/services/elevation.js';
+import { TERRAIN_CACHE_PREFIX, POINT_ONLY_TTL_SECONDS, TILE_ANSWER_TTL_SECONDS } from '../src/services/land-analysis.js';
 
 const fixture = name => new URL(`fixtures/${name}`, import.meta.url);
 const YS = JSON.parse(readFileSync(fixture('slope-raster-yellowstone-03092732390050000.json'), 'utf8')).geometry;
@@ -273,4 +274,41 @@ test('tiles down: slopeRaster answers unavailable (never throws), is not memoize
   // The failure was not memoized: tiles back, raster answers.
   stubTiles();
   assert.equal((await slopeRaster(YS)).available, true);
+});
+
+test('terrain cache: a point-only answer (no raster) is kept 10 minutes; the raster answer gets the normal TTL', async () => {
+  const store = new Map();
+  globalThis.caches = { default: {
+    async match(req) { const hit = store.get(req.url); return hit ? hit.clone() : undefined; },
+    async put(req, res) { store.set(req.url, res.clone()); }
+  } };
+  const xs = ringsFromGeometry(YS).flat();
+  const lon0 = Math.min(...xs.map(p => p[0]));
+  const usgs = (url, init) => {
+    if (url.startsWith(`${ELEVATION_IMAGE_SERVICE}/getSamples`)) {
+      const pts = JSON.parse(new URLSearchParams(String(init.body)).get('geometry')).points;
+      return new Response(JSON.stringify({ samples: pts.map(([x], i) => ({ locationId: i, value: String(1000 + (x - lon0) * 1000) })) }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response('down', { status: 502 });
+  };
+  const land = () => worker.fetch(new Request('https://acresx.test/api/land-analysis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ geometry: YS }) }), {}, {}).then(r => r.json());
+  const terrainEntry = () => [...store.entries()].find(([k]) => k.startsWith(TERRAIN_CACHE_PREFIX))?.[1];
+  const restore = configureElevation({ budgetMs: 800, identifyAfterMs: 100, epqsAfterMs: 200, tilesAfterMs: 100, retryMinMs: 50, minStageMs: 50, backoffMs: 0 });
+  try {
+    // Tiles down: the getSamples 9-point answer, cached briefly.
+    stubTiles({}, usgs);
+    const first = (await land()).terrain;
+    assert.equal(first.available, true);
+    assert.equal(first.gradeMethod, undefined, 'no raster');
+    assert.equal(terrainEntry().headers.get('Cache-Control'), `public, max-age=${POINT_ONLY_TTL_SECONDS}`);
+    // Once that entry expires, tiles back: the raster answer replaces it with the normal TTL
+    // (getSamples points: 30 days).
+    store.clear();
+    stubTiles(YS_TILES, usgs);
+    const second = (await land()).terrain;
+    assert.equal(second.gradeMethod, 'raster');
+    near(second.gradePct, 7.4, 0.2, 'raster grade');
+    const ttl = Number(/max-age=(\d+)/.exec(terrainEntry().headers.get('Cache-Control'))[1]);
+    assert.ok(ttl >= TILE_ANSWER_TTL_SECONDS, `raster answer TTL ${ttl}`);
+  } finally { restore(); }
 });

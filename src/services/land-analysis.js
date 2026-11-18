@@ -166,6 +166,8 @@ async function landCoverAnalysis(geometry) {
 // The raster starts with the points; once the points have settled it gets at most this much more
 // time (tiles normally answer in under a second), so it never holds the terrain answer up long.
 export const RASTER_GRACE_MS = 1500;
+// Edge-cache lifetime of a terrain answer without the raster (see terrainAnalysis).
+export const POINT_ONLY_TTL_SECONDS = 10 * 60;
 
 async function terrainAnalysis(geometry, ctx) {
   const points = terrainPoints(geometry).then(value => ({ value }), error => ({ error }));
@@ -184,7 +186,10 @@ async function terrainAnalysis(geometry, ctx) {
   const answer = pointsResult.value;
   if (!raster?.available) {
     if (raster?.error) console.warn('Slope raster unavailable; terrain keeps the 9-point grade', raster.error);
-    return answer;
+    // A point-only answer (tiles failed or missed the grace window) is kept at most
+    // POINT_ONLY_TTL_SECONDS, so the raster grade replaces it soon instead of the smoother
+    // 9-point grade staying cached for a day (tiles) or 30 days (getSamples).
+    return { ...answer, ttlSeconds: Math.min(answer.ttlSeconds ?? POINT_ONLY_TTL_SECONDS, POINT_ONLY_TTL_SECONDS) };
   }
   answer.result = { ...answer.result, pointGradePct: answer.result.gradePct, ...terrainFromRaster(raster) };
   return answer;
