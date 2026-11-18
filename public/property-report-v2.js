@@ -10,8 +10,10 @@
 //   Page 2  Site details: any further key findings, about the score (why, top drivers), the buildable-area breakdown, site
 //           conditions (water, septic, public water/sewer, power, access, flood, wetlands, terrain)
 //           as label/value rows.
-//   Page 3  Zoning & records: zoning in plain words + permitted uses, overlays, assessor values
-//           and tax line, and a listing only when one matched.
+//   Page 3  Zoning & records: zoning in plain words + permitted uses, overlays, recorded
+//           restrictions (plat / COS, recorded agreements, conservation easements, likely
+//           easements, recorder link and the title-report line: public/recorded-restrictions.js),
+//           assessor values and tax line, and a listing only when one matched.
 //   Page 4  Costs & next steps: what the total sums, the cost table (line, confidence tag, range)
 //           with a total equal to the page-1 range, a "before you buy" checklist.
 //   Page 5  Cost assumptions: how each cost line was estimated (only when the lines carry it).
@@ -321,7 +323,11 @@
       assess: assessment(data), cost: costEstimate(data),
       // County coverage badge (public/coverage-trust.js, /api/county-coverage); null if not loaded.
       coverage: window.AcresXCoverage?.forData?.(data)?.coverage || null,
-      structure: window.AcresXCoverage?.existingStructure?.(data) || null
+      structure: window.AcresXCoverage?.existingStructure?.(data) || null,
+      // Recorded restrictions (public/recorded-restrictions.js describe(), from
+      // /api/recorded-restrictions); null when the lookup had not answered. Kept in f, so saved and
+      // shared reports render it from the snapshot.
+      restrictions: data.recordedRestrictions && window.AcresXRestrictions?.describe ? window.AcresXRestrictions.describe(data.recordedRestrictions, data) : null
     };
     f.findings = findings(data, f);
     return f;
@@ -625,6 +631,26 @@
     return `<div class="assessor">${cells.join('')}</div><p class="muted">${esc(a.source || 'County assessor')}${ref}</p>`;
   }
 
+  // Page 3 "Recorded restrictions" from f.restrictions (strings only, so a snapshot renders it
+  // without public/recorded-restrictions.js). Never says there are no restrictions.
+  const RESTRICTIONS_TITLE = 'Order a preliminary title report — it lists recorded easements, covenants (CC&Rs) and HOA.';
+  function restrictionsBlock(f, S) {
+    const r = f.restrictions;
+    if (!r || typeof r !== 'object') return `<p class="muted">Recorded restrictions were not checked when this report was generated. ${esc(RESTRICTIONS_TITLE)}</p>`;
+    const refs = (Array.isArray(r.sources) ? r.sources : []).filter(s => s && s.ok && !s.skipped && s.name).map(s => S.add(s.name, { date: r.asOf ? `as of ${r.asOf}` : '' }));
+    const li = (level, title, detail) => `<li>${dot(level)}<p><strong>${esc(title)}</strong>${detail ? ` <span class="kf-d">— ${esc(detail)}</span>` : ''}</p></li>`;
+    const rows = [li('verify', r.headline || 'Plat status not determined', (r.platLines || []).join(' · '))];
+    for (const a of r.agreements || []) rows.push(li('verify', a.title, a.detail));
+    rows.push(li((r.easements || []).length ? 'risk' : r.easementStatus === 'none' ? 'good' : 'verify', r.easementLine || 'Conservation easement check not available', ''));
+    for (const e of r.easements || []) rows.push(li('risk', e.title, e.detail));
+    for (const x of r.flags || []) rows.push(li('verify', x.title, x.detail));
+    if (r.hoa) rows.push(li('verify', r.hoa, 'Listing claims do not affect the buildability score.'));
+    const links = (Array.isArray(r.links) ? r.links : []).filter(l => l && l.label && host(l.url)).map(l => `${esc(l.label)} <span class="url">${esc(host(l.url))}</span>`);
+    const notes = (Array.isArray(r.notes) ? r.notes : []).filter(n => typeof n === 'string');
+    return `<ul class="c-list restrictions">${rows.join('')}</ul>${S.mark(refs)}
+<p class="restrictions-title"><strong>${esc(r.title || RESTRICTIONS_TITLE)}</strong></p>${notes.length ? `<p class="muted">${notes.map(esc).join(' ')}</p>` : ''}${links.length ? `<p class="muted">Records: ${links.join(' · ')}</p>` : ''}`;
+  }
+
   function listingBlock(data) {
     const listing = data.resoListings || data.listingContext || {};
     const rec = listing.best || listing.match || null;
@@ -751,6 +777,7 @@ ${sec('Site conditions', siteCards(data, f, S))}
     return `<section class="page p3"><div class="page-body">${pageHead('Zoning & records', f)}
 ${sec('Zoning', `${zoningBlock(f, S)}${densityWarning}`)}
 ${sec('Overlays', overlayBlock(f, S))}
+${sec('Recorded restrictions', restrictionsBlock(f, S))}
 ${sec('Assessor record', assessorBlock(f, S, data))}
 ${listingBlock(data)}
 </div>${footer(3, f.pages, f.brand)}</section>`;
@@ -881,6 +908,7 @@ table{border-collapse:collapse;width:100%}
 .overlays{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
 .overlays li{font-size:var(--fs-small);padding:6px 0;border-bottom:1px solid var(--rule);break-inside:avoid}.overlays strong{font-weight:600}.overlays em{font-style:normal;color:var(--caution)}.overlays span{display:block;font-size:var(--fs-cap);color:var(--ink-2)}
 .assessor{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-bottom:6px}
+.restrictions li+li{border-top:1px solid var(--rule)}.restrictions-title{margin:8px 0 2px}
 .assessor>div{display:grid;grid-template-columns:1.35in 1fr;column-gap:12px;padding:6px 0;border-bottom:1px solid var(--rule)}
 .assessor span{grid-column:1;font-size:var(--fs-small);color:var(--ink-2)}.assessor strong{grid-column:2;font-size:var(--fs-body);font-weight:600}.assessor small{grid-column:2;font-size:var(--fs-cap);color:var(--ink-3)}
 .listing strong{display:block;font-weight:600}.listing span{display:block;font-size:var(--fs-small);color:var(--ink-2)}
@@ -960,7 +988,10 @@ table{border-collapse:collapse;width:100%}
       land: { landCover: data.land?.landCover || null },
       resoListings: rec ? { best: pick(rec, ['status', 'standardStatus', 'StandardStatus', 'listPrice', 'daysOnMarket', 'listingId']) } : null,
       // Page 2 tax line (taxCell, rendered with window.AcresXPropertyTax from public/property-tax.js).
-      propertyTax: data.propertyTax || null
+      propertyTax: data.propertyTax || null,
+      // Recorded restrictions answer (page 3 renders from f.restrictions; the answer is kept for
+      // reference). Named fields only; it never holds owner fields.
+      recordedRestrictions: data.recordedRestrictions ? pick(data.recordedRestrictions, ['status', 'plat', 'agreements', 'conservationEasements', 'recorder', 'asOf']) : null
     };
   }
   function snapshot(model) {

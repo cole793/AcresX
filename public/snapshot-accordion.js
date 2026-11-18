@@ -7,7 +7,8 @@
     soil: 'Septic Feasibility',
     power: 'Power',
     listing: 'Listing Context',
-    slope: 'Site-Work Feasibility'
+    slope: 'Site-Work Feasibility',
+    restrictions: 'Recorded Restrictions'
   };
 
   function titleCase(value) {

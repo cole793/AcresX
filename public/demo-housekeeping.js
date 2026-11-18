@@ -6,7 +6,9 @@
     listing: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/><path d="M8.5 10.5h4M10.5 8.5v4"/></svg>',
     slope: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="m5 17 6-7 3 3 5-7"/><path d="M16 6h3v3"/></svg>',
     zoning: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>',
-    permits: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 9h8M8 13h8M8 17h5"/></svg>'
+    permits: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 9h8M8 13h8M8 17h5"/></svg>',
+    // Recorded restrictions card (public/recorded-restrictions.js): a deed with a seal.
+    restrictions: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6Z"/><path d="M15 3v4h4M9 10h7M9 13h4"/><circle cx="14.5" cy="17" r="2"/></svg>'
   };
 
   function addStyles() {
@@ -55,7 +57,7 @@
   }
 
   // Card -> its data section in progressive-loading.js.
-  const SECTION_OF = { wells: 'wells', soil: 'land', power: 'utility', listing: 'evidence', slope: 'land', zoning: 'zoningPermits', permits: 'zoningPermits' };
+  const SECTION_OF = { wells: 'wells', soil: 'land', power: 'utility', listing: 'evidence', slope: 'land', zoning: 'zoningPermits', permits: 'zoningPermits', restrictions: 'restrictions' };
 
   function confidenceFor(detail) {
     if (typeof last === 'undefined' || !last?.parcel) return { label: 'Verify', cls: 'verify', note: 'No property analysis loaded' };
@@ -72,6 +74,7 @@
     if (detail === 'slope') return last?.land?.terrain?.available ? { label: 'Screening', cls: 'screening', note: 'Estimated from elevation data; not a survey' } : { label: 'Verify', cls: 'verify', note: 'Terrain screening is not available for this parcel' };
     if (detail === 'zoning') { if (CX) return CX.zoningChip(last); const z = last?.zoningPermits?.zoning; return z?.status === 'gis_match' ? { label: 'Mapped — verify', cls: 'screening', note: 'Mapped zoning record returned; permitted uses still require agency verification' } : { label: 'Verify', cls: 'verify', note: 'Zoning record requires agency verification' }; }
     if (detail === 'permits') return { label: 'Verify', cls: 'verify', note: 'Permit requirements depend on the proposed project and jurisdiction' };
+    if (detail === 'restrictions') return { label: 'Verify', cls: 'verify', note: 'Mapped plat and easement records only; a title report confirms easements, CC&Rs and HOA' };
     return { label: 'Verify', cls: 'verify', note: 'Verification recommended' };
   }
 
