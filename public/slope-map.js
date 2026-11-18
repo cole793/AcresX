@@ -22,7 +22,7 @@
   const style = document.createElement('style');
   style.id = 'slopeMapStyles';
   style.textContent = `
-    .slope-legend{position:absolute;z-index:451;left:12px;bottom:84px;background:rgba(255,255,255,.96);border:1px solid rgba(23,35,28,.14);border-radius:11px;padding:10px 12px;font-size:10px;box-shadow:0 4px 14px rgba(0,0,0,.1);display:none;min-width:150px}
+    .slope-legend{position:absolute;z-index:451;left:12px;bottom:84px;background:rgba(255,255,255,.96);border:1px solid rgba(23,35,28,.14);border-radius:11px;padding:10px 12px;font-size:10px;box-shadow:0 4px 14px rgba(0,0,0,.1);display:none;min-width:150px;max-width:230px}
     .slope-legend.show{display:block}.slope-legend strong{display:block;font-size:11px;margin-bottom:6px}.slope-legend-row{display:flex;align-items:center;gap:7px;margin:5px 0;color:#48554d}.slope-swatch{width:18px;height:10px;border-radius:3px;border:1px solid rgba(0,0,0,.12)}
     .slope-legend-note{margin-top:7px;padding-top:7px;border-top:1px solid #e1e7e2;color:#748077;line-height:1.35}
   `;
