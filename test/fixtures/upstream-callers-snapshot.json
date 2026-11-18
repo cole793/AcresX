@@ -55,7 +55,6 @@
           "match": {
             "id": 1,
             "wellTag": "BAA123",
-            "projectName": "Smith",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
             "completionDate": 946684800000,
@@ -88,7 +87,7 @@
     },
     "requests": [
       "GET https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query?f=json&where=PID_NUM%3D%2747174.9017%27&outFields=PID_NUM%2Cowner_name%2Ctaxpayer_name%2Csite_address%2Csite_city%2Csite_state%2Csite_zip&returnGeometry=false",
-      "GET https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query?f=geojson&where=WellProjectType+%3C%3E+%27Decommission%27&geometry=%7B%22xmin%22%3A-117.40889817009793%2C%22ymin%22%3A47.594%2C%22xmax%22%3A-117.39010182990208%2C%22ymax%22%3A47.607%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=ID%2CWellTagNr%2CProjectName%2COwnerName%2CWellAddress%2CParcelNumber%2CCompletedDepth%2CWorkCompletionDate%2CWellProjectType%2CWellSubType%2CDrillerLicenseNumber%2CFlowRateGPM&resultRecordCount=1000"
+      "GET https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query?f=geojson&where=WellProjectType+%3C%3E+%27Decommission%27&geometry=%7B%22xmin%22%3A-117.40889817009793%2C%22ymin%22%3A47.594%2C%22xmax%22%3A-117.39010182990208%2C%22ymax%22%3A47.607%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=ID%2CWellTagNr%2COwnerName%2CWellAddress%2CParcelNumber%2CCompletedDepth%2CWorkCompletionDate%2CWellProjectType%2CWellSubType%2CDrillerLicenseNumber%2CFlowRateGPM&resultRecordCount=1000"
     ]
   },
   "existing-well: assessor miss falls back to LIKE query": {
@@ -109,7 +108,6 @@
           "match": {
             "id": 1,
             "wellTag": "BAA123",
-            "projectName": "Smith",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
             "completionDate": 946684800000,
@@ -143,7 +141,7 @@
     "requests": [
       "GET https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query?f=json&where=PID_NUM%3D%2747174-9017%27&outFields=PID_NUM%2Cowner_name%2Ctaxpayer_name%2Csite_address%2Csite_city%2Csite_state%2Csite_zip&returnGeometry=false",
       "GET https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query?f=json&where=PID_NUM+LIKE+%27%25471749017%25%27&outFields=PID_NUM%2Cowner_name%2Ctaxpayer_name%2Csite_address%2Csite_city%2Csite_state%2Csite_zip&returnGeometry=false",
-      "GET https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query?f=geojson&where=WellProjectType+%3C%3E+%27Decommission%27&geometry=%7B%22xmin%22%3A-117.40889817009793%2C%22ymin%22%3A47.594%2C%22xmax%22%3A-117.39010182990208%2C%22ymax%22%3A47.607%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=ID%2CWellTagNr%2CProjectName%2COwnerName%2CWellAddress%2CParcelNumber%2CCompletedDepth%2CWorkCompletionDate%2CWellProjectType%2CWellSubType%2CDrillerLicenseNumber%2CFlowRateGPM&resultRecordCount=1000"
+      "GET https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query?f=geojson&where=WellProjectType+%3C%3E+%27Decommission%27&geometry=%7B%22xmin%22%3A-117.40889817009793%2C%22ymin%22%3A47.594%2C%22xmax%22%3A-117.39010182990208%2C%22ymax%22%3A47.607%2C%22spatialReference%22%3A%7B%22wkid%22%3A4326%7D%7D&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&returnGeometry=true&outFields=ID%2CWellTagNr%2COwnerName%2CWellAddress%2CParcelNumber%2CCompletedDepth%2CWorkCompletionDate%2CWellProjectType%2CWellSubType%2CDrillerLicenseNumber%2CFlowRateGPM&resultRecordCount=1000"
     ]
   },
   "existing-well: assessor ArcGIS error is treated as no assessor record": {
@@ -164,7 +162,6 @@
           "match": {
             "id": 1,
             "wellTag": "BAA123",
-            "projectName": "Smith",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
             "completionDate": 946684800000,

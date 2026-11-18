@@ -16,6 +16,12 @@
 // NAME or ZONE_NAME, or the parcel situs fields (SITUS_ADDRESS) of the searched property.
 export const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|(first|last|middle)_name|file_as|addr_|legalpartytype|well_?(addr|owner)|site_name)/i;
 
+// Well records only (2026-11-18): WA Ecology's ProjectName is free text that is often the owner's
+// surname ("Smith"), so it never leaves the Worker on a well answer (/api/arcgis wells,
+// /api/well-depth-terrain). Not part of PERSONAL_FIELD: the Montana and Idaho well answers set
+// their own ProjectName label ("Montana GWIC well", the IDWR use such as "Domestic").
+export const WELL_RECORD_PERSONAL_FIELD = new RegExp(`${PERSONAL_FIELD.source}|^project_?name$`, 'i');
+
 // Deep copy of `value` with every object key matching PERSONAL_FIELD removed.
 export function withoutPersonalFields(value, pattern = PERSONAL_FIELD) {
   if (Array.isArray(value)) return value.map(item => withoutPersonalFields(item, pattern));

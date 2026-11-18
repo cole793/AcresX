@@ -4,7 +4,9 @@ import { upstreamJson } from '../../shared/upstream.js';
 // through /api/arcgis (public/index.html). Used by the terrain-aware depth estimate
 // (src/services/well-depth-terrain.js). Ecology records carry no land-surface elevation, and
 // CompletedDepth / StaticWaterLvl are text fields ("120", "45.5", "").
-// OwnerName and WellAddress are not requested (owner decision, 2026-10-29).
+// OwnerName and WellAddress are not requested (owner decision, 2026-10-29). ProjectName (free
+// text, often the owner's surname) is requested only for the nonresidential check in
+// src/services/well-depth-terrain.js candidateOf(); the route never returns record properties.
 export const ECOLOGY_WELLS = 'https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query';
 
 const number = value => {
