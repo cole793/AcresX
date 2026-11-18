@@ -44,6 +44,11 @@ recover). The rules are in `validation/README.md`, "Alerts". The comparison and 
 issue body escaping and the parcel-lookup rate-limit retry are tested offline in
 `test/validation-alerts.test.js`.
 
+## Live checks from a cloud session
+
+Node's `fetch` ignores the session proxy by default. For a one-off live check from Node (never in
+`npm test`), run it with `NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt`.
+
 ## CI
 
 - `.github/workflows/test.yml` runs `npm run check` on every pull request.

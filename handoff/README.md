@@ -32,7 +32,8 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| (none) | | | All gap-report PRs through #80 are merged. |
+| `claude/small-fixes-nov18` | | | Tiny-parcel homesite centroid, Stevens easement note hidden, this handoff update. |
+| (none else) | | | Everything through #96 is merged. |
 
 Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
 HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
@@ -67,6 +68,22 @@ report view (no prompt/popup); #78 iOS text-size-adjust + no clipped pages; #79 
 (self-hosted html2canvas 1.4.1 + jsPDF 4.2.1); #80 iPhone Home Screen app: Open in Safari +
 deep links (`?state=&county=&parcel=&report=1`).
 
+Merged 2026-11-17 to 11-18 (each approved with its own button; every deploy succeeded): #81
+handoff notes; #87 (draft) closed, replaced by #88 calm report layout (6 pages; page 1 is the
+summary; "More findings" on page 2); #89 soil backup (Esri Living Atlas USA Soils Map Units when
+USDA SDA is down); #90 Montana road centerlines (Yellowstone MapServer/40, Gallatin ArcGIS Online
+Streets; ownership 'unknown' shows "Road status not mapped"); #91 cleanups (soil backup label,
+30-day SDA cache, tax link allowlist, tax validated in Spokane and Stevens); #92 Gallatin zoning
+rules (67 zones across 22 districts); #93 slope raster (Terrarium tiles, Horn slope, >30% slope
+removed, gradual terrain score with anchors 0-5% -> 96, 10% -> 82, 15% -> 62, 25% -> 35; septic
+graded on the gentlest clear ~1 ac homesite; `homesiteStatus`); #94 terrain-aware well depth
+(+/-50 ft = comparable, >100 ft lower = drainage, deep-well rules; well addresses and owner names
+never displayed); #95 interior homesite point, fewer than 3 comparable wells -> one deep upland
+well sets the range top, versioned cache key `WELL_TERRAIN_RULES_VERSION` (bump it on any rule
+change: previews share the Cache API with production); #96 recorded restrictions (plats, COS,
+subdivisions, Spokane development agreements, PAD-US + MSL conservation easements, recorder
+links).
+
 Product gap report (2026-11-14): all 16 gaps closed except accounts setup (owner steps).
 
 Yearly chore: replace `src/counties/kootenai-levy-2026.js` each fall when Kootenai certifies levies.
@@ -75,9 +92,10 @@ Yearly chore: replace `src/counties/kootenai-levy-2026.js` each fall when Kooten
 
 Kootenai 87 and Yellowstone 80: **level 3** (lastValidated 2026-11-11; clean daily runs
 2026-11-09, 11-10 and 11-11, owner sign-off 2026-11-12; merged in #54). Stevens 78: **level 3**
-(lastValidated 2026-11-12; clean daily runs 2026-11-11 and 11-12, owner sign-off 2026-11-13; on
-`claude/stevens-level-3`, not merged yet). Gallatin 75 (level 2, 2026-11-03); Spokane
-about 90 (2026-11-11), level 2; level 3 pending one more consecutive clean daily run.
+(lastValidated 2026-11-12; clean daily runs 2026-11-11 and 11-12, owner sign-off 2026-11-13;
+merged in #57-#59). Spokane about 90: level 3 (#65). Gallatin 75: level 2; owner signed off
+parcels 06069905302080000 and 06033804413010000 on 2026-11-18, so level 3 is pending two
+consecutive clean daily runs.
 City of Spokane and Spokane Valley zoning rules are blocked: their code sites block automated
 fetches, and the owner was asked for the code pages.
 All five counties are in the daily validation run.
@@ -101,19 +119,24 @@ artifact upload failed (fixed on `claude/validation-publish-resilience`).
 
 ## Waiting on the owner
 
-- Accounts: add **Account → D1 → Edit** to the Cloudflare token stored as GitHub secret
-  `CLOUDFLARE_API_TOKEN` (the 2026-11-15 run of "Apply D1 migrations" failed with code 7403),
-  then the lead reruns the workflow (owner approved running it on 2026-11-15). Then: Resend
-  account, verify acresx.info DNS, set Cloudflare secret `RESEND_API_KEY` on the `acresx` Worker.
-- `SERPER_API_KEY` is not set in production, so web listing search is skipped (optional).
+- Accounts: create a new GitHub secret `CLOUDFLARE_D1_TOKEN` (a Cloudflare token with
+  **Account → D1 → Edit**); then the lead changes the "Apply D1 migrations" workflow to use it
+  and reruns it (the 2026-11-15 run failed with code 7403). Then: Resend account, verify
+  acresx.info DNS, set Cloudflare secret `RESEND_API_KEY` on the `acresx` Worker. Meanwhile
+  testers keep saved items in browser storage, behind Cloudflare Zero Trust.
+- City of Spokane / Spokane Valley zoning code pages (their sites block automated fetches).
+- Contractor quotes per county; Billings and Bozeman city fee schedules.
 - Utility outreach for distribution line data (Avista written OK, Inland Power, Kootenai
   Electric, NorthWestern, co-ops; City of Cheney; Spokane County GIS "Power and Gas" layer).
-- City of Spokane / Spokane Valley zoning code pages; contractor quotes per county; Billings and
-  Bozeman city fee schedules.
-
+- `SERPER_API_KEY` is not set in production, so web listing search is skipped (optional).
 - Upload the ChatGPT history export for project context.
-- Note: the session network is now open (owner allowed all domains on 2026-10-26).
 - Live domain names (realtor test site, landing page), for `PRODUCT.md`.
+
+## Policy
+
+- 2026-11-18 owner rule: "accurate data is the most important thing; owner names may be used
+  internally where they improve accuracy but must never be displayed in the dashboard or
+  reports". The same goes for other personal free text (well addresses, easement comments).
 
 ## Approvals
 
@@ -145,9 +168,18 @@ Each entry: date, the exact action approved.
   change, sign-in by email link (Resend); approved running the D1 migration workflow.
 - 2026-11-16: the auto-mode permission check blocked a merge under the blanket approval, so each
   merge again gets its own Approve button. Merges #78-#80 approved that way.
+- 2026-11-17: owner approved the calm report layout ("Looks great, push update").
+- 2026-11-18: owner decisions: gradual terrain scale; 30% slope cutoff everywhere; septic uses the
+  best homesite; the two-deep-wells rule with comparables, and one deep upland well sets the top
+  when fewer than 3 wells are comparable. Owner signed off Gallatin parcels 06069905302080000 and
+  06033804413010000. Merges #89-#96, each approved by button.
 
 ## Next steps (offered, not approved)
 
+- Wetlands backup source if NWI fails again (reminder set for 2026-11-19 23:30Z).
+- Multi-property compare / batch reports (broker feedback).
+- Kootenai levy table: replace `src/counties/kootenai-levy-2026.js` each fall.
+- Stevens: add the county lot layer (layer 8) to recorded restrictions.
 - Remove the Netlify GitHub app if Netlify isn't used.
 - Delete the leftover `cloudflare/workers-autoconfig` branch (from closed PR #1).
 - Continue the `ARCHITECTURE.md` migration: hazard screening, then the parcel/well/utility proxy,
