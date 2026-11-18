@@ -5,9 +5,12 @@ import { soilAt } from './soils.js';
 import {
   elevationSamplesFt, getSamplesWithRetry, spreadPick, POINT_FALLBACK_TIMEOUT_MS, TERRAIN_TILES_SOURCE
 } from './elevation.js';
+import { slopeRaster, terrainFromRaster } from './slope-raster.js';
 
 // v2 (2026-11-02): every terrain answer carries elevationSources; v1 entries are left to expire.
-export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v2/';
+// v3 (2026-11-17): gradePct is the per-pixel slope raster's parcel mean (slope-raster.js) when the
+// terrain tiles answer; v2 entries (9-point average) are left to expire.
+export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v3/';
 export const CANOPY_CACHE_PREFIX = 'https://acresx.internal/cache/canopy/v1/';
 export const CANOPY_FALLBACK_MAX_POINTS = 12;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -152,7 +155,42 @@ async function landCoverAnalysis(geometry) {
   } };
 }
 
-async function terrainAnalysis(geometry) {
+// Terrain: the 9 elevation points below (centre, corners, edge midpoints of the bounding box) and,
+// beside them, the per-pixel slope raster (slope-raster.js, AWS Terrain Tiles). When the raster
+// answers, gradePct is its area-weighted mean over the parcel (was the mean of the 8 grades from
+// the centre point, which a draw or bank between the points never touched), maxGradePct its
+// steepest pixel and minFt / maxFt / reliefFt its range inside the parcel; p90GradePct
+// (steepest 10% of the parcel) and slopeClasses are added; pointGradePct keeps the 9-point figure.
+// Without a raster answer the 9-point answer is unchanged (no gradeMethod field). Without the
+// points, a raster answer alone still makes terrain available (centerFt is then null).
+// The raster starts with the points; once the points have settled it gets at most this much more
+// time (tiles normally answer in under a second), so it never holds the terrain answer up long.
+export const RASTER_GRACE_MS = 1500;
+
+async function terrainAnalysis(geometry, ctx) {
+  const points = terrainPoints(geometry).then(value => ({ value }), error => ({ error }));
+  const rasterJob = slopeRaster(geometry, { ctx });
+  let timer;
+  const grace = points.then(() => new Promise(resolve => { timer = setTimeout(() => resolve({ available: false, error: `Slope raster took more than ${RASTER_GRACE_MS} ms after the elevation points` }), RASTER_GRACE_MS); }));
+  const [pointsResult, raster] = await Promise.all([points, Promise.race([rasterJob, grace]).finally(() => clearTimeout(timer))]);
+  if (pointsResult.error && !raster?.available) throw pointsResult.error;
+  if (pointsResult.error) {
+    console.warn('Terrain points failed; using the slope raster alone', pointsResult.error?.message);
+    return { cacheable: true, ttlSeconds: TILE_ANSWER_TTL_SECONDS, result: {
+      available: true, centerFt: null, sampleCount: 0, pointGradePct: null,
+      ...terrainFromRaster(raster), source: TILE_ELEVATION_LABEL, elevationSources: [TERRAIN_TILES_SOURCE]
+    } };
+  }
+  const answer = pointsResult.value;
+  if (!raster?.available) {
+    if (raster?.error) console.warn('Slope raster unavailable; terrain keeps the 9-point grade', raster.error);
+    return answer;
+  }
+  answer.result = { ...answer.result, pointGradePct: answer.result.gradePct, ...terrainFromRaster(raster) };
+  return answer;
+}
+
+async function terrainPoints(geometry) {
   const bounds = geometryBounds(geometry);
   const center = {
     lon: (bounds.minLon + bounds.maxLon) / 2,
@@ -215,7 +253,7 @@ async function cachedLayer(prefix, geometry, ctx, compute) {
   const slot = await openGeometryCache(prefix, geometry);
   const hit = await readCachedJson(slot);
   if (hit?.available === true) return hit;
-  const { result, cacheable, ttlSeconds = CACHE_TTL_SECONDS } = await compute(geometry);
+  const { result, cacheable, ttlSeconds = CACHE_TTL_SECONDS } = await compute(geometry, ctx);
   if (cacheable && result?.available === true) await writeCachedJson(slot, result, ttlSeconds, ctx);
   return result;
 }

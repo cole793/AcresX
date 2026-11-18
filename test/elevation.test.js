@@ -15,12 +15,18 @@ import { TCC_SERVICE, CANOPY_FALLBACK_MAX_POINTS, TERRAIN_CACHE_PREFIX, CANOPY_C
 import { SLOPE_CACHE_PREFIX } from '../src/services/slope-grid.js';
 import { SOIL_CACHE_PREFIX } from '../src/services/soils.js';
 import { TERRAIN_TILES_URL } from '../src/services/terrain-tiles.js';
+import { chooseZoom } from '../src/services/slope-raster.js';
+import { ringsFromGeometry } from '../src/shared/polygon-coverage.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`fixtures/${name}`, import.meta.url), 'utf8'));
 const recorded = fixture('elevation-getsamples.json');
 const legacy = fixture('elevation-legacy-snapshot.json');
 const batched = fixture('elevation-batched-snapshot.json');
 const geometry = recorded.geometry;
+const rasterTiles = (() => {
+  const xs = ringsFromGeometry(geometry).flat();
+  return chooseZoom({ minLon: Math.min(...xs.map(p => p[0])), maxLon: Math.max(...xs.map(p => p[0])), minLat: Math.min(...xs.map(p => p[1])), maxLat: Math.max(...xs.map(p => p[1])) }).tiles.length;
+})();
 // The batched snapshots plus the additive elevationSources field.
 const terrainSnap = { ...batched.landAnalysis.terrain, elevationSources: ['getSamples'] };
 const slopeSnap = { ...batched.slopeGrid, elevationSources: ['getSamples'] };
@@ -151,7 +157,9 @@ test('land-analysis: terrain and canopy come from one getSamples request each', 
   assert.equal(count('3dep'), 1);
   assert.equal(count('tcc'), 1);
   assert.equal(usgsAndOthers().length, 3, 'soil + terrain + canopy');
-  assert.ok(count('tiles') <= 1, 'at most one terrain tile for this parcel');
+  // One tile for the terrain points, plus the slope raster's window (slope-raster.js) for this
+  // parcel; the tiles are down in this file, so neither is memoized.
+  assert.ok(count('tiles') <= 1 + rasterTiles, 'at most one terrain tile for the points plus the raster window');
 
   for (const call of calls.filter(c => c.kind === '3dep' || c.kind === 'tcc')) {
     assert.equal(call.method, 'POST');
@@ -319,7 +327,7 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   await landAnalysis();
   assert.ok(count('3dep') <= 3 && count('tcc') <= 3);
   assert.equal(usgsAndOthers().length, 3);
-  assert.ok(count('tiles') <= 1);
+  assert.ok(count('tiles') <= 1 + rasterTiles);
 
   calls = [];
   stubFetch();
@@ -337,9 +345,10 @@ test('request budget: normal path is 1 request per layer; worst case stays under
   assert.equal(body.soil.available, false);
   // Soil: one attempt plus the shared client's one retry on a network error, then the same for
   // the Esri SSURGO backup (src/services/soils.js; unknown to this stub, so it fails too).
-  // Terrain: 2 getSamples + 9 identify + 9 EPQS + 1 terrain tile (one tile covers this parcel).
-  assert.equal(calls.length, 2 + 2 + (2 + 9 + 9 + 1) + (2 + CANOPY_FALLBACK_MAX_POINTS));
-  assert.ok(calls.length < 40, `land-analysis worst case made ${calls.length} requests`);
+  // Terrain: 2 getSamples + 9 identify + 9 EPQS + 1 terrain tile (one tile covers this parcel),
+  // plus the slope raster's tile window (slope-raster.js, one tile here; at most 16).
+  assert.equal(calls.length, 2 + 2 + (2 + 9 + 9 + 1 + rasterTiles) + (2 + CANOPY_FALLBACK_MAX_POINTS));
+  assert.ok(calls.length < 40 + rasterTiles, `land-analysis worst case made ${calls.length} requests`);
 
   calls = [];
   stubFetch({ '3dep': fail, identify: fail, epqs: fail });
@@ -634,8 +643,8 @@ test('cache guard: a slope answer that mixes getSamples and identify values is n
   } finally { restore(); }
 });
 
-test('cache: terrain and slope use the v2 prefixes (answers carry elevationSources)', () => {
-  assert.equal(TERRAIN_CACHE_PREFIX, 'https://acresx.internal/cache/terrain/v2/');
+test('cache: terrain v3 (raster mean grade) and slope-grid v2 prefixes (answers carry elevationSources)', () => {
+  assert.equal(TERRAIN_CACHE_PREFIX, 'https://acresx.internal/cache/terrain/v3/');
   assert.equal(SLOPE_CACHE_PREFIX, 'https://acresx.internal/cache/slope-grid/v2/');
 });
 

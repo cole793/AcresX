@@ -15,7 +15,8 @@
 //                acres?, note? }]   'shown': mapped and listed, not subtracted (buffers)     (every constraint, whether counted or not)
 //     notes: [string], disclaimer, method,
 //     geometry: GeoJSON MultiPolygon of the buildable part (or null),
-//     removedGeometry: GeoJSON MultiPolygon of what was removed (or null) }
+//     removedGeometry: GeoJSON MultiPolygon of what was removed (or null),
+//     slopeClasses: [{ key, label, pct, acres }] from the slope raster, or null (coarse grid) }
 // 'partial': a constraint layer did not answer, so it was not subtracted (layers/notes say which).
 // 'unavailable': no constraint could be checked (buildableAcres null) or the parcel outline was
 // unusable (HTTP 400).
@@ -37,8 +38,18 @@
 //            delineation, so they are listed under mayAlsoRestrict and drawn separately. No
 //            county elsewhere publishes one we use: the note says buffers are not mapped; none
 //            is invented.
-//   slope    slope-grid cells (src/services/slope-grid.js, called in-process so its cache is
-//            shared) steeper than STEEP_SLOPE_PCT, as their cell rectangles.
+//   slope    the per-pixel slope raster (src/services/slope-raster.js: AWS Terrain Tiles, ~7-13 m
+//            pixels, Horn 3 x 3 slope, shared cache with /api/land-analysis): pixels steeper than
+//            STEEP_SLOPE_PCT, as rectangles. If the tiles fail, the 5 x 5 slope-grid cells
+//            (src/services/slope-grid.js, called in-process so its cache is shared) steeper than
+//            STEEP_SLOPE_PCT, as their cell rectangles, with a note that the grid is coarse.
+//            Slopes of 15-30% are not subtracted; the slope layer's note gives their acres ("may
+//            limit building"), and slopeClasses (additive) gives every class.
+//            Threshold: 30% is the one documented rule (Spokane County / Spokane Valley critical
+//            areas: geologically hazardous areas are slopes of 30% or greater). Montana county
+//            subdivision rules found 2026-11-17 use 25% as a trigger for geotechnical review
+//            (Yellowstone County) or a presumption of unsuitability (Missoula, Carbon), not a
+//            removal; so 25-30% stays shown, not subtracted, in every county.
 //   setback  the zoning setback, only when the rules table gives one plain number ("10 feet",
 //            Stevens County tables). Front/side/rear text ("Front 10 ft; rear 15 ft; ...") is
 //            not applied: which line is the front is not known.
@@ -53,6 +64,7 @@ import { floodScreening, describeFloodRow, FEMA_PROVIDER, ESRI_PROVIDER, FEMA_NF
 import { floodShareParams, WHERE_NOT_X, FLOOD_SHARE_MAX_BYTES, FLOOD_REQUEST_HEADERS, BACKUP_OUT_FIELDS } from './flood-share.js';
 import { wetlandsScreening, nwiOutlines } from './wetlands.js';
 import { handleSlopeGrid } from './slope-grid.js';
+import { slopeRaster, boundsRing, MAY_LIMIT_PCT } from './slope-raster.js';
 import { SPOKANE_WETLAND_LAYERS } from '../counties/spokane-overlays.js';
 
 export const STEEP_SLOPE_PCT = 30;
@@ -169,8 +181,28 @@ async function countyWetlandLayer(source, geometry, kind) {
   }
 }
 
+// The raster's slope classes; buildableFromLayers turns each share into acres of this answer's
+// parcel acres, so they add up to parcelAcres.
+function rasterClasses(raster) {
+  return (raster.classes || []).map(c => ({ key: c.key, label: c.label, pct: c.pct, share: c.share }));
+}
+
 async function slopeLayer(geometry, env, ctx) {
   const label = `Slopes over ${STEEP_SLOPE_PCT}%`;
+  const raster = await slopeRaster(geometry, { ctx });
+  if (raster?.available) {
+    const limiting = (raster.classes || []).filter(c => c.key === '15-25' || c.key === '25-30').reduce((a, c) => a + (c.share || 0), 0);
+    return {
+      status: raster.steepMask?.length ? 'counted' : 'none', label,
+      source: `${raster.source} (${raster.pixelM} m pixels)`,
+      rings: (raster.steepMask || []).map(boundsRing),
+      slopeClasses: rasterClasses(raster),
+      limitingShare: limiting,
+      note: limiting >= 0.005
+        ? `About ${Math.round(limiting * 1000) / 10}% of the parcel is ${MAY_LIMIT_PCT}–${STEEP_SLOPE_PCT}% slope: it may limit building (driveways, septic, foundations; some counties ask for an engineer's review over 25%), so it is shown, not subtracted.`
+        : undefined
+    };
+  }
   try {
     const response = await handleSlopeGrid(new Request('https://acresx.internal/api/slope-grid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ geometry }) }), env, ctx);
     const grid = await response.json();
@@ -180,7 +212,7 @@ async function slopeLayer(geometry, env, ctx) {
     return {
       status: steep.length ? 'counted' : 'none', label, source: `${grid.source || 'USGS elevation'} (${resolution})`,
       rings: steep.map(c => rect(c.bounds)),
-      note: `Slope is read from a coarse ${resolution} of elevation samples, so small steep areas such as banks or draws may not show.`
+      note: `The detailed slope map was unavailable${raster?.error ? ` (${raster.error})` : ''}, so slope is read from a coarse ${resolution} of elevation samples; small steep areas such as banks or draws may not show.`
     };
   } catch (error) {
     console.warn('Buildable area: slope grid failed', error?.message);
@@ -236,6 +268,10 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
   const overlap = Math.max(0, ownSum - areas.removedSqM);
   const buildableSqM = Math.max(0, total - areas.removedSqM);
   const shape = maskGeometry(parcel, groups, { setbackM, flag });
+  const slope = layers.find(l => l.key === 'slope');
+  const slopeClasses = Array.isArray(slope?.slopeClasses)
+    ? slope.slopeClasses.map(c => ({ key: c.key, label: c.label, pct: c.pct, acres: toAcres((c.share || 0) * total) }))
+    : null;
   return {
     status: missing.length ? 'partial' : 'measured',
     parcelAcres, buildableAcres: toAcres(buildableSqM), buildablePct: toPct(buildableSqM),
@@ -244,7 +280,9 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
     disclaimer: setbackM > 0 ? DISCLAIMER_WITH_SETBACK : DISCLAIMER, method: METHOD,
     geometry: shape.buildable.length ? { type: 'MultiPolygon', coordinates: shape.buildable } : null,
     removedGeometry: shape.removed.length ? { type: 'MultiPolygon', coordinates: shape.removed } : null,
-    bufferGeometry: shape.flagged.length ? { type: 'MultiPolygon', coordinates: shape.flagged } : null
+    bufferGeometry: shape.flagged.length ? { type: 'MultiPolygon', coordinates: shape.flagged } : null,
+    // Additive: slope classes of the parcel from the slope raster (null on the coarse grid).
+    slopeClasses
   };
 }
 
