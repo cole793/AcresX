@@ -145,6 +145,14 @@
     if (d.mostly) return `Nearby wells are mostly in a drainage about ${ft(d.medianDropFt)} lower; upland wells may be much deeper.`;
     return `${d.count} of the ${d.of} nearest wells ${d.count === 1 ? 'sits' : 'sit'} over ${DRAINAGE_FT} ft lower (drainage ${d.count === 1 ? 'well' : 'wells'}, not used as comparable).`;
   }
+  // One deep well at similar or higher ground does not move the range (two are needed, owner
+  // decision 2026-11-18); it is named instead.
+  function deepText(s) {
+    const one = s?.method === 'terrain' ? s.deepWells?.single : null;
+    if (!one || !(one.depthFt > (s.highFt ?? 0))) return '';
+    const where = one.dzFt > SIMILAR_FT ? 'on higher ground' : 'at similar elevation';
+    return `One nearby well ${where} went to ${ft(one.depthFt)}; deeper wells are possible.`;
+  }
   function caution(s) {
     if (!s || s.feet == null || s.confidence === 'moderate') return '';
     if (s.method === 'nearest') return NOT_CHECKED;
@@ -172,7 +180,7 @@
       const extra = !s.residential ? ' · no clearly residential well type' : s.excluded ? ` · ${s.excluded} nonresidential excluded` : '';
       return `${label(s)}${extra}`;
     }
-    return [label(s), drainageText(s), caution(s)].filter(Boolean).join(' · ');
+    return [label(s), drainageText(s), deepText(s), caution(s)].filter(Boolean).join(' · ');
   }
   // { key, label, cls, score }: the card grade, the report chip and the score's water factor.
   function grade(s) {
@@ -205,7 +213,7 @@
 
   root.AcresXWellDepth = {
     NEARBY, SIMILAR_FT, DRAINAGE_FT, MIN_COMPARABLE, FEW_COMPARABLE, NOT_CHECKED,
-    stats, value, label, fact, note, status, caution, drainageText, elevationText, grade, basis, reportLine, rangeText, excludedWell, median
+    stats, value, label, fact, note, status, caution, drainageText, deepText, elevationText, grade, basis, reportLine, rangeText, excludedWell, median
   };
 
   // ---- Septic

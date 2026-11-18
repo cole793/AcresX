@@ -75,7 +75,7 @@ function report(data) {
 // The terrain-aware answers public/well-terrain.js attaches as wells.terrain
 // (src/services/well-depth-terrain.js shapes).
 const MODERATE = { available: true, status: 'estimated', parcelElevationFt: 2332, searchRadiusMiles: 2, estimate: { confidence: 'moderate', depthFt: 100, lowFt: 90, highFt: 130, planningDepthFt: 130, scoreDepthFt: 100, comparableCount: 6, usedCount: 6, parcelElevationFt: 2332, waterLevelDepthFt: 60, waterLevelWells: 4, drainage: { count: 0, of: 10, medianDropFt: null, mostly: false }, higher: { count: 1, of: 10 }, deepWells: { count: 0, medianFt: null } } };
-const UPLAND = { available: true, status: 'estimated', parcelElevationFt: 3545, searchRadiusMiles: 4, estimate: { confidence: 'low', depthFt: 250, lowFt: 250, highFt: 1370, planningDepthFt: 1370, scoreDepthFt: 1370, comparableCount: 0, usedCount: 8, parcelElevationFt: 3545, waterLevelDepthFt: 220, waterLevelWells: 7, drainage: { count: 7, of: 10, medianDropFt: 240, mostly: true }, higher: { count: 1, of: 10, medianRiseFt: 110 }, deepWells: { count: 1, medianFt: 1370 } } };
+const UPLAND = { available: true, status: 'estimated', parcelElevationFt: 3545, searchRadiusMiles: 4, estimate: { confidence: 'low', depthFt: 250, lowFt: 250, highFt: 510, planningDepthFt: 510, scoreDepthFt: 510, comparableCount: 0, usedCount: 8, parcelElevationFt: 3545, waterLevelDepthFt: 220, waterLevelWells: 7, drainage: { count: 7, of: 10, medianDropFt: 240, mostly: true }, higher: { count: 1, of: 10, medianRiseFt: 110 }, deepWells: { count: 1, medianFt: 1370, raisedHigh: false, single: { depthFt: 1365, dzFt: 115, distanceMi: 1.05 } } } };
 const wellsWith = terrain => { const w = WELLS.map(x => structuredClone(x)); if (terrain) w.terrain = structuredClone(terrain); return w; };
 
 test('well depth without an elevation check: the closest-five median, labelled low confidence, never "Shallow"', () => {
@@ -111,20 +111,22 @@ test('well depth with terrain: comparable wells give a moderate estimate; an upl
   assert.deepEqual({ ...WD.grade(m) }, { key: 'shallow', label: 'Shallow', cls: 'green', score: 92 });
   assert.equal(WD.elevationText(m), 'Homesite about 2,332 ft elevation; static water about 60 ft below it (4 wells)');
   const u = WD.stats({ wells: wellsWith(UPLAND) });
-  assert.equal(WD.value(u), '250–1,370 ft');
-  assert.equal(WD.fact(u), '250–1,370 ft (low confidence)');
+  assert.equal(WD.value(u), '250–510 ft');
+  assert.equal(WD.fact(u), '250–510 ft (low confidence)');
   assert.equal(WD.drainageText(u), 'Nearby wells are mostly in a drainage about 240 ft lower; upland wells may be much deeper.');
   assert.equal(WD.caution(u), 'Few wells at this elevation nearby — depth could be much greater; ask a local driller.');
   assert.match(WD.note(u), /low confidence .*drainage about 240 ft lower.*Few wells at this elevation nearby/);
   assert.equal(WD.grade(u).label, 'Possibly deep', 'graded by the high end; never "Shallow" at low confidence');
   assert.equal(WD.grade(u).score, 55);
-  assert.equal(u.planningDepth, 1370);
+  assert.equal(u.planningDepth, 510);
+  assert.equal(WD.deepText(u), 'One nearby well on higher ground went to 1,365 ft; deeper wells are possible.');
+  assert.match(WD.note(u), /One nearby well on higher ground went to 1,365 ft; deeper wells are possible\./);
 });
 
 for (const [name, terrain, want] of [
   ['elevation not checked', null, { metric: '100–150 ft', fact: '100–150 ft (4 wells; low confidence, elevation not checked)', grade: 'Uncertain', water: 70, cost: /100 ft median nearby well depth \(4 wells; elevation not checked, low confidence\)/, report: /Median nearby well depth \(4 wells\): 100 ft — elevation not checked, low confidence/, chip: 'Depth uncertain' }],
   ['similar-elevation wells', MODERATE, { metric: '100 ft', fact: '100 ft (90–130 ft; 6 wells at similar elevation)', grade: 'Shallow', water: 92, cost: /100 ft estimated well depth \(range 90–130 ft; 6 wells at similar elevation\)/, report: /Estimated well depth: 100 ft \(range 90–130 ft; 6 wells at similar elevation\)/, chip: 'Shallow wells' }],
-  ['upland parcel above a drainage', UPLAND, { metric: '250–1,370 ft', fact: '250–1,370 ft (low confidence)', grade: 'Possibly deep', water: 55, cost: /250–1,370 ft estimated well depth \(low confidence; no wells at similar elevation\)/, report: /Estimated well depth: 250–1,370 ft, low confidence \(no wells at similar elevation\)/, chip: 'Possibly deep' }]
+  ['upland parcel above a drainage', UPLAND, { metric: '250–510 ft', fact: '250–510 ft (low confidence)', grade: 'Possibly deep', water: 55, cost: /250–510 ft estimated well depth \(low confidence; no wells at similar elevation\)/, report: /Estimated well depth: 250–510 ft, low confidence \(no wells at similar elevation\)/, chip: 'Possibly deep' }]
 ]) {
   test(`well depth (${name}): overview, well card, score, cost model and report read the same estimate`, () => {
     const d = dashboard(baseLast({ wells: wellsWith(terrain) }));
@@ -147,7 +149,7 @@ test('well depth: the cost line prices the upper end of the range, wider when co
   const at = terrain => dashboard(baseLast({ wells: wellsWith(terrain) })).page.run('window.AcresXCostModel.estimate(last)').components.well;
   const m = at(MODERATE), u = at(UPLAND);
   assert.equal(m.high - at(MODERATE).high, 0);
-  assert.ok(u.high - m.high >= (1370 - 130) * 59, `upland high ${u.high} vs ${m.high}`);
+  assert.ok(u.high - m.high >= (510 - 130) * 59, `upland high ${u.high} vs ${m.high}`);
   assert.equal(m.confidence, 'Moderate');
   assert.equal(u.confidence, 'Low');
 });

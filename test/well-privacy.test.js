@@ -3,8 +3,10 @@
 // The stubbed state services below answer with owner and address fields planted on every record,
 // even ones AcresX does not ask for, for each state (WA Ecology, IDWR, MBMG GWIC), and the
 // well routes' answers are checked for those fields and values. WA Ecology's ProjectName (free
-// text, often the owner's surname) is planted too and must not come back from any WA well path;
-// the Montana and Idaho answers keep their own ProjectName labels. No network.
+// text, often the owner's surname) is planted too. The WA well list (/api/arcgis wells) keeps it
+// because the browser's nonresidential check reads it (accuracy first, owner update 2026-11-18)
+// but never renders it; the terrain and existing-well answers do not carry it. The Montana and
+// Idaho answers keep their own ProjectName labels. No network.
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,7 +18,7 @@ import { ELEVATION_IMAGE_SERVICE } from '../src/services/elevation.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 
 const LAT = 47.5, LON = -117.4;
-const PLANTED = { owner: 'PLANTED OWNER SMITH', address: '987 PLANTED WELL RD' };
+const PLANTED = { owner: 'PLANTED OWNER SMITH', address: '987 PLANTED WELL RD', project: 'SMITHPROJECT' };
 const PLANTED_VALUE = /PLANTED/;
 const ADDRESS_OR_OWNER_KEY = /owner|address|addr|site_name|taxpayer|mail/i;
 const ALLOWED_KEYS = new Set(['ownerMatch', 'ownerSimilarity', 'partialOwnerMatch', 'addressMatch', 'siteAddress']);
@@ -37,7 +39,7 @@ const idwr = () => ({ type: 'FeatureCollection', features: Array.from({ length: 
 } })) });
 const ecology = () => ({ type: 'FeatureCollection', features: Array.from({ length: 6 }, (_, i) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: near(i) }, properties: {
   ID: 3000 + i, WellTagNr: `BAA${i}`, CompletedDepth: String(140 + i), StaticWaterLvl: '45', WellProjectType: 'Water', ParcelNumber: '23123.9051',
-  OwnerName: PLANTED.owner, WellAddress: PLANTED.address, ProjectName: PLANTED.owner
+  OwnerName: PLANTED.owner, WellAddress: PLANTED.address, ProjectName: PLANTED.project
 } })) });
 const json = body => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
@@ -69,11 +71,12 @@ afterEach(() => { globalThis.fetch = realFetch; restoreUpstream(); if (realCache
 
 const post = (path, body) => worker.fetch(new Request(`https://acresx.test${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), {}, { waitUntil() {} });
 const keysOf = value => (Array.isArray(value) ? value.flatMap(keysOf) : value && typeof value === 'object' ? Object.entries(value).flatMap(([k, v]) => [k, ...keysOf(v)]) : []);
-// wa: Ecology's ProjectName counts as an owner field too.
+// wa: Ecology's ProjectName (key and planted text) must not be in the answer either.
 function assertClean(body, where, { wa = false } = {}) {
   const leaked = [...new Set(keysOf(body).filter(k => !ALLOWED_KEYS.has(k) && (ADDRESS_OR_OWNER_KEY.test(k) || (wa && /^project_?name$/i.test(k)))))];
   assert.deepEqual(leaked, [], `${where}: owner/address field names`);
   assert.doesNotMatch(JSON.stringify(body), PLANTED_VALUE, `${where}: owner/address values`);
+  if (wa) assert.doesNotMatch(JSON.stringify(body), new RegExp(PLANTED.project), `${where}: ProjectName text`);
 }
 const asked = host => calls.filter(c => c.url.startsWith(host)).map(c => c.url).join('\n');
 
@@ -96,12 +99,11 @@ test('ProjectName is still read server-side for the nonresidential check', () =>
   assert.equal(candidateOf(f('Smith'), home).residential, true);
 });
 
-test('the browser WA well list neither requests nor shows ProjectName', () => {
+test('the browser WA well list reads ProjectName for classification but never shows it', () => {
   const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
-  const findWells = html.split('\n').find(l => l.startsWith('async function findWells('));
-  assert.match(findWells, /outFields:'ID,WellTagNr,/);
-  assert.doesNotMatch(findWells, /ProjectName/);
-  assert.doesNotMatch(html, /ProjectName/, 'not used to label a well either');
+  const lines = html.split('\n');
+  assert.match(lines.find(l => l.startsWith('async function findWells(')), /outFields:'ID,WellTagNr,ProjectName,/, 'requested: the nonresidential check reads it');
+  assert.equal(lines.filter(l => l.includes('ProjectName')).length, 1, 'only in the request, never in a label');
   assert.match(html, /a\.WellTagNr\|\|\[a\.WellSubType\|\|a\.WellProjectType/, 'label: tag number, else well type and completion year');
 });
 
@@ -122,7 +124,8 @@ test('/api/arcgis wells (the WA well list): owner and address stripped even when
   const response = await post('/api/arcgis', { service: 'wells', params: { f: 'geojson', where: '1=1', outFields: '*' } });
   const body = await response.json();
   assert.ok(body.features?.length > 0, JSON.stringify(body).slice(0, 200));
-  assertClean(body, 'arcgis wells', { wa: true });
+  assertClean(body, 'arcgis wells');
+  assert.equal(body.features[0].properties.ProjectName, PLANTED.project, 'kept for the nonresidential check (not rendered)');
 });
 
 for (const state of ['WA', 'ID', 'MT']) {

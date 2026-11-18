@@ -354,7 +354,7 @@
     if (!f.water && f.well && wg === 'deep') amber.push({ title: 'Deep wells nearby', detail: `About ${Math.round(f.well.depth)} ft at wells of similar elevation` });
     if (!f.water && f.well && (wg === 'uncertain' || wg === 'possibly_deep')) {
       const st = f.well.stats || {};
-      amber.push({ title: st.drainage?.mostly ? 'Nearby wells are mostly in a drainage' : st.method === 'nearest' ? 'Well depth: elevation not checked' : 'Few wells at this elevation nearby', detail: [WD?.reportLine(st), WD?.drainageText(st), WD?.caution(st)].filter(Boolean).join(' ') });
+      amber.push({ title: st.drainage?.mostly ? 'Nearby wells are mostly in a drainage' : st.method === 'nearest' ? 'Well depth: elevation not checked' : 'Few wells at this elevation nearby', detail: [WD?.reportLine(st), WD?.drainageText(st), WD?.deepText?.(st), WD?.caution(st)].filter(Boolean).join(' ') });
     }
     if (!f.water && !f.well && !missing.water) amber.push({ title: 'No nearby well depths', detail: 'Ask a local driller about expected depth and yield.' });
     if (!f.sewer && f.soil.available && f.soil.feasibility === 'limited') amber.push({ title: 'Soils may limit septic', detail: f.soil.mapUnit || 'USDA soil screening' });
@@ -523,7 +523,7 @@
     const WDr = window.AcresXWellDepth;
     const depthLine = f.well ? (WDr && f.well.stats ? WDr.reportLine(f.well.stats) : `Median nearby well depth (${f.well.count} well${f.well.count === 1 ? '' : 's'}): ${Math.round(f.well.depth)} ft`) : 'No nearby well depths on record';
     // The caution (few comparable wells, drainage, elevation not checked) rides on the second line.
-    const wellCaution = f.well?.stats && WDr ? [WDr.drainageText(f.well.stats), WDr.caution(f.well.stats)].filter(Boolean).join(' ') : '';
+    const wellCaution = f.well?.stats && WDr ? [WDr.drainageText(f.well.stats), WDr.deepText?.(f.well.stats), WDr.caution(f.well.stats)].filter(Boolean).join(' ') : '';
     const wref = S.add(wellSource, { date: '' });
     if (f.water) {
       card('Water', 'good', 'Public water', [`${f.water.basis}${f.water.asOf ? ` (map as of ${f.water.asOf})` : ''}`, `If a private well were needed: ${depthLine.charAt(0).toLowerCase()}${depthLine.slice(1)}`], [S.add(f.water.source?.name, { url: f.water.source?.url, date: f.water.asOf ? `as of ${f.water.asOf}` : '' }), wref]);

@@ -65,7 +65,13 @@ test('upland parcel with valley wells: drainage wells flagged, deeper range, low
   assert.ok(e.drainage.medianDropFt >= 150, `drainage about ${e.drainage.medianDropFt} ft lower`);
   // Today's closest-five median was 53 ft; the homesite needs far more.
   assert.ok(e.depthFt >= 150, `low end ${e.depthFt}`);
-  assert.ok(e.highFt >= 1000, `high end ${e.highFt} (deep artesian wells at similar or higher ground)`);
+  // One deep (1,365 ft artesian) well on higher ground: named, but it does not move the range
+  // (two are needed, owner decision 2026-11-18).
+  assert.ok(e.highFt > e.depthFt && e.highFt < 1000, `high end ${e.highFt}`);
+  assert.equal(e.deepWells.count, 1);
+  assert.equal(e.deepWells.raisedHigh, false);
+  assert.equal(e.deepWells.single.depthFt, 1365);
+  assert.ok(e.deepWells.single.dzFt > WELL_TERRAIN.similarFt, 'on higher ground');
   assert.equal(e.planningDepthFt, e.highFt);
   assert.equal(e.scoreDepthFt, e.highFt, 'low confidence grades by the high end');
   assert.ok(e.waterLevelDepthFt > 100, `static water about ${e.waterLevelDepthFt} ft below the homesite`);
@@ -107,6 +113,39 @@ test('similar-elevation wells: moderate confidence, median and quartile range', 
   // Static water 60 ft below each well: 75 ft below the homesite at the wells 15 ft lower, 40 ft
   // at those 20 ft higher; median 75, rounded to 80.
   assert.equal(e.waterLevelDepthFt, 80);
+});
+
+test('deep wells at similar or higher ground: two raise the high end at any confidence, one only adds a note', () => {
+  const base = [120, 140, 100, 160, 130].map((depthFt, i) => ({ id: String(i), distanceMi: 0.2 + i * 0.1, depthFt, staticFt: null, elevationFt: 2400 }));
+  const deep = (n, at = 0.25) => Array.from({ length: n }, (_, i) => ({ id: `d${i}`, distanceMi: at + i * 0.01, depthFt: 900 + i * 100, staticFt: null, elevationFt: 2480 }));
+  const one = estimateWellDepth({ parcelElevationFt: 2400, wells: [...base, ...deep(1)].sort((a, b) => a.distanceMi - b.distanceMi) });
+  assert.equal(one.confidence, 'moderate');
+  assert.equal(one.highFt, 140, 'one deep well does not move the range (p75 of the five comparable)');
+  assert.deepEqual({ ...one.deepWells.single }, { depthFt: 900, dzFt: 80, distanceMi: 0.25 });
+  assert.equal(one.deepWells.raisedHigh, false);
+  const two = estimateWellDepth({ parcelElevationFt: 2400, wells: [...base, ...deep(2)].sort((a, b) => a.distanceMi - b.distanceMi) });
+  assert.equal(two.highFt, 950, 'two deep wells raise the high end to their median');
+  assert.equal(two.deepWells.raisedHigh, true);
+  assert.equal(two.deepWells.single, null);
+  assert.equal(two.depthFt, one.depthFt, 'the central estimate is unchanged');
+  // Low confidence too: one deep well never raises it.
+  const valley = Array.from({ length: 6 }, (_, i) => ({ id: `v${i}`, distanceMi: 0.1 * (i + 1), depthFt: 40, staticFt: null, elevationFt: 2250 }));
+  const lowOne = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...deep(1, 0.7)] });
+  const lowTwo = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...deep(2, 0.7)] });
+  assert.equal(lowOne.confidence, 'low');
+  assert.ok(lowOne.highFt < 900 && lowOne.deepWells.single, `low, one deep: high ${lowOne.highFt}`);
+  assert.equal(lowTwo.highFt, 950);
+
+  const h = makeLazyContext();
+  h.run(readPublic('screening-inputs.js'));
+  const WD = h.context.AcresXWellDepth;
+  const wells = [{ properties: { CompletedDepth: 120 } }];
+  wells.terrain = { available: true, estimate: one };
+  const s = WD.stats({ wells });
+  assert.equal(WD.deepText(s), 'One nearby well on higher ground went to 900 ft; deeper wells are possible.');
+  assert.match(WD.note(s), /One nearby well on higher ground went to 900 ft/);
+  wells.terrain = { available: true, estimate: two };
+  assert.equal(WD.deepText(WD.stats({ wells })), '');
 });
 
 test('mostly drainage wells keep confidence low even with three comparable wells', () => {

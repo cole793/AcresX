@@ -40,7 +40,7 @@ export const WELL_TERRAIN = Object.freeze({
   useOthers: 8,         // low confidence: the nearest other wells (elevation-adjusted) it adds
   nearestForDrainage: 10, // "mostly in a drainage": over half of the nearest 10 with an elevation
   deepFt: 500,          // deep well evidence at similar or higher ground (widens the high end)
-  deepMinModerate: 2,   // deep wells needed to widen a moderate-confidence range (low: 1)
+  deepMin: 2,           // deep wells needed to raise the high end, at any confidence (owner, 2026-11-18)
   radiiMiles: [2, 4, 6], // search radius steps; 6 mi is the cap
   sampleBatch: 40,      // wells sampled per step, nearest first
   maxSampled: 120,
@@ -118,8 +118,10 @@ export function candidateOf(feature, home) {
 //             half its depth). Depth = their median (the low end); the high end is at least 1.5x
 //             their 75th percentile and 2x the median.
 // Either way, deep wells (deepFt+ and at least 2x the median) recorded at similar or higher ground
-// no farther away than the wells used raise the high end to their median depth (moderate: at
-// least deepMinModerate of them; low: one is enough): the homesite may need that aquifer.
+// no farther away than the wells used raise the high end to their median depth when there are at
+// least deepMin (2) of them, at any confidence (owner decision, 2026-11-18). A single deep well
+// does not move the range; it is reported (deepWells.single) and the card and report say "One
+// nearby well on higher ground went to 1,365 ft; deeper wells are possible."
 // planningDepthFt (the cost model's well line) is the high end; scoreDepthFt (the score's water
 // factor and the card grade) is the median when confidence is moderate, the high end when low.
 export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRAIN) {
@@ -162,7 +164,8 @@ export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRA
   const reach = Math.max(...used.map(w => w.distanceMi));
   const deep = known.filter(w => w.distanceMi <= reach && w.depthFt >= Math.max(cfg.deepFt, 2 * depth) && w.dzFt >= -cfg.similarFt);
   const deepMedian = median(deep.map(w => w.depthFt));
-  if (deepMedian != null && deep.length >= (moderate ? cfg.deepMinModerate : 1)) high = Math.max(high, deepMedian);
+  const raisedByDeep = deepMedian != null && deep.length >= cfg.deepMin && deepMedian > high;
+  if (raisedByDeep) high = deepMedian;
 
   const waterDepths = used.map(w => w.waterDepthAtHomesiteFt).filter(v => v != null);
   const r = v => round10(v);
@@ -179,7 +182,10 @@ export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRA
     waterLevelWells: waterDepths.length,
     drainage: { count: drainage.length, of: nearest.length, medianDropFt: r(median(drainage.map(w => -w.dzFt))), mostly: mostlyDrainage },
     higher: { count: higher.length, of: nearest.length, medianRiseFt: r(median(higher.map(w => w.dzFt))) },
-    deepWells: { count: deep.length, medianFt: r(deepMedian) }
+    deepWells: {
+      count: deep.length, medianFt: r(deepMedian), raisedHigh: raisedByDeep,
+      single: deep.length === 1 ? { depthFt: Math.round(deep[0].depthFt), dzFt: Math.round(deep[0].dzFt), distanceMi: Math.round(deep[0].distanceMi * 100) / 100 } : null
+    }
   };
   out.planningDepthFt = out.highFt;
   out.scoreDepthFt = moderate ? out.depthFt : out.highFt;

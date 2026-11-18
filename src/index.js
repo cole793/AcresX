@@ -31,7 +31,7 @@ import { handleListingSearchStatus } from './services/listing-search-status.js';
 import { handleAddressSearch } from './services/address-search.js';
 import { handleAccounts } from './services/accounts.js';
 import { json } from './shared/http.js';
-import { withoutPersonalFields, responseWithoutPersonalFields, WELL_RECORD_PERSONAL_FIELD, PERSONAL_FIELD } from './shared/personal-fields.js';
+import { withoutPersonalFields, responseWithoutPersonalFields } from './shared/personal-fields.js';
 
 // A failed lookup may carry a browser fallback hint (src/shared/fallback.js); it is the only
 // field added to these 502 answers.
@@ -108,7 +108,5 @@ export default { async scheduled(controller,env,ctx){const req=new Request('http
   }
   // Legacy routes pass upstream attributes through (/api/arcgis, the zoning-permits fallback), so
   // their JSON answers lose owner and mailing fields here.
-  // The WA well list (/api/arcgis service 'wells') also loses Ecology's ProjectName (often the owner's surname).
-  const wellRecords=request.method==='POST'&&url.pathname==='/api/arcgis'&&(await request.clone().json().catch(()=>null))?.service==='wells';
-  const response=await legacyWorker.fetch(request,env,ctx); if(url.pathname.startsWith('/api/'))return await responseWithoutPersonalFields(response,wellRecords?WELL_RECORD_PERSONAL_FIELD:PERSONAL_FIELD); return await maybeInjectUiPolish(request,response);
+  const response=await legacyWorker.fetch(request,env,ctx); if(url.pathname.startsWith('/api/'))return await responseWithoutPersonalFields(response); return await maybeInjectUiPolish(request,response);
 } catch(error){return json({error:error?.message||'Request failed',...fallbackOf(error)},502,'no-store');} } };
