@@ -40,14 +40,27 @@ export const WELL_TERRAIN = Object.freeze({
   useOthers: 8,         // low confidence: the nearest other wells (elevation-adjusted) it adds
   nearestForDrainage: 10, // "mostly in a drainage": over half of the nearest 10 with an elevation
   deepFt: 500,          // deep well evidence at similar or higher ground (widens the high end)
-  deepMin: 2,           // deep wells needed to raise the high end when comparable wells exist (owner, 2026-11-18)
+  deepMin: 2,           // deep wells needed to raise the high end with minComparable+ comparable wells (owner, 2026-11-18)
   radiiMiles: [2, 4, 6], // search radius steps; 6 mi is the cap
   sampleBatch: 40,      // wells sampled per step, nearest first
   maxSampled: 120,
   budgetMs: 10000,      // the browser waits up to ~12.5 s inside its 15 s wells section
   cacheSeconds: 7 * 24 * 3600
 });
-export const WELL_TERRAIN_CACHE_PREFIX = 'well-depth-terrain-v1';
+// Cache API key for /api/well-depth-terrain answers: this prefix (a URL, like every other cache
+// prefix; the old bare 'well-depth-terrain-v1' could not form a Request URL, so nothing was ever
+// cached) plus { rules, state, lat, lon }. Preview Workers share the Cache API with production,
+// so an answer computed under older rules could otherwise be served for up to 7 days.
+// BUMP WELL_TERRAIN_RULES_VERSION WHENEVER THE ESTIMATE CAN CHANGE: WELL_TERRAIN thresholds,
+// estimateWellDepth(), candidateOf() filters, the candidate search or the elevation sources.
+//   1  2026-11-17  first terrain-aware rules
+//   2  2026-11-18  two deep wells needed to raise the high end
+//   3  2026-11-18  with no comparable well, one deep well sets the top of the range
+//   4  2026-11-18  with fewer than 3 comparable wells, one deep well sets the top of the range
+export const WELL_TERRAIN_RULES_VERSION = 4;
+export const WELL_TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/well-depth-terrain/v2/';
+// ~11 m: one homesite point per parcel; the same parcel always sends the same point.
+export const wellTerrainCacheKey = (state, lat, lon) => ({ rules: WELL_TERRAIN_RULES_VERSION, state, lat: Number(lat.toFixed(4)), lon: Number(lon.toFixed(4)) });
 
 // Same list as public/screening-inputs.js (NONRESIDENTIAL): irrigation, monitoring, municipal ...
 const NONRESIDENTIAL = /\b(irrigat|agricultur|industrial|monitor|observation|injection|dewater|geothermal|environmental|remediation|municipal)\w*/i;
@@ -119,13 +132,14 @@ export function candidateOf(feature, home) {
 //             their 75th percentile and 2x the median.
 // Deep wells (deepFt+ and at least 2x the median) at similar or higher ground (owner decisions,
 // 2026-11-18):
-//   - with comparable wells: at least deepMin (2) of them, no farther away than the wells used,
-//     raise the high end to their median depth. A single one does not move the range; it is
-//     reported (deepWells.single) and the card and report say "One nearby well on higher ground
-//     went to 1,365 ft; deeper wells are possible."
-//   - with no comparable well at all: even a single one anywhere in the search radius sets the
-//     top of the range (deepWells.raisedHigh), and the note names it (depth, distance, height,
-//     flowing artesian, approximate location) with "ask a local driller".
+//   - with at least minComparable (3) comparable wells: at least deepMin (2) of them, no farther
+//     away than the wells used, raise the high end to their median depth. A single one does not
+//     move the range; it is reported (deepWells.single) and the card and report say "One nearby
+//     well on higher ground went to 1,365 ft; deeper wells are possible."
+//   - with fewer comparable wells (0-2, so never moderate confidence): even a single one anywhere
+//     in the search radius sets the top of the range (deepWells.raisedHigh), and the note names
+//     it (depth, distance, height, flowing artesian, approximate location) with "ask a local
+//     driller".
 // planningDepthFt (the cost model's well line) is the high end; scoreDepthFt (the score's water
 // factor and the card grade) is the median when confidence is moderate, the high end when low.
 export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRAIN) {
@@ -165,11 +179,11 @@ export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRA
     high = Math.max(quantile(pool, 0.75) * 1.5, depth * 2);
   }
   // Deep wells at similar or higher ground, within the distance of the wells used.
-  const noComparable = comparable.length === 0;
-  const reach = noComparable ? Infinity : Math.max(...used.map(w => w.distanceMi));
+  const fewComparable = comparable.length < cfg.minComparable;
+  const reach = fewComparable ? Infinity : Math.max(...used.map(w => w.distanceMi));
   const deep = known.filter(w => w.distanceMi <= reach && w.depthFt >= Math.max(cfg.deepFt, 2 * depth) && w.dzFt >= -cfg.similarFt);
   const deepMedian = median(deep.map(w => w.depthFt));
-  const raisedByDeep = deepMedian != null && deep.length >= (noComparable ? 1 : cfg.deepMin) && deepMedian > high;
+  const raisedByDeep = deepMedian != null && deep.length >= (fewComparable ? 1 : cfg.deepMin) && deepMedian > high;
   if (raisedByDeep) high = deepMedian;
 
   const waterDepths = used.map(w => w.waterDepthAtHomesiteFt).filter(v => v != null);
@@ -314,8 +328,7 @@ export async function handleWellDepthTerrain(request) {
   const lat = Number(body?.lat), lon = Number(body?.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ available: false, status: 'bad_request', error: 'lat and lon are required.' }, 400, 'no-store');
   if (!FINDERS[state]) return json({ available: false, status: 'not_supported', state }, 200, 'no-store');
-  // ~11 m: one homesite point per parcel; the same parcel always sends the same point.
-  const key = `${state}:${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const key = wellTerrainCacheKey(state, lat, lon);
   const answer = await cachedJson(WELL_TERRAIN_CACHE_PREFIX, key, WELL_TERRAIN.cacheSeconds, () => wellDepthTerrain({ state, lat, lon }), { isValid: goodAnswer });
   // The answer carries well ids, depths and elevations only; the strip is the last guard.
   return json(withoutPersonalFields(answer, WELL_RECORD_PERSONAL_FIELD), 200, goodAnswer(answer) ? 'public, max-age=3600, s-maxage=86400' : 'no-store');

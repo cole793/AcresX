@@ -145,9 +145,9 @@
     if (d.mostly) return `Nearby wells are mostly in a drainage about ${ft(d.medianDropFt)} lower; upland wells may be much deeper.`;
     return `${d.count} of the ${d.of} nearest wells ${d.count === 1 ? 'sits' : 'sit'} over ${DRAINAGE_FT} ft lower (drainage ${d.count === 1 ? 'well' : 'wells'}, not used as comparable).`;
   }
-  // One deep well at similar or higher ground (owner decisions 2026-11-18): with no comparable
-  // well it sets the top of the range and is named in full; with comparable wells it does not move
-  // the range (two are needed) and is named briefly.
+  // One deep well at similar or higher ground (owner decisions 2026-11-18): with fewer than 3
+  // comparable wells it sets the top of the range and is named in full; with 3 or more it does not
+  // move the range (two are needed) and is named briefly.
   function deepText(s) {
     const one = s?.method === 'terrain' ? s.deepWells?.single : null;
     if (!one) return '';

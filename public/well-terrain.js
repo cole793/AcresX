@@ -15,15 +15,49 @@
   const base = root.findWells;
   if (typeof base !== 'function' || base.__terrain) return;
 
-  // An interior point: the centroid when it falls inside the parcel, else a point on the surface.
+  // The homesite point: a true interior point of the parcel (owner decision 2026-11-18). turf.centroid
+  // is the average of the vertices, which is not the middle of the parcel (on the Yellowstone broker
+  // parcel it sat ~10 ft lower and changed which wells counted as comparable). So: the area
+  // centroid of the largest polygon when it falls inside the parcel; otherwise (a concave parcel)
+  // the midpoint of the widest inside span along the centroid's latitude, which is always interior.
+  const polygons = g => (g?.type === 'Polygon' ? [g.coordinates] : g?.type === 'MultiPolygon' ? g.coordinates : []);
+  function ringArea(ring) { let a = 0; for (let i = 0; i < ring.length - 1; i++) a += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1]; return a / 2; }
+  function areaCentroid(ring) {
+    let a = 0, cx = 0, cy = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const [x0, y0] = ring[i], [x1, y1] = ring[i + 1], f = x0 * y1 - x1 * y0;
+      a += f; cx += (x0 + x1) * f; cy += (y0 + y1) * f;
+    }
+    return a ? [cx / (3 * a), cy / (3 * a)] : null;
+  }
+  // x positions where the polygon's rings cross latitude y.
+  function crossings(poly, y) {
+    const xs = [];
+    for (const ring of poly) for (let i = 0; i < ring.length - 1; i++) {
+      const [x0, y0] = ring[i], [x1, y1] = ring[i + 1];
+      if ((y0 > y) !== (y1 > y)) xs.push(x0 + (y - y0) / (y1 - y0) * (x1 - x0));
+    }
+    return xs.sort((a, b) => a - b);
+  }
+  const inside = (poly, [x, y]) => crossings(poly, y).filter(cx => cx < x).length % 2 === 1;
   function homesite(parcel) {
     try {
-      const t = root.turf;
-      const c = t.centroid(parcel);
-      if (typeof t.booleanPointInPolygon === 'function' && !t.booleanPointInPolygon(c, parcel) && typeof t.pointOnFeature === 'function') return t.pointOnFeature(parcel).geometry.coordinates;
-      return c.geometry.coordinates;
+      const poly = polygons(parcel?.geometry || parcel).map(p => p.map(r => r.map(c => [Number(c[0]), Number(c[1])])))
+        .sort((a, b) => Math.abs(ringArea(b[0])) - Math.abs(ringArea(a[0])))[0];
+      if (!poly) return null;
+      const c = areaCentroid(poly[0]);
+      if (c && inside(poly, c)) return c;
+      const ys = poly[0].map(p => p[1]);
+      // The centroid's latitude, nudged off any vertex so no crossing is counted twice.
+      let y = c ? c[1] : (Math.min(...ys) + Math.max(...ys)) / 2;
+      if (ys.includes(y)) y += (Math.max(...ys) - Math.min(...ys)) * 1e-6;
+      const xs = crossings(poly, y);
+      let best = null;
+      for (let i = 0; i + 1 < xs.length; i += 2) if (!best || xs[i + 1] - xs[i] > best[1] - best[0]) best = [xs[i], xs[i + 1]];
+      return best ? [(best[0] + best[1]) / 2, y] : null;
     } catch (_) { return null; }
   }
+  root.AcresXWellTerrain = { homesite };
   function stateOf(parcel) {
     const p = parcel?.properties || {};
     return String(p._stateCode || root.document?.getElementById('state')?.value || 'WA').toUpperCase();
