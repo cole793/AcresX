@@ -12,7 +12,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { makeLazyContext, readPublic } from './ui-harness.js';
 
-const fixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
+// The page's wells now carry the terrain-aware estimate (public/well-terrain.js attaches it as
+// wells.terrain; recorded for this parcel 2026-11-18: moderate confidence, 170 ft, 8 wells at similar elevation).
+const TERRAIN = JSON.parse(readFileSync(new URL('./fixtures/well-depth-terrain-spokane-23123.9051.json', import.meta.url), 'utf8')).answer;
+const withTerrain = data => { data.wells.terrain = structuredClone(TERRAIN); return data; };
+const fixture = () => withTerrain(JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8')));
 const MODULES = ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'acreage.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'property-report-v2.js'];
 
 function generate(data, { modules = MODULES, scoreMetric = '', name } = {}) {
@@ -52,7 +56,8 @@ test('cost total: page 1 = page 4 total = sum of the lines = AcresXCostModel.est
   assert.deepEqual(amounts(total), sum);
   const e = h.context.AcresXCostModel.estimate(data);
   assert.deepEqual(amounts(total), [e.low, e.high]);
-  assert.equal(total, '$45,437–$89,566');
+  // The well line's high end is the high end of the depth range (230 ft, was the 100 ft median): +130 ft x $60.
+  assert.equal(total, '$45,437–$97,366');
 });
 
 test('page 5: the assumptions of each cost line, with the same source numbers as the cost table', () => {

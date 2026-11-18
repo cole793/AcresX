@@ -22,7 +22,7 @@ function valueFrom(attrs, candidates) {
   return null;
 }
 
-async function queryGwic(lat, lon, miles) {
+async function queryGwic(lat, lon, miles, { timeoutMs = 12000, retryTimeoutMs = 8000, elevation = false } = {}) {
   const latPad = miles / 69;
   const lonPad = miles / (69 * Math.max(0.2, Math.cos(lat * Math.PI / 180)));
   const envelope = {
@@ -42,19 +42,23 @@ async function queryGwic(lat, lon, miles) {
   url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('returnGeometry', 'true');
-  url.searchParams.set('outFields', 'gwicid,latitude,longitude,total_depth_ft_bgs,static_water_level_ft_bgs,date_completed,status,construction_type,site_type,abandoned_flag');
+  // elevation (the terrain-aware depth estimate, src/services/well-depth-terrain.js) adds
+  // altitude_ft_amsl, the land-surface altitude GWIC records for some wells (method_altitude says
+  // how: SUR-GPS, MAP, DEM, ...), and geomethod, how the location was found (TRS-SEC = the centre
+  // of the section, up to ~0.7 mi off). /api/well-search keeps its original fields and shape.
+  url.searchParams.set('outFields', `gwicid,latitude,longitude,${elevation ? 'altitude_ft_amsl,geomethod,' : ''}total_depth_ft_bgs,static_water_level_ft_bgs,date_completed,status,construction_type,site_type,abandoned_flag`);
   url.searchParams.set('resultRecordCount', '2000');
 
   // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
   const data = await upstreamJson(url, {
     headers: { 'User-Agent': 'AcresX/0.9 Montana Beta' },
-    timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true,
+    timeoutMs, retryTimeoutMs, arcgis: true,
     label: 'mbmg-gwic-boreholes', agency: 'GWIC Boreholes service', arcgisMessage: 'GWIC Boreholes query failed'
   });
   return data.features || [];
 }
 
-function normalizeFeature(feature) {
+function normalizeFeature(feature, { elevation = false } = {}) {
   const attrs = feature.attributes || {};
   const geometry = feature.geometry || {};
   const lon = number(geometry.x ?? valueFrom(attrs, ['longitude', 'lon', 'x']));
@@ -68,6 +72,8 @@ function normalizeFeature(feature) {
   const status = valueFrom(attrs, ['status']);
   const constructionType = valueFrom(attrs, ['construction_type']);
   const siteType = valueFrom(attrs, ['site_type']);
+  const altitude = number(valueFrom(attrs, ['altitude_ft_amsl']));
+  const geomethod = valueFrom(attrs, ['geomethod']);
   const abandoned = String(valueFrom(attrs, ['abandoned_flag']) || '').trim().toUpperCase();
   if (['Y', 'YES', 'TRUE'].includes(abandoned)) return null;
 
@@ -87,10 +93,22 @@ function normalizeFeature(feature) {
       WellProjectType: siteType ? String(siteType) : 'Groundwater well',
       WellSubType: constructionType ? String(constructionType) : '',
       Status: status ? String(status) : '',
+      ...(elevation ? { LandSurfaceElevFt: altitude != null && altitude > 0 ? altitude : null, LocationMethod: geomethod ? String(geomethod) : '' } : {}),
       ReportLink: gwicId ? `https://mbmggwic.mtech.edu/sqlserver/v11/reports/SiteSummary.asp?gwicid=${encodeURIComponent(gwicId)}&agency=mbmg&reqby=M` : '',
       _source: 'Montana Bureau of Mines and Geology GWIC — Boreholes'
     }
   };
+}
+
+// Every GWIC well with a reported depth within `miles` (a square envelope) of the point, for the
+// terrain-aware depth estimate. timeoutMs / retryTimeoutMs: the caller's remaining budget.
+export async function findMontanaWellCandidates({ lat, lon, miles, timeoutMs, retryTimeoutMs }) {
+  lat = Number(lat);
+  lon = Number(lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('Montana well search requires parcel coordinates.');
+  const rows = await queryGwic(lat, lon, miles, { timeoutMs, retryTimeoutMs, elevation: true });
+  return rows.map(row => normalizeFeature(row, { elevation: true })).filter(Boolean)
+    .filter(feature => Number.isFinite(Number(feature.properties.CompletedDepth)) && Number(feature.properties.CompletedDepth) > 0);
 }
 
 export async function findMontanaWells({ lat, lon }) {
@@ -103,7 +121,7 @@ export async function findMontanaWells({ lat, lon }) {
   while (miles <= 64 && normalized.length < 5) {
     const rows = await queryGwic(lat, lon, miles);
     normalized = rows
-      .map(normalizeFeature)
+      .map(row => normalizeFeature(row))
       .filter(Boolean)
       .filter(feature => Number.isFinite(Number(feature.properties.CompletedDepth)) && Number(feature.properties.CompletedDepth) > 0);
     miles *= 2;

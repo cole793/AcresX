@@ -6,8 +6,8 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  // Nearby well depth: the one definition in screening-inputs.js (window.AcresXWellDepth), the
-  // median of the residential-comparable wells among the closest five.
+  // Nearby well depth: the one definition in screening-inputs.js (window.AcresXWellDepth):
+  // terrain-aware (wells at similar elevation), else the closest-five median at low confidence.
   function wellStats() {
     if (typeof last === 'undefined') return null;
     return window.AcresXWellDepth ? window.AcresXWellDepth.stats(last) : null;
@@ -73,7 +73,10 @@
 
     // Public water / sewer (public-utilities.js) replace the well and septic inputs when served (not when only likely, 2026-11-15).
     const PU = window.AcresXUtilities;
-    const wellWater = depth != null ? (depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
+    // The water factor is the well grade's score (AcresXWellDepth.grade: never "Shallow" at low
+    // confidence; low confidence grades by the high end of the depth range).
+    const wellGrade = window.AcresXWellDepth?.grade(wells);
+    const wellWater = depth != null ? (wellGrade ? wellGrade.score : depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
     // Septic: USDA drainage and hydrologic group with the measured parcel slope (screening-inputs.js).
     const SX = window.AcresXSeptic;
     const soilSeptic = SX ? SX.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
@@ -179,13 +182,14 @@
     // With public water the card's grade and status are public-utilities.js's; the depths stay as
     // the "if a private well were needed" figures.
     if (depth != null && !window.AcresXUtilities?.water(last)) {
-      const label = depth <= 200 ? 'Shallow' : depth <= 400 ? 'Moderate' : 'Deep';
-      if (grade) grade.textContent = label;
-      if (dot) dot.className = `traffic-dot ${depth <= 200 ? 'green' : depth <= 400 ? 'amber' : 'red'}`;
-      if (status) status.textContent = stats.excluded ? `${stats.excluded} nonresidential well${stats.excluded === 1 ? '' : 's'} excluded from depth estimate` : 'Residential-comparable nearby well depths';
+      // One grade (AcresXWellDepth.grade): never "Shallow" at low confidence.
+      const g = WD.grade(stats);
+      if (grade) grade.textContent = g.label;
+      if (dot) dot.className = `traffic-dot ${g.cls}`;
+      if (status) status.textContent = WD.status(stats);
       if (card) {
         card.classList.remove('snapshot-good', 'snapshot-limited', 'snapshot-bad', 'snapshot-neutral');
-        card.classList.add(depth <= 200 ? 'snapshot-good' : depth <= 400 ? 'snapshot-limited' : 'snapshot-bad');
+        card.classList.add(g.cls === 'green' ? 'snapshot-good' : g.cls === 'amber' ? 'snapshot-limited' : 'snapshot-bad');
       }
     }
   }
@@ -343,12 +347,14 @@
     const soil = last?.land?.soil || {};
     const terrain = last?.land?.terrain || {};
     const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
-    const wellBasis = () => `${Math.round(depth)} ft median nearby well depth (${wells.count} well${wells.count === 1 ? '' : 's'})`;
+    const wellBasis = () => window.AcresXWellDepth?.basis(wells) || `${Math.round(depth)} ft median nearby well depth (${wells.count} well${wells.count === 1 ? '' : 's'})`;
+    // Priced at the high end of the depth range (AcresXWellDepth.planningDepth).
+    const costDepth = wells?.planningDepth ?? depth;
 
     let well;
     if (depth == null) well = { low: 20000, high: 40000, basis: 'No nearby comparable well depths; broad planning allowance' };
-    else if (depth <= 200) well = { low: 14000, high: 24000, basis: wellBasis() };
-    else if (depth <= 400) well = { low: 20000, high: 35000, basis: wellBasis() };
+    else if (costDepth <= 200) well = { low: 14000, high: 24000, basis: wellBasis() };
+    else if (costDepth <= 400) well = { low: 20000, high: 35000, basis: wellBasis() };
     else well = { low: 30000, high: 50000, basis: wellBasis() };
 
     let septic;

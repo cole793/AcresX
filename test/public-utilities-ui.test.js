@@ -123,7 +123,7 @@ test('cards and detail tab say "Public water: …", keep well data as "if a priv
   const r = render(baseLast({ water: SERVED(), sewer: NONE }));
   assert.equal(r.$('waterGrade').textContent, 'Public water');
   assert.match(r.$('waterStatus').textContent, /^Public water likely available — City of Coeur d'Alene · verify with the city\/district$/);
-  assert.equal(r.$('wellNote').textContent, 'If a private well were needed: Median nearby well depth (1 well)', 'the depth note is kept, labelled');
+  assert.equal(r.$('wellNote').textContent, 'If a private well were needed: Median nearby well depth (1 well) · elevation not checked, low confidence', 'the depth note is kept, labelled (no terrain answer in this fixture: the low-confidence fallback)');
   assert.equal(r.$('soilNote').textContent, 'Measured parcel grade 4.0%. USDA screening only; a site evaluation sets the system type.', 'sewer not found: the septic card keeps the soil screening (screening-refinements.js), not a sewer label');
   r.page.run('renderResults()');
   const block = r.page.document.querySelector('.public-utilities-detail');

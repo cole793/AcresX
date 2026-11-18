@@ -72,7 +72,13 @@ function report(data) {
 
 // ---- 1. Well depth
 
-test('well depth: one definition, the median of residential-comparable wells among the closest five', () => {
+// The terrain-aware answers public/well-terrain.js attaches as wells.terrain
+// (src/services/well-depth-terrain.js shapes).
+const MODERATE = { available: true, status: 'estimated', parcelElevationFt: 2332, searchRadiusMiles: 2, estimate: { confidence: 'moderate', depthFt: 100, lowFt: 90, highFt: 130, planningDepthFt: 130, scoreDepthFt: 100, comparableCount: 6, usedCount: 6, parcelElevationFt: 2332, waterLevelDepthFt: 60, waterLevelWells: 4, drainage: { count: 0, of: 10, medianDropFt: null, mostly: false }, higher: { count: 1, of: 10 }, deepWells: { count: 0, medianFt: null } } };
+const UPLAND = { available: true, status: 'estimated', parcelElevationFt: 3545, searchRadiusMiles: 4, estimate: { confidence: 'low', depthFt: 250, lowFt: 250, highFt: 1370, planningDepthFt: 1370, scoreDepthFt: 1370, comparableCount: 0, usedCount: 8, parcelElevationFt: 3545, waterLevelDepthFt: 220, waterLevelWells: 7, drainage: { count: 7, of: 10, medianDropFt: 240, mostly: true }, higher: { count: 1, of: 10, medianRiseFt: 110 }, deepWells: { count: 1, medianFt: 1370, raisedHigh: true, single: { id: '218511', depthFt: 1365, dzFt: 105, distanceMi: 0.96, flowing: true, approximateLocation: true } } } };
+const wellsWith = terrain => { const w = WELLS.map(x => structuredClone(x)); if (terrain) w.terrain = structuredClone(terrain); return w; };
+
+test('well depth without an elevation check: the closest-five median, labelled low confidence, never "Shallow"', () => {
   const h = makeLazyContext();
   h.run(readPublic('screening-inputs.js'));
   const WD = h.context.AcresXWellDepth;
@@ -80,9 +86,12 @@ test('well depth: one definition, the median of residential-comparable wells amo
   assert.equal(s.feet, 100);
   assert.equal(s.count, 4);
   assert.equal(s.excluded, 1);
-  assert.equal(WD.label(s), 'Median nearby well depth (4 wells)');
-  assert.equal(WD.fact(s), '100 ft (4 wells)');
-  assert.equal(WD.note(s), 'Median nearby well depth (4 wells) · 1 nonresidential excluded');
+  assert.equal(s.confidence, 'low');
+  assert.equal(s.highFt, 150, 'widened to 1.5x the median');
+  assert.equal(WD.label(s), 'Median nearby well depth (4 wells) · elevation not checked, low confidence');
+  assert.equal(WD.fact(s), '100–150 ft (4 wells; low confidence, elevation not checked)');
+  assert.equal(WD.note(s), 'Median nearby well depth (4 wells) · elevation not checked, low confidence · 1 nonresidential excluded');
+  assert.equal(WD.grade(s).label, 'Uncertain');
   const none = WD.stats({ wells: [{ properties: { CompletedDepth: 300, WellProjectType: 'Irrigation' } }, { properties: { CompletedDepth: 500, WellProjectType: 'Monitoring' } }] });
   assert.equal(none.feet, 400, 'no residential well: median of all depths');
   assert.match(WD.note(none), /no clearly residential well type/);
@@ -90,20 +99,59 @@ test('well depth: one definition, the median of residential-comparable wells amo
   assert.equal(WD.stats({}), null, 'wells not loaded yet');
 });
 
-test('well depth: overview, well card, cost model and report show the same number', () => {
-  const data = baseLast();
-  const d = dashboard(data);
-  assert.equal(d.$('overviewWellDepth').textContent, '100 ft (4 wells)', 'overview (was the 151 ft mean)');
-  assert.equal(d.$('wellMetric').textContent, '100 ft', 'well card (index.html had the 126 ft weighted mean)');
-  assert.equal(d.$('wellNote').textContent, 'Median nearby well depth (4 wells) · 1 nonresidential excluded');
-  const cost = d.page.run('window.AcresXCostModel.estimate(last)');
-  assert.equal(cost.local, true, 'Spokane: the local cost model');
-  assert.match(cost.components.well.basis, /100 ft median nearby well depth \(4 wells\)/, 'local cost model (was 7 wells, 30-1500 ft)');
-  const generic = d.page.run('window.__acresxScreeningCostEstimate()');
-  assert.match(generic.components.well.basis, /^100 ft median nearby well depth \(4 wells\)$/);
-  const { html, calc } = report(baseLast());
-  assert.match(html, /Median nearby well depth \(4 wells\): 100 ft/);
-  assert.equal(calc.factors.water.score, 92, 'the score reads the same 100 ft');
+test('well depth with terrain: comparable wells give a moderate estimate; an upland parcel above a drainage a low-confidence range', () => {
+  const h = makeLazyContext();
+  h.run(readPublic('screening-inputs.js'));
+  const WD = h.context.AcresXWellDepth;
+  const m = WD.stats({ wells: wellsWith(MODERATE) });
+  assert.equal(m.method, 'terrain');
+  assert.equal(WD.value(m), '100 ft');
+  assert.equal(WD.fact(m), '100 ft (90–130 ft; 6 wells at similar elevation)');
+  assert.equal(WD.note(m), 'Estimated well depth (6 wells at similar elevation)');
+  assert.deepEqual({ ...WD.grade(m) }, { key: 'shallow', label: 'Shallow', cls: 'green', score: 92 });
+  assert.equal(WD.elevationText(m), 'Homesite about 2,332 ft elevation; static water about 60 ft below it (4 wells)');
+  const u = WD.stats({ wells: wellsWith(UPLAND) });
+  assert.equal(WD.value(u), '250–1,370 ft');
+  assert.equal(WD.fact(u), '250–1,370 ft (low confidence)');
+  assert.equal(WD.drainageText(u), 'Nearby wells are mostly in a drainage about 240 ft lower; upland wells may be much deeper.');
+  assert.equal(WD.caution(u), 'Few wells at this elevation nearby — depth could be much greater; ask a local driller.');
+  assert.match(WD.note(u), /low confidence .*drainage about 240 ft lower.*Few wells at this elevation nearby/);
+  assert.equal(WD.grade(u).label, 'Possibly deep', 'graded by the high end; never "Shallow" at low confidence');
+  assert.equal(WD.grade(u).score, 55);
+  assert.equal(u.planningDepth, 1370);
+  assert.equal(WD.deepText(u), 'Top of the range: one well 1.0 mi away on ground about 105 ft higher went to 1,365 ft (flowing artesian; location approximate (section centre)); ask a local driller.');
+  assert.match(WD.note(u), /Top of the range: one well 1\.0 mi away .* went to 1,365 ft \(flowing artesian; location approximate \(section centre\)\); ask a local driller\./);
+});
+
+for (const [name, terrain, want] of [
+  ['elevation not checked', null, { metric: '100–150 ft', fact: '100–150 ft (4 wells; low confidence, elevation not checked)', grade: 'Uncertain', water: 70, cost: /100 ft median nearby well depth \(4 wells; elevation not checked, low confidence\)/, report: /Median nearby well depth \(4 wells\): 100 ft — elevation not checked, low confidence/, chip: 'Depth uncertain' }],
+  ['similar-elevation wells', MODERATE, { metric: '100 ft', fact: '100 ft (90–130 ft; 6 wells at similar elevation)', grade: 'Shallow', water: 92, cost: /100 ft estimated well depth \(range 90–130 ft; 6 wells at similar elevation\)/, report: /Estimated well depth: 100 ft \(range 90–130 ft; 6 wells at similar elevation\)/, chip: 'Shallow wells' }],
+  ['upland parcel above a drainage', UPLAND, { metric: '250–1,370 ft', fact: '250–1,370 ft (low confidence)', grade: 'Possibly deep', water: 55, cost: /250–1,370 ft estimated well depth \(low confidence; no wells at similar elevation\)/, report: /Estimated well depth: 250–1,370 ft, low confidence \(no wells at similar elevation\)/, chip: 'Possibly deep' }]
+]) {
+  test(`well depth (${name}): overview, well card, score, cost model and report read the same estimate`, () => {
+    const d = dashboard(baseLast({ wells: wellsWith(terrain) }));
+    assert.equal(d.$('overviewWellDepth').textContent, want.fact, 'overview');
+    assert.equal(d.$('wellMetric').textContent, want.metric, 'well card');
+    assert.equal(d.$('waterGrade').textContent, want.grade, 'well card grade');
+    const cost = d.page.run('window.AcresXCostModel.estimate(last)');
+    assert.match(cost.components.well.basis, want.cost, 'local cost model');
+    const generic = d.page.run('window.__acresxScreeningCostEstimate()');
+    assert.match(generic.components.well.basis, want.cost, 'generic cost');
+    const { html, calc } = report(baseLast({ wells: wellsWith(terrain) }));
+    assert.match(html, want.report, 'report well line');
+    assert.match(html, new RegExp(`>${want.chip}<`), 'report chip');
+    assert.equal(calc.factors.water.score, want.water, 'score water factor');
+    if (want.grade !== 'Shallow') assert.doesNotMatch(html, /Shallow wells/, 'no "Shallow wells" at low confidence');
+  });
+}
+
+test('well depth: the cost line prices the upper end of the range, wider when confidence is low', () => {
+  const at = terrain => dashboard(baseLast({ wells: wellsWith(terrain) })).page.run('window.AcresXCostModel.estimate(last)').components.well;
+  const m = at(MODERATE), u = at(UPLAND);
+  assert.equal(m.high - at(MODERATE).high, 0);
+  assert.ok(u.high - m.high >= (1370 - 130) * 59, `upland high ${u.high} vs ${m.high}`);
+  assert.equal(m.confidence, 'Moderate');
+  assert.equal(u.confidence, 'Low');
 });
 
 // ---- 2. Score: flood share and buildable area

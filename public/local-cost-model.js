@@ -67,11 +67,14 @@
 
   // ---- Parcel facts
 
-  // The one nearby-well-depth definition (screening-inputs.js): median of the residential-comparable
-  // wells among the closest five, the number the dashboard and the report show.
+  // The one nearby-well-depth definition (screening-inputs.js), the estimate the dashboard and the
+  // report show. The drilling line prices the range: low end x low rate, high end (planningDepth,
+  // widened at low confidence) x high rate.
   function wellDepth(l) {
-    const s = root.AcresXWellDepth?.stats(l);
-    return s?.depth == null ? null : { median: s.depth, count: s.count };
+    const WD = root.AcresXWellDepth;
+    const s = WD?.stats(l);
+    if (s?.depth == null) return null;
+    return { median: s.depth, count: s.count, lowFt: s.lowFt ?? s.depth, highFt: s.planningDepth ?? s.highFt ?? s.depth, confidence: s.confidence, basis: WD.basis(s) };
   }
   function slopeBand(l) {
     const t = l?.land?.terrain || {};
@@ -273,7 +276,7 @@
     }
     const d = wellDepth(l);
     const drill = d
-      ? { low: d.median * P.wellPerFt.low + P.wellFixed.low, high: d.median * P.wellPerFt.high + P.wellFixed.high, text: `${Math.round(d.median)} ft median nearby well depth (${d.count} well${d.count === 1 ? '' : 's'}) x $${P.wellPerFt.low}-$${P.wellPerFt.high}/ft plus $${P.wellFixed.low.toLocaleString('en-US')}-$${P.wellFixed.high.toLocaleString('en-US')} pump, tank and wiring` }
+      ? { low: d.lowFt * P.wellPerFt.low + P.wellFixed.low, high: d.highFt * P.wellPerFt.high + P.wellFixed.high, text: `${d.basis}; priced ${Math.round(d.lowFt).toLocaleString('en-US')} ft x $${P.wellPerFt.low}/ft to ${Math.round(d.highFt).toLocaleString('en-US')} ft x $${P.wellPerFt.high}/ft plus $${P.wellFixed.low.toLocaleString('en-US')}-$${P.wellFixed.high.toLocaleString('en-US')} pump, tank and wiring` }
       : { low: P.wellNoDepth.low, high: P.wellNoDepth.high, text: 'no usable nearby well depth; AcresX allowance for a typical private well' };
     const ws = l?.costContext?.watershed;
     const w = ws?.available && ws.number != null && C.wellPermit.wria ? C.wellPermit.wria[ws.number] : null;
@@ -282,7 +285,7 @@
       : C.wellPermit.wria && ws && !ws.available ? ' Watershed (WRIA) not checked: the Ecology layer did not answer; parcels in WRIA 55 add a $500 surcharge and a $3,000-$5,000 mitigation certificate.' : '';
     return line('well', drill.low + fixed + wLow, drill.high + fixed + (extra ? extra.value : 0) + wHigh, 'Well',
       `Exact fees: ${fees}${extra ? ' (high end only)' : ''}.${wText} Drilling: ${drill.text} (AcresX planning rate, no official source; driller quote recommended).`,
-      [...both.map(x => ref(x)), ...(extra ? [ref(extra)] : []), ...(w ? [ref(w.surcharge), { name: ws.source?.name || 'WA Ecology WRIA', url: ws.source?.url || '', asOf: '', verified: true }] : []), planningRef()], { confidence: d && d.count >= 3 ? 'Moderate' : 'Low', wria: ws?.number ?? null });
+      [...both.map(x => ref(x)), ...(extra ? [ref(extra)] : []), ...(w ? [ref(w.surcharge), { name: ws.source?.name || 'WA Ecology WRIA', url: ws.source?.url || '', asOf: '', verified: true }] : []), planningRef()], { confidence: d && d.confidence === 'moderate' ? 'Moderate' : 'Low', wria: ws?.number ?? null });
   }
 
   function septic(l, C, P) {

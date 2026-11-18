@@ -133,7 +133,8 @@
   function wellDepth(data) {
     const S = window.AcresXScore;
     // The one definition (screening-inputs.js), the number the dashboard shows.
-    try { const s = window.AcresXWellDepth?.stats(data) || S?.wellStats?.(); if (s) return s.depth == null ? null : { depth: s.depth, count: s.count || 0 }; } catch {}
+    // stats: the whole AcresXWellDepth answer (range, confidence, drainage); grade: its one grade.
+    try { const s = window.AcresXWellDepth?.stats(data) || S?.wellStats?.(); if (s) return s.depth == null ? null : { depth: s.depth, count: s.count || 0, stats: s, grade: window.AcresXWellDepth?.grade(s) || null }; } catch {}
     return null;
   }
 
@@ -193,7 +194,11 @@
         if (pw) return `Public water ${pw.status === 'served' ? 'likely available' : 'may be available'}${pw.provider ? ` (${pw.provider})` : ''}`;
         if (!f.well) return 'No nearby well depths on record';
         const d = Math.round(f.well.depth);
-        return d <= 200 ? `Shallow nearby wells (about ${d} ft median)` : d <= 400 ? `Moderate well depths nearby (about ${d} ft)` : `Deep wells nearby (about ${d} ft median)`;
+        const g = f.well.grade?.key;
+        const range = f.well.stats && window.AcresXWellDepth ? window.AcresXWellDepth.rangeText(f.well.stats) : `${d} ft`;
+        if (g === 'uncertain') return `Well depth uncertain (${range}, low confidence)`;
+        if (g === 'possibly_deep') return `Well may be deep (${range}, low confidence)`;
+        return g === 'shallow' || (!g && d <= 200) ? `Shallow wells at similar elevation (about ${d} ft)` : g === 'moderate' || (!g && d <= 400) ? `Moderate well depths nearby (about ${d} ft)` : `Deep wells nearby (about ${d} ft)`;
       }
       case 'soil': {
         const ps = PU?.sewer(data);
@@ -344,7 +349,13 @@
     if (f.power.others.length) amber.push({ title: 'Overlapping power territories', detail: `${f.power.primary} · also listed: ${f.power.others.join(', ')}` });
     else if (!f.power.primary && !missing.power) amber.push({ title: 'Power provider not identified', detail: 'Ask the local utilities which one serves the parcel.' });
     if (f.puChecked && !f.sewer) amber.push({ title: 'No public sewer found', detail: 'Plan for a septic system and a soil evaluation.' });
-    if (!f.water && f.well && f.well.depth > 400) amber.push({ title: 'Deep wells nearby', detail: `About ${Math.round(f.well.depth)} ft median depth of nearby wells` });
+    const WD = window.AcresXWellDepth;
+    const wg = f.well?.grade?.key || (f.well ? (f.well.depth <= 200 ? 'shallow' : f.well.depth <= 400 ? 'moderate' : 'deep') : null);
+    if (!f.water && f.well && wg === 'deep') amber.push({ title: 'Deep wells nearby', detail: `About ${Math.round(f.well.depth)} ft at wells of similar elevation` });
+    if (!f.water && f.well && (wg === 'uncertain' || wg === 'possibly_deep')) {
+      const st = f.well.stats || {};
+      amber.push({ title: st.drainage?.mostly ? 'Nearby wells are mostly in a drainage' : st.method === 'nearest' ? 'Well depth: elevation not checked' : 'Few wells at this elevation nearby', detail: [WD?.reportLine(st), WD?.drainageText(st), WD?.deepText?.(st), WD?.caution(st)].filter(Boolean).join(' ') });
+    }
     if (!f.water && !f.well && !missing.water) amber.push({ title: 'No nearby well depths', detail: 'Ask a local driller about expected depth and yield.' });
     if (!f.sewer && f.soil.available && f.soil.feasibility === 'limited') amber.push({ title: 'Soils may limit septic', detail: f.soil.mapUnit || 'USDA soil screening' });
     if (f.terrain.available && Number(f.terrain.gradePct) > 8 && Number(f.terrain.gradePct) <= 15) amber.push({ title: 'Moderate slope', detail: `${Number(f.terrain.gradePct).toFixed(1)}% average grade` });
@@ -355,7 +366,7 @@
     if (f.water) green.push({ title: 'Public water likely available', detail: f.water.provider || 'Verify with the city/district' });
     if (f.sewer) green.push({ title: 'Public sewer likely available', detail: f.sewer.provider || 'Verify with the city/district' });
     if (f.terrain.available && Number(f.terrain.gradePct) <= 8) green.push({ title: 'Low slope', detail: `${Number(f.terrain.gradePct).toFixed(1)}% average grade` });
-    if (!f.water && f.well && f.well.depth <= 200) green.push({ title: 'Shallow wells nearby', detail: `About ${Math.round(f.well.depth)} ft median depth of nearby wells` });
+    if (!f.water && f.well && wg === 'shallow') green.push({ title: 'Shallow wells at similar elevation', detail: `About ${Math.round(f.well.depth)} ft estimated (${f.well.count} well${f.well.count === 1 ? '' : 's'} at similar elevation)` });
     if (f.power.primary && !f.power.others.length) green.push({ title: 'Power provider mapped', detail: f.power.primary });
     if (!f.sewer && f.soil.available && f.soil.feasibility === 'favorable') green.push({ title: 'Favorable soil for septic', detail: f.soil.mapUnit || 'USDA soil screening' });
     if (f.flood.category === 'minimal') green.push({ title: 'Minimal flood hazard', detail: f.flood.detail });
@@ -509,13 +520,19 @@
     // Water / well
     const ex = data.existingWell || {}, exm = ex.best || ex.match || {}, ev = exm.evidence || {};
     const wellNote = ex.available && ex.match ? (ev.insideParcel ? 'A recorded well maps inside the parcel; verify it' : `Possible well record ${num(ev.distanceToParcelFt) != null ? `${Math.round(ev.distanceToParcelFt).toLocaleString('en-US')} ft from the parcel` : 'nearby'} (${String(ex.confidence || 'low').toLowerCase()} confidence)`) : '';
-    const depthLine = f.well ? `Median nearby well depth (${f.well.count} well${f.well.count === 1 ? '' : 's'}): ${Math.round(f.well.depth)} ft` : 'No nearby well depths on record';
+    const WDr = window.AcresXWellDepth;
+    const depthLine = f.well ? (WDr && f.well.stats ? WDr.reportLine(f.well.stats) : `Median nearby well depth (${f.well.count} well${f.well.count === 1 ? '' : 's'}): ${Math.round(f.well.depth)} ft`) : 'No nearby well depths on record';
+    // The caution (few comparable wells, drainage, elevation not checked) rides on the second line.
+    const wellCaution = f.well?.stats && WDr ? [WDr.drainageText(f.well.stats), WDr.deepText?.(f.well.stats), WDr.caution(f.well.stats)].filter(Boolean).join(' ') : '';
     const wref = S.add(wellSource, { date: '' });
     if (f.water) {
       card('Water', 'good', 'Public water', [`${f.water.basis}${f.water.asOf ? ` (map as of ${f.water.asOf})` : ''}`, `If a private well were needed: ${depthLine.charAt(0).toLowerCase()}${depthLine.slice(1)}`], [S.add(f.water.source?.name, { url: f.water.source?.url, date: f.water.asOf ? `as of ${f.water.asOf}` : '' }), wref]);
     } else {
       const d = f.well?.depth;
-      card('Water / well', d == null ? 'verify' : d <= 200 ? 'good' : d <= 400 ? 'verify' : 'risk', d == null ? 'No depth data' : d <= 200 ? 'Shallow wells' : d <= 400 ? 'Moderate depth' : 'Deep wells', [depthLine, wellNote], [wref]);
+      const g = f.well?.grade;
+      const level = d == null ? 'verify' : g ? (g.cls === 'green' ? 'good' : g.cls === 'amber' ? 'verify' : 'risk') : d <= 200 ? 'good' : d <= 400 ? 'verify' : 'risk';
+      const chipText = d == null ? 'No depth data' : g ? ({ shallow: 'Shallow wells', moderate: 'Moderate depth', deep: 'Deep wells', uncertain: 'Depth uncertain', possibly_deep: 'Possibly deep' }[g.key] || g.label) : d <= 200 ? 'Shallow wells' : d <= 400 ? 'Moderate depth' : 'Deep wells';
+      card('Water / well', level, chipText, [depthLine, [wellCaution, wellNote].filter(Boolean).join(' ')], [wref]);
     }
     // Septic / soil
     const soil = f.soil;

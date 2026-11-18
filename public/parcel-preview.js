@@ -150,7 +150,7 @@
             <div class="property-overview-fact"><span>Flood screening</span><strong id="overviewFlood">—</strong></div>
             <div class="property-overview-fact"><span>Wetland screening</span><strong id="overviewWetlands">—</strong></div>
             <div class="property-overview-fact"><span>Dominant soil</span><strong id="overviewSoil">—</strong></div>
-            <div class="property-overview-fact"><span>Median nearby well depth</span><strong id="overviewWellDepth">—</strong></div>
+            <div class="property-overview-fact"><span>Estimated well depth</span><strong id="overviewWellDepth">—</strong></div>
             <div class="property-overview-fact"><span>Public water / sewer</span><strong id="overviewPublicUtilities">—</strong></div>
           </div>
           <div class="property-overview-foot">Mapped acreage is calculated from the public parcel boundary and may differ slightly from assessor-recorded acreage.</div>

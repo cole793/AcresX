@@ -577,7 +577,7 @@
   // ---- 2. IDWR wells (copy of src/states/idaho/wells.js)
 
   const IDAHO_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0';
-  const IDAHO_WELL_FIELDS = 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,WellAddress,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude';
+  const IDAHO_WELL_FIELDS = 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude';
 
   async function idahoWells(input, signal) {
     const { lat: y, lon: x } = pointOf(input, true);

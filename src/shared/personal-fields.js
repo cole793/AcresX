@@ -9,9 +9,19 @@
 // Montana OwnerName/OwnerAddress*/CareOfTaxpayer, Yellowstone OWNER/OWNER_NAME/MAILADDRESS*,
 // WA Ecology wells OwnerName, Kootenai Owner_*/Recipient_*/
 // DeliveryAddr_*/LastLine_*, Spokane owner_name/taxpayer_name, Stevens assessor file_as_na/
-// last_name/first_name/owner_id/addr_*). It is case-insensitive and
-// anchored at the start, so it does not match zoning fields such as NAME or ZONE_NAME.
-export const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|(first|last|middle)_name|file_as|addr_|legalpartytype)/i;
+// last_name/first_name/owner_id/addr_*). Well records too (2026-11-18): a well's street address
+// identifies its owner's home, so WA Ecology / IDWR WellAddress (and wellAddress, WellAddr*,
+// WellOwner*) are personal, as is MBMG GWIC site_name (the owner's name, "SMITH JOHN * TOWN MT").
+// It is case-insensitive and anchored at the start, so it does not match zoning fields such as
+// NAME or ZONE_NAME, or the parcel situs fields (SITUS_ADDRESS) of the searched property.
+export const PERSONAL_FIELD = /^(owner|own_|ownr|taxpayer|careof|mail|public_std|recipient|attentionline|deliveryaddr|lastline|(first|last|middle)name_|(first|last|middle)_name|file_as|addr_|legalpartytype|well_?(addr|owner)|site_name)/i;
+
+// Well records only (2026-11-18): WA Ecology's ProjectName is free text that is often the owner's
+// surname ("Smith"). /api/well-depth-terrain strips it (its answer needs no record text). The WA
+// well list (/api/arcgis wells) keeps it: the browser's nonresidential check reads it (accuracy
+// first, owner update 2026-11-18), and it is never rendered. Not part of PERSONAL_FIELD: the
+// Montana and Idaho well answers set their own ProjectName label ("Montana GWIC well", "Domestic").
+export const WELL_RECORD_PERSONAL_FIELD = new RegExp(`${PERSONAL_FIELD.source}|^project_?name$`, 'i');
 
 // Deep copy of `value` with every object key matching PERSONAL_FIELD removed.
 export function withoutPersonalFields(value, pattern = PERSONAL_FIELD) {

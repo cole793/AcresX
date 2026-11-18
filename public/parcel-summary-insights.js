@@ -44,8 +44,8 @@
       soilFacts.forEach(f => { if (f !== primary) f.remove(); });
     }
 
-    // Keep exactly one Median Nearby Well Depth row (the same number as the well card and report).
-    const wellFacts = factsByLabel('Median nearby well depth');
+    // Keep exactly one Estimated Well Depth row (the same number as the well card and report).
+    const wellFacts = factsByLabel('Estimated well depth');
     if (wellFacts.length) {
       const primary = wellFacts[0];
       const strong = primary.querySelector('strong');

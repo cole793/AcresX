@@ -1,0 +1,1261 @@
+{
+"recorded": "2026-11-18",
+"note": "GWIC Boreholes (MBMG) features nearest the Yellowstone 03092732390050000 homesite (no site_name), and USGS 3DEP getSamples meters per point keyed \"lon,lat\" (5 decimals). Upland parcel; the nearest wells sit in the Blue Creek drainage.",
+"home": {
+"lon": -108.54662925491618,
+"lat": 45.70131149495968
+},
+"gwic": {
+"features": [
+{
+"attributes": {
+"gwicid": 272111,
+"latitude": 45.70416667,
+"longitude": -108.55448333,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 25.8,
+"static_water_level_ft_bgs": 6.1,
+"date_completed": 1366070400000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.55517494230071,
+"y": 45.70411821965948
+}
+},
+{
+"attributes": {
+"gwicid": 221835,
+"latitude": 45.694797,
+"longitude": -108.536802,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 200.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 1123632000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.53681380204554,
+"y": 45.694803853354685
+}
+},
+{
+"attributes": {
+"gwicid": 135279,
+"latitude": 45.71187,
+"longitude": -108.55216,
+"altitude_ft_amsl": 3490.0,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 45.0,
+"static_water_level_ft_bgs": 28.33,
+"date_completed": 724550400000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.55285164566978,
+"y": 45.711821546991196
+}
+},
+{
+"attributes": {
+"gwicid": 218511,
+"latitude": 45.69066906,
+"longitude": -108.55950707,
+"altitude_ft_amsl": 3650.0,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 1365.0,
+"static_water_level_ft_bgs": -103.95,
+"date_completed": 1069113600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.55951887494834,
+"y": 45.69067591198773
+}
+},
+{
+"attributes": {
+"gwicid": 271786,
+"latitude": 45.714778,
+"longitude": -108.541194,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 53.0,
+"static_water_level_ft_bgs": 45.85,
+"date_completed": 1363564800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.541194097656,
+"y": 45.714777956292
+}
+},
+{
+"attributes": {
+"gwicid": 162201,
+"latitude": 45.718204,
+"longitude": -108.541358,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 34.0,
+"static_water_level_ft_bgs": 25.36,
+"date_completed": 848361600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "BOREHOLE",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54136980734724,
+"y": 45.718210855274535
+}
+},
+{
+"attributes": {
+"gwicid": 162939,
+"latitude": 45.70470322,
+"longitude": -108.52196046,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 50.0,
+"static_water_level_ft_bgs": 28.0,
+"date_completed": 857088000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.52197225784948,
+"y": 45.704710078516335
+}
+},
+{
+"attributes": {
+"gwicid": 184466,
+"latitude": 45.685694,
+"longitude": -108.53418,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 100.0,
+"static_water_level_ft_bgs": 30.0,
+"date_completed": 919728000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.53419179957605,
+"y": 45.685700852881524
+}
+},
+{
+"attributes": {
+"gwicid": 230197,
+"latitude": 45.716766,
+"longitude": -108.560778,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 35.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 1159488000000,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": "YES"
+},
+"geometry": {
+"x": -108.56078981182515,
+"y": 45.71677285336375
+}
+},
+{
+"attributes": {
+"gwicid": 271785,
+"latitude": 45.718611,
+"longitude": -108.536917,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 45.0,
+"static_water_level_ft_bgs": 42.3,
+"date_completed": 1363305600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.53691709806338,
+"y": 45.71861095624121
+}
+},
+{
+"attributes": {
+"gwicid": 254276,
+"latitude": 45.71987,
+"longitude": -108.54945,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 25.3,
+"static_water_level_ft_bgs": null,
+"date_completed": 459475200000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54945009752727,
+"y": 45.7198699555558
+}
+},
+{
+"attributes": {
+"gwicid": 235860,
+"latitude": 45.716741,
+"longitude": -108.56262,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 45.0,
+"static_water_level_ft_bgs": 32.0,
+"date_completed": 1177977600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.56262009814375,
+"y": 45.7167409558384
+}
+},
+{
+"attributes": {
+"gwicid": 279842,
+"latitude": 45.71583333,
+"longitude": -108.56571667,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 39.0,
+"static_water_level_ft_bgs": 16.33,
+"date_completed": 1409788800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.56640890533804,
+"y": 45.71578473988103
+}
+},
+{
+"attributes": {
+"gwicid": 183927,
+"latitude": 45.688418,
+"longitude": -108.525216,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 110.0,
+"static_water_level_ft_bgs": 32.0,
+"date_completed": 965606400000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5252277986538,
+"y": 45.688424854191965
+}
+},
+{
+"attributes": {
+"gwicid": 94193,
+"latitude": 45.709256,
+"longitude": -108.57299,
+"altitude_ft_amsl": 3241.0,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 1291.0,
+"static_water_level_ft_bgs": null,
+"date_completed": -283996800000,
+"status": "NEW WELL",
+"construction_type": "E",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.57300181383731,
+"y": 45.70926285168666
+}
+},
+{
+"attributes": {
+"gwicid": 319004,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 14.0,
+"static_water_level_ft_bgs": null,
+"date_completed": null,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": "YES"
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319005,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 20.0,
+"static_water_level_ft_bgs": 5.0,
+"date_completed": 1626393600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319006,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 14.0,
+"static_water_level_ft_bgs": null,
+"date_completed": null,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": "YES"
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319010,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 21.0,
+"static_water_level_ft_bgs": 5.0,
+"date_completed": 1626393600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319027,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 14.0,
+"static_water_level_ft_bgs": null,
+"date_completed": null,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": "YES"
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319028,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 14.0,
+"static_water_level_ft_bgs": null,
+"date_completed": null,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": "YES"
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319029,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 20.0,
+"static_water_level_ft_bgs": 5.0,
+"date_completed": 1626393600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319030,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 21.0,
+"static_water_level_ft_bgs": 5.0,
+"date_completed": 1626393600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319031,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 21.0,
+"static_water_level_ft_bgs": 5.0,
+"date_completed": 1626393600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 319032,
+"latitude": 45.69836385,
+"longitude": -108.51807021,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 21.0,
+"static_water_level_ft_bgs": 5.0,
+"date_completed": 1626393600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51808200536313,
+"y": 45.69837070397
+}
+},
+{
+"attributes": {
+"gwicid": 98388,
+"latitude": 45.683873,
+"longitude": -108.531558,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 34.0,
+"static_water_level_ft_bgs": 28.0,
+"date_completed": -1877212800000,
+"status": "NEW WELL",
+"construction_type": "D",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.53156979973556,
+"y": 45.68387985237511
+}
+},
+{
+"attributes": {
+"gwicid": 161122,
+"latitude": 45.691151,
+"longitude": -108.521326,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 140.0,
+"static_water_level_ft_bgs": 80.0,
+"date_completed": 813196800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.52133779820298,
+"y": 45.691157854131305
+}
+},
+{
+"attributes": {
+"gwicid": 254470,
+"latitude": 45.72189,
+"longitude": -108.54745,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 30.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 671068800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54745009759361,
+"y": 45.721889955845214
+}
+},
+{
+"attributes": {
+"gwicid": 223131,
+"latitude": 45.681156,
+"longitude": -108.538051,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 1225.0,
+"static_water_level_ft_bgs": -346.5,
+"date_completed": 1125100800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.53806280054353,
+"y": 45.68116285173576
+}
+},
+{
+"attributes": {
+"gwicid": 98389,
+"latitude": 45.680254,
+"longitude": -108.547167,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 84.0,
+"static_water_level_ft_bgs": 40.0,
+"date_completed": 151027200000,
+"status": "NEW WELL",
+"construction_type": "H",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54717880234278,
+"y": 45.68026085127027
+}
+},
+{
+"attributes": {
+"gwicid": 254465,
+"latitude": 45.72261,
+"longitude": -108.54709,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 33.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 671068800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54709009750017,
+"y": 45.72260995636117
+}
+},
+{
+"attributes": {
+"gwicid": 315233,
+"latitude": 45.6946,
+"longitude": -108.51734,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 55.0,
+"static_water_level_ft_bgs": 12.0,
+"date_completed": 1625788800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5180300037581,
+"y": 45.69455194860082
+}
+},
+{
+"attributes": {
+"gwicid": 158947,
+"latitude": 45.72225,
+"longitude": -108.55472,
+"altitude_ft_amsl": 3175.0,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 31.3,
+"static_water_level_ft_bgs": 24.7,
+"date_completed": 457228800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5554119148346,
+"y": 45.72220148608301
+}
+},
+{
+"attributes": {
+"gwicid": 254469,
+"latitude": 45.72304,
+"longitude": -108.54677,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 30.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 671068800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54677009724745,
+"y": 45.72303995590469
+}
+},
+{
+"attributes": {
+"gwicid": 160975,
+"latitude": 45.711875,
+"longitude": -108.519367,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 65.0,
+"static_water_level_ft_bgs": 24.0,
+"date_completed": 841104000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51937880210505,
+"y": 45.71188185701608
+}
+},
+{
+"attributes": {
+"gwicid": 135278,
+"latitude": 45.72312,
+"longitude": -108.55041,
+"altitude_ft_amsl": 3185.0,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 48.5,
+"static_water_level_ft_bgs": 37.75,
+"date_completed": 692582400000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.55110176228156,
+"y": 45.72307152208733
+}
+},
+{
+"attributes": {
+"gwicid": 268416,
+"latitude": 45.719375,
+"longitude": -108.56455,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 18.0,
+"static_water_level_ft_bgs": 6.5,
+"date_completed": 1316736000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.56456181283929,
+"y": 45.71938185391984
+}
+},
+{
+"attributes": {
+"gwicid": 158948,
+"latitude": 45.7233,
+"longitude": -108.5463,
+"altitude_ft_amsl": 3205.0,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 55.8,
+"static_water_level_ft_bgs": 38.46,
+"date_completed": 456969600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5469916044066,
+"y": 45.72325155880003
+}
+},
+{
+"attributes": {
+"gwicid": 268415,
+"latitude": 45.72106389,
+"longitude": -108.56060833,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 20.4,
+"static_water_level_ft_bgs": 5.83,
+"date_completed": 1316736000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5606201451564,
+"y": 45.72107074301521
+}
+},
+{
+"attributes": {
+"gwicid": 135276,
+"latitude": 45.7235,
+"longitude": -108.54655,
+"altitude_ft_amsl": 3205.0,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 39.5,
+"static_water_level_ft_bgs": null,
+"date_completed": 692841600000,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54724161797337,
+"y": 45.723451555138915
+}
+},
+{
+"attributes": {
+"gwicid": 180478,
+"latitude": 45.723629,
+"longitude": -108.54914,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 27.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 956793600000,
+"status": "DRY WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54915181004458,
+"y": 45.72363585502408
+}
+},
+{
+"attributes": {
+"gwicid": 98386,
+"latitude": 45.683862,
+"longitude": -108.526513,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 34.0,
+"static_water_level_ft_bgs": 29.0,
+"date_completed": -1225152000000,
+"status": "NEW WELL",
+"construction_type": "D",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.52652479855571,
+"y": 45.68386885367927
+}
+},
+{
+"attributes": {
+"gwicid": 135277,
+"latitude": 45.724081,
+"longitude": -108.545897,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 53.0,
+"static_water_level_ft_bgs": 14.17,
+"date_completed": 697680000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54590880942457,
+"y": 45.72408785572545
+}
+},
+{
+"attributes": {
+"gwicid": 162199,
+"latitude": 45.724081,
+"longitude": -108.545897,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 69.0,
+"static_water_level_ft_bgs": 42.0,
+"date_completed": 848016000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "BOREHOLE",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54590880942457,
+"y": 45.72408785572545
+}
+},
+{
+"attributes": {
+"gwicid": 98385,
+"latitude": 45.689329,
+"longitude": -108.518733,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 90.0,
+"static_water_level_ft_bgs": 47.0,
+"date_completed": 226627200000,
+"status": "NEW WELL",
+"construction_type": "C",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51874479780692,
+"y": 45.689335854323375
+}
+},
+{
+"attributes": {
+"gwicid": 176733,
+"latitude": 45.697458,
+"longitude": -108.51418,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 245.0,
+"static_water_level_ft_bgs": 75.0,
+"date_completed": 934156800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5141917977732,
+"y": 45.697464855452594
+}
+},
+{
+"attributes": {
+"gwicid": 311929,
+"latitude": 45.72,
+"longitude": -108.52694444,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 200.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 1605657600000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.52694454205539,
+"y": 45.71999995631312
+}
+},
+{
+"attributes": {
+"gwicid": 163698,
+"latitude": 45.72468,
+"longitude": -108.54454,
+"altitude_ft_amsl": null,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 49.8,
+"static_water_level_ft_bgs": 38.0,
+"date_completed": 457142400000,
+"status": "ABANDONED",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.54455180984016,
+"y": 45.724686855983215
+}
+},
+{
+"attributes": {
+"gwicid": 237699,
+"latitude": 45.680116,
+"longitude": -108.530957,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 1440.0,
+"static_water_level_ft_bgs": null,
+"date_completed": 1181779200000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.53164729647146,
+"y": 45.680067876093986
+}
+},
+{
+"attributes": {
+"gwicid": 315235,
+"latitude": 45.6976,
+"longitude": -108.51286,
+"altitude_ft_amsl": null,
+"geomethod": "NAV-GPS",
+"total_depth_ft_bgs": 42.0,
+"static_water_level_ft_bgs": 19.0,
+"date_completed": 1626048000000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51354987942233,
+"y": 45.697551978414566
+}
+},
+{
+"attributes": {
+"gwicid": 94189,
+"latitude": 45.718204,
+"longitude": -108.520664,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 55.0,
+"static_water_level_ft_bgs": 14.0,
+"date_completed": 178156800000,
+"status": "NEW WELL",
+"construction_type": "H",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.52067580334143,
+"y": 45.71821085760272
+}
+},
+{
+"attributes": {
+"gwicid": 94190,
+"latitude": 45.718204,
+"longitude": -108.520664,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 35.0,
+"static_water_level_ft_bgs": 7.0,
+"date_completed": 237513600000,
+"status": "NEW WELL",
+"construction_type": "H",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.52067580334143,
+"y": 45.71821085760272
+}
+},
+{
+"attributes": {
+"gwicid": 232064,
+"latitude": 45.721821,
+"longitude": -108.525851,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 25.0,
+"static_water_level_ft_bgs": 25.0,
+"date_completed": 1168300800000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5258628054104,
+"y": 45.72182785755295
+}
+},
+{
+"attributes": {
+"gwicid": 232065,
+"latitude": 45.721821,
+"longitude": -108.525851,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 25.0,
+"static_water_level_ft_bgs": 25.0,
+"date_completed": 1168387200000,
+"status": "NEW WELL",
+"construction_type": null,
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5258628054104,
+"y": 45.72182785755295
+}
+},
+{
+"attributes": {
+"gwicid": 94197,
+"latitude": 45.698,
+"longitude": -108.5102,
+"altitude_ft_amsl": 3360.0,
+"geomethod": "MAP",
+"total_depth_ft_bgs": 32.0,
+"static_water_level_ft_bgs": 9.0,
+"date_completed": 395280000000,
+"status": "NEW WELL",
+"construction_type": "H",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.51088978224745,
+"y": 45.6979520028296
+}
+},
+{
+"attributes": {
+"gwicid": 94168,
+"latitude": 45.727362,
+"longitude": -108.546715,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 16.0,
+"static_water_level_ft_bgs": null,
+"date_completed": -278035200000,
+"status": "NEW WELL",
+"construction_type": "V",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5467268111258,
+"y": 45.727368856180284
+}
+},
+{
+"attributes": {
+"gwicid": 94169,
+"latitude": 45.727362,
+"longitude": -108.546715,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 60.0,
+"static_water_level_ft_bgs": 20.0,
+"date_completed": -230083200000,
+"status": "NEW WELL",
+"construction_type": "E",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.5467268111258,
+"y": 45.727368856180284
+}
+},
+{
+"attributes": {
+"gwicid": 94234,
+"latitude": 45.701081,
+"longitude": -108.509174,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 21.0,
+"static_water_level_ft_bgs": 6.0,
+"date_completed": -305164800000,
+"status": "NEW WELL",
+"construction_type": "D",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.50918579735607,
+"y": 45.70108785685051
+}
+},
+{
+"attributes": {
+"gwicid": 94160,
+"latitude": 45.7273525,
+"longitude": -108.55477985,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 30.0,
+"static_water_level_ft_bgs": 10.0,
+"date_completed": 240192000000,
+"status": "NEW WELL",
+"construction_type": "H",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.55479166226368,
+"y": 45.72735935614504
+}
+},
+{
+"attributes": {
+"gwicid": 94161,
+"latitude": 45.7273525,
+"longitude": -108.55477985,
+"altitude_ft_amsl": null,
+"geomethod": "TRS-SEC",
+"total_depth_ft_bgs": 30.0,
+"static_water_level_ft_bgs": 10.0,
+"date_completed": 240192000000,
+"status": "NEW WELL",
+"construction_type": "H",
+"site_type": "WELL",
+"abandoned_flag": null
+},
+"geometry": {
+"x": -108.55479166226368,
+"y": 45.72735935614504
+}
+}
+]
+},
+"elevationMeters": {
+"-108.54663,45.70131": 1081.473388672,
+"-108.55517,45.70412": 1051.012084961,
+"-108.53681,45.69480": 1093.019042969,
+"-108.55285,45.71182": 1062.410888672,
+"-108.55952,45.69068": 1110.231933594,
+"-108.54119,45.71478": 1026.760253906,
+"-108.54137,45.71821": 1034.422729492,
+"-108.52197,45.70471": 1052.676269531,
+"-108.53419,45.68570": 1105.315063477,
+"-108.56079,45.71677": 993.903686523,
+"-108.53692,45.71861": 1022.040222168,
+"-108.54945,45.71987": 1045.803344727,
+"-108.56262,45.71674": 1002.948730469,
+"-108.56641,45.71578": 969.422790527,
+"-108.52523,45.68842": 1065.529296875,
+"-108.57300,45.70926": 999.681152344,
+"-108.51808,45.69837": 1085.116821289,
+"-108.53157,45.68388": 1069.265380859,
+"-108.52134,45.69116": 1050.700683594,
+"-108.54745,45.72189": 999.356445312,
+"-108.53806,45.68116": 1089.349243164,
+"-108.54718,45.68026": 1126.452392578,
+"-108.54709,45.72261": 987.223510742,
+"-108.51803,45.69455": 1036.228637695,
+"-108.55541,45.72220": 964.954406738,
+"-108.54677,45.72304": 981.900146484,
+"-108.51938,45.71188": 1015.940856934,
+"-108.55110,45.72307": 968.248901367,
+"-108.56456,45.71938": 964.914978027,
+"-108.54699,45.72325": 980.603393555,
+"-108.56062,45.72107": 964.161437988,
+"-108.54724,45.72345": 979.912963867,
+"-108.54915,45.72364": 970.751037598,
+"-108.52652,45.68387": 1106.503662109,
+"-108.54591,45.72409": 975.840087891,
+"-108.51874,45.68934": 1096.717773438,
+"-108.51419,45.69746": 1033.723754883,
+"-108.52694,45.72000": 1028.386230469,
+"-108.54455,45.72469": 972.004638672,
+"-108.53165,45.68007": 1109.045898438,
+"-108.51355,45.69755": 1028.678833008,
+"-108.52068,45.71821": 1017.58026123,
+"-108.52586,45.72183": 1017.70300293,
+"-108.51089,45.69795": 1032.073242188,
+"-108.54673,45.72737": 962.870788574,
+"-108.50919,45.70109": 1035.41796875,
+"-108.55479,45.72736": 962.774108887
+}
+}

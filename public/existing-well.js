@@ -128,7 +128,6 @@
         <div class="datum"><span>Well parcel number</span><strong>${escHtml(m.parcelNumber || 'Not reported')}</strong></div>
         <div class="datum"><span>Well tag</span><strong>${escHtml(m.wellTag || 'Not reported')}</strong></div>
         <div class="datum"><span>Completed depth</span><strong>${m.completedDepth ? `${escHtml(m.completedDepth)} ft` : 'Not reported'}</strong></div>
-        <div class="datum"><span>Well address</span><strong>${escHtml(m.wellAddress || 'Not reported')}</strong></div>
       </div>
       <div class="existing-well-evidence">
         ${evidenceLabel('Parcel number match', evidence.parcelMatch)}
