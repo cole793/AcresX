@@ -1,0 +1,15 @@
+{
+ "_note": "Stevens Assessors_Data_Share/MapServer/7 sample row, live 2026-11-18.",
+ "features": [
+  {
+   "attributes": {
+    "Plat_name": "Buckleys Addition - Corrected",
+    "Auditors_number": null,
+    "Plat_location": "A-5, B-85",
+    "Plat_signed_by_Auditor": -557712000000,
+    "Lot": null,
+    "Block": null
+   }
+  }
+ ]
+}

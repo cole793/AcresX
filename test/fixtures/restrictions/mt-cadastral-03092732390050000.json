@@ -1,0 +1,19 @@
+{
+ "_note": "Montana Cadastral FeatureServer/0 by PARCELID, live 2026-11-17.",
+ "features": [
+  {
+   "attributes": {
+    "PARCELID": "03092732390050000",
+    "COUNTYCD": 3,
+    "LegalDescriptionShort": "HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD (25)",
+    "Subdivision": "HARVEY SUBD",
+    "CertificateOfSurvey": null,
+    "PropAccess": "",
+    "PropertyCardLink": "https://svc.mt.gov/msl/cadastral/?page=PropertyDetails&geocode=03092732390050000",
+    "Township": "01 S",
+    "Range": "26 E",
+    "Section": "32"
+   }
+  }
+ ]
+}

@@ -1,0 +1,16 @@
+{
+ "_note": "Yellowstone Tax_and_Legal_Parcels/MapServer/1 at an interior point of 03092732390050000, live 2026-11-18.",
+ "features": [
+  {
+   "attributes": {
+    "SUBD": "HARVEY SUB",
+    "BLK_NUM": "1",
+    "LOT_NUM": "5A",
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": "AM B:1 L:1A & 5",
+    "CS_AM": null
+   }
+  }
+ ]
+}

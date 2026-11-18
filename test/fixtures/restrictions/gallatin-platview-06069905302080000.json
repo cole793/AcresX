@@ -1,0 +1,21 @@
+{
+ "_note": "Gallatin Parcel_Platview FeatureServer/3 by GEOCODE, live 2026-11-17 (named fields only; no owner fields on this row).",
+ "features": [
+  {
+   "attributes": {
+    "PARCEL_ID": 31785,
+    "GEOCODE": "06069905302080000",
+    "SUB_NAME": " ",
+    "L0GIS_OwnerParcel_CLASS": "COS",
+    "L0GIS_OwnerParcel_SUBCLASS": "PARCEL",
+    "L0GIS_OwnerParcel_RECORD": "COS 1103K",
+    "L0GIS_OwnerParcel_RECORD_ALT": " ",
+    "L0GIS_OwnerParcel_LOT": "TR. 8A-2",
+    "L0GIS_OwnerParcel_DATE_SURV": "02/06/1997",
+    "PLSS_KEY": "3S_6E_SEC_5_SW_QUARTER",
+    "plat_url_sub": null,
+    "plat_url_plss": null
+   }
+  }
+ ]
+}

@@ -1,0 +1,71 @@
+{
+ "_note": "Yellowstone Tax_and_Legal_Parcels/MapServer/1, whole-parcel-polygon intersect for 03092732390050000, live 2026-11-17: neighbouring lots touch the boundary.",
+ "features": [
+  {
+   "attributes": {
+    "SUBD": null,
+    "BLK_NUM": null,
+    "LOT_NUM": null,
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": null,
+    "CS_AM": null
+   }
+  },
+  {
+   "attributes": {
+    "SUBD": "HARVEY SUB",
+    "BLK_NUM": null,
+    "LOT_NUM": null,
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": null,
+    "CS_AM": null
+   }
+  },
+  {
+   "attributes": {
+    "SUBD": "HARVEY SUB",
+    "BLK_NUM": "1",
+    "LOT_NUM": "1A1",
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": "AM B:1 L:1A & 5",
+    "CS_AM": null
+   }
+  },
+  {
+   "attributes": {
+    "SUBD": "HARVEY SUB",
+    "BLK_NUM": "1",
+    "LOT_NUM": "5A",
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": "AM B:1 L:1A & 5",
+    "CS_AM": null
+   }
+  },
+  {
+   "attributes": {
+    "SUBD": "HARVEY SUB",
+    "BLK_NUM": null,
+    "LOT_NUM": null,
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": "AM B:1 L:1B",
+    "CS_AM": null
+   }
+  },
+  {
+   "attributes": {
+    "SUBD": "HARVEY SUB",
+    "BLK_NUM": "1",
+    "LOT_NUM": "4",
+    "CERT_SURV": null,
+    "TR_NUM": null,
+    "SUBD_AM": "AM B:1 L:1B",
+    "CS_AM": null
+   }
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "_note": "Spokane SCOUT/LayersMenu/MapServer/31 sample row, live 2026-11-18 (geometry added by the test).",
+ "features": [
+  {
+   "attributes": {
+    "FILENUM": "04-CPA-11",
+    "RECORDINGNUM": "5881801",
+    "RECORDINGDATE": 1268006400000,
+    "ZONECLASS": "MU"
+   }
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "_note": "Montana State Library DigitalAtlas_Admin/MapServer/1 sample row (Gallatin), live 2026-11-18 (geometry added by the test).",
+ "features": [
+  {
+   "attributes": {
+    "EaseHolder": 68,
+    "EaseDate": 1470355200000,
+    "DeedRef": "2553504",
+    "GISAcreage": 160.2
+   }
+  }
+ ]
+}

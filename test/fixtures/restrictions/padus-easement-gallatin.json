@@ -1,0 +1,15 @@
+{
+ "_note": "PAD-US 4.1 Protection_Mechanism_Category_PADUS/FeatureServer/0 Category=Easement sample row (Gallatin), live 2026-11-18 (geometry added by the test).",
+ "features": [
+  {
+   "attributes": {
+    "Unit_Nm": "Gallatin Valley Land Trust 306101002.EAS.2685",
+    "EsmtHldr": "Gallatin Valley Land Trust",
+    "EHoldTyp": "NGO",
+    "Src_Date": "2019/07/03",
+    "Pub_Access": "XA",
+    "GIS_Acres": 160
+   }
+  }
+ ]
+}
