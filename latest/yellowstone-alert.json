@@ -1,13 +1,13 @@
 {
-  "runId": "44183637837",
+  "runId": "44401658417",
   "county": "Yellowstone",
   "alerting": false,
   "aboveThreshold": false,
   "changed": true,
   "title": "Validation: Yellowstone — 0 layers broken",
-  "body": "The scheduled county validation for Yellowstone, MT found broken layers (run 2026-11-17T22:03:24.388Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 1 of 12 (03103233202530000)\n- Zoning: 1 of 12 (03113520290010000)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 2, still broken 0, recovered 36, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Zoning | ok | mismatch | zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null |\n| 03103233202530000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03072530104010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103333215010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103233201230000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03113517000000000 | Soil | error | ok | HTTP 503 |\n| 03113517000000000 | Terrain | error | ok | HTTP 503 |\n| 03113517000000000 | Slope grid | error | ok | HTTP 503 |\n| 03113517000000000 | Listing | error | unavailable | HTTP 503 |\n| 03072527101010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103333303010000 | Wells | error | ok | HTTP 503 |\n| 03103333303010000 | Soil | error | ok | HTTP 503 |\n| 03103333303010000 | Terrain | error | ok | HTTP 503 |\n| 03103333303010000 | Power | error | ok | HTTP 503 |\n| 03103333303010000 | Zoning | error | ok | HTTP 503 |\n| 03103333303010000 | Listing | error | unavailable | HTTP 503 |\n| 03103233202530000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03113519316050000 | Wells | error | ok | HTTP 503 |\n| 03113519316050000 | Soil | error | ok | HTTP 503 |\n| 03113519316050000 | Terrain | error | ok | HTTP 503 |\n| 03113519316050000 | Slope grid | error | ok | HTTP 503 |\n| 03113519316050000 | Flood | error | ok | HTTP 503 |\n| 03113519316050000 | Power | error | ok | HTTP 503 |\n| 03113519316050000 | Public water/sewer | error | ok | HTTP 503 |\n| 03113519316050000 | Zoning | error | ok | HTTP 503 |\n| 03113519316050000 | Assessment | error | ok | HTTP 503 |\n| 03113519316050000 | Property tax | error | ok | HTTP 503 |\n| 03113519316050000 | Listing | error | unavailable | HTTP 503 |\n| 03072528309010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103333414250000 | Wells | error | ok | HTTP 503 |\n| 03103333414250000 | Soil | error | ok | HTTP 503 |\n| 03103333414250000 | Terrain | error | ok | HTTP 503 |\n| 03103333414250000 | Slope grid | error | ok | HTTP 503 |\n| 03103333414250000 | Power | error | ok | HTTP 503 |\n| 03103333414250000 | Zoning | error | ok | HTTP 503 |\n| 03103333414250000 | Listing | error | unavailable | HTTP 503 |\n| 03103233202670000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-17T22:03:24.388Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 1 of 12 (03103233202530000)\n- Zoning: 1 of 12 (03113520290010000)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 2, still broken 0, recovered 36, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Zoning | ok | mismatch | zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null |\n| 03103233202530000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03072530104010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103333215010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103233201230000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03113517000000000 | Soil | error | ok | HTTP 503 |\n| 03113517000000000 | Terrain | error | ok | HTTP 503 |\n| 03113517000000000 | Slope grid | error | ok | HTTP 503 |\n| 03113517000000000 | Listing | error | unavailable | HTTP 503 |\n| 03072527101010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103333303010000 | Wells | error | ok | HTTP 503 |\n| 03103333303010000 | Soil | error | ok | HTTP 503 |\n| 03103333303010000 | Terrain | error | ok | HTTP 503 |\n| 03103333303010000 | Power | error | ok | HTTP 503 |\n| 03103333303010000 | Zoning | error | ok | HTTP 503 |\n| 03103333303010000 | Listing | error | unavailable | HTTP 503 |\n| 03103233202530000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03113519316050000 | Wells | error | ok | HTTP 503 |\n| 03113519316050000 | Soil | error | ok | HTTP 503 |\n| 03113519316050000 | Terrain | error | ok | HTTP 503 |\n| 03113519316050000 | Slope grid | error | ok | HTTP 503 |\n| 03113519316050000 | Flood | error | ok | HTTP 503 |\n| 03113519316050000 | Power | error | ok | HTTP 503 |\n| 03113519316050000 | Public water/sewer | error | ok | HTTP 503 |\n| 03113519316050000 | Zoning | error | ok | HTTP 503 |\n| 03113519316050000 | Assessment | error | ok | HTTP 503 |\n| 03113519316050000 | Property tax | error | ok | HTTP 503 |\n| 03113519316050000 | Listing | error | unavailable | HTTP 503 |\n| 03072528309010000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 03103333414250000 | Wells | error | ok | HTTP 503 |\n| 03103333414250000 | Soil | error | ok | HTTP 503 |\n| 03103333414250000 | Terrain | error | ok | HTTP 503 |\n| 03103333414250000 | Slope grid | error | ok | HTTP 503 |\n| 03103333414250000 | Power | error | ok | HTTP 503 |\n| 03103333414250000 | Zoning | error | ok | HTTP 503 |\n| 03103333414250000 | Listing | error | unavailable | HTTP 503 |\n| 03103233202670000 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-17T22:03:24.388Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 1 of 12 (03103233202530000)\n- Zoning: 1 of 12 (03113520290010000)\n",
+  "body": "The scheduled county validation for Yellowstone, MT found broken layers (run 2026-11-18T21:40:30.308Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44401658417\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wells: 1 of 12 (03113520290010000)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 1, still broken 0, recovered 2, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Wells | ok | error | HTTP 502: GWIC Boreholes service timed out after 8s |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Zoning | mismatch | ok | zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null |\n| 03103233202530000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-18T21:40:30.308Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44401658417\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wells: 1 of 12 (03113520290010000)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 1, still broken 0, recovered 2, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Wells | ok | error | HTTP 502: GWIC Boreholes service timed out after 8s |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 03113520290010000 | Zoning | mismatch | ok | zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null |\n| 03103233202530000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-18T21:40:30.308Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44401658417\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/yellowstone-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wells: 1 of 12 (03113520290010000)\n",
   "decision": {
     "alerting": false,
     "aboveThreshold": false,
@@ -15,30 +15,16 @@
     "watchLayers": [],
     "belowThreshold": [
       {
-        "layer": "wetlands",
-        "label": "Wetlands",
+        "layer": "wells",
+        "label": "Wells",
         "count": 1,
         "total": 12,
         "previousCount": 0,
         "parcels": [
           {
-            "parcelId": "03103233202530000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
-          }
-        ]
-      },
-      {
-        "layer": "zoning",
-        "label": "Zoning",
-        "count": 1,
-        "total": 12,
-        "previousCount": 3,
-        "parcels": [
-          {
             "parcelId": "03113520290010000",
-            "status": "mismatch",
-            "detail": "zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null"
+            "status": "error",
+            "detail": "HTTP 502: GWIC Boreholes service timed out after 8s"
           }
         ]
       }
@@ -53,272 +39,27 @@
     "newlyBroken": [
       {
         "parcelId": "03113520290010000",
-        "layer": "zoning",
-        "was": "ok",
-        "now": "mismatch",
-        "detail": "zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null"
-      },
-      {
-        "parcelId": "03103233202530000",
-        "layer": "wetlands",
+        "layer": "wells",
         "was": "ok",
         "now": "error",
-        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+        "detail": "HTTP 502: GWIC Boreholes service timed out after 8s"
       }
     ],
     "stillBroken": [],
     "recovered": [
       {
         "parcelId": "03113520290010000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03072530104010000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03103333215010000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03103233201230000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03113517000000000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113517000000000",
-        "layer": "terrain",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113517000000000",
-        "layer": "slope",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113517000000000",
-        "layer": "listing",
-        "was": "error",
-        "now": "unavailable",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03072527101010000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03103333303010000",
-        "layer": "wells",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333303010000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333303010000",
-        "layer": "terrain",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333303010000",
-        "layer": "power",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333303010000",
         "layer": "zoning",
-        "was": "error",
+        "was": "mismatch",
         "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333303010000",
-        "layer": "listing",
-        "was": "error",
-        "now": "unavailable",
-        "detail": "HTTP 503"
+        "detail": "zoning: expected \"ok\", got \"error\"; zoning.code: expected \"UNZONED\", got null; zoning.jurisdiction: expected \"Yellowstone County\", got null"
       },
       {
         "parcelId": "03103233202530000",
-        "layer": "soil",
+        "layer": "wetlands",
         "was": "error",
         "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "wells",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "terrain",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "slope",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "flood",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "power",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "publicUtilities",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "zoning",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "assessment",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "tax",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03113519316050000",
-        "layer": "listing",
-        "was": "error",
-        "now": "unavailable",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03072528309010000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "wells",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "terrain",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "slope",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "power",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "zoning",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103333414250000",
-        "layer": "listing",
-        "was": "error",
-        "now": "unavailable",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "03103233202670000",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
+        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       }
     ],
     "newlyUnavailable": []
