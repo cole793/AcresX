@@ -3,13 +3,23 @@
 // Injected first by maybeInjectUiPolish() in src/index.js; the other scripts call these helpers
 // at render time.
 //
-// window.AcresXWellDepth: nearby well depth.
-//   One definition everywhere: the median reported depth (CompletedDepth > 0) of the
-//   residential-comparable wells among the closest five nearby records (findWells / the state
-//   well searches return them closest first and keep five). Nonresidential types (irrigation,
-//   monitoring, municipal, ...) are left out. When none of the five is clearly residential, the
-//   median of all five depths is used and the note says so. Label: "Median nearby well depth
-//   (N wells)". An on-parcel well record (existing-well.js) is a separate fact, not this number.
+// window.AcresXWellDepth: nearby well depth, one definition everywhere (dashboard card, overview,
+//   score water factor, cost model, printable report).
+//   Terrain-aware (2026-11-17; public/well-terrain.js attaches POST /api/well-depth-terrain's answer
+//   to the wells array as wells.terrain; the rules are in src/services/well-depth-terrain.js):
+//   wells within +/-50 ft of the homesite elevation are the comparable ones; wells more than 100 ft
+//   lower are drainage wells and are reported separately. Confidence is moderate with at least 3
+//   comparable wells (and the nearest wells not mostly in a drainage): depth = their median, range
+//   = their 25th-75th percentile. Otherwise low: a range from the elevation-adjusted depths, with
+//   the caution "Few wells at this elevation nearby ...". Never "Shallow" at low confidence.
+//   Without the terrain answer (failed, timed out, not covered): the median reported depth
+//   (CompletedDepth > 0) of the residential-comparable wells among the closest five
+//   (nonresidential types left out; all five when none is clearly residential), labelled
+//   "elevation not checked, low confidence", with a widened range.
+//   stats(data).planningDepth: the high end of the range (the cost model's well line);
+//   scoreDepth: the depth grade(s) and the score's water factor use (median at moderate
+//   confidence, the high end at low). An on-parcel well record (existing-well.js) is a separate
+//   fact, not this number.
 //
 // window.AcresXSeptic: septic screening from USDA soil plus the measured parcel slope.
 //   The soil service (src/services/soils.js classifyFeasibility) grades septic from the map
@@ -33,6 +43,11 @@
 
   const NEARBY = 5;
   const NONRESIDENTIAL = /\b(irrigat|agricultur|industrial|monitor|observation|injection|dewater|geothermal|environmental|remediation|municipal)\w*/i;
+  const SIMILAR_FT = 50;
+  const DRAINAGE_FT = 100;
+  const MIN_COMPARABLE = 3;
+  const FEW_COMPARABLE = 'Few wells at this elevation nearby — depth could be much greater; ask a local driller.';
+  const NOT_CHECKED = 'Elevation not checked: nearby wells may sit in a valley or drainage below this parcel; ask a local driller.';
 
   function wellText(well) {
     const p = well?.properties || {};
@@ -47,43 +62,151 @@
     const mid = Math.floor(sorted.length / 2);
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
+  function quantile(values, q) {
+    const s = values.filter(Number.isFinite).sort((a, b) => a - b);
+    if (!s.length) return null;
+    const pos = (s.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return s[lo] + (s[hi] - s[lo]) * (pos - lo);
+  }
+  const round10 = v => Math.round(v / 10) * 10;
 
-  // { depth, feet, count, residential, median, fallbackMedian, excluded, total } or null when the
-  // wells have not loaded. depth: the number every surface shows (null: no depth on record);
-  // count: the wells it is the median of.
-  function stats(data) {
-    if (!data || !Array.isArray(data.wells)) return null;
-    const wells = data.wells.slice(0, NEARBY);
+  // The closest-five median (the fallback, and context next to the terrain estimate).
+  function nearest(wellsList) {
+    const wells = wellsList.slice(0, NEARBY);
     const comparable = wells.filter(w => !excludedWell(w)).map(depthOf).filter(v => v != null);
     const all = wells.map(depthOf).filter(v => v != null);
     const med = median(comparable);
     const fallbackMedian = median(all);
-    const depth = med ?? fallbackMedian;
+    return { med, fallbackMedian, depths: med != null ? comparable : all, excluded: wells.filter(excludedWell).length, total: wells.length };
+  }
+
+  // null when the wells have not loaded. Otherwise { depth, feet, count, lowFt, highFt,
+  // confidence ('moderate' | 'low' | null), method ('terrain' | 'nearest' | 'none'), comparable,
+  // planningDepth, scoreDepth, elevationChecked, parcelElevationFt, waterLevelDepthFt, drainage,
+  // higher, deepWells, residential, median, fallbackMedian, excluded, total, terrainStatus }.
+  // depth: the central number (null: no depth on record); count: the wells it rests on.
+  function stats(data) {
+    if (!data || !Array.isArray(data.wells)) return null;
+    const n = nearest(data.wells);
+    const t = data.wells.terrain;
+    const nearestDepth = n.med ?? n.fallbackMedian;
+    const common = { residential: n.med != null, median: n.med, fallbackMedian: n.fallbackMedian, nearestDepth, excluded: n.excluded, total: n.total, terrainStatus: t ? (t.available ? 'estimated' : t.status || 'unavailable') : 'not_checked' };
+    const e = t?.available ? t.estimate : null;
+    if (e && finite(e.depthFt) != null) {
+      const confidence = e.confidence === 'moderate' ? 'moderate' : 'low';
+      const lowFt = finite(e.lowFt) ?? e.depthFt, highFt = finite(e.highFt) ?? e.depthFt;
+      return {
+        ...common, method: 'terrain', confidence, elevationChecked: true,
+        depth: e.depthFt, feet: Math.round(e.depthFt), lowFt, highFt,
+        count: e.comparableCount || 0, comparable: e.comparableCount || 0, usedCount: e.usedCount || 0,
+        planningDepth: finite(e.planningDepthFt) ?? highFt,
+        scoreDepth: finite(e.scoreDepthFt) ?? (confidence === 'moderate' ? e.depthFt : highFt),
+        parcelElevationFt: finite(e.parcelElevationFt ?? t.parcelElevationFt),
+        waterLevelDepthFt: finite(e.waterLevelDepthFt), waterLevelWells: e.waterLevelWells || 0,
+        drainage: e.drainage || null, higher: e.higher || null, deepWells: e.deepWells || null,
+        searchRadiusMiles: finite(t.searchRadiusMiles)
+      };
+    }
+    if (nearestDepth == null) {
+      return { ...common, method: 'none', confidence: null, elevationChecked: false, depth: null, feet: null, count: 0, comparable: 0, lowFt: null, highFt: null, planningDepth: null, scoreDepth: null };
+    }
+    // Elevation not checked: today's median, low confidence, the range widened upward.
+    const lowFt = Math.round(nearestDepth);
+    const highFt = Math.max(lowFt, round10(Math.max(nearestDepth * 1.5, quantile(n.depths, 0.75) ?? 0)));
     return {
-      depth, feet: depth == null ? null : Math.round(depth),
-      count: med != null ? comparable.length : all.length,
-      residential: med != null,
-      median: med, fallbackMedian,
-      excluded: wells.filter(excludedWell).length,
-      total: wells.length
+      ...common, method: 'nearest', confidence: 'low', elevationChecked: false,
+      depth: nearestDepth, feet: Math.round(nearestDepth), count: n.depths.length, comparable: 0,
+      lowFt, highFt, planningDepth: highFt, scoreDepth: highFt
     };
   }
+
   const plural = n => `${n} well${n === 1 ? '' : 's'}`;
-  // "100 ft", or 'Not available'.
-  const value = s => (s?.feet == null ? 'Not available' : `${s.feet.toLocaleString('en-US')} ft`);
-  // "Median nearby well depth (5 wells)".
-  const label = s => (s?.feet == null ? 'No nearby well depths on record' : `Median nearby well depth (${plural(s.count)})`);
-  // "100 ft (5 wells)": the overview fact, under the label "Median nearby well depth".
-  const fact = s => (s?.feet == null ? 'Not available' : `${value(s)} (${plural(s.count)})`);
-  // The card's foot line: the label, plus what was left out.
+  const ft = n => `${Math.round(n).toLocaleString('en-US')} ft`;
+  const rangeText = s => (Math.round(s.lowFt) === Math.round(s.highFt) ? ft(s.lowFt) : `${Math.round(s.lowFt).toLocaleString('en-US')}–${ft(s.highFt)}`);
+  const atElevation = s => (s.comparable ? `${plural(s.comparable)} at similar elevation` : 'no wells at similar elevation');
+
+  // The card value: "100 ft" (moderate), "240–1,370 ft" (low), or 'Not available'.
+  const value = s => (s?.feet == null ? 'Not available' : s.confidence === 'moderate' ? ft(s.depth) : rangeText(s));
+  function label(s) {
+    if (s?.feet == null) return 'No nearby well depths on record';
+    if (s.method === 'terrain') return s.confidence === 'moderate' ? `Estimated well depth (${atElevation(s)})` : `Estimated well depth range · low confidence (${atElevation(s)})`;
+    return `Median nearby well depth (${plural(s.count)}) · elevation not checked, low confidence`;
+  }
+  // The overview fact, under the label "Estimated well depth".
+  function fact(s) {
+    if (s?.feet == null) return 'Not available';
+    if (s.method === 'terrain') return s.confidence === 'moderate' ? `${ft(s.depth)} (${rangeText(s)}; ${atElevation(s)})` : `${rangeText(s)} (low confidence)`;
+    return `${rangeText(s)} (${plural(s.count)}; low confidence, elevation not checked)`;
+  }
+  // "Nearby wells are mostly in a drainage about 220 ft lower; upland wells may be much deeper."
+  function drainageText(s) {
+    const d = s?.drainage;
+    if (!d || !d.count) return '';
+    if (d.mostly) return `Nearby wells are mostly in a drainage about ${ft(d.medianDropFt)} lower; upland wells may be much deeper.`;
+    return `${d.count} of the ${d.of} nearest wells ${d.count === 1 ? 'sits' : 'sit'} over ${DRAINAGE_FT} ft lower (drainage ${d.count === 1 ? 'well' : 'wells'}, not used as comparable).`;
+  }
+  function caution(s) {
+    if (!s || s.feet == null || s.confidence === 'moderate') return '';
+    if (s.method === 'nearest') return NOT_CHECKED;
+    return s.comparable < MIN_COMPARABLE ? FEW_COMPARABLE : 'Depth could be much greater; ask a local driller.';
+  }
+  // "Homesite about 3,535 ft; static water about 220 ft below it (9 wells)".
+  function elevationText(s) {
+    if (s?.method !== 'terrain' || s.parcelElevationFt == null) return '';
+    const water = s.waterLevelDepthFt != null && s.waterLevelWells ? `; static water about ${ft(s.waterLevelDepthFt)} below it (${plural(s.waterLevelWells)})` : '';
+    return `Homesite about ${ft(s.parcelElevationFt)} elevation${water}`;
+  }
+  // The card's short status line.
+  function status(s) {
+    if (!s || s.feet == null) return '';
+    if (s.method === 'nearest') return 'Elevation not checked · low confidence';
+    if (s.drainage?.mostly) return 'Nearby wells mostly in a drainage below the parcel';
+    if (s.confidence !== 'moderate') return 'Few wells at this elevation nearby';
+    return `${atElevation(s)}${s.excluded ? ` · ${s.excluded} nonresidential excluded` : ''}`;
+  }
+  // The card's foot line: the label, plus what was left out and any caution.
   function note(s) {
     if (!s) return 'Closest five recorded wells';
     if (s.feet == null) return 'No nearby depth records returned';
-    const extra = !s.residential ? ' · no clearly residential well type' : s.excluded ? ` · ${s.excluded} nonresidential excluded` : '';
-    return `${label(s)}${extra}`;
+    if (s.method === 'nearest') {
+      const extra = !s.residential ? ' · no clearly residential well type' : s.excluded ? ` · ${s.excluded} nonresidential excluded` : '';
+      return `${label(s)}${extra}`;
+    }
+    return [label(s), drainageText(s), caution(s)].filter(Boolean).join(' · ');
+  }
+  // { key, label, cls, score }: the card grade, the report chip and the score's water factor.
+  function grade(s) {
+    if (!s || s.depth == null) return null;
+    const d = s.scoreDepth ?? s.depth;
+    if (s.confidence === 'moderate') {
+      if (d <= 200) return { key: 'shallow', label: 'Shallow', cls: 'green', score: 92 };
+      if (d <= 400) return { key: 'moderate', label: 'Moderate', cls: 'amber', score: 76 };
+      return { key: 'deep', label: 'Deep', cls: 'red', score: 55 };
+    }
+    if (d <= 400) return { key: 'uncertain', label: 'Uncertain', cls: 'amber', score: 70 };
+    return { key: 'possibly_deep', label: 'Possibly deep', cls: 'red', score: 55 };
+  }
+  // The cost lines' basis: "100 ft estimated well depth (range 80–140 ft; 5 wells at similar elevation)".
+  function basis(s) {
+    if (s?.feet == null) return '';
+    if (s.method === 'terrain') return s.confidence === 'moderate'
+      ? `${ft(s.depth)} estimated well depth (range ${rangeText(s)}; ${atElevation(s)})`
+      : `${rangeText(s)} estimated well depth (low confidence; ${atElevation(s)})`;
+    return `${ft(s.depth)} median nearby well depth (${plural(s.count)}; elevation not checked, low confidence)`;
+  }
+  // The report's well line: "Estimated well depth: 240–1,370 ft, low confidence (1 well at similar elevation)".
+  function reportLine(s) {
+    if (s?.feet == null) return 'No nearby well depths on record';
+    if (s.method === 'terrain') return s.confidence === 'moderate'
+      ? `Estimated well depth: ${ft(s.depth)} (range ${rangeText(s)}; ${atElevation(s)})`
+      : `Estimated well depth: ${rangeText(s)}, low confidence (${atElevation(s)})`;
+    return `Median nearby well depth (${plural(s.count)}): ${ft(s.depth)} — elevation not checked, low confidence`;
   }
 
-  root.AcresXWellDepth = { NEARBY, stats, value, label, fact, note, excludedWell, median };
+  root.AcresXWellDepth = {
+    NEARBY, SIMILAR_FT, DRAINAGE_FT, MIN_COMPARABLE, FEW_COMPARABLE, NOT_CHECKED,
+    stats, value, label, fact, note, status, caution, drainageText, elevationText, grade, basis, reportLine, rangeText, excludedWell, median
+  };
 
   // ---- Septic
 

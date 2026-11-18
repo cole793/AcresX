@@ -1,0 +1,238 @@
+{
+ "recorded": "2026-11-18",
+ "note": "POST /api/well-depth-terrain answer for Spokane 23123.9051 (this branch run against the live WA Ecology layer and AWS Terrain Tiles); what public/well-terrain.js attaches as wells.terrain.",
+ "answer": {
+  "state": "WA",
+  "point": {
+   "lat": 47.4943,
+   "lon": -117.44929
+  },
+  "source": "Washington State Department of Ecology well reports",
+  "comparableWithinFt": 50,
+  "drainageBelowFt": 100,
+  "available": true,
+  "status": "estimated",
+  "parcelElevationFt": 2332,
+  "parcelElevationSource": "terrain-tiles",
+  "elevationSources": [
+   "terrain-tiles"
+  ],
+  "searchRadiusMiles": 2,
+  "truncated": false,
+  "candidates": 195,
+  "sampled": 40,
+  "estimate": {
+   "confidence": "moderate",
+   "depthFt": 170,
+   "lowFt": 100,
+   "highFt": 230,
+   "comparableCount": 8,
+   "comparableMaxMi": 0.32,
+   "usedCount": 8,
+   "wellsWithElevation": 40,
+   "unknownElevation": 0,
+   "parcelElevationFt": 2332,
+   "waterLevelDepthFt": null,
+   "waterLevelWells": 0,
+   "drainage": {
+    "count": 0,
+    "of": 10,
+    "medianDropFt": null,
+    "mostly": false
+   },
+   "higher": {
+    "count": 0,
+    "of": 10,
+    "medianRiseFt": null
+   },
+   "deepWells": {
+    "count": 0,
+    "medianFt": null
+   },
+   "planningDepthFt": 230,
+   "scoreDepthFt": 170,
+   "wells": [
+    {
+     "id": "188596",
+     "distanceMi": 0.16,
+     "depthFt": 100,
+     "staticFt": null,
+     "elevationFt": 2332,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 0,
+     "group": "similar",
+     "adjustedDepthFt": 100,
+     "used": true
+    },
+    {
+     "id": "188597",
+     "distanceMi": 0.16,
+     "depthFt": 100,
+     "staticFt": null,
+     "elevationFt": 2332,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 0,
+     "group": "similar",
+     "adjustedDepthFt": 100,
+     "used": true
+    },
+    {
+     "id": "453777",
+     "distanceMi": 0.18,
+     "depthFt": 100,
+     "staticFt": null,
+     "elevationFt": 2332,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 0,
+     "group": "similar",
+     "adjustedDepthFt": 100,
+     "used": true
+    },
+    {
+     "id": "418373",
+     "distanceMi": 0.22,
+     "depthFt": 215,
+     "staticFt": null,
+     "elevationFt": 2342,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 11,
+     "group": "similar",
+     "adjustedDepthFt": 215,
+     "used": true
+    },
+    {
+     "id": "418375",
+     "distanceMi": 0.22,
+     "depthFt": 240,
+     "staticFt": null,
+     "elevationFt": 2342,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 11,
+     "group": "similar",
+     "adjustedDepthFt": 240,
+     "used": true
+    },
+    {
+     "id": "391937",
+     "distanceMi": 0.24,
+     "depthFt": 220,
+     "staticFt": null,
+     "elevationFt": 2332,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 0,
+     "group": "similar",
+     "adjustedDepthFt": 220,
+     "used": true
+    },
+    {
+     "id": "391935",
+     "distanceMi": 0.24,
+     "depthFt": 260,
+     "staticFt": null,
+     "elevationFt": 2332,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 0,
+     "group": "similar",
+     "adjustedDepthFt": 260,
+     "used": true
+    },
+    {
+     "id": "361611",
+     "distanceMi": 0.32,
+     "depthFt": 120,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 120,
+     "used": true
+    },
+    {
+     "id": "361613",
+     "distanceMi": 0.32,
+     "depthFt": 200,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 200,
+     "used": false
+    },
+    {
+     "id": "361645",
+     "distanceMi": 0.32,
+     "depthFt": 200,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 200,
+     "used": false
+    },
+    {
+     "id": "361616",
+     "distanceMi": 0.32,
+     "depthFt": 120,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 120,
+     "used": false
+    },
+    {
+     "id": "361615",
+     "distanceMi": 0.32,
+     "depthFt": 240,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 240,
+     "used": false
+    },
+    {
+     "id": "369459",
+     "distanceMi": 0.32,
+     "depthFt": 220,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 220,
+     "used": false
+    },
+    {
+     "id": "391939",
+     "distanceMi": 0.32,
+     "depthFt": 140,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 140,
+     "used": false
+    },
+    {
+     "id": "361612",
+     "distanceMi": 0.32,
+     "depthFt": 280,
+     "staticFt": null,
+     "elevationFt": 2344,
+     "elevationSource": "terrain-tiles",
+     "dzFt": 12,
+     "group": "similar",
+     "adjustedDepthFt": 280,
+     "used": false
+    }
+   ]
+  }
+ }
+}

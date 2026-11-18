@@ -221,15 +221,32 @@ test('septic: SRHD $1,890 exact (draft 2026 noted), installed system labeled; PH
   assert.doesNotMatch(e.components.permits.basis, /SRHD/);
 });
 
-test('well: exact Ecology $200 / IDWR $75 fee + depth range, driller quote recommended', () => {
+// Three wells at similar elevation (public/well-terrain.js attaches the terrain answer as
+// wells.terrain): moderate confidence, 200 ft, range 190-210 ft.
+const terrainWells = () => {
   const wells = [210, 190, 200].map(d => ({ properties: { CompletedDepth: d } }));
+  wells.terrain = { available: true, estimate: { confidence: 'moderate', depthFt: 200, lowFt: 190, highFt: 210, planningDepthFt: 210, scoreDepthFt: 200, comparableCount: 3, usedCount: 3, parcelElevationFt: 2400 } };
+  return wells;
+};
+
+test('well: exact Ecology $200 / IDWR $75 fee + depth range, driller quote recommended', () => {
+  const wells = terrainWells();
   const wa = estimate({ county: 'Spokane', wells, wria: { available: true, number: 57, name: 'Middle Spokane' } }).components.well;
-  assert.deepEqual([wa.low, wa.high], [200 * 42 + 3500 + 200, 200 * 60 + 5500 + 200 + 180]);
+  // The range is priced: low end x low rate, high end x high rate.
+  assert.deepEqual([wa.low, wa.high], [190 * 42 + 3500 + 200, 210 * 60 + 5500 + 200 + 180]);
   assert.match(wa.basis, /driller quote recommended/);
   assert.match(wa.basis, /Ecology notice of intent/);
+  assert.match(wa.basis, /200 ft estimated well depth \(range 190–210 ft; 3 wells at similar elevation\)/);
+  assert.equal(wa.confidence, 'Moderate');
   const id = estimate({ county: 'Kootenai', wells }).components.well;
-  assert.deepEqual([id.low, id.high], [200 * 42 + 3500 + 75, 200 * 60 + 5500 + 75]);
+  assert.deepEqual([id.low, id.high], [190 * 42 + 3500 + 75, 210 * 60 + 5500 + 75]);
   assert.match(id.basis, /IDWR drilling permit \(domestic\) \$75/);
+  // Elevation not checked: the closest-five median, the high end widened to 1.5x, low confidence.
+  const plain = [210, 190, 200].map(d => ({ properties: { CompletedDepth: d } }));
+  const low = estimate({ county: 'Kootenai', wells: plain }).components.well;
+  assert.deepEqual([low.low, low.high], [200 * 42 + 3500 + 75, 300 * 60 + 5500 + 75]);
+  assert.equal(low.confidence, 'Low');
+  assert.match(low.basis, /elevation not checked, low confidence/);
 });
 
 test('well in WRIA 55 adds the $500 surcharge + $3,000-$5,000 mitigation certificate; WRIA 54/56/57 add nothing', () => {
@@ -391,10 +408,10 @@ test('Montana power: NorthWestern Rule 6 is the generic range minus the $400 all
 });
 
 test('Montana well: DNRC $400 Notice of Intent + $250 Notice of Completion on both ends; no WRIA charge', () => {
-  const wells = [210, 190, 200].map(d => ({ properties: { CompletedDepth: d } }));
+  const wells = terrainWells();
   for (const county of ['Yellowstone', 'Gallatin']) {
     const w = estimate({ county, wells, wria: { available: true, number: 55, name: 'x' } }).components.well;
-    assert.deepEqual([w.low, w.high], [200 * 42 + 3500 + 650, 200 * 60 + 5500 + 650], county);
+    assert.deepEqual([w.low, w.high], [190 * 42 + 3500 + 650, 210 * 60 + 5500 + 650], county);
     assert.match(w.basis, /DNRC Notice of Intent \(Form 602I\) \$400 \+ DNRC Notice of Completion \(Form 602\) \$250/);
     assert.doesNotMatch(w.basis, /WRIA/);
     assert.ok(w.sources.some(s => /602I\.pdf$/.test(s.url) && s.asOf === '2026-01-01' && s.verified));

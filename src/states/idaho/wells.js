@@ -4,6 +4,56 @@ import { withoutPersonalFields } from '../../shared/personal-fields.js';
 
 const IDAHO_WELLS = 'https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0';
 
+// One IDWR query: wells with a reported depth within `miles` of the point.
+async function queryIdaho(x, y, miles, { timeoutMs = 12000, retryTimeoutMs = 8000, resultRecordCount = 200 } = {}) {
+  const url = new URL(`${IDAHO_WELLS}/query`);
+  url.searchParams.set('f', 'geojson');
+  url.searchParams.set('where', 'TotalDepth > 0');
+  url.searchParams.set('geometry', `${x},${y}`);
+  url.searchParams.set('geometryType', 'esriGeometryPoint');
+  url.searchParams.set('inSR', '4326');
+  url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
+  url.searchParams.set('distance', String(miles));
+  url.searchParams.set('units', 'esriSRUnit_StatuteMile');
+  url.searchParams.set('outFields', 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,WellAddress,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude');
+  url.searchParams.set('returnGeometry', 'true');
+  url.searchParams.set('outSR', '4326');
+  url.searchParams.set('resultRecordCount', String(resultRecordCount));
+  // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
+  const data = await upstreamJson(url, { timeoutMs, retryTimeoutMs, arcgis: true, label: 'idwr-wells', agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed' });
+  return (data.features || []).filter(f => Number(f?.properties?.TotalDepth) > 0);
+}
+
+// No owner names (owner decision, 2026-10-29): the well owner (Owner) is not requested, so the
+// record is labelled by its use instead, and the properties are stripped in case it comes back.
+function normalize(feature) {
+  const p = withoutPersonalFields(feature.properties || {});
+  return {
+    type: 'Feature',
+    geometry: feature.geometry,
+    properties: {
+      ...p,
+      ID: p.WellID,
+      WellTagNr: p.MetalTagNumber || p.PermitID || p.WellID,
+      ProjectName: p.WellUse || 'Idaho well record',
+      CompletedDepth: p.TotalDepth,
+      StaticWaterLvl: p.StaticWaterLevel,
+      FlowRateGPM: p.ProductionRate,
+      WorkCompletionDate: p.ConstructionDate,
+      FileName: p.WellDocs,
+      _source: 'Idaho Department of Water Resources'
+    }
+  };
+}
+
+// Every IDWR well with a reported depth within `miles`, for the terrain-aware depth estimate
+// (src/services/well-depth-terrain.js). IDWR records carry no land-surface elevation.
+export async function findIdahoWellCandidates({ lat, lon, miles, timeoutMs, retryTimeoutMs }) {
+  const y = Number(lat), x = Number(lon);
+  if (!Number.isFinite(y) || !Number.isFinite(x)) throw new Error('Idaho well search requires parcel coordinates.');
+  return (await queryIdaho(x, y, miles, { timeoutMs, retryTimeoutMs, resultRecordCount: 2000 })).map(normalize);
+}
+
 export async function findIdahoWells({ lat, lon }) {
   const y = Number(lat), x = Number(lon);
   if (!Number.isFinite(y) || !Number.isFinite(x)) throw new Error('Idaho well search requires parcel coordinates.');
@@ -11,58 +61,20 @@ export async function findIdahoWells({ lat, lon }) {
   const radii = [2, 5, 10, 20, 40];
   let features = [];
   for (const miles of radii) {
-    const url = new URL(`${IDAHO_WELLS}/query`);
-    url.searchParams.set('f', 'geojson');
-    url.searchParams.set('where', 'TotalDepth > 0');
-    url.searchParams.set('geometry', `${x},${y}`);
-    url.searchParams.set('geometryType', 'esriGeometryPoint');
-    url.searchParams.set('inSR', '4326');
-    url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
-    url.searchParams.set('distance', String(miles));
-    url.searchParams.set('units', 'esriSRUnit_StatuteMile');
-    url.searchParams.set('outFields', 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,WellAddress,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude');
-    url.searchParams.set('returnGeometry', 'true');
-    url.searchParams.set('outSR', '4326');
-    url.searchParams.set('resultRecordCount', '200');
-    // Was one 20 s attempt; now 12 s + one retry at 8 s (body included).
-    let data;
     try {
-      data = await upstreamJson(url, { timeoutMs: 12000, retryTimeoutMs: 8000, arcgis: true, label: 'idwr-wells', agency: 'Idaho well service', arcgisMessage: 'Idaho well search failed' });
+      features = await queryIdaho(x, y, miles);
     } catch (error) {
       // src/index.js copies error.fallback into its 502 answer (src/shared/fallback.js).
       if (isFallbackEligible(error)) error.fallback = fallbackHint(FALLBACK_KINDS.idahoWells, { lat: y, lon: x });
       throw error;
     }
-    features = (data.features || []).filter(f => Number(f?.properties?.TotalDepth) > 0);
     if (features.length >= 5) break;
   }
-
-  // No owner names (owner decision, 2026-10-29): the well owner (Owner) is not requested, so the
-  // record is labelled by its use instead, and the properties are stripped in case it comes back.
-  const wells = features.map(feature => {
-    const p = withoutPersonalFields(feature.properties || {});
-    return {
-      type: 'Feature',
-      geometry: feature.geometry,
-      properties: {
-        ...p,
-        ID: p.WellID,
-        WellTagNr: p.MetalTagNumber || p.PermitID || p.WellID,
-        ProjectName: p.WellUse || 'Idaho well record',
-        CompletedDepth: p.TotalDepth,
-        StaticWaterLvl: p.StaticWaterLevel,
-        FlowRateGPM: p.ProductionRate,
-        WorkCompletionDate: p.ConstructionDate,
-        FileName: p.WellDocs,
-        _source: 'Idaho Department of Water Resources'
-      }
-    };
-  });
 
   return {
     available: true,
     state: 'ID',
     source: 'Idaho Department of Water Resources Well Database',
-    wells
+    wells: features.map(normalize)
   };
 }

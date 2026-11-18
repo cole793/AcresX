@@ -144,6 +144,7 @@ const CASES = [
   ['address-search other-counties WA Stevens', post('/api/address-search', { action: 'other-counties', state: 'WA', county: 'Stevens', parcelId: SPOKANE_PARCEL }), b => assert.equal(b.matches[0].county, 'Spokane')],
   ['well-search MT', post('/api/well-search', { state: 'MT', ...point }), b => { assert.ok(b.wells.length > 0); assert.equal(b.wells[0].properties.ProjectName, 'Montana GWIC well'); }],
   ['well-search ID', post('/api/well-search', { state: 'ID', ...point }), b => { assert.ok(b.wells.length > 0); assert.equal(b.wells[0].properties.ProjectName, 'Domestic'); }],
+  ['well-depth-terrain MT', post('/api/well-depth-terrain', { state: 'MT', ...point }), b => assert.equal(typeof b.available, 'boolean')],
   ['existing-well Spokane', post('/api/existing-well', { state: 'WA', county: 'Spokane', ...parcel }), b => { assert.equal(b.status, 'strong_match'); assert.equal(b.match.wellTag, 'BAA123'); assert.equal(b.match.evidence.ownerMatch, true, 'owner names are still compared server-side'); }],
   ['reso-listings', post('/api/reso-listings', { parcelId: PARCEL })],
   ['utility-territory', post('/api/utility-territory', point), b => assert.ok(b.matches.length > 0)],

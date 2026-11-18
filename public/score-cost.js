@@ -41,11 +41,13 @@
   }
 
   // The one nearby-well-depth definition (screening-inputs.js); `average` kept as this file's name
-  // for it, but it is the median of the residential-comparable wells among the closest five.
+  // for its central depth. grade: AcresXWellDepth.grade (the score's water factor); costDepth: the
+  // high end of the range (planningDepth); basis: the shared cost-line wording.
   function avgWellDepth() {
     if (typeof last === 'undefined' || !window.AcresXWellDepth) return null;
-    const s = window.AcresXWellDepth.stats(last);
-    return s?.depth == null ? null : { average: s.depth, count: s.count };
+    const WD = window.AcresXWellDepth;
+    const s = WD.stats(last);
+    return s?.depth == null ? null : { average: s.depth, count: s.count, grade: WD.grade(s), costDepth: s.planningDepth ?? s.depth, basis: WD.basis(s) };
   }
 
   function scoreFactors() {
@@ -59,7 +61,7 @@
 
     // Public water / sewer (public-utilities.js) replace the well and septic inputs when served (not when only likely, 2026-11-15).
     const PU = window.AcresXUtilities;
-    const wellWater = wells ? (wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
+    const wellWater = wells ? (wells.grade ? wells.grade.score : wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
     const soilSeptic = window.AcresXSeptic ? window.AcresXSeptic.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
     const water = PU ? PU.waterScore(wellWater, last) : wellWater;
     const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
@@ -102,9 +104,9 @@
 
     let well;
     if (!wells) well = { low: 20000, high: 40000, basis: 'No nearby reported well depths; broad planning allowance' };
-    else if (wells.average <= 200) well = { low: 14000, high: 24000, basis: `${Math.round(wells.average)} ft median nearby well depth` };
-    else if (wells.average <= 400) well = { low: 20000, high: 35000, basis: `${Math.round(wells.average)} ft median nearby well depth` };
-    else well = { low: 30000, high: 50000, basis: `${Math.round(wells.average)} ft median nearby well depth` };
+    else if (wells.costDepth <= 200) well = { low: 14000, high: 24000, basis: wells.basis };
+    else if (wells.costDepth <= 400) well = { low: 20000, high: 35000, basis: wells.basis };
+    else well = { low: 30000, high: 50000, basis: wells.basis };
 
     let septic;
     if (!soil.available) septic = { low: 18000, high: 32000, basis: 'Soil screening unavailable; broad planning allowance' };

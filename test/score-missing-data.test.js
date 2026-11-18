@@ -9,7 +9,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { makeClock, makeContext, makeLazyContext, readPublic } from './ui-harness.js';
 
-const fixture = () => JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8'));
+// The page's wells now carry the terrain-aware estimate (public/well-terrain.js attaches it as
+// wells.terrain; recorded for this parcel 2026-11-18: moderate confidence, 170 ft, 8 wells at similar elevation).
+const TERRAIN = JSON.parse(readFileSync(new URL('./fixtures/well-depth-terrain-spokane-23123.9051.json', import.meta.url), 'utf8')).answer;
+const withTerrain = data => { data.wells.terrain = structuredClone(TERRAIN); return data; };
+const fixture = () => withTerrain(JSON.parse(readFileSync(new URL('./fixtures/report-spokane-23123.9051.json', import.meta.url), 'utf8')));
 // What the browser leaves when USDA soil and USGS terrain did not answer (src/services/land-analysis.js).
 const withoutSoilTerrain = data => ({
   ...data,
