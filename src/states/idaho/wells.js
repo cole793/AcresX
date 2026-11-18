@@ -15,7 +15,9 @@ async function queryIdaho(x, y, miles, { timeoutMs = 12000, retryTimeoutMs = 800
   url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
   url.searchParams.set('distance', String(miles));
   url.searchParams.set('units', 'esriSRUnit_StatuteMile');
-  url.searchParams.set('outFields', 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,WellAddress,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude');
+  // No Owner and no WellAddress: a well's street address identifies its owner's home
+  // (owner decision, 2026-10-29; WellAddress dropped 2026-11-18, nothing read it).
+  url.searchParams.set('outFields', 'WellID,PermitID,MetalTagNumber,ConstructionDate,WellUse,CountyName,ProductionRate,StaticWaterLevel,CasingDepth,TotalDepth,WellDocs,Latitude,Longitude');
   url.searchParams.set('returnGeometry', 'true');
   url.searchParams.set('outSR', '4326');
   url.searchParams.set('resultRecordCount', String(resultRecordCount));

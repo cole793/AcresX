@@ -56,7 +56,6 @@
             "id": 1,
             "wellTag": "BAA123",
             "projectName": "Smith",
-            "wellAddress": "123 TEST RD",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
             "completionDate": 946684800000,
@@ -111,7 +110,6 @@
             "id": 1,
             "wellTag": "BAA123",
             "projectName": "Smith",
-            "wellAddress": "123 TEST RD",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
             "completionDate": 946684800000,
@@ -167,7 +165,6 @@
             "id": 1,
             "wellTag": "BAA123",
             "projectName": "Smith",
-            "wellAddress": "123 TEST RD",
             "parcelNumber": "47174.9017",
             "completedDepth": 220,
             "completionDate": 946684800000,
@@ -1425,9 +1422,9 @@
       }
     },
     "requests": [
-      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=10&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
-      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
-      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=5&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CWellAddress%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200"
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=10&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=2&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200",
+      "GET https://gis.idwr.idaho.gov/hosting/rest/services/Groundwater/Wells/FeatureServer/0/query?f=geojson&where=TotalDepth+%3E+0&geometry=-116.8%2C47.7&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=5&units=esriSRUnit_StatuteMile&outFields=WellID%2CPermitID%2CMetalTagNumber%2CConstructionDate%2CWellUse%2CCountyName%2CProductionRate%2CStaticWaterLevel%2CCasingDepth%2CTotalDepth%2CWellDocs%2CLatitude%2CLongitude&returnGeometry=true&outSR=4326&resultRecordCount=200"
     ]
   },
   "idaho wells: HTTP 503": {

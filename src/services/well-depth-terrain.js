@@ -25,6 +25,7 @@
 // (wells or elevation) answers { available: false, status } and the browser keeps the plain
 // nearest-wells median, labelled low confidence (public/screening-inputs.js). Screening only.
 import { json } from '../shared/http.js';
+import { withoutPersonalFields } from '../shared/personal-fields.js';
 import { cachedJson } from '../shared/upstream.js';
 import { findMontanaWellCandidates } from '../states/montana/wells.js';
 import { findIdahoWellCandidates } from '../states/idaho/wells.js';
@@ -302,5 +303,6 @@ export async function handleWellDepthTerrain(request) {
   // ~11 m: one homesite point per parcel; the same parcel always sends the same point.
   const key = `${state}:${lat.toFixed(4)},${lon.toFixed(4)}`;
   const answer = await cachedJson(WELL_TERRAIN_CACHE_PREFIX, key, WELL_TERRAIN.cacheSeconds, () => wellDepthTerrain({ state, lat, lon }), { isValid: goodAnswer });
-  return json(answer, 200, goodAnswer(answer) ? 'public, max-age=3600, s-maxage=86400' : 'no-store');
+  // The answer carries well ids, depths and elevations only; the strip is the last guard.
+  return json(withoutPersonalFields(answer), 200, goodAnswer(answer) ? 'public, max-age=3600, s-maxage=86400' : 'no-store');
 }
