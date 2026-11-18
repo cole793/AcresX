@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import {
   computeSlopeRaster, hornSlopePct, clipMask, runRects, chooseZoom, rasterWindow, lonToX, latToY, xToLon, yToLat, pixelMeters,
-  slopeRaster, clearSlopeRasterMemo, boundsRing, SLOPE_CLASSES, STEEP_REMOVED_PCT, RASTER_MAX_TILES
+  slopeRaster, clearSlopeRasterMemo, boundsRing, SLOPE_CLASSES, STEEP_REMOVED_PCT, RASTER_MAX_TILES, RASTER_MAX_PIXELS
 } from '../src/services/slope-raster.js';
 import { clearTerrainTileMemo, TERRAIN_TILES_URL } from '../src/services/terrain-tiles.js';
 import { buildableFromLayers } from '../src/services/buildable-area.js';
@@ -168,6 +168,10 @@ test('zoom choice: z14 for a parcel, lower zooms for larger ones, never more tha
     assert.ok(w && w.tiles.length <= RASTER_MAX_TILES, `${d}°: ${w?.tiles.length} tiles at z${w?.z}`);
   }
   assert.equal(chooseZoom(square(1)), null, 'a 1° parcel needs too many tiles even at z12');
+  // CPU cap: a ~1,500 ac box fits 16 tiles at z14 but not RASTER_MAX_PIXELS, so it drops to z13.
+  const big = chooseZoom({ minLon: -108.56, maxLon: -108.5, minLat: 45.69, maxLat: 45.732 });
+  assert.equal(big.z, 13);
+  assert.ok(big.width * big.height <= RASTER_MAX_PIXELS);
   const w = rasterWindow(square(0.005), 14);
   assert.ok(w.width > 2 && w.height > 2, 'the window has the 1-pixel Horn margin');
 });

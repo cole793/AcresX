@@ -8,7 +8,8 @@
 //
 // Method:
 //   1. Zoom: the highest of RASTER_ZOOMS (14, 13, 12) whose tiles covering the parcel's bounding
-//      box plus a one-pixel margin number at most RASTER_MAX_TILES. Pixel size is
+//      box plus a one-pixel margin number at most RASTER_MAX_TILES, in a window of at most
+//      RASTER_MAX_PIXELS pixels (z14 up to about 400 x 400 px, ~2.7 km square at 45.7 N). Pixel size is
 //      40,075,016.686 m x cos(lat) / (256 x 2^z): z14 ~6.7 m, z13 ~13.3 m, z12 ~26.7 m at 45.7 N.
 //      The source raster is ~10 m, so z14 adds no detail beyond it, only finer clipping.
 //   2. Elevation per pixel: terrarium decode, (R x 256 + G + B / 256) - 32768 m. Voids
@@ -43,8 +44,10 @@
 // dataset), and in-flight / recent results are kept per isolate, so /api/land-analysis,
 // /api/buildable-area and /api/slope-raster for one parcel compute it once.
 //
-// CPU (measured offline, Node 22): a 53 ac parcel at z14 (4 tiles) ~15 ms decode + ~2 ms raster;
-// a full 16-tile z14 box ~60 ms decode + ~25 ms raster. Never throws from slopeRaster(): failures
+// CPU (measured 2026-11-17, Node 22, live tiles): the 53 ac Yellowstone parcel at z14 (2 tiles,
+// 4,800 parcel pixels) 13 ms; a 0.03 x 0.021 degree box (~370 ac, z14, 6 tiles, 122,500 pixels)
+// 137 ms; a 0.06 x 0.042 degree box (~1,500 ac) took 485 ms at z14 (490,000 pixels), so the
+// pixel cap moves it to z13 (~120,000 pixels). Never throws from slopeRaster(): failures
 // come back as { available: false, error }.
 import { loadTile, terrariumMeters, TERRAIN_TILE_SIZE, TERRAIN_TILE_TIMEOUT_MS } from './terrain-tiles.js';
 import { ringsFromGeometry, SQM_PER_ACRE } from '../shared/polygon-coverage.js';
@@ -55,6 +58,7 @@ export const SLOPE_RASTER_CACHE_PREFIX = 'https://acresx.internal/cache/slope-ra
 export const SLOPE_RASTER_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const RASTER_ZOOMS = Object.freeze([14, 13, 12]);
 export const RASTER_MAX_TILES = 16;
+export const RASTER_MAX_PIXELS = 160000;
 export const RASTER_TILE_CONCURRENCY = 8;
 export const STEEP_REMOVED_PCT = 30;
 export const MAY_LIMIT_PCT = 15;
@@ -112,10 +116,12 @@ export function rasterWindow(bounds, z) {
   return { z, x0, y0, width: x1 - x0 + 1, height: y1 - y0 + 1, tiles };
 }
 
-export function chooseZoom(bounds, maxTiles = RASTER_MAX_TILES) {
+// The highest zoom whose window needs at most maxTiles tiles and maxPixels pixels (CPU: the
+// raster costs ~1 ms per 1,000 pixels in Node, so a big parcel drops a zoom instead).
+export function chooseZoom(bounds, maxTiles = RASTER_MAX_TILES, maxPixels = RASTER_MAX_PIXELS) {
   for (const z of RASTER_ZOOMS) {
     const w = rasterWindow(bounds, z);
-    if (w.tiles.length <= maxTiles) return w;
+    if (w.tiles.length <= maxTiles && w.width * w.height <= maxPixels) return w;
   }
   return null;
 }
