@@ -270,7 +270,7 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
   const buildableSqM = Math.max(0, total - areas.removedSqM);
   const shape = maskGeometry(parcel, groups, { setbackM, flag });
   const slope = layers.find(l => l.key === 'slope');
-  const homesite = pickHomesite(slope?.homesites, groups, flag);
+  const { homesite, homesiteStatus } = pickHomesite(slope?.homesites, groups, flag);
   const slopeClasses = Array.isArray(slope?.slopeClasses)
     ? slope.slopeClasses.map(c => ({ key: c.key, label: c.label, pct: c.pct, acres: toAcres((c.share || 0) * total) }))
     : null;
@@ -287,25 +287,40 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
     slopeClasses,
     // Additive: the gentlest ~1 ac clear of removed constraints (null without the raster or when
     // none is clear); the septic slope input on the page (public/screening-inputs.js).
-    homesite
+    homesite,
+    // 'found', 'none_clear' (no ~1 acre site clear of mapped constraints: the page grades septic
+    // on the parcel average) or 'unavailable' (no slope raster).
+    homesiteStatus
   };
 }
 
-// The first (gentlest) slope-raster homesite candidate with under 5% of its area in a removed
-// constraint (flood, wetlands, steep slope; the zoning setback is not checked: it depends on the
-// parcel lines, and a 1 ac square fits inside it on any parcel big enough to have one).
+// The gentlest slope-raster homesite candidate (slope-raster.js homesiteCandidates: up to 400
+// ~1 ac squares under 30%, spread over the parcel, gentlest first) with under 5% of its area in a
+// removed constraint (flood, wetlands, steep slope; the zoning setback is not checked: it depends
+// on the parcel lines). Only the constraint rings whose box touches a square are tested, so the
+// search stays cheap. { homesite, homesiteStatus: 'found' | 'none_clear' | 'unavailable' }.
 export const HOMESITE_MAX_OVERLAP = 0.05;
+const ringBox = rings => {
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const ring of rings) for (const [x, y] of ring) { if (x < w) w = x; if (x > e) e = x; if (y < s) s = y; if (y > n) n = y; }
+  return [w, s, e, n];
+};
 function pickHomesite(candidates, groups, flag) {
-  if (!Array.isArray(candidates) || !candidates.length) return null;
-  const removing = Object.fromEntries(Object.entries(groups).filter(([k]) => k !== flag));
+  if (!Array.isArray(candidates) || !candidates.length) return { homesite: null, homesiteStatus: 'unavailable' };
+  const removing = Object.entries(groups).filter(([k]) => k !== flag).map(([k, list]) => [k, list.map(rings => ({ rings, box: ringBox(rings) }))]);
   for (const c of candidates) {
-    const ring = [[[c.bounds[0], c.bounds[1]], [c.bounds[2], c.bounds[1]], [c.bounds[2], c.bounds[3]], [c.bounds[0], c.bounds[3]], [c.bounds[0], c.bounds[1]]]];
-    const a = maskAreas(ring, removing, { strips: 40 });
-    if (!(a.parcelSqM > 0) || a.removedSqM / a.parcelSqM < HOMESITE_MAX_OVERLAP) {
-      return { slopePct: c.slopePct, acres: c.acres, center: c.center, bounds: c.bounds, basis: 'Gentlest ~1 acre of the parcel outside mapped flood zones, wetlands and slopes over 30% (slope raster)' };
+    const [w, s, e, n] = c.bounds;
+    const near = Object.fromEntries(removing.map(([k, list]) => [k, list.filter(({ box }) => box[0] < e && box[2] > w && box[1] < n && box[3] > s).map(x => x.rings)]).filter(([, list]) => list.length));
+    let share = 0;
+    if (Object.keys(near).length) {
+      const a = maskAreas([[[w, s], [e, s], [e, n], [w, n], [w, s]]], near, { strips: 40 });
+      share = a.parcelSqM > 0 ? a.removedSqM / a.parcelSqM : 0;
+    }
+    if (share < HOMESITE_MAX_OVERLAP) {
+      return { homesiteStatus: 'found', homesite: { slopePct: c.slopePct, acres: c.acres, center: c.center, bounds: c.bounds, basis: 'Gentlest ~1 acre of the parcel outside mapped flood zones, wetlands and slopes over 30% (slope raster)' } };
     }
   }
-  return null;
+  return { homesite: null, homesiteStatus: 'none_clear' };
 }
 
 export async function buildableArea(body, env, ctx) {

@@ -64,7 +64,9 @@ export const STEEP_REMOVED_PCT = 30;
 export const MAY_LIMIT_PCT = 15;
 // Homesite / drainfield area (owner decision 2026-11-18): the gentlest ~1 acre square.
 export const HOMESITE_SQM = 4046.8564224;
-export const HOMESITE_CANDIDATES = 6;
+// Up to this many candidates, spread over the parcel (no two closer than half a square), so
+// buildable-area.js can find the gentlest one clear of flood zones and wetlands.
+export const HOMESITE_CANDIDATES = 400;
 export const MASK_MAX_RECTS = 2500;
 export const DISPLAY_MAX_RECTS = 3000;
 export const RASTER_SOURCE = 'USGS 3DEP elevation (AWS Terrain Tiles copy), per-pixel slope';
@@ -326,7 +328,9 @@ export function computeSlopeRaster(dem, win, rings, { steepPct = STEEP_REMOVED_P
 // Gentlest homesite areas (owner decision 2026-11-18: septic uses the slope of the best homesite
 // area, not the parcel average). Squares of k x k pixels, k = ceil(sqrt(1 acre) / pixel size),
 // wholly inside the parcel, every pixel measured and none over steepPct; ranked by mean slope
-// (summed-area tables), up to HOMESITE_CANDIDATES that do not overlap, gentlest first. A parcel
+// (summed-area tables), gentlest first, up to HOMESITE_CANDIDATES with no two offset by less than
+// half a square in both directions (every valid square is then within half a square of a
+// candidate, so a clear area of an acre or more always has a mostly-clear candidate). A parcel
 // with fewer than k x k pixels: one candidate, its non-steep pixels. buildable-area.js picks the
 // first candidate clear of flood zones and wetlands; land-analysis.js reports the first.
 // [{ slopePct, acres, center: [lon, lat], bounds: [w, s, e, n] }].
@@ -371,6 +375,7 @@ export function homesiteCandidates(slope, inside, count, win, steepPct = STEEP_R
   }
   order.sort((a, b) => means[a] - means[b]);
   const blocked = new Uint8Array(pw * ph);
+  const half = Math.max(1, Math.ceil(k / 2));
   const out = [];
   for (const j of order) {
     if (blocked[j]) continue;
@@ -378,7 +383,7 @@ export function homesiteCandidates(slope, inside, count, win, steepPct = STEEP_R
     const b = rectBounds({ c0: c, c1: c + k - 1, r0: r, r1: r + k - 1 }, win);
     out.push({ slopePct: round1(means[j]), acres: acresOf(k * k), center: [r6((b[0] + b[2]) / 2), r6((b[1] + b[3]) / 2)], bounds: b });
     if (out.length >= HOMESITE_CANDIDATES) break;
-    for (let rr = Math.max(0, r - k + 1); rr < Math.min(ph, r + k); rr++) for (let cc = Math.max(0, c - k + 1); cc < Math.min(pw, c + k); cc++) blocked[rr * pw + cc] = 1;
+    for (let rr = Math.max(0, r - half + 1); rr < Math.min(ph, r + half); rr++) for (let cc = Math.max(0, c - half + 1); cc < Math.min(pw, c + half); cc++) blocked[rr * pw + cc] = 1;
   }
   return out;
 }
@@ -494,6 +499,7 @@ export async function handleSlopeRaster(request, env, ctx) {
   try { body = await request.json(); } catch { body = {}; }
   const geometry = body?.geometry;
   if (!geometry || !['Polygon', 'MultiPolygon'].includes(geometry.type)) return json({ available: false, error: 'Parcel polygon geometry is required.' }, 400, 'no-store');
-  const result = await slopeRaster(geometry, { ctx });
+  const { homesites, ...result } = await slopeRaster(geometry, { ctx });
+  if (homesites?.length) result.homesite = homesites[0];
   return json(result, 200, result.available ? 'public, max-age=3600, s-maxage=2592000' : 'no-store');
 }

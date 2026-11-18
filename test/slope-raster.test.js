@@ -331,8 +331,9 @@ test('homesite: the gentlest ~1 ac square of a steep parcel is the flat bench', 
   const c0 = lonToX(w, Z) - win.x0, c1 = lonToX(e, Z) - win.x0, r0 = latToY(n, Z) - win.y0, r1 = latToY(s, Z) - win.y0;
   assert.ok(c0 >= 22 && c1 <= 38 && r0 >= 22 && r1 <= 38, `inside the bench: cols ${c0}-${c1}, rows ${r0}-${r1}`);
   assert.ok(rest.length > 0 && rest.every(h => h.slopePct >= best.slopePct), 'other candidates are steeper');
-  // Candidates do not overlap.
-  for (const h of rest) assert.ok(h.bounds[0] >= e - 1e-9 || h.bounds[2] <= w + 1e-9 || h.bounds[1] >= n - 1e-9 || h.bounds[3] <= s + 1e-9, 'no overlap with the best');
+  // Candidates are spread out: none is offset from the best by less than half a square both ways.
+  const halfLon = (e - w) / 2 - 1e-9, halfLat = (n - s) / 2 - 1e-9;
+  for (const h of rest) assert.ok(Math.abs(h.bounds[0] - w) >= halfLon || Math.abs(h.bounds[1] - s) >= halfLat, 'spread from the best');
 });
 
 test('homesite: a parcel smaller than an acre is its own candidate; all-steep parcels have none', () => {
@@ -344,16 +345,28 @@ test('homesite: a parcel smaller than an acre is its own candidate; all-steep pa
   assert.deepEqual(cliff.homesites, [], 'nothing under 30%');
 });
 
-test('homesite: buildable-area skips a candidate inside a flood zone and takes the next gentlest', () => {
-  const r = computeSlopeRaster(benchDem(), win, interior);
+test('homesite: the flattest acre is in a flood zone, a slightly steeper acre is clear: buildable-area takes the clear one', () => {
+  // 25% plane with two benches: A (cols 4-20) flat, B (cols 38-54) a 3% plane; both rows 22-38.
+  const dem = demOf((r, c, m) => {
+    if (r >= 22 && r < 38 && c >= 4 && c < 20) return 0.25 * 4 * m;
+    if (r >= 22 && r < 38 && c >= 38 && c < 54) return 0.25 * 38 * m + 0.03 * (c - 38) * m;
+    return 0.25 * c * m;
+  });
+  const r = computeSlopeRaster(dem, win, interior);
+  assert.equal(r.homesites[0].slopePct, 0, 'the flattest candidate is bench A');
   const geometry = { type: 'Polygon', coordinates: interior };
   const slope = { key: 'slope', label: 'Slopes over 30%', status: 'none', rings: [], slopeClasses: r.classes, homesites: r.homesites };
-  const clear = buildableFromLayers(geometry, [{ key: 'flood', label: 'Flood', status: 'none', rings: [] }, slope]);
-  assert.deepEqual(clear.homesite.bounds, r.homesites[0].bounds);
-  assert.equal(clear.homesite.slopePct, 0);
-  const flooded = buildableFromLayers(geometry, [{ key: 'flood', label: 'Flood', status: 'counted', rings: [boundsRing(r.homesites[0].bounds)] }, slope]);
-  assert.notDeepEqual(flooded.homesite.bounds, r.homesites[0].bounds, 'the flooded bench is skipped');
-  assert.equal(flooded.homesite.slopePct, r.homesites[1].slopePct);
+  // A flood zone over bench A and its surroundings (columns 0-30).
+  const flood = { key: 'flood', label: 'Flood', status: 'counted', rings: [pixelBox(0, 0, 30, H)] };
+  const b = buildableFromLayers(geometry, [flood, slope]);
+  assert.equal(b.homesiteStatus, 'found');
+  near(b.homesite.slopePct, 3, 0.3, 'bench B slope');
+  const c = lonToX(b.homesite.bounds[0], Z) - win.x0;
+  assert.ok(c >= 37, `homesite starts at column ${c}, east of the flood zone`);
+  // The whole parcel flooded: no site clear of mapped constraints.
+  const none = buildableFromLayers(geometry, [{ ...flood, rings: [pixelBox(0, 0, W, H)] }, slope]);
+  assert.equal(none.homesite, null);
+  assert.equal(none.homesiteStatus, 'none_clear');
 });
 
 test('septic: graded on the homesite slope, not the parcel average; re-graded when the buildable homesite arrives; parcel average without a raster', () => {
@@ -373,6 +386,11 @@ test('septic: graded on the homesite slope, not the parcel average; re-graded wh
   assert.equal(SX.score(land), 38);
   assert.equal(land.soil.feasibility, 'limited');
   assert.match(land.soil.septic.limits.join(' '), /drainfield-area slope 18\.4% \(over 15%\)/);
+  // No ~1 acre site clear of mapped constraints: the parcel average, not the in-flood terrain homesite.
+  h.context.last = { land, buildableArea: { homesite: null, homesiteStatus: 'none_clear' } };
+  assert.equal(SX.score(land), 38, 'graded on the 25% parcel average');
+  assert.match(land.soil.septic.context, /no ~1 acre site clear of mapped constraints/);
+  assert.equal(land.soil.septic.slopeSource, 'measured');
   // No raster: the parcel average, as before.
   h.context.last = null;
   const old = { soil: soil(), terrain: { available: true, gradePct: 25 } };

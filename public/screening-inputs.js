@@ -119,6 +119,8 @@
     const b = buildable === undefined ? (() => { try { return typeof last !== 'undefined' ? last?.buildableArea : root.last?.buildableArea; } catch { return root.last?.buildableArea; } })() : buildable;
     const fromBuildable = finite(b?.homesite?.slopePct);
     if (fromBuildable != null) return { slopePct: fromBuildable, homesite: b.homesite };
+    // No ~1 acre site clear of mapped constraints: the parcel average, not a site in a flood zone.
+    if (b?.homesiteStatus === 'none_clear') return { noneClear: true };
     const t = land?.terrain;
     const fromTerrain = t?.available ? finite(t.homesiteSlopePct) : null;
     if (fromTerrain != null) return { slopePct: fromTerrain, homesite: t.homesite || null };
@@ -130,7 +132,9 @@
     if (!soil?.available) return null;
     const t = land?.terrain;
     const average = t?.available ? finite(t.gradePct) : null;
-    const site = homesiteInput(land, buildable);
+    const input = homesiteInput(land, buildable);
+    const noneClear = Boolean(input?.noneClear);
+    const site = noneClear ? null : input;
     const measured = site ? site.slopePct : average;
     const soilSlope = finite(soil.soilSlopePct);
     const slopePct = measured ?? soilSlope;
@@ -141,7 +145,7 @@
     const mapSlope = range ? `soil map unit spans ${range[0]}–${range[1]}% slopes` : soilSlope != null ? `soil map unit's typical slope ${soilSlope}%` : '';
     let context;
     if (site) context = [`drainfield-area slope ${pct1(site.slopePct)} (gentlest ~1 ac)`, average != null ? `parcel average ${pct1(average)}` : '', mapSlope].filter(Boolean).join('; ');
-    else if (measured != null) context = [mapSlope, `measured parcel grade ${pct1(measured)}`].filter(Boolean).join('; ');
+    else if (measured != null) context = [mapSlope, `measured parcel grade ${pct1(measured)}`, noneClear ? 'no ~1 acre site clear of mapped constraints' : ''].filter(Boolean).join('; ');
     else context = `measured parcel grade not available${soilSlope != null ? `; soil map slope ${soilSlope}% used` : ''}`;
     context = context.charAt(0).toUpperCase() + context.slice(1);
     const limits = c.limits.map(x => (x.startsWith('slope') && measured != null ? `${site ? 'drainfield-area slope' : 'measured grade'} ${pct1(measured)} (over ${LIMITED_OVER_PCT}%)` : x));
@@ -156,7 +160,7 @@
 
   // Grades the land answer (idempotent for the same slope input). Re-grades when the input
   // changes, i.e. when the buildable-area homesite arrives after the land answer. Returns land.
-  const inputKey = land => { const s = homesiteInput(land); return s ? `h:${s.slopePct}` : 'avg'; };
+  const inputKey = land => { const s = homesiteInput(land); return s?.noneClear ? 'none' : s ? `h:${s.slopePct}` : 'avg'; };
   function apply(land) {
     const soil = land?.soil;
     if (!soil?.available) return land;
