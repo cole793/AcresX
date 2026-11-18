@@ -193,7 +193,9 @@
       const slopeStatus = document.getElementById('slopeStatus');
       const slopeNote = document.getElementById('slopeNote');
       if (slopeStatus) slopeStatus.textContent = `Average grade ${Number(terrain.gradePct).toFixed(1)}%`;
-      if (slopeNote) slopeNote.textContent = `${Math.round(terrain.reliefFt)} ft total relief · USGS elevation screening`;
+      // p90GradePct: the slope raster's 90th percentile (src/services/slope-raster.js), when measured.
+      const p90 = Number.isFinite(Number(terrain.p90GradePct)) && terrain.p90GradePct !== null ? ` · steepest 10% of the parcel: ${Math.round(terrain.p90GradePct)}%+` : '';
+      if (slopeNote) slopeNote.textContent = `${Math.round(terrain.reliefFt)} ft total relief${p90} · USGS elevation screening`;
     }
 
     if (!listingIsFound()) {

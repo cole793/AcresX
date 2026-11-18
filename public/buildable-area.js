@@ -11,7 +11,7 @@
 // single plain number). A failed request leaves { status: 'unavailable' } and the card says so;
 // nothing else on the page changes.
 //
-// window.AcresXBuildable: { headline, breakdown, notCounted, fmtAcres, claim, load, render }
+// window.AcresXBuildable: { headline, breakdown, notCounted, slopeLine, fmtAcres, claim, load, render }
 // (property-report-v2.js reads the same text helpers for page 1).
 (function (root) {
   const WAIT_FOR = ['flood', 'wetlands', 'zoningPermits', 'land'];
@@ -38,6 +38,12 @@
   function breakdown(b) {
     if (!measured(b)) return [];
     return (b.removed || []).map(r => `${r.reason}: ${fmtAcres(r.acres, b.parcelAcres)} ac (${num(r.pct) ?? 0}%)`);
+  }
+  // "Slope across the parcel: 0–8% 77% · 8–15% 6.7% · ..." from the slope raster (null on the
+  // coarse grid, src/services/buildable-area.js slopeClasses).
+  function slopeLine(b) {
+    if (!measured(b) || !Array.isArray(b.slopeClasses) || !b.slopeClasses.length) return '';
+    return `Slope across the parcel: ${b.slopeClasses.map(c => `${c.label} ${num(c.pct) ?? 0}%`).join(' · ')}`;
   }
   // Constraints that could not be checked, by label.
   function notCounted(b) {
@@ -145,6 +151,7 @@
     </div><div>
       <ul class="buildable-list">${removed || '<li class="none"><span>No mapped flood zone, wetland or steep slope removed</span><span>0 ac</span></li>'}${overlap}</ul>
       ${mayAlsoHtml(b)}
+      ${slopeLine(b) ? `<div class="buildable-notes">${esc(slopeLine(b))}. Over 30% is removed; 15–30% is shown, not removed.</div>` : ''}
       <div class="buildable-notes">${missing.length ? `<strong>Not counted:</strong> ${esc(missing.join(', '))}. ` : ''}${esc((b.notes || []).join(' '))}</div>
     </div>`;
   }
@@ -236,7 +243,7 @@
     try { renderMap(l.buildableArea, l); } catch (error) { console.warn('AcresX buildable map shading failed', error); }
   }
 
-  root.AcresXBuildable = { headline, breakdown, mayAlso, notCounted, fmtAcres, measured, claim, load, render };
+  root.AcresXBuildable = { headline, breakdown, mayAlso, notCounted, slopeLine, fmtAcres, measured, claim, load, render };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;
