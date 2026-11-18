@@ -281,6 +281,20 @@ test('homesite point: the area centroid when inside; a true interior point for a
   assert.equal(H({ properties: {} }), null, 'no geometry: no point (no request)');
 });
 
+test('homesite point: tiny parcels at real Montana coordinates get the true centroid (precision guard)', () => {
+  const { ctx } = wrapperContext({ terrainAnswer: {}, wells: () => [] });
+  const H = ctx.AcresXWellTerrain.homesite;
+  // Raw lon/lat shoelace sums cancel badly here: before the guard 1e-4° gave null and 3e-4° was ~11% off.
+  for (const d of [1e-4, 3e-4]) {
+    const [x, y] = [-110, 45];
+    const point = H({ geometry: { type: 'Polygon', coordinates: [[[x, y], [x + d, y], [x + d, y + d], [x, y + d], [x, y]]] } });
+    assert.ok(point, `${d}° square: a point`);
+    const [px, py] = point;
+    assert.ok(px > x && px < x + d && py > y && py < y + d, `${d}° square: (${px}, ${py}) inside`);
+    assert.ok(Math.abs(px - (x + d / 2)) < 0.01 * d && Math.abs(py - (y + d / 2)) < 0.01 * d, `${d}° square: centroid error under 1% of the side, got (${px}, ${py})`);
+  }
+});
+
 function wrapperContext({ terrainAnswer, terrainDelayMs = 0, wells }) {
   const fetches = [];
   const ctx = {

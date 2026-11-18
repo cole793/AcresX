@@ -22,13 +22,17 @@
   // the midpoint of the widest inside span along the centroid's latitude, which is always interior.
   const polygons = g => (g?.type === 'Polygon' ? [g.coordinates] : g?.type === 'MultiPolygon' ? g.coordinates : []);
   function ringArea(ring) { let a = 0; for (let i = 0; i < ring.length - 1; i++) a += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1]; return a / 2; }
+  // Coordinates are taken relative to the first vertex: with raw lon/lat (-110, 45) the shoelace
+  // terms are ~5,000 and cancel to ~1e-8 for a 1e-4° parcel, losing most of the precision.
   function areaCentroid(ring) {
+    if (!ring?.length) return null;
+    const [ox, oy] = ring[0];
     let a = 0, cx = 0, cy = 0;
     for (let i = 0; i < ring.length - 1; i++) {
-      const [x0, y0] = ring[i], [x1, y1] = ring[i + 1], f = x0 * y1 - x1 * y0;
+      const x0 = ring[i][0] - ox, y0 = ring[i][1] - oy, x1 = ring[i + 1][0] - ox, y1 = ring[i + 1][1] - oy, f = x0 * y1 - x1 * y0;
       a += f; cx += (x0 + x1) * f; cy += (y0 + y1) * f;
     }
-    return a ? [cx / (3 * a), cy / (3 * a)] : null;
+    return a ? [ox + cx / (3 * a), oy + cy / (3 * a)] : null;
   }
   // x positions where the polygon's rings cross latitude y.
   function crossings(poly, y) {
