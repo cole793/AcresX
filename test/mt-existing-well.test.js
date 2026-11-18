@@ -231,6 +231,35 @@ test('a complete answer is cached under the versioned prefix, owner-free, and se
   assert.deepEqual(second, first);
 });
 
+test('owner lookup down: still answers (partial, owner not checked), and is not cached', async () => {
+  store = fakeCache();
+  stub(fixtureRoutes({ owner: down }));
+  const { response, body } = await fixtureRequest();
+  assert.equal(body.available, true);
+  assert.equal(body.status, 'strong_match');
+  assert.equal(body.partial, true);
+  assert.equal(body.sourceStatus.assessor, 'unavailable');
+  assert.equal(body.match.evidence.ownerChecked, false);
+  assert.match(response.headers.get('Cache-Control'), /no-store/);
+  assert.equal(store.size, 0);
+});
+
+test('the request\'s address is echoed to that caller only, never stored in or served from the cache', async () => {
+  store = fakeCache();
+  stub(fixtureRoutes());
+  const first = await post({ state: 'MT', county: 'Yellowstone', parcelId: FX.parcelId, geometry: FX.geometry, address: '111 FIRST CALLER RD' });
+  assert.equal(first.body.siteAddress, '111 FIRST CALLER RD');
+  assert.equal(store.size, 1);
+  assert.doesNotMatch([...store.values()].join(''), /FIRST CALLER/);
+  const before = calls.length;
+  const second = await post({ state: 'MT', county: 'Yellowstone', parcelId: FX.parcelId, geometry: FX.geometry, address: '222 SECOND CALLER RD' });
+  assert.equal(calls.length, before, 'served from the cache');
+  assert.equal(second.body.siteAddress, '222 SECOND CALLER RD');
+  assert.doesNotMatch(JSON.stringify(second.body), /FIRST CALLER/);
+  const third = await post({ state: 'MT', county: 'Yellowstone', parcelId: FX.parcelId, geometry: FX.geometry });
+  assert.equal(third.body.siteAddress, '');
+});
+
 test('missing geometry: JSON 400', async () => {
   stub({ gwic: [], rights: [], owner: [], yield: [] });
   const { response, body } = await post({ state: 'MT', county: 'Yellowstone', parcelId: FX.parcelId });

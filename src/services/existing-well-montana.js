@@ -400,7 +400,8 @@ async function buildAnswer(body, county) {
     chosen.yieldGpm = await queryYield(chosen.gwicId, YIELD_BUDGET_MS);
     chosen.flowRateGPM = chosen.yieldGpm;
   }
-  const partial = !gwic.ok || !rights.ok;
+  // A missing owner lookup is partial too: the owner match could change the answer, so it is not cached.
+  const partial = !gwic.ok || !rights.ok || !owner.ok;
   return {
     body: {
       available: true, ...base, partial,
@@ -408,7 +409,6 @@ async function buildAnswer(body, county) {
       summary: summaryLine(status, chosen, waterRight),
       score: chosen?.score || 0, match: chosen, waterRight,
       candidateCount: wells.length + pods.length,
-      siteAddress: String(body.address || ''),
       methodology: 'Matches Montana GWIC well logs and DNRC groundwater rights to the parcel by parcel geocode, mapped location (GPS and map points; township-range-section tracts only when the whole tract lies in the parcel, never a section-centre point), and the current owner name (compared, never shown). GWIC and DNRC records have no well address.',
       caution: 'Well logs and water rights are historical records and mapped locations can be approximate. A match is screening evidence, not proof that a well is currently usable or legally serving the parcel; verify its condition and yield.'
     }
@@ -429,7 +429,8 @@ export async function handleMontanaExistingWell(body, county) {
     answer = { available: false, status: 'unavailable', label: 'Well-record screening unavailable', state: 'MT', county: county || '', error: String(error?.message || error) };
   }
   if (answer?.error && answer.httpStatus) return json({ error: answer.error }, answer.httpStatus, 'no-store');
-  // County name from this request (a cached answer may be shared by the same parcel's searches).
-  const out = { ...answer, county: county || answer.county || '' };
+  // County name and site address from this request, added after the cache (a cached answer is
+  // shared by every search of the parcel, so it never holds one caller's strings).
+  const out = { ...answer, county: county || answer.county || '', ...(answer?.available ? { siteAddress: String(body.address || '').slice(0, 200) } : {}) };
   return json(out, 200, out.available && !out.partial ? 'public, max-age=300, s-maxage=900' : 'no-store');
 }
