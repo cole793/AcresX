@@ -44,7 +44,7 @@ import { findCadastralPlat, findMontanaEasements, MT_EASEMENTS_SOURCE } from '..
 import { findPadusEasements, PADUS_SOURCE, PADUS_EASEMENTS } from './padus-easements.js';
 
 // Bump the version whenever the answer shape or an adapter's mapping changes.
-export const RESTRICTIONS_CACHE_PREFIX = 'https://acresx.internal/cache/recorded-restrictions/v1/';
+export const RESTRICTIONS_CACHE_PREFIX = 'https://acresx.internal/cache/recorded-restrictions/v2/';
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const MAX_BODY_BYTES = 300_000;
 
@@ -121,7 +121,7 @@ function publicAgreement(a) {
 
 function publicEasement(e) {
   const out = { name: text(e?.name, 120) || 'Conservation easement' };
-  for (const [key, max] of [['holder', 120], ['holderType', 60], ['deedRef', 40], ['note', 120], ['source', 160]]) { const v = text(e?.[key], max); if (v) out[key] = v; }
+  for (const [key, max] of [['holder', 120], ['holderType', 60], ['deedRef', 40], ['source', 160]]) { const v = text(e?.[key], max); if (v) out[key] = v; }
   const d = isoDate(e?.date); if (d) out.date = d;
   out.sharePct = Number.isFinite(e?.sharePct) ? e.sharePct : null;
   return out;

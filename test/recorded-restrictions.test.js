@@ -14,7 +14,7 @@ import { interiorPoint, parcelRings, featureShares, MIN_OVERLAP_SHARE } from '..
 import { pointInRings } from '../src/shared/polygon-coverage.js';
 import { RESTRICTIONS_CACHE_PREFIX, TITLE_LINE, PLATTED_NOTE, NOT_CHECKED_NOTE } from '../src/services/recorded-restrictions.js';
 import { kootenaiPlat, parseKootenaiLegal } from '../src/counties/kootenai-restrictions.js';
-import { stevensLegalPlat } from '../src/counties/stevens-restrictions.js';
+import { stevensLegalPlat, stevensHolderType, stevensEasement } from '../src/counties/stevens-restrictions.js';
 import { parseMontanaLegal } from '../src/states/montana/restrictions.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/restrictions/${name}`, import.meta.url), 'utf8'));
@@ -232,9 +232,27 @@ test('Stevens: a mapped subdivision gives the plat name and plat book; a county 
   assert.equal(body.plat.recordedDate, '1952-04-30');
   assert.equal(body.conservationEasements.status, 'found');
   assert.equal(body.conservationEasements.items[0].sharePct, 100);
-  assert.equal(body.conservationEasements.items[0].note, 'DNR easement');
+  // COMMENT is free text that could name a person: only its holder category is returned.
+  assert.equal(body.conservationEasements.items[0].holderType, 'State agency');
+  assert.equal(body.conservationEasements.items[0].note, undefined);
+  assert.doesNotMatch(JSON.stringify(body), /DNR easement/);
   assert.ok(body.notes.some(n => /conservation easement is mapped/.test(n)));
   assertClean(body);
+});
+
+test('Stevens easement COMMENT: a holder category only, never the free text (it could name a person)', () => {
+  assert.equal(stevensHolderType('DNR easement'), 'State agency');
+  assert.equal(stevensHolderType('WDFW conservation easement'), 'State agency');
+  assert.equal(stevensHolderType('US Fish and Wildlife Service'), 'Federal agency');
+  assert.equal(stevensHolderType('Inland Northwest Land Conservancy'), 'Nonprofit / land trust');
+  assert.equal(stevensHolderType('Stevens County Conservation District'), 'Special district');
+  assert.equal(stevensHolderType('Stevens County'), 'Local government');
+  assert.equal(stevensHolderType('John Q Placeholder'), null);
+  assert.equal(stevensHolderType(''), null);
+  const e = stevensEasement({ COMMENT: 'Easement to John Q Placeholder', PARCELN: '0434200' }, 0.5);
+  assert.equal(e.holderType, null);
+  assert.ok(!('note' in e));
+  assert.doesNotMatch(JSON.stringify(e), /Placeholder/);
 });
 
 test('Stevens legal descriptions are read conservatively', () => {
@@ -394,7 +412,7 @@ test('cache: a complete answer is stored 30 days under the versioned prefix and 
   await call({ state: 'WA', county: 'Spokane', parcelId: '23123.9051', geometry: polygon(SP_RING) });
   const keys = [...store.keys()];
   assert.equal(keys.length, 1);
-  assert.equal(RESTRICTIONS_CACHE_PREFIX, 'https://acresx.internal/cache/recorded-restrictions/v1/');
+  assert.equal(RESTRICTIONS_CACHE_PREFIX, 'https://acresx.internal/cache/recorded-restrictions/v2/');
   assert.ok(keys[0].startsWith(RESTRICTIONS_CACHE_PREFIX));
   assert.match(store.get(keys[0]), /metes_and_bounds/);
   const before = requested.length;

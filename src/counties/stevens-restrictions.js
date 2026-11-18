@@ -11,6 +11,8 @@
 //   (mostly town plats), so "no plat here" is read with the legal description.
 // - Assessors_Data_Share MapServer/21 "Conservation Easements" (PARCELN, COMMENT), matched by
 //   overlap with the parcel outline. EditorName and the *_user fields are never requested.
+//   COMMENT is free text (e.g. "DNR easement") that could name a person, so it is read only to
+//   pick a holder category (the PAD-US vocabulary) and is never returned or displayed.
 import { restrictionQuery, pointParams, polygonParams, overlapping, sharePct, text, isoDate } from '../shared/restrictions.js';
 
 export const STEVENS_PARCELS = 'https://gis.stevenscountywa.gov/server/rest/services/RealPropertyParcels_Public/MapServer/0';
@@ -51,8 +53,23 @@ export function stevensSubdivisionPlat(attrs = {}) {
   };
 }
 
+// Holder category from the free-text COMMENT, using the PAD-US labels (padus-easements.js).
+// Only recognised agency / land-trust words count; anything else stays unknown. Most specific
+// first: "Stevens County Conservation District" is a district, "Fish and Wildlife Service" federal.
+const HOLDER_CATEGORIES = [
+  [/\bCONSERVATION DISTRICT\b/i, 'Special district'],
+  [/\b(LAND TRUST|CONSERVANCY|LAND COUNCIL|TRUST FOR PUBLIC LAND)\b/i, 'Nonprofit / land trust'],
+  [/\b(USFS|FOREST SERVICE|BLM|BUREAU OF LAND MANAGEMENT|NRCS|USFWS|FISH AND WILDLIFE SERVICE|BUREAU OF RECLAMATION|BONNEVILLE|FEDERAL|UNITED STATES)\b/i, 'Federal agency'],
+  [/\b(DNR|WDFW|NATURAL RESOURCES|FISH (AND|&) WILDLIFE|STATE OF WASHINGTON|WASHINGTON STATE)\b/i, 'State agency'],
+  [/\b(COUNTY|CITY OF|TOWN OF)\b/i, 'Local government']
+];
+export function stevensHolderType(comment) {
+  const s = text(comment, 254);
+  return s ? HOLDER_CATEGORIES.find(([re]) => re.test(s))?.[1] || null : null;
+}
+
 export function stevensEasement(attributes = {}, share) {
-  return { name: 'Conservation easement', holder: null, holderType: null, note: text(attributes.COMMENT, 75), deedRef: null, date: null, sharePct: sharePct(share), source: STEVENS_EASEMENTS_SOURCE };
+  return { name: 'Conservation easement', holder: null, holderType: stevensHolderType(attributes.COMMENT), deedRef: null, date: null, sharePct: sharePct(share), source: STEVENS_EASEMENTS_SOURCE };
 }
 
 export async function getStevensRestrictions({ parcelId, point, rings, signal }) {
