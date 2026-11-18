@@ -145,13 +145,20 @@
     if (d.mostly) return `Nearby wells are mostly in a drainage about ${ft(d.medianDropFt)} lower; upland wells may be much deeper.`;
     return `${d.count} of the ${d.of} nearest wells ${d.count === 1 ? 'sits' : 'sit'} over ${DRAINAGE_FT} ft lower (drainage ${d.count === 1 ? 'well' : 'wells'}, not used as comparable).`;
   }
-  // One deep well at similar or higher ground does not move the range (two are needed, owner
-  // decision 2026-11-18); it is named instead.
+  // One deep well at similar or higher ground (owner decisions 2026-11-18): with no comparable
+  // well it sets the top of the range and is named in full; with comparable wells it does not move
+  // the range (two are needed) and is named briefly.
   function deepText(s) {
     const one = s?.method === 'terrain' ? s.deepWells?.single : null;
-    if (!one || !(one.depthFt > (s.highFt ?? 0))) return '';
-    const where = one.dzFt > SIMILAR_FT ? 'on higher ground' : 'at similar elevation';
-    return `One nearby well ${where} went to ${ft(one.depthFt)}; deeper wells are possible.`;
+    if (!one) return '';
+    const where = one.dzFt > SIMILAR_FT ? `on ground about ${ft(one.dzFt)} higher` : 'at similar elevation';
+    if (s.deepWells.raisedHigh) {
+      const extra = [one.flowing ? 'flowing artesian' : '', one.approximateLocation ? 'location approximate (section centre)' : ''].filter(Boolean).join('; ');
+      const dist = one.distanceMi != null ? ` ${one.distanceMi.toFixed(1)} mi away` : '';
+      return `Top of the range: one well${dist} ${where} went to ${ft(one.depthFt)}${extra ? ` (${extra})` : ''}; ask a local driller.`;
+    }
+    if (!(one.depthFt > (s.highFt ?? 0))) return '';
+    return `One nearby well ${one.dzFt > SIMILAR_FT ? 'on higher ground' : 'at similar elevation'} went to ${ft(one.depthFt)}; deeper wells are possible.`;
   }
   function caution(s) {
     if (!s || s.feet == null || s.confidence === 'moderate') return '';

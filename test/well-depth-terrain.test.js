@@ -65,13 +65,17 @@ test('upland parcel with valley wells: drainage wells flagged, deeper range, low
   assert.ok(e.drainage.medianDropFt >= 150, `drainage about ${e.drainage.medianDropFt} ft lower`);
   // Today's closest-five median was 53 ft; the homesite needs far more.
   assert.ok(e.depthFt >= 150, `low end ${e.depthFt}`);
-  // One deep (1,365 ft artesian) well on higher ground: named, but it does not move the range
-  // (two are needed, owner decision 2026-11-18).
-  assert.ok(e.highFt > e.depthFt && e.highFt < 1000, `high end ${e.highFt}`);
+  // No comparable well, and one deep (1,365 ft flowing artesian) well on higher ground: it sets
+  // the top of the range (owner decision 2026-11-18).
+  assert.equal(e.comparableCount, 0);
   assert.equal(e.deepWells.count, 1);
-  assert.equal(e.deepWells.raisedHigh, false);
+  assert.equal(e.deepWells.raisedHigh, true);
+  assert.equal(e.highFt, 1370);
   assert.equal(e.deepWells.single.depthFt, 1365);
+  assert.equal(e.deepWells.single.id, '218511');
   assert.ok(e.deepWells.single.dzFt > WELL_TERRAIN.similarFt, 'on higher ground');
+  assert.equal(e.deepWells.single.flowing, true, 'negative static level');
+  assert.equal(e.deepWells.single.approximateLocation, true, 'GWIC TRS-SEC: section centre');
   assert.equal(e.planningDepthFt, e.highFt);
   assert.equal(e.scoreDepthFt, e.highFt, 'low confidence grades by the high end');
   assert.ok(e.waterLevelDepthFt > 100, `static water about ${e.waterLevelDepthFt} ft below the homesite`);
@@ -115,25 +119,37 @@ test('similar-elevation wells: moderate confidence, median and quartile range', 
   assert.equal(e.waterLevelDepthFt, 80);
 });
 
-test('deep wells at similar or higher ground: two raise the high end at any confidence, one only adds a note', () => {
+test('deep wells: with comparable wells two raise the high end and one only adds a note; with none, one sets the top', () => {
   const base = [120, 140, 100, 160, 130].map((depthFt, i) => ({ id: String(i), distanceMi: 0.2 + i * 0.1, depthFt, staticFt: null, elevationFt: 2400 }));
   const deep = (n, at = 0.25) => Array.from({ length: n }, (_, i) => ({ id: `d${i}`, distanceMi: at + i * 0.01, depthFt: 900 + i * 100, staticFt: null, elevationFt: 2480 }));
   const one = estimateWellDepth({ parcelElevationFt: 2400, wells: [...base, ...deep(1)].sort((a, b) => a.distanceMi - b.distanceMi) });
   assert.equal(one.confidence, 'moderate');
   assert.equal(one.highFt, 140, 'one deep well does not move the range (p75 of the five comparable)');
-  assert.deepEqual({ ...one.deepWells.single }, { depthFt: 900, dzFt: 80, distanceMi: 0.25 });
+  assert.deepEqual({ ...one.deepWells.single }, { id: 'd0', depthFt: 900, dzFt: 80, distanceMi: 0.25, flowing: false, approximateLocation: false });
   assert.equal(one.deepWells.raisedHigh, false);
   const two = estimateWellDepth({ parcelElevationFt: 2400, wells: [...base, ...deep(2)].sort((a, b) => a.distanceMi - b.distanceMi) });
   assert.equal(two.highFt, 950, 'two deep wells raise the high end to their median');
   assert.equal(two.deepWells.raisedHigh, true);
   assert.equal(two.deepWells.single, null);
   assert.equal(two.depthFt, one.depthFt, 'the central estimate is unchanged');
-  // Low confidence too: one deep well never raises it.
-  const valley = Array.from({ length: 6 }, (_, i) => ({ id: `v${i}`, distanceMi: 0.1 * (i + 1), depthFt: 40, staticFt: null, elevationFt: 2250 }));
-  const lowOne = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...deep(1, 0.7)] });
-  const lowTwo = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...deep(2, 0.7)] });
+  // No comparable well (all in a valley 150 ft down): one deep well anywhere in the search sets
+  // the top of the range, even beyond the wells used.
+  const valley = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}`, distanceMi: 0.1 * (i + 1), depthFt: 40, staticFt: null, elevationFt: 2250 }));
+  const farDeep = [{ id: 'far', distanceMi: 3.5, depthFt: 1200, staticFt: -20, elevationFt: 2500, coarseLocation: true }];
+  const zeroOne = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...farDeep] });
+  assert.equal(zeroOne.confidence, 'low');
+  assert.equal(zeroOne.comparableCount, 0);
+  assert.equal(zeroOne.highFt, 1200);
+  assert.equal(zeroOne.deepWells.raisedHigh, true);
+  assert.deepEqual({ ...zeroOne.deepWells.single }, { id: 'far', depthFt: 1200, dzFt: 100, distanceMi: 3.5, flowing: true, approximateLocation: true });
+  // Low confidence but with comparable wells (mostly drainage): one deep well is a note only.
+  const near = [{ id: 'c1', distanceMi: 0.15, depthFt: 60, staticFt: null, elevationFt: 2400 }, { id: 'c2', distanceMi: 0.25, depthFt: 70, staticFt: null, elevationFt: 2410 }];
+  const lowOne = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...near, ...deep(1, 0.7)].sort((a, b) => a.distanceMi - b.distanceMi) });
   assert.equal(lowOne.confidence, 'low');
-  assert.ok(lowOne.highFt < 900 && lowOne.deepWells.single, `low, one deep: high ${lowOne.highFt}`);
+  assert.equal(lowOne.comparableCount, 2);
+  assert.ok(lowOne.highFt < 900, `with comparables, one deep: high ${lowOne.highFt}`);
+  assert.equal(lowOne.deepWells.raisedHigh, false);
+  const lowTwo = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...near, ...deep(2, 0.42)].sort((a, b) => a.distanceMi - b.distanceMi) });
   assert.equal(lowTwo.highFt, 950);
 
   const h = makeLazyContext();
@@ -146,6 +162,10 @@ test('deep wells at similar or higher ground: two raise the high end at any conf
   assert.match(WD.note(s), /One nearby well on higher ground went to 900 ft/);
   wells.terrain = { available: true, estimate: two };
   assert.equal(WD.deepText(WD.stats({ wells })), '');
+  wells.terrain = { available: true, estimate: zeroOne };
+  const z = WD.stats({ wells });
+  assert.equal(WD.deepText(z), 'Top of the range: one well 3.5 mi away on ground about 100 ft higher went to 1,200 ft (flowing artesian; location approximate (section centre)); ask a local driller.');
+  assert.equal(WD.value(z), `${zeroOne.lowFt}–1,200 ft`);
 });
 
 test('mostly drainage wells keep confidence low even with three comparable wells', () => {

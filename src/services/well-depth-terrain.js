@@ -40,7 +40,7 @@ export const WELL_TERRAIN = Object.freeze({
   useOthers: 8,         // low confidence: the nearest other wells (elevation-adjusted) it adds
   nearestForDrainage: 10, // "mostly in a drainage": over half of the nearest 10 with an elevation
   deepFt: 500,          // deep well evidence at similar or higher ground (widens the high end)
-  deepMin: 2,           // deep wells needed to raise the high end, at any confidence (owner, 2026-11-18)
+  deepMin: 2,           // deep wells needed to raise the high end when comparable wells exist (owner, 2026-11-18)
   radiiMiles: [2, 4, 6], // search radius steps; 6 mi is the cap
   sampleBatch: 40,      // wells sampled per step, nearest first
   maxSampled: 120,
@@ -117,11 +117,15 @@ export function candidateOf(feature, home) {
 //             zone reached from the homesite; a well above the homesite counts at no less than
 //             half its depth). Depth = their median (the low end); the high end is at least 1.5x
 //             their 75th percentile and 2x the median.
-// Either way, deep wells (deepFt+ and at least 2x the median) recorded at similar or higher ground
-// no farther away than the wells used raise the high end to their median depth when there are at
-// least deepMin (2) of them, at any confidence (owner decision, 2026-11-18). A single deep well
-// does not move the range; it is reported (deepWells.single) and the card and report say "One
-// nearby well on higher ground went to 1,365 ft; deeper wells are possible."
+// Deep wells (deepFt+ and at least 2x the median) at similar or higher ground (owner decisions,
+// 2026-11-18):
+//   - with comparable wells: at least deepMin (2) of them, no farther away than the wells used,
+//     raise the high end to their median depth. A single one does not move the range; it is
+//     reported (deepWells.single) and the card and report say "One nearby well on higher ground
+//     went to 1,365 ft; deeper wells are possible."
+//   - with no comparable well at all: even a single one anywhere in the search radius sets the
+//     top of the range (deepWells.raisedHigh), and the note names it (depth, distance, height,
+//     flowing artesian, approximate location) with "ask a local driller".
 // planningDepthFt (the cost model's well line) is the high end; scoreDepthFt (the score's water
 // factor and the card grade) is the median when confidence is moderate, the high end when low.
 export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRAIN) {
@@ -161,10 +165,11 @@ export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRA
     high = Math.max(quantile(pool, 0.75) * 1.5, depth * 2);
   }
   // Deep wells at similar or higher ground, within the distance of the wells used.
-  const reach = Math.max(...used.map(w => w.distanceMi));
+  const noComparable = comparable.length === 0;
+  const reach = noComparable ? Infinity : Math.max(...used.map(w => w.distanceMi));
   const deep = known.filter(w => w.distanceMi <= reach && w.depthFt >= Math.max(cfg.deepFt, 2 * depth) && w.dzFt >= -cfg.similarFt);
   const deepMedian = median(deep.map(w => w.depthFt));
-  const raisedByDeep = deepMedian != null && deep.length >= cfg.deepMin && deepMedian > high;
+  const raisedByDeep = deepMedian != null && deep.length >= (noComparable ? 1 : cfg.deepMin) && deepMedian > high;
   if (raisedByDeep) high = deepMedian;
 
   const waterDepths = used.map(w => w.waterDepthAtHomesiteFt).filter(v => v != null);
@@ -184,7 +189,10 @@ export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRA
     higher: { count: higher.length, of: nearest.length, medianRiseFt: r(median(higher.map(w => w.dzFt))) },
     deepWells: {
       count: deep.length, medianFt: r(deepMedian), raisedHigh: raisedByDeep,
-      single: deep.length === 1 ? { depthFt: Math.round(deep[0].depthFt), dzFt: Math.round(deep[0].dzFt), distanceMi: Math.round(deep[0].distanceMi * 100) / 100 } : null
+      single: deep.length === 1 ? {
+        id: deep[0].id, depthFt: Math.round(deep[0].depthFt), dzFt: Math.round(deep[0].dzFt), distanceMi: Math.round(deep[0].distanceMi * 100) / 100,
+        flowing: deep[0].staticFt != null && deep[0].staticFt < 0, approximateLocation: Boolean(deep[0].coarseLocation)
+      } : null
     }
   };
   out.planningDepthFt = out.highFt;
