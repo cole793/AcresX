@@ -4,8 +4,10 @@ import { upstreamJson } from '../../shared/upstream.js';
 // This layer contains point geometry plus total depth, static water level,
 // completion date and GWIC identifiers in one queryable feature layer.
 // site_name is not requested: GWIC site names are the well owner's name ("SMITH JOHN * TOWN MT"),
-// and owner names are never requested or returned (owner decision, 2026-10-29).
-const GWIC_BOREHOLES = 'https://mbmgmap.mtech.edu/server/rest/services/Water_Resources/GWIC_Database/FeatureServer/4';
+// and owner names are never returned (owner decision, 2026-10-29). The one exception is the
+// existing-well match (src/services/existing-well-montana.js), which requests site_name to compare
+// it with the parcel owner and returns only the yes/no (owner rule, 2026-11-18).
+export const GWIC_BOREHOLES = 'https://mbmgmap.mtech.edu/server/rest/services/Water_Resources/GWIC_Database/FeatureServer/4';
 
 function number(value) {
   const n = Number(value);

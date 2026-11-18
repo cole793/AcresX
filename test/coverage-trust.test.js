@@ -138,6 +138,16 @@ test('a well record mapped inside the parcel: "On-parcel record" and an existing
   assert.match(d.structure, /^A well record maps to this parcel/);
 });
 
+test('Montana answers: evidence.onParcel decides (an owner-matched section-centre record is not on the parcel)', async () => {
+  const noImprovements = { available: true, state: 'MT', statewideRecords: [{ TotalValue: 108840, TotalLandValue: 108840, TotalBuildingValue: 0 }] };
+  const off = await dashboard(flathead({ propertyAssessment: noImprovements, existingWell: { available: true, state: 'MT', match: { evidence: { onParcel: false, ownerMatch: true, pointInParcel: true, insideParcel: false } } } }));
+  assert.equal(off.wells, 'Nearby records');
+  assert.equal(off.structure, '');
+  const on = await dashboard(flathead({ propertyAssessment: noImprovements, existingWell: { available: true, state: 'MT', match: { evidence: { onParcel: true, insideParcel: true } } } }));
+  assert.equal(on.wells, 'On-parcel record');
+  assert.match(on.structure, /^A well record maps to this parcel/);
+});
+
 test('registry down: no badge, chips never say "Confirmed", the dashboard still renders', async () => {
   const d = await dashboard(flathead(), { registry: null });
   assert.equal(d.badge, '');
