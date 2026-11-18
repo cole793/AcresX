@@ -68,19 +68,45 @@
     }
   }
   // Presentation-only enhancement. The matched listing remains the sole source of MLS claims.
+  // Listing claims are unverified seller/broker statements: they are shown, never scored.
   const numberWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+  // A negative or future-tense statement is not evidence of an existing well ("no well",
+  // "without a well", "well to be drilled", "buyer to drill", "needs a well", "proposed well").
+  const NO_EXISTING_WELL = /\b(?:no (?:existing |private |drilled )?wells?|without (?:a )?well|wells? (?:is |are )?(?:to be|will be|would need to be|must be) drilled|(?:buyer|purchaser) (?:to|will|must) drill|drill (?:a )?(?:new )?well|needs? (?:a )?(?:new )?well|requires? (?:a )?(?:new )?well|wells? (?:is |are )?(?:needed|required)|(?:future|proposed) well)\b/i;
+  // { kind: 'existing' | 'shared', count, claims } for listing remarks, or null. A shared or
+  // community well is reported as such (it may sit on another parcel), never as this parcel's well.
+  function wellClaims(remarks) {
+    const text = normalize(remarks);
+    if (!text || NO_EXISTING_WELL.test(text)) return null;
+    const found = scan(text).well;
+    const shared = found.filter(item => item.claim === 'well_shared');
+    if (shared.length) return { kind: 'shared', count: null, claims: shared };
+    const claims = found.filter(item => item.claim === 'well_count' || item.claim === 'well_existing');
+    if (!claims.length) return null;
+    const countClaim = claims.find(item => item.claim === 'well_count');
+    const token = countClaim?.phrase.match(/\b(one|two|three|four|five|[1-5])\b/i)?.[1]?.toLowerCase();
+    const count = token ? (numberWords[token] || Number(token)) : null;
+    return { kind: 'existing', count, claims };
+  }
   function wellReport() {
     const listing = window.__acresxLast?.resoListings;
     const remarks = listing?.best?.publicRemarks || listing?.best?.PublicRemarks || '';
-    if (!remarks) return null;
-    const claims = scan(remarks).well.filter(item =>
-      item.claim === 'well_count' || item.claim === 'well_existing');
-    // A negative or future-tense statement is not evidence of an existing well.
-    if (!claims.length || /\\b(?:no (?:existing |private )?wells?|without (?:a )?well|well (?:to be|will be) drilled)\\b/i.test(remarks)) return null;
-    const countClaim = claims.find(item => item.claim === 'well_count');
-    const token = countClaim?.phrase.match(/\\b(one|two|three|four|five|[1-5])\\b/i)?.[1]?.toLowerCase();
-    const count = token ? (numberWords[token] || Number(token)) : null;
-    return { listing, claims, count, remarks };
+    const found = remarks ? wellClaims(remarks) : null;
+    return found ? { listing, remarks, ...found } : null;
+  }
+  // A recorded well on this parcel from /api/existing-well (public/existing-well.js). When there is
+  // one, it keeps the card headline and the listing claim becomes a secondary, unverified line.
+  function recordedWell() {
+    const data = window.__acresxLast || (typeof last !== 'undefined' ? last : null);
+    const ex = data?.existingWell || (typeof last !== 'undefined' ? last?.existingWell : null);
+    const m = ex?.available ? ex.match : null;
+    if (!m) return false;
+    const e = m.evidence || {};
+    return typeof e.onParcel === 'boolean' ? e.onParcel : Boolean(e.insideParcel || e.ownerMatch);
+  }
+  function listingLine(report) {
+    if (report.kind === 'shared') return 'Listing reports a shared well (seller/broker statement, unverified)';
+    return 'Listing also reports ' + (report.count > 1 ? report.count + ' wells' : 'an existing well') + ' (seller/broker statement, unverified)';
   }
   function updateWellCard() {
     const card = document.querySelector('.snapshot-card[data-detail="wells"]');
@@ -93,6 +119,33 @@
     const previous = card.__mlsWellPresentation;
     // A summary re-render rewrites the card; then its current text is the new baseline.
     const stillShown = previous && value.textContent === previous.shown;
+    const recorded = Boolean(report) && recordedWell();
+    const secondary = card.__mlsWellSecondary;
+    if (!recorded && secondary) { secondary.remove(); delete card.__mlsWellSecondary; }
+    if (recorded) {
+      // The recorded well keeps the headline: undo any listing takeover, then add the claim as a
+      // secondary line under it.
+      if (previous) {
+        if (stillShown) {
+          value.textContent = previous.value;
+          status.textContent = previous.status;
+        }
+        previous.note?.remove();
+        card.classList.remove('mls-well-reported');
+        delete card.__mlsWellPresentation;
+      }
+      const text = listingLine(report);
+      if (secondary?.parentNode && secondary.textContent === text) return;
+      secondary?.remove();
+      const line = document.createElement('div');
+      line.className = 'mls-well-card-note mls-well-secondary';
+      line.textContent = text;
+      const button = card.querySelector('.snapshot-details-btn');
+      if (button) card.insertBefore(line, button);
+      else card.appendChild(line);
+      card.__mlsWellSecondary = line;
+      return;
+    }
     if (!report) {
       if (previous) {
         if (stillShown) {
@@ -106,7 +159,15 @@
       return;
     }
     const signature = String(report.listing.best.listingId || '') + ':' + report.remarks;
-    if (previous?.signature === signature && stillShown) return;
+    if (previous?.signature === signature && stillShown) {
+      // Another module rewrote only the status line (public/existing-well.js, a nearby record):
+      // keep it as the baseline to restore and show the listing status again.
+      if (status.textContent !== previous.shownStatus) {
+        previous.status = status.textContent;
+        status.textContent = previous.shownStatus;
+      }
+      return;
+    }
     if (previous) {
       previous.note?.remove();
       if (stillShown) {
@@ -124,10 +185,16 @@
     baseline.note = note;
     card.__mlsWellPresentation = baseline;
     card.classList.add('mls-well-reported');
-    value.textContent = report.count ? report.count + ' wells reported' : 'Well reported';
-    status.textContent = 'Matched listing reports existing well' +
-      (report.count === 1 ? '' : 's') + ' · Verify on property';
+    if (report.kind === 'shared') {
+      value.textContent = 'Shared well reported';
+      status.textContent = 'Matched listing reports a shared well · Verify agreement and location';
+    } else {
+      value.textContent = report.count > 1 ? report.count + ' wells reported' : 'Well reported';
+      status.textContent = 'Matched listing reports existing well' +
+        (report.count > 1 ? 's' : '') + ' · Verify on property';
+    }
     baseline.shown = value.textContent;
+    baseline.shownStatus = status.textContent;
   }
   function addWellStyles() {
     if (document.getElementById('acresxMlsWellStyles')) return;
@@ -176,7 +243,8 @@
       notice.dataset.mlsWellNote = 'true';
       notice.dataset.signature = signature;
       const heading = document.createElement('strong');
-      heading.textContent = report.count ? report.count + ' WELLS REPORTED IN LISTING' : 'WELL REPORTED IN LISTING';
+      heading.textContent = report.kind === 'shared' ? 'SHARED WELL REPORTED IN LISTING'
+        : report.count > 1 ? report.count + ' WELLS REPORTED IN LISTING' : 'WELL REPORTED IN LISTING';
       notice.appendChild(heading);
       const description = document.createElement('p');
       description.textContent = 'Matched listing description mentions: ' +
@@ -330,6 +398,8 @@
     document.head.appendChild(style);
   }
   window.__acresxScanMlsRemarks = scan;
+  // wellClaims for tests; refresh() lets public/existing-well.js settle the card headline at once.
+  window.AcresXListingWell = { claims: wellClaims, refresh: () => { try { updateWellCard(); } catch (error) { console.warn('[AcresX MLS scanner] well card refresh failed', error); } } };
   addWellStyles();
   addInfrastructureStyles();
   window.setInterval(() => { inspect(); updateWellCard(); showWellEvidence(); updateAdditionalInfrastructure(); }, 750);

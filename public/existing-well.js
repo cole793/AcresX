@@ -49,7 +49,14 @@
     return `<span class="${yes ? 'yes' : 'no'}">${yes ? '✓' : '–'} ${escHtml(label)}</span>`;
   }
 
+  // The card headline, then the listing claim's place under it (public/mls-description-scanner.js:
+  // a recorded well keeps the headline whichever script ran first).
   function renderCard(data) {
+    paintCard(data);
+    window.AcresXListingWell?.refresh?.();
+  }
+
+  function paintCard(data) {
     const card = document.querySelector('.snapshot-card[data-detail="wells"]');
     if (!card) return;
     let el = card.querySelector('.existing-well-summary');
