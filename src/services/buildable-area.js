@@ -15,7 +15,8 @@
 //                acres?, note? }]   'shown': mapped and listed, not subtracted (buffers)     (every constraint, whether counted or not)
 //     notes: [string], disclaimer, method,
 //     geometry: GeoJSON MultiPolygon of the buildable part (or null),
-//     removedGeometry: GeoJSON MultiPolygon of what was removed (or null) }
+//     removedGeometry: GeoJSON MultiPolygon of what was removed (or null),
+//     slopeClasses: [{ key, label, pct, acres }] from the slope raster, or null (coarse grid) }
 // 'partial': a constraint layer did not answer, so it was not subtracted (layers/notes say which).
 // 'unavailable': no constraint could be checked (buildableAcres null) or the parcel outline was
 // unusable (HTTP 400).
@@ -37,15 +38,25 @@
 //            delineation, so they are listed under mayAlsoRestrict and drawn separately. No
 //            county elsewhere publishes one we use: the note says buffers are not mapped; none
 //            is invented.
-//   slope    slope-grid cells (src/services/slope-grid.js, called in-process so its cache is
-//            shared) steeper than STEEP_SLOPE_PCT, as their cell rectangles.
+//   slope    the per-pixel slope raster (src/services/slope-raster.js: AWS Terrain Tiles, ~7-13 m
+//            pixels, Horn 3 x 3 slope, shared cache with /api/land-analysis): pixels steeper than
+//            STEEP_SLOPE_PCT, as rectangles. If the tiles fail, the 5 x 5 slope-grid cells
+//            (src/services/slope-grid.js, called in-process so its cache is shared) steeper than
+//            STEEP_SLOPE_PCT, as their cell rectangles, with a note that the grid is coarse.
+//            Slopes of 15-30% are not subtracted; the slope layer's note gives their acres ("may
+//            limit building"), and slopeClasses (additive) gives every class.
+//            Threshold: 30% is the one documented rule (Spokane County / Spokane Valley critical
+//            areas: geologically hazardous areas are slopes of 30% or greater). Montana county
+//            subdivision rules found 2026-11-17 use 25% as a trigger for geotechnical review
+//            (Yellowstone County) or a presumption of unsuitability (Missoula, Carbon), not a
+//            removal; so 25-30% stays shown, not subtracted, in every county.
 //   setback  the zoning setback, only when the rules table gives one plain number ("10 feet",
 //            Stevens County tables). Front/side/rear text ("Front 10 ft; rear 15 ft; ...") is
 //            not applied: which line is the front is not known.
 // Area: src/shared/area-mask.js (strip union, 400 strips; geometry on 1.5 m strips, at most
 // 1,500 rectangles).
 import { json } from '../shared/http.js';
-import { ringsFromGeometry, SQM_PER_ACRE } from '../shared/polygon-coverage.js';
+import { ringsFromGeometry, SQM_PER_ACRE, stripCrossings, intervalsOf, unionIntervals } from '../shared/polygon-coverage.js';
 import { arcgisQuery as polygonQuery, spatialParams } from '../shared/arcgis.js';
 import { arcgisQuery } from '../shared/upstream.js';
 import { maskAreas, maskGeometry, SETBACK_GROUP } from '../shared/area-mask.js';
@@ -53,6 +64,7 @@ import { floodScreening, describeFloodRow, FEMA_PROVIDER, ESRI_PROVIDER, FEMA_NF
 import { floodShareParams, WHERE_NOT_X, FLOOD_SHARE_MAX_BYTES, FLOOD_REQUEST_HEADERS, BACKUP_OUT_FIELDS } from './flood-share.js';
 import { wetlandsScreening, nwiOutlines } from './wetlands.js';
 import { handleSlopeGrid } from './slope-grid.js';
+import { slopeRaster, boundsRing, MAY_LIMIT_PCT } from './slope-raster.js';
 import { SPOKANE_WETLAND_LAYERS } from '../counties/spokane-overlays.js';
 
 export const STEEP_SLOPE_PCT = 30;
@@ -169,8 +181,29 @@ async function countyWetlandLayer(source, geometry, kind) {
   }
 }
 
+// The raster's slope classes; buildableFromLayers turns each share into acres of this answer's
+// parcel acres, so they add up to parcelAcres.
+function rasterClasses(raster) {
+  return (raster.classes || []).map(c => ({ key: c.key, label: c.label, pct: c.pct, share: c.share }));
+}
+
 async function slopeLayer(geometry, env, ctx) {
   const label = `Slopes over ${STEEP_SLOPE_PCT}%`;
+  const raster = await slopeRaster(geometry, { ctx });
+  if (raster?.available) {
+    const limiting = (raster.classes || []).filter(c => c.key === '15-25' || c.key === '25-30').reduce((a, c) => a + (c.share || 0), 0);
+    return {
+      status: raster.steepMask?.length ? 'counted' : 'none', label,
+      source: `${raster.source} (${raster.pixelM} m pixels)`,
+      rings: (raster.steepMask || []).map(boundsRing),
+      slopeClasses: rasterClasses(raster),
+      homesites: raster.homesites || [],
+      limitingShare: limiting,
+      note: limiting >= 0.005
+        ? `About ${Math.round(limiting * 1000) / 10}% of the parcel is ${MAY_LIMIT_PCT}–${STEEP_SLOPE_PCT}% slope: it may limit building (driveways, septic, foundations; some counties ask for an engineer's review over 25%), so it is shown, not subtracted.`
+        : undefined
+    };
+  }
   try {
     const response = await handleSlopeGrid(new Request('https://acresx.internal/api/slope-grid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ geometry }) }), env, ctx);
     const grid = await response.json();
@@ -180,7 +213,7 @@ async function slopeLayer(geometry, env, ctx) {
     return {
       status: steep.length ? 'counted' : 'none', label, source: `${grid.source || 'USGS elevation'} (${resolution})`,
       rings: steep.map(c => rect(c.bounds)),
-      note: `Slope is read from a coarse ${resolution} of elevation samples, so small steep areas such as banks or draws may not show.`
+      note: `The detailed slope map was unavailable${raster?.error ? ` (${raster.error})` : ''}, so slope is read from a coarse ${resolution} of elevation samples; small steep areas such as banks or draws may not show.`
     };
   } catch (error) {
     console.warn('Buildable area: slope grid failed', error?.message);
@@ -236,6 +269,11 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
   const overlap = Math.max(0, ownSum - areas.removedSqM);
   const buildableSqM = Math.max(0, total - areas.removedSqM);
   const shape = maskGeometry(parcel, groups, { setbackM, flag });
+  const slope = layers.find(l => l.key === 'slope');
+  const { homesite, homesiteStatus } = pickHomesite(slope?.homesites, groups, flag);
+  const slopeClasses = Array.isArray(slope?.slopeClasses)
+    ? slope.slopeClasses.map(c => ({ key: c.key, label: c.label, pct: c.pct, acres: toAcres((c.share || 0) * total) }))
+    : null;
   return {
     status: missing.length ? 'partial' : 'measured',
     parcelAcres, buildableAcres: toAcres(buildableSqM), buildablePct: toPct(buildableSqM),
@@ -244,8 +282,87 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
     disclaimer: setbackM > 0 ? DISCLAIMER_WITH_SETBACK : DISCLAIMER, method: METHOD,
     geometry: shape.buildable.length ? { type: 'MultiPolygon', coordinates: shape.buildable } : null,
     removedGeometry: shape.removed.length ? { type: 'MultiPolygon', coordinates: shape.removed } : null,
-    bufferGeometry: shape.flagged.length ? { type: 'MultiPolygon', coordinates: shape.flagged } : null
+    bufferGeometry: shape.flagged.length ? { type: 'MultiPolygon', coordinates: shape.flagged } : null,
+    // Additive: slope classes of the parcel from the slope raster (null on the coarse grid).
+    slopeClasses,
+    // Additive: the gentlest ~1 ac clear of removed constraints (null without the raster or when
+    // none is clear); the septic slope input on the page (public/screening-inputs.js).
+    homesite,
+    // 'found', 'none_clear' (no ~1 acre site clear of mapped constraints: the page grades septic
+    // on the parcel average), 'not_checked' (constraints too detailed to search; parcel average
+    // too) or 'unavailable' (no slope raster).
+    homesiteStatus
   };
+}
+
+// The gentlest slope-raster homesite candidate (slope-raster.js homesiteCandidates: up to 400
+// ~1 ac squares under 30%, spread over the parcel, gentlest first) with under 5% of its area in a
+// removed constraint (flood, wetlands, steep slope; the zoning setback is not checked: it depends
+// on the parcel lines).
+//
+// CPU: the removed constraints are turned into horizontal lines once (HOMESITE_ROWS_PER_SQUARE
+// rows per candidate square), each line the union of covered
+// x-intervals with running lengths. A candidate's covered share is then exact along x (binary
+// search into each row) and sampled per row along y: O(rows x log intervals) per candidate,
+// whatever the polygons' vertex count. The one-off line building costs one step per edge per row
+// it crosses; above HOMESITE_MAX_CROSSINGS (a very detailed constraint over a large parcel) the
+// search is skipped (measured 2026-11-18: a 40,000-vertex comb over a 37 ac parcel, ~1.2M
+// crossings, takes ~70 ms): homesiteStatus 'not_checked', and the page grades septic on the parcel
+// average as for 'none_clear'.
+// { homesite, homesiteStatus: 'found' | 'none_clear' | 'not_checked' | 'unavailable' }.
+export const HOMESITE_MAX_OVERLAP = 0.05;
+export const HOMESITE_ROWS_PER_SQUARE = 8;
+export const HOMESITE_MAX_ROWS = 2000;
+export const HOMESITE_MAX_CROSSINGS = 1500000;
+
+export function pickHomesite(candidates, groups, flag) {
+  if (!Array.isArray(candidates) || !candidates.length) return { homesite: null, homesiteStatus: 'unavailable' };
+  const polys = Object.entries(groups || {}).filter(([k]) => k !== flag).flatMap(([, list]) => list || []).filter(Boolean);
+  const found = c => ({ homesiteStatus: 'found', homesite: { slopePct: c.slopePct, acres: c.acres, center: c.center, bounds: c.bounds, basis: 'Gentlest ~1 acre of the parcel outside mapped flood zones, wetlands and slopes over 30% (slope raster)' } });
+  if (!polys.length) return found(candidates[0]);
+  // Rows over the candidates' extent.
+  let minY = Infinity, maxY = -Infinity;
+  for (const c of candidates) { if (c.bounds[1] < minY) minY = c.bounds[1]; if (c.bounds[3] > maxY) maxY = c.bounds[3]; }
+  const side = Math.min(...candidates.map(c => c.bounds[3] - c.bounds[1]).filter(v => v > 0));
+  if (!(maxY > minY) || !(side > 0)) return found(candidates[0]);
+  let dy = side / HOMESITE_ROWS_PER_SQUARE;
+  let rows = Math.ceil((maxY - minY) / dy);
+  if (rows > HOMESITE_MAX_ROWS) { rows = HOMESITE_MAX_ROWS; dy = (maxY - minY) / rows; }
+  // Work estimate before building: one crossing per edge per row it spans.
+  let work = 0;
+  for (const rings of polys) for (const ring of rings) for (let i = 1; i < ring.length; i++) {
+    const lo = Math.max(minY, Math.min(ring[i - 1][1], ring[i][1])), hi = Math.min(maxY, Math.max(ring[i - 1][1], ring[i][1]));
+    if (hi >= lo) work += (hi - lo) / dy + 1;
+  }
+  if (work > HOMESITE_MAX_CROSSINGS) return { homesite: null, homesiteStatus: 'not_checked' };
+  const perPoly = polys.map(rings => stripCrossings(rings, minY, dy, rows));
+  const lines = [];
+  for (let r = 0; r < rows; r++) {
+    // One polygon's even-odd intervals are already sorted and disjoint; several are unioned.
+    const parts = perPoly.map(l => intervalsOf(l[r])).filter(list => list.length);
+    const iv = parts.length === 1 ? parts[0] : unionIntervals(parts);
+    const cum = new Float64Array(iv.length);
+    let acc = 0;
+    for (let i = 0; i < iv.length; i++) { acc += iv[i][1] - iv[i][0]; cum[i] = acc; }
+    lines.push({ iv, cum });
+  }
+  // Covered length of row r left of x.
+  const coveredTo = ({ iv, cum }, x) => {
+    let lo = 0, hi = iv.length; // first interval starting at or after x
+    while (lo < hi) { const m = (lo + hi) >> 1; if (iv[m][0] < x) lo = m + 1; else hi = m; }
+    if (lo === 0) return 0;
+    const [a, b] = iv[lo - 1];
+    return (lo > 1 ? cum[lo - 2] : 0) + Math.min(x, b) - a;
+  };
+  for (const c of candidates) {
+    const [w, s, e, n] = c.bounds;
+    const r0 = Math.max(0, Math.ceil((s - minY) / dy - 0.5)), r1 = Math.min(rows - 1, Math.floor((n - minY) / dy - 0.5));
+    if (r1 < r0 || !(e > w)) continue;
+    let covered = 0;
+    for (let r = r0; r <= r1; r++) covered += coveredTo(lines[r], e) - coveredTo(lines[r], w);
+    if (covered / ((e - w) * (r1 - r0 + 1)) < HOMESITE_MAX_OVERLAP) return found(c);
+  }
+  return { homesite: null, homesiteStatus: 'none_clear' };
 }
 
 export async function buildableArea(body, env, ctx) {

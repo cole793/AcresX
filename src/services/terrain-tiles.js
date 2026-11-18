@@ -79,7 +79,8 @@ export function tileZoomFor(points, maxTiles = TERRAIN_TILE_MAX_TILES) {
 
 export const terrariumMeters = (r, g, b) => (r * 256 + g + b / 256) - 32768;
 
-async function loadTile(tile, { signal, timeoutMs }) {
+// One decoded tile (memoized per isolate). Also used by slope-raster.js, which raises maxPerHost.
+export async function loadTile(tile, { signal, timeoutMs = TERRAIN_TILE_TIMEOUT_MS, maxPerHost } = {}) {
   const key = tileKey(tile.z, tile.x, tile.y);
   if (memo.has(key)) {
     const hit = memo.get(key);
@@ -88,7 +89,7 @@ async function loadTile(tile, { signal, timeoutMs }) {
     return hit;
   }
   const response = await fetchWithTimeout(`${TERRAIN_TILES_URL}/${key}.png`, {
-    signal, label: 'terrain-tiles', agency: 'AWS Terrain Tiles', maxBytes: TERRAIN_TILE_MAX_BYTES
+    signal, label: 'terrain-tiles', agency: 'AWS Terrain Tiles', maxBytes: TERRAIN_TILE_MAX_BYTES, ...(maxPerHost ? { maxPerHost } : {})
   }, timeoutMs);
   if (!response.ok) throw new Error(`AWS Terrain Tiles returned ${response.status}`);
   let image;

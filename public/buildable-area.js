@@ -11,7 +11,7 @@
 // single plain number). A failed request leaves { status: 'unavailable' } and the card says so;
 // nothing else on the page changes.
 //
-// window.AcresXBuildable: { headline, breakdown, notCounted, fmtAcres, claim, load, render }
+// window.AcresXBuildable: { headline, breakdown, notCounted, slopeLine, fmtAcres, claim, load, render }
 // (property-report-v2.js reads the same text helpers for page 1).
 (function (root) {
   const WAIT_FOR = ['flood', 'wetlands', 'zoningPermits', 'land'];
@@ -38,6 +38,12 @@
   function breakdown(b) {
     if (!measured(b)) return [];
     return (b.removed || []).map(r => `${r.reason}: ${fmtAcres(r.acres, b.parcelAcres)} ac (${num(r.pct) ?? 0}%)`);
+  }
+  // "Slope across the parcel: 0–8% 77% · 8–15% 6.7% · ..." from the slope raster (null on the
+  // coarse grid, src/services/buildable-area.js slopeClasses).
+  function slopeLine(b) {
+    if (!measured(b) || !Array.isArray(b.slopeClasses) || !b.slopeClasses.length) return '';
+    return `Slope across the parcel: ${b.slopeClasses.map(c => `${c.label} ${num(c.pct) ?? 0}%`).join(' · ')}`;
   }
   // Constraints that could not be checked, by label.
   function notCounted(b) {
@@ -118,6 +124,7 @@
       @media(max-width:860px){.buildable-card{grid-template-columns:1fr}}
       .legend-buildable{display:inline-block;width:14px;height:10px;border-radius:2px;background:rgba(47,138,88,.45);border:1px solid #2f8a58}
       .legend-buffer{display:inline-block;width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,#d39a2a 0 3px,rgba(240,190,90,.3) 3px 6px)}
+      .legend-homesite{display:inline-block;width:14px;height:10px;border-radius:2px;border:2px dashed #1f4e79;box-sizing:border-box}
       .legend-removed{display:inline-block;width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,#c0392b 0 3px,rgba(192,57,43,.25) 3px 6px)}
     `;
     document.head?.appendChild(s);
@@ -145,6 +152,8 @@
     </div><div>
       <ul class="buildable-list">${removed || '<li class="none"><span>No mapped flood zone, wetland or steep slope removed</span><span>0 ac</span></li>'}${overlap}</ul>
       ${mayAlsoHtml(b)}
+      ${b.homesite ? `<div class="buildable-notes">Gentlest ~1 ac outside these constraints (dashed outline on the map): ${esc(Number(b.homesite.slopePct).toFixed(1))}% slope; septic is graded on it.</div>` : b.homesiteStatus === 'none_clear' ? '<div class="buildable-notes">No ~1 acre site clear of mapped constraints; septic is graded on the parcel average slope.</div>' : b.homesiteStatus === 'not_checked' ? '<div class="buildable-notes">The mapped constraints are too detailed to check a ~1 acre site; septic is graded on the parcel average slope.</div>' : ''}
+      ${slopeLine(b) ? `<div class="buildable-notes">${esc(slopeLine(b))}. Over 30% is removed; 15–30% is shown, not removed.</div>` : ''}
       <div class="buildable-notes">${missing.length ? `<strong>Not counted:</strong> ${esc(missing.join(', '))}. ` : ''}${esc((b.notes || []).join(' '))}</div>
     </div>`;
   }
@@ -191,6 +200,13 @@
     if (b.geometry) L.geoJSON(b.geometry, { interactive: false, style: { stroke: false, fillColor: '#2f8a58', fillOpacity: 0.42 } }).addTo(layer);
     const hatched = [];
     if (b.removedGeometry) hatched.push([L.geoJSON(b.removedGeometry, { interactive: false, style: { stroke: false, fillColor: '#c0392b', fillOpacity: 0.5 } }).addTo(layer), 'buildableHatch']);
+    // The gentlest ~1 ac clear of constraints (the septic slope input): a dashed outline.
+    const h = b.homesite;
+    if (h && Array.isArray(h.bounds) && h.bounds.length === 4) {
+      const [w, s, e, n] = h.bounds;
+      L.rectangle([[s, w], [n, e]], { color: '#1f4e79', weight: 2, dashArray: '5 4', fill: false, interactive: true })
+        .bindTooltip(`Gentlest ~1 ac: drainfield-area slope ${Number(h.slopePct).toFixed(1)}%`).addTo(layer);
+    }
     if (b.bufferGeometry) hatched.push([L.geoJSON(b.bufferGeometry, { interactive: false, style: { stroke: false, fillColor: '#d39a2a', fillOpacity: 0.35 } }).addTo(layer), 'bufferHatch']);
     if (hatched.length) {
       layer.addTo(map);
@@ -222,7 +238,7 @@
     }
     const legend = document.querySelector('.map-legend');
     if (legend && !legend.querySelector('.legend-buildable')) {
-      legend.insertAdjacentHTML('beforeend', '<div class="legend-row"><span class="legend-buildable"></span>Buildable (estimate)</div><div class="legend-row"><span class="legend-removed"></span>Removed: flood, wetland, steep slope</div><div class="legend-row"><span class="legend-buffer"></span>Mapped wetland buffer (not removed)</div>');
+      legend.insertAdjacentHTML('beforeend', '<div class="legend-row"><span class="legend-buildable"></span>Buildable (estimate)</div><div class="legend-row"><span class="legend-removed"></span>Removed: flood, wetland, steep slope</div><div class="legend-row"><span class="legend-buffer"></span>Mapped wetland buffer (not removed)</div><div class="legend-row"><span class="legend-homesite"></span>Gentlest ~1 ac (septic slope)</div>');
     }
   }
 
@@ -236,7 +252,7 @@
     try { renderMap(l.buildableArea, l); } catch (error) { console.warn('AcresX buildable map shading failed', error); }
   }
 
-  root.AcresXBuildable = { headline, breakdown, mayAlso, notCounted, fmtAcres, measured, claim, load, render };
+  root.AcresXBuildable = { headline, breakdown, mayAlso, notCounted, slopeLine, fmtAcres, measured, claim, load, render };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;

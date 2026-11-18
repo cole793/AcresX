@@ -19,6 +19,8 @@ import {
   TCC_SERVICE, TERRAIN_CACHE_PREFIX, TILE_ANSWER_TTL_SECONDS, TILE_ELEVATION_LABEL, USGS_ELEVATION_LABEL
 } from '../src/services/land-analysis.js';
 import { SLOPE_CACHE_PREFIX, SLOPE_CACHE_CONTROL, SLOPE_TILE_CACHE_CONTROL } from '../src/services/slope-grid.js';
+import { clearSlopeRasterMemo } from '../src/services/slope-raster.js';
+import { RASTER_GRACE_MS } from '../src/services/land-analysis.js';
 
 const fixtureUrl = name => new URL(`fixtures/${name}`, import.meta.url);
 const TILE_PNG = readFileSync(fixtureUrl('terrarium-14-2878-5726.png'));
@@ -86,7 +88,7 @@ function fakeCache() {
   return store;
 }
 
-beforeEach(() => { calls = []; delete globalThis.caches; clearTerrainTileMemo(); });
+beforeEach(() => { calls = []; delete globalThis.caches; clearTerrainTileMemo(); clearSlopeRasterMemo(); });
 afterEach(() => {
   globalThis.fetch = realFetch;
   if (realCaches === undefined) delete globalThis.caches; else globalThis.caches = realCaches;
@@ -255,7 +257,11 @@ test('USGS slow, tiles answer: terrain and a full slope grid from the tiles, no 
     assert.deepEqual(body.terrain.elevationSources, ['terrain-tiles']);
     assert.equal(body.terrain.source, TILE_ELEVATION_LABEL);
     assert.equal(body.terrain.sampleCount, 9);
-    assert.ok(Math.abs(body.terrain.gradePct - 18.18) < 3, `tile grade ${body.terrain.gradePct} vs USGS 18.18`);
+    // The 9-point grade from the tiles is close to the USGS one; gradePct is now the slope
+    // raster's parcel mean from the same tile (slope-raster.js), steeper than the 9-point average.
+    assert.ok(Math.abs(body.terrain.pointGradePct - 18.18) < 3, `tile 9-point grade ${body.terrain.pointGradePct} vs USGS 18.18`);
+    assert.equal(body.terrain.gradeMethod, 'raster');
+    assert.ok(body.terrain.gradePct > body.terrain.pointGradePct && body.terrain.p90GradePct > body.terrain.gradePct);
     assert.equal(count('identify') + count('epqs'), 0, 'tiles answered before any hedge started');
     assert.ok(calls.find(c => c.kind === '3dep').signal.aborted, 'the slow getSamples was cancelled');
 
@@ -277,7 +283,8 @@ test('USGS fast: getSamples is preferred even when the tiles answered first', as
     const { body } = await landAnalysis();
     assert.deepEqual(body.terrain.elevationSources, ['getSamples']);
     assert.equal(body.terrain.source, USGS_ELEVATION_LABEL);
-    assert.ok(Math.abs(body.terrain.gradePct - 18.180578852890957) < 1e-9, 'the recorded USGS numbers');
+    assert.ok(Math.abs(body.terrain.pointGradePct - 18.180578852890957) < 1e-9, 'the recorded USGS numbers');
+    assert.equal(body.terrain.gradeMethod, 'raster', 'gradePct is the raster mean');
   });
 });
 
@@ -318,7 +325,8 @@ test('both down: honest messages naming the backup, other layers unaffected, in 
     const started = Date.now();
     const hung = (await landAnalysis()).body;
     assert.equal(hung.terrain.available, false);
-    assert.ok(Date.now() - started < FAST.budgetMs + 500, `took ${Date.now() - started} ms`);
+    // The slope raster gets RASTER_GRACE_MS after the points settle (land-analysis.js).
+    assert.ok(Date.now() - started < FAST.budgetMs + RASTER_GRACE_MS + 500, `took ${Date.now() - started} ms`);
   });
 });
 
