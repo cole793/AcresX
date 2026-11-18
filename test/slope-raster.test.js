@@ -163,10 +163,11 @@ test('runRects merges identical runs down rows; isolated steep pixels are left o
 test('zoom choice: z14 for a parcel, lower zooms for larger ones, never more than 16 tiles', () => {
   const square = d => ({ minLon: -108.6, maxLon: -108.6 + d, minLat: 45.7, maxLat: 45.7 + d * 0.7 });
   assert.equal(chooseZoom(square(0.005)).z, 14);
-  for (const d of [0.005, 0.03, 0.08, 0.15]) {
+  for (const d of [0.005, 0.03, 0.08]) {
     const w = chooseZoom(square(d));
     assert.ok(w && w.tiles.length <= RASTER_MAX_TILES, `${d}°: ${w?.tiles.length} tiles at z${w?.z}`);
   }
+  assert.equal(chooseZoom(square(0.15)), null, 'a ~34,000 ac box is over the pixel cap even at z12 (the slope grid answers it)');
   assert.equal(chooseZoom(square(1)), null, 'a 1° parcel needs too many tiles even at z12');
   // CPU cap: a ~1,500 ac box fits 16 tiles at z14 but not RASTER_MAX_PIXELS, so it drops to z13.
   const big = chooseZoom({ minLon: -108.56, maxLon: -108.5, minLat: 45.69, maxLat: 45.732 });
