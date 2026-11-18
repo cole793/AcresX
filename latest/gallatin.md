@@ -1,23 +1,23 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-17T21:48:44.194Z
-- Parcels: 12, with an error or mismatch: 1
-- Layer results: ok 152, unavailable 39, error 1, mismatch 0, skipped 0
+- Run: 2026-11-18T21:27:42.841Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 161, unavailable 31, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 06079621201790000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06079611101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06069818101020000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079621201790000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06079611101010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06069818101020000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06079801358210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06069905302080000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06069624301010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06033804413010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06033908402700000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06110827101470000 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06069905302080000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06069624301010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06033804413010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06033908402700000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06110827101470000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
 | 06101033302010000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06042734301530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06042734301530000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06079812230210000 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
 
 ## Parcel details
@@ -30,15 +30,15 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Wells**: ok. 109 well record(s), 5 of nearest 5 report depth [wellCount=109, nearestDepthsCount=5, nearestMi=0.04, medianDepthFt=540]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Amsterdam-Quagle silt loams, 4 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Amsterdam-Quagle silt loams, 4 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=6, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 2.5%, max 4.8% [gradePct=2.5, maxGradePct=4.8, reliefFt=45, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.2% [cellCount=16, avgSlopePct=5.2, maxSlopePct=7.8, partial=false]
-- **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
+- **Terrain**: ok. avg grade 6%, max 23.9% [gradePct=6, maxGradePct=23.9, reliefFt=43, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=14.9, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $1,221, no tax amount [assessedValue=1221, landValue=1221, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $69.97 [taxTotal=69.97, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -51,7 +51,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Wells**: ok. 113 well record(s), 5 of nearest 5 report depth [wellCount=113, nearestDepthsCount=5, nearestMi=0.37, medianDepthFt=163]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Cabbart-Amesha-Trimad complex, 15 to 45 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=30, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 3%, max 6.2% [gradePct=3, maxGradePct=6.2, reliefFt=199, sampleCount=9]
+- **Terrain**: ok. avg grade 9.8%, max 36.6% [gradePct=9.8, maxGradePct=36.6, reliefFt=225, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.7% [cellCount=16, avgSlopePct=5.7, maxSlopePct=13.2, partial=false]
 - **Flood**: ok. zones X, D (via FEMA NFHL) [high=false, intersects=true, zones=X; D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1]
@@ -59,7 +59,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $530,345, no tax amount [assessedValue=530345, landValue=221765, improvementValue=308580, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $3,884.15 [taxTotal=3884.15, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -72,15 +72,15 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel 
 - **Wells**: ok. 426 well record(s), 5 of nearest 5 report depth [wellCount=426, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=40]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Hyalite-Beaverton complex, 0 to 4 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Hyalite-Beaverton complex, 0 to 4 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=2, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 3.6%, max 6.2% [gradePct=3.6, maxGradePct=6.2, reliefFt=25, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 5.1% [cellCount=16, avgSlopePct=5.1, maxSlopePct=7.1, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Terrain**: ok. avg grade 5.1%, max 7.6% [gradePct=5.1, maxGradePct=7.6, reliefFt=24, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 5.8% [cellCount=16, avgSlopePct=5.8, maxSlopePct=15.3, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=0.7]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $1,067,605, no tax amount [assessedValue=1067605, landValue=716325, improvementValue=351280, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $3,336.11 [taxTotal=3336.11, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -93,78 +93,78 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Wells**: ok. 1505 well record(s), 5 of nearest 5 report depth [wellCount=1505, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=42]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Blossberg loam, 0 to 2 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Blossberg loam, 0 to 2 percent slopes, hydrologicGroup=B/D, drainage=Poorly drained, soilSlopePct=1, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 1.3%, max 3.1% [gradePct=1.3, maxGradePct=3.1, reliefFt=3, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=1.7, partial=false]
+- **Terrain**: ok. avg grade 1.5%, max 1.6% [gradePct=1.5, maxGradePct=1.6, reliefFt=1, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=10, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water served (City of Bozeman) 9 m; sewer served (City of Bozeman) 13 m [water=served, sewer=served, waterProvider=City of Bozeman, sewerProvider=City of Bozeman, waterProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, waterDistanceM=9, sewerDistanceM=13, failedLayers=(none)]
 - **Zoning**: ok. R-3 (City of Bozeman) · overlays: none mapped [code=R-3, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $662,000, no tax amount [assessedValue=662000, landValue=206513, improvementValue=455487, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $3,337.65 [taxTotal=3337.65, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06069905302080000 (BOZEMAN, 9.88 ac)
 
-Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county parcel south of Bozeman (Hyalite district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RR-10, DISTRICT_N HYALITE: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.016503%2C45.599720&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RR-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).
+Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county parcel south of Bozeman (Hyalite district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RR-10, DISTRICT_N HYALITE: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.016503%2C45.599720&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RR-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard). Zoning rules expected from the Hyalite Zoning Regulation §6 (RR-10; read 2026-11-17 from https://www.gallatinmt.gov/DocumentCenter/View/1188).
 
 - **Parcel**: ok. parcel 06069905302080000, 9.88 ac (mapped) [parcelId=06069905302080000, acres=9.88, address=SKYRIDGE DR, BOZEMAN, MT 59715, lat=45.599921, lon=-111.016656, acresSource=mapped outline]
 - **Wells**: ok. 555 well record(s), 5 of nearest 5 report depth [wellCount=555, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=228]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Bavdark loam, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Bavdark loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 10.6%, max 20% [gradePct=10.6, maxGradePct=20, reliefFt=171, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15% [cellCount=16, avgSlopePct=15, maxSlopePct=21.2, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Terrain**: ok. avg grade 15.5%, max 28% [gradePct=15.5, maxGradePct=28, reliefFt=173, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 15.1% [cellCount=16, avgSlopePct=15.1, maxSlopePct=23.1, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC [providers=NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. RR-10 (Gallatin County) · overlays: none mapped [code=RR-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. RR-10: Rural Residential (6 uses) [code=RR-10, family=Rural Residential, useCount=6]
 - **Assessment**: ok. assessed $1,228,455, no tax amount [assessedValue=1228455, landValue=1228455, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $9,208.96 [taxTotal=9208.96, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06069624301010000 (no locality, 158.98 ac)
 
-Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vacant parcel in the county unzoned area (INNERZONE UNZ). Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE UNZ, ZONED UNZONED: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.305586%2C45.558961&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).
+Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vacant parcel in the county unzoned area (INNERZONE UNZ). Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE UNZ, ZONED UNZONED: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.305586%2C45.558961&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined). Zoning rules: no county zoning district, so the rules answer is the plain "unzoned" summary (src/zoning/gallatin-rules.js).
 
 - **Parcel**: ok. parcel 06069624301010000, 159.05 ac (mapped) [parcelId=06069624301010000, acres=159.05, lat=45.558556, lon=-111.305016, acresSource=mapped outline]
 - **Wells**: ok. 11 well record(s), 5 of nearest 5 report depth [wellCount=11, nearestDepthsCount=5, nearestMi=1.59, medianDepthFt=524]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Bangtail-Adel loams, 4 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Bangtail-Adel loams, 4 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 13.4%, max 22.2% [gradePct=13.4, maxGradePct=22.2, reliefFt=663, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=30.9, partial=false]
+- **Terrain**: ok. avg grade 25.3%, max 68.5% [gradePct=25.3, maxGradePct=68.5, reliefFt=673, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22.4% [cellCount=16, avgSlopePct=22.4, maxSlopePct=30.6, partial=false]
 - **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=0.8]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $18,108, no tax amount [assessedValue=18108, landValue=18108, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $125.71 [taxTotal=125.71, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 06033804413010000 (BIG SKY, 3.32 ac)
 
-Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (Big Sky zoning district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RC-SF-10, DISTRICT_N BIG SKY: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.360143%2C45.246635&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RC-SF-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).
+Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (Big Sky zoning district); returned an empty zone code before the field-mapping fix. Expected values checked by hand on 2026-11-02 (read-only): county zoning layer 42 returns INNERZONE RC-SF-10, DISTRICT_N BIG SKY: https://services3.arcgis.com/JuknJLoAEm9DTWXh/ArcGIS/rest/services/County_Zoning_Districts/FeatureServer/42/query?geometry=-111.360143%2C45.246635&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=INNERZONE%2CDISTRICT_N%2CZONED&returnGeometry=false&f=json; the outline intersects only RC-SF-10; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined). Zoning rules expected from the Gallatin Canyon/Big Sky Zoning Regulation §10 (RC-SF-10; read 2026-11-17 from https://www.gallatinmt.gov/DocumentCenter/View/1172).
 
 - **Parcel**: ok. parcel 06033804413010000, 3.33 ac (mapped) [parcelId=06033804413010000, acres=3.33, address=WILDERNESS RIDGE TRL, BIG SKY, MT 59716, lat=45.246655, lon=-111.36022, acresSource=mapped outline]
 - **Wells**: ok. 246 well record(s), 5 of nearest 5 report depth [wellCount=246, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=1058]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Yellowmule-Ouselfal complex, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Yellowmule-Ouselfal complex, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 9%, max 21% [gradePct=9, maxGradePct=21, reliefFt=112, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15.9% [cellCount=16, avgSlopePct=15.9, maxSlopePct=36.1, partial=false]
+- **Terrain**: ok. avg grade 16.9%, max 42.4% [gradePct=16.9, maxGradePct=42.4, reliefFt=99, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 16.2% [cellCount=16, avgSlopePct=16.2, maxSlopePct=25.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. RC-SF-10 (Gallatin County) · overlays: none mapped [code=RC-SF-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. RC-SF-10: Rural Residential (7 uses) [code=RC-SF-10, family=Rural Residential, useCount=7]
 - **Assessment**: ok. assessed $2,012,317, no tax amount [assessedValue=2012317, landValue=2012317, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $14,164.97 [taxTotal=14164.97, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -177,15 +177,15 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improv
 - **Wells**: ok. 313 well record(s), 5 of nearest 5 report depth [wellCount=313, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=115]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Bridger loam, 2 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Bridger loam, 2 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=5, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 1.6%, max 2.9% [gradePct=1.6, maxGradePct=2.9, reliefFt=5, sampleCount=9]
+- **Terrain**: ok. avg grade 2.2%, max 3% [gradePct=2.2, maxGradePct=3, reliefFt=3, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 2.3% [cellCount=16, avgSlopePct=2.3, maxSlopePct=3, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. R-SF-11000 (Gallatin County) · overlays: none mapped [code=R-SF-11000, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. R-SF-11000: Residential (7 uses) [code=R-SF-11000, family=Residential, useCount=7]
 - **Assessment**: ok. assessed $1,479,400, no tax amount [assessedValue=1479400, landValue=327612, improvementValue=1151788, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $4,360.14 [taxTotal=4360.14, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -198,10 +198,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Wells**: ok. 149 well record(s), 5 of nearest 5 report depth [wellCount=149, nearestDepthsCount=5, nearestMi=0.1, medianDepthFt=500]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Amesha loam, 8 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Amesha loam, 8 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=12, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 6.2%, max 15% [gradePct=6.2, maxGradePct=15, reliefFt=118, sampleCount=9]
+- **Terrain**: ok. avg grade 16.5%, max 48% [gradePct=16.5, maxGradePct=48, reliefFt=114, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=35.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -219,7 +219,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 - **Wells**: ok. 1580 well record(s), 5 of nearest 5 report depth [wellCount=1580, nearestDepthsCount=5, nearestMi=0.17, medianDepthFt=73]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Beaverell loam, 0 to 2 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Beaverell loam, 0 to 2 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=1, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 0.5%, max 0.7% [gradePct=0.5, maxGradePct=0.7, reliefFt=20, sampleCount=9]
+- **Terrain**: ok. avg grade 0.7%, max 0.9% [gradePct=0.7, maxGradePct=0.9, reliefFt=18, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -240,15 +240,15 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Wells**: ok. 316 well record(s), 5 of nearest 5 report depth [wellCount=316, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=140]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Lonniebee-Cowood complex, 35 to 60 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Lonniebee-Cowood complex, 35 to 60 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=48, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 9.6%, max 19.5% [gradePct=9.6, maxGradePct=19.5, reliefFt=127, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=34.7, partial=false]
-- **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
+- **Terrain**: ok. avg grade 29.2%, max 58.5% [gradePct=29.2, maxGradePct=58.5, reliefFt=152, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 22% [cellCount=16, avgSlopePct=22, maxSlopePct=33, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.3]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
 - **Zoning**: ok. RC-SF-2.5 (Gallatin County) · overlays: none mapped [code=RC-SF-2.5, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: ok. RC-SF-2.5: Residential (7 uses) [code=RC-SF-2.5, family=Residential, useCount=7]
 - **Assessment**: ok. assessed $869,596, no tax amount [assessedValue=869596, landValue=869596, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $5,501.61 [taxTotal=5501.61, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -261,7 +261,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Wells**: ok. 1476 well record(s), 5 of nearest 5 report depth [wellCount=1476, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=44]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Urban land) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Urban land, soilSlopePct=0, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 2.5%, max 3.8% [gradePct=2.5, maxGradePct=3.8, reliefFt=3, sampleCount=9]
+- **Terrain**: ok. avg grade 1.4%, max 1.8% [gradePct=1.4, maxGradePct=1.8, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.4% [cellCount=16, avgSlopePct=1.4, maxSlopePct=1.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
@@ -269,7 +269,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water served (City of Bozeman) 12 m; sewer served (City of Bozeman) 3 m [water=served, sewer=served, waterProvider=City of Bozeman, sewerProvider=City of Bozeman, waterProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, waterDistanceM=12, sewerDistanceM=3, failedLayers=(none)]
 - **Zoning**: ok. R-2 (City of Bozeman) · overlays: none mapped [code=R-2, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. not requested: the browser has no zoning rules for Gallatin
+- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
 - **Assessment**: ok. assessed $742,800, no tax amount [assessedValue=742800, landValue=302880, improvementValue=439920, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: unavailable. not_found: iTax lists no tax bill for this parcel. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
