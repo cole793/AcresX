@@ -47,7 +47,19 @@ export const WELL_TERRAIN = Object.freeze({
   budgetMs: 10000,      // the browser waits up to ~12.5 s inside its 15 s wells section
   cacheSeconds: 7 * 24 * 3600
 });
-export const WELL_TERRAIN_CACHE_PREFIX = 'well-depth-terrain-v1';
+// Cache API key for /api/well-depth-terrain answers: this prefix (a URL, like every other cache
+// prefix; the old bare 'well-depth-terrain-v1' could not form a Request URL, so nothing was ever
+// cached) plus { rules, state, lat, lon }. Preview Workers share the Cache API with production,
+// so an answer computed under older rules could otherwise be served for up to 7 days.
+// BUMP WELL_TERRAIN_RULES_VERSION WHENEVER THE ESTIMATE CAN CHANGE: WELL_TERRAIN thresholds,
+// estimateWellDepth(), candidateOf() filters, the candidate search or the elevation sources.
+//   1  2026-11-17  first terrain-aware rules
+//   2  2026-11-18  two deep wells needed to raise the high end
+//   3  2026-11-18  with no comparable well, one deep well sets the top of the range
+export const WELL_TERRAIN_RULES_VERSION = 3;
+export const WELL_TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/well-depth-terrain/v2/';
+// ~11 m: one homesite point per parcel; the same parcel always sends the same point.
+export const wellTerrainCacheKey = (state, lat, lon) => ({ rules: WELL_TERRAIN_RULES_VERSION, state, lat: Number(lat.toFixed(4)), lon: Number(lon.toFixed(4)) });
 
 // Same list as public/screening-inputs.js (NONRESIDENTIAL): irrigation, monitoring, municipal ...
 const NONRESIDENTIAL = /\b(irrigat|agricultur|industrial|monitor|observation|injection|dewater|geothermal|environmental|remediation|municipal)\w*/i;
@@ -314,8 +326,7 @@ export async function handleWellDepthTerrain(request) {
   const lat = Number(body?.lat), lon = Number(body?.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ available: false, status: 'bad_request', error: 'lat and lon are required.' }, 400, 'no-store');
   if (!FINDERS[state]) return json({ available: false, status: 'not_supported', state }, 200, 'no-store');
-  // ~11 m: one homesite point per parcel; the same parcel always sends the same point.
-  const key = `${state}:${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const key = wellTerrainCacheKey(state, lat, lon);
   const answer = await cachedJson(WELL_TERRAIN_CACHE_PREFIX, key, WELL_TERRAIN.cacheSeconds, () => wellDepthTerrain({ state, lat, lon }), { isValid: goodAnswer });
   // The answer carries well ids, depths and elevations only; the strip is the last guard.
   return json(withoutPersonalFields(answer, WELL_RECORD_PERSONAL_FIELD), 200, goodAnswer(answer) ? 'public, max-age=3600, s-maxage=86400' : 'no-store');

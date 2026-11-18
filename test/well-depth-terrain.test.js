@@ -12,7 +12,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import worker from '../src/index.js';
-import { WELL_TERRAIN, estimateWellDepth, wellDepthTerrain, candidateOf } from '../src/services/well-depth-terrain.js';
+import { WELL_TERRAIN, estimateWellDepth, wellDepthTerrain, candidateOf, WELL_TERRAIN_RULES_VERSION, WELL_TERRAIN_CACHE_PREFIX, wellTerrainCacheKey } from '../src/services/well-depth-terrain.js';
+import { valueCacheKey } from '../src/shared/edge-cache.js';
 import { pointElevationsFt, POINT_SOURCES } from '../src/services/point-elevations.js';
 import { TERRAIN_TILES_URL, clearTerrainTileMemo } from '../src/services/terrain-tiles.js';
 import { ELEVATION_IMAGE_SERVICE } from '../src/services/elevation.js';
@@ -298,4 +299,34 @@ test('well-terrain.js: a slow terrain answer is dropped at the wait limit (fallb
   const wells = await pending;
   assert.equal(wells.terrain.status, 'timeout');
   assert.equal(wells.length, 1);
+});
+
+// ---- Cache key
+
+test('cache key: a valid Cache API URL that includes the rules version', async () => {
+  // The old bare 'well-depth-terrain-v1' prefix could not form a Request URL, so nothing was cached.
+  assert.match(WELL_TERRAIN_CACHE_PREFIX, /^https:\/\/acresx\.internal\/cache\/well-depth-terrain\/v\d+\/$/);
+  assert.ok(Number.isInteger(WELL_TERRAIN_RULES_VERSION) && WELL_TERRAIN_RULES_VERSION >= 3);
+  const key = wellTerrainCacheKey('MT', 45.701312, -108.546631);
+  assert.deepEqual({ ...key }, { rules: WELL_TERRAIN_RULES_VERSION, state: 'MT', lat: 45.7013, lon: -108.5466 });
+  const url = (await valueCacheKey(WELL_TERRAIN_CACHE_PREFIX, key)).url;
+  assert.ok(url.startsWith(WELL_TERRAIN_CACHE_PREFIX));
+  const older = (await valueCacheKey(WELL_TERRAIN_CACHE_PREFIX, { ...key, rules: WELL_TERRAIN_RULES_VERSION - 1 })).url;
+  assert.notEqual(url, older, 'answers cached under older rules are never read');
+
+  // The route stores and reads under that key.
+  yellowstone();
+  const store = new Map();
+  globalThis.caches = { default: {
+    async match(req) { const hit = store.get(req.url); return hit ? new Response(hit) : undefined; },
+    async put(req, res) { store.set(req.url, await res.text()); }
+  } };
+  const post = () => worker.fetch(new Request('https://acresx.test/api/well-depth-terrain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: 'MT', lat: HOME.lat, lon: HOME.lon }) }), {}, { waitUntil() {} });
+  const first = await (await post()).json();
+  const expected = (await valueCacheKey(WELL_TERRAIN_CACHE_PREFIX, wellTerrainCacheKey('MT', HOME.lat, HOME.lon))).url;
+  assert.deepEqual([...store.keys()], [expected]);
+  const upstream = calls.length;
+  const second = await (await post()).json();
+  assert.equal(calls.length, upstream, 'served from the cache');
+  assert.deepEqual(second, first);
 });
