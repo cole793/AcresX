@@ -54,7 +54,9 @@ import { ringsFromGeometry, SQM_PER_ACRE } from '../shared/polygon-coverage.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { json } from '../shared/http.js';
 
-export const SLOPE_RASTER_CACHE_PREFIX = 'https://acresx.internal/cache/slope-raster/v2/';
+// v2 (2026-11-18): homesite candidates; v3: up to 400 spread-out candidates (was 6), so older
+// entries cannot hide a homesite clear of flood zones and wetlands.
+export const SLOPE_RASTER_CACHE_PREFIX = 'https://acresx.internal/cache/slope-raster/v3/';
 export const SLOPE_RASTER_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const RASTER_ZOOMS = Object.freeze([14, 13, 12]);
 export const RASTER_MAX_TILES = 16;
