@@ -1,39 +1,41 @@
 # Changes since the previous run: Stevens, WA
 
-- Run: 2026-11-17T21:56:28.693Z
+- Run: 2026-11-18T21:35:36.788Z
 
 ## Cells
 
-Parcel x layer cells: newly broken 3, still broken 0, recovered 12, newly unavailable 1.
+Parcel x layer cells: newly broken 11, still broken 0, recovered 3, newly unavailable 4.
 
 ### Newly broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 2214900 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
-| 8673053 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
-| 8673053 | Zoning | ok | error | request failed: fetch failed |
+| 8974701 | Public water/sewer | ok | mismatch | publicUtilities.water: expected "not\_found", got "unavailable"; publicUtilities.sewer: expected "not\_found", got "unavailable" |
+| 8974701 | Zoning | ok | mismatch | zoning.code: expected "RA-5", got null |
+| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected "RA-5", got null |
+| 8974701 | Assessment | ok | mismatch | assessment.propertyClass: expected "99", got null |
+| 0763202 | Zoning | ok | mismatch | zoning.code: expected "R-1", got null |
+| 0763202 | Zoning rules | ok | mismatch | zoningRules.code: expected "R-1", got null |
+| 0763202 | Assessment | ok | error | Stevens County Assessor timed out |
+| 0231200 | Zoning | ok | mismatch | zoning.code: expected "R1", got null |
+| 0231200 | Assessment | ok | mismatch | assessment.propertyClass: expected "11", got null |
+| 0000500 | Public water/sewer | ok | mismatch | publicUtilities.water: expected "served", got "likely"; publicUtilities.sewer: expected "likely", got "unavailable" |
+| 0000500 | Zoning | ok | mismatch | zoning.code: expected "C-2", got null |
 
 ### Recovered
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 8974701 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 0763202 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 0231200 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 0000500 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 2371220 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 2378200 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 2214900 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 2611300 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 8673053 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 2342700 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 5320900 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
-| 5317201 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |
+| 2214900 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
+| 8673053 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
+| 8673053 | Zoning | error | ok | request failed: fetch failed |
 
 ### Newly unavailable
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 8673053 | Zoning rules | ok | unavailable | not requested: no zoning code returned \(the browser skips this call too\) |
+| 0763202 | Public water/sewer | ok | unavailable | water likely \(Stevens Co Pud - Suncrest\); sewer unavailable |
+| 0763202 | Property tax | ok | unavailable | unavailable: property tax not available |
+| 0231200 | Public water/sewer | ok | unavailable | water likely \(Chewelah Water Dept South\); sewer unavailable |
+| 0231200 | Property tax | ok | unavailable | unavailable: property tax not available |
 

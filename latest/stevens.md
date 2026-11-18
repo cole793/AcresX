@@ -1,21 +1,21 @@
 # County validation: Stevens, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-17T21:56:28.693Z
-- Parcels: 12, with an error or mismatch: 2
-- Layer results: ok 159, unavailable 30, error 3, mismatch 0, skipped 0
+- Run: 2026-11-18T21:35:36.788Z
+- Parcels: 12, with an error or mismatch: 4
+- Layer results: ok 148, unavailable 33, error 1, mismatch 10, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
-| 0763202 | ok | ok | unavailable | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | ok | ok | ok | unavailable |
-| 0231200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 0000500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | mismatch | mismatch | mismatch | mismatch | unavailable | unavailable |
+| 0763202 | ok | ok | unavailable | ok | ok | ok | ok | ok | unavailable | unavailable | unavailable | mismatch | mismatch | error | unavailable | unavailable |
+| 0231200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | unavailable | mismatch | unavailable | mismatch | unavailable | unavailable |
+| 0000500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | mismatch | mismatch | unavailable | ok | ok | unavailable |
 | 2371220 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 2378200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 2214900 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 2214900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 2611300 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 8673053 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | error | unavailable | ok | ok | unavailable |
+| 8673053 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 2342700 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 5320900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 5317201 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
@@ -30,17 +30,22 @@ Why: Small unincorporated lot with a blank situs city (picked by discovery 2026-
 - **Wells**: ok. 241 well record(s), 5 of nearest 5 report depth [wellCount=241, nearestDepthsCount=5, nearestMi=0.53, medianDepthFt=18.5]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Dart loamy coarse sand, 0 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Dart loamy coarse sand, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 1.1%, max 3.1% [gradePct=1.1, maxGradePct=3.1, reliefFt=5, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 2.9% [cellCount=16, avgSlopePct=2.9, maxSlopePct=7.2, partial=false]
-- **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
+- **Terrain**: ok. avg grade 2.8%, max 8.1% [gradePct=2.8, maxGradePct=8.1, reliefFt=4, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 3.1% [cellCount=16, avgSlopePct=3.1, maxSlopePct=7.4, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~1499 ft to mapped power [provider=AVISTA CORP, distanceFt=1499, confidence=low, distributionStatus=utility_published_proximity]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
-- **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
-- **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
-- **Assessment**: ok. assessed n/a, class 99 Other undeveloped land, no tax amount [taxPresent=false, taxYear=2026, propertyClass=99, propertyClassDescription=Other undeveloped land, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: unavailable. not_found: The property search lists no tax statement for this parcel. [taxStatus=not_found]
+- **Public water/sewer**: mismatch. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=stevens-city-limits]
+  - mismatch `publicUtilities.water`: expected not_found, got unavailable
+  - mismatch `publicUtilities.sewer`: expected not_found, got unavailable
+- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured, source=primary]
+  - mismatch `zoning.code`: expected RA-5, got null
+- **Zoning rules**: mismatch. not requested: no zoning code returned (the browser skips this call too)
+  - mismatch `zoningRules.code`: expected RA-5, got null
+- **Assessment**: mismatch. Stevens County Assessor timed out
+  - mismatch `assessment.propertyClass`: expected 99, got null
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 0763202 (Nine Mile Falls, 0.92 ac, Lake Spokane UGA, R-1)
@@ -51,17 +56,19 @@ Why: Small unincorporated lot in the Lake Spokane urban growth area (picked by d
 - **Wells**: ok. 141 well record(s), 5 of nearest 5 report depth [wellCount=141, nearestDepthsCount=5, nearestMi=0.12, medianDepthFt=143]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Dart loamy coarse sand, 0 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Dart loamy coarse sand, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 0.3%, max 0.4% [gradePct=0.3, maxGradePct=0.4, reliefFt=1, sampleCount=9]
+- **Terrain**: ok. avg grade 0.6%, max 2.3% [gradePct=0.6, maxGradePct=2.3, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1.1, partial=false]
-- **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
+- **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: unavailable. No mapped retail electric service territory intersected the parcel center. [providers=(none)]
 - **Power**: unavailable. not requested: no utility provider identified (the browser skips this call too)
-- **Public water/sewer**: ok. water likely (Stevens Co Pud - Suncrest); sewer not_found [water=likely, sewer=not_found, waterProvider=Stevens Co Pud - Suncrest, waterProviders=Stevens Co Pud - Suncrest, sewerProviders=(none), waterPublic=true, sewerPublic=false, failedLayers=(none)]
-- **Zoning**: ok. R-1 (Stevens County) [code=R-1, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
-- **Zoning rules**: ok. R-1: Residential (6 uses) [code=R-1, family=Residential, useCount=6]
-- **Assessment**: ok. assessed $67,500, class 18 All other residential not elsewhere coded, no tax amount [assessedValue=67500, landValue=67500, improvementValue=0, taxPresent=false, netValue=67500, taxYear=2026, propertyClass=18, propertyClassDescription=All other residential not elsewhere coded, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $643.21 [taxTotal=643.21, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Public water/sewer**: unavailable. water likely (Stevens Co Pud - Suncrest); sewer unavailable [water=likely, sewer=unavailable, waterProvider=Stevens Co Pud - Suncrest, waterProviders=Stevens Co Pud - Suncrest, sewerProviders=(none), waterPublic=true, sewerPublic=false, failedLayers=stevens-city-limits]
+- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured, source=primary]
+  - mismatch `zoning.code`: expected R-1, got null
+- **Zoning rules**: mismatch. not requested: no zoning code returned (the browser skips this call too)
+  - mismatch `zoningRules.code`: expected R-1, got null
+- **Assessment**: error. Stevens County Assessor timed out
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 0231200 (City of Chewelah, 0.12 ac)
@@ -72,17 +79,19 @@ Why: Small lot inside Chewelah city limits (picked by discovery 2026-11-02, seed
 - **Wells**: ok. 178 well record(s), 5 of nearest 5 report depth [wellCount=178, nearestDepthsCount=5, nearestMi=0.43, medianDepthFt=40]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Chewelah fine sandy loam) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Chewelah fine sandy loam, hydrologicGroup=C, drainage=Somewhat poorly drained, soilSlopePct=2, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 0.7%, max 1.2% [gradePct=0.7, maxGradePct=1.2, reliefFt=1, sampleCount=9]
+- **Terrain**: ok. avg grade 1.1%, max 1.4% [gradePct=1.1, maxGradePct=1.4, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=3.3, partial=false]
-- **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
+- **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. CITY OF CHEWELAH [providers=CITY OF CHEWELAH]
 - **Power**: ok. CITY OF CHEWELAH [provider=CITY OF CHEWELAH, confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water served (Chewelah Water Dept South); sewer likely (City of Chewelah) [water=served, sewer=likely, waterProvider=Chewelah Water Dept South, sewerProvider=City of Chewelah, waterProviders=Chewelah Water Dept South; City of Chewelah, sewerProviders=City of Chewelah, waterPublic=true, sewerPublic=true, failedLayers=(none)]
-- **Zoning**: ok. R1 (City of Chewelah) [code=R1, jurisdiction=City of Chewelah, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
-- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
-- **Assessment**: ok. assessed $90,567, class 11 Household, single family units, no tax amount [assessedValue=90567, landValue=27000, improvementValue=63567, taxPresent=false, netValue=90567, taxYear=2026, propertyClass=11, propertyClassDescription=Household, single family units, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $622.56 [taxTotal=622.56, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Public water/sewer**: unavailable. water likely (Chewelah Water Dept South); sewer unavailable [water=likely, sewer=unavailable, waterProvider=Chewelah Water Dept South, waterProviders=Chewelah Water Dept South, sewerProviders=(none), waterPublic=true, sewerPublic=false, failedLayers=stevens-city-limits]
+- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured, source=primary]
+  - mismatch `zoning.code`: expected R1, got null
+- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
+- **Assessment**: mismatch. Stevens County Assessor timed out
+  - mismatch `assessment.propertyClass`: expected 11, got null
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 0000500 (City of Colville, 0.16 ac)
@@ -93,15 +102,18 @@ Why: Small lot inside Colville city limits (315 N Main St). Stevens Cities layer
 - **Wells**: ok. 393 well record(s), 5 of nearest 5 report depth [wellCount=393, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=16]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Hodgson silt loam, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Hodgson silt loam, 3 to 15 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=9, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 1%, max 1.4% [gradePct=1, maxGradePct=1.4, reliefFt=2, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.4% [cellCount=16, avgSlopePct=1.4, maxSlopePct=1.7, partial=false]
-- **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
+- **Terrain**: ok. avg grade 1.4%, max 1.7% [gradePct=1.4, maxGradePct=1.7, reliefFt=1, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 1.2% [cellCount=16, avgSlopePct=1.2, maxSlopePct=1.9, partial=false]
+- **Flood**: ok. no mapped FEMA zone (via FEMA NFHL) [high=false, intersects=false, zones=(none), category=not_mapped, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~2 ft to mapped power [provider=AVISTA CORP, distanceFt=2, confidence=moderate, distributionStatus=utility_published_proximity]
-- **Public water/sewer**: ok. water served (Colville Water Department); sewer likely (City of Colville) [water=served, sewer=likely, waterProvider=Colville Water Department, sewerProvider=City of Colville, waterProviders=Colville Water Department; City of Colville, sewerProviders=City of Colville, waterPublic=true, sewerPublic=true, failedLayers=(none)]
-- **Zoning**: ok. C-2 (City of Colville) [code=C-2, jurisdiction=City of Colville, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
-- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
+- **Public water/sewer**: mismatch. water likely (Colville Water Department); sewer unavailable [water=likely, sewer=unavailable, waterProvider=Colville Water Department, waterProviders=Colville Water Department, sewerProviders=(none), waterPublic=true, sewerPublic=false, failedLayers=stevens-city-limits]
+  - mismatch `publicUtilities.water`: expected served, got likely
+  - mismatch `publicUtilities.sewer`: expected likely, got unavailable
+- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured, source=primary]
+  - mismatch `zoning.code`: expected C-2, got null
+- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $279,262, class 55 Retail trade - Automotive, marine craft, aircraft, and accessories, no tax amount [assessedValue=279262, landValue=34056, improvementValue=245206, taxPresent=false, netValue=279262, taxYear=2026, propertyClass=55, propertyClassDescription=Retail trade - Automotive, marine craft, aircraft, and accessories, source=Stevens County Assessor (RealPropertyParcels_Public)]
 - **Property tax**: ok. billed 2026 tax $1,861.39 [taxTotal=1861.39, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -114,7 +126,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 67 well record(s), 5 of nearest 5 report depth [wellCount=67, nearestDepthsCount=5, nearestMi=0.12, medianDepthFt=210]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Springdale sandy loam, 0 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Springdale sandy loam, 0 to 15 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=8, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 12.9%, max 24.1% [gradePct=12.9, maxGradePct=24.1, reliefFt=190, sampleCount=9]
+- **Terrain**: ok. avg grade 24%, max 61.8% [gradePct=24, maxGradePct=61.8, reliefFt=149, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 20.6% [cellCount=16, avgSlopePct=20.6, maxSlopePct=31.2, partial=false]
 - **Flood**: ok. high-risk zone (X, AE) (via Stevens County digitized FEMA FIRM) [high=true, intersects=true, zones=X; AE, category=high, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=7.8]
@@ -135,7 +147,7 @@ Why: Unincorporated 1-5 ac parcel with a city-named situs (picked by discovery 2
 - **Wells**: ok. 75 well record(s), 5 of nearest 5 report depth [wellCount=75, nearestDepthsCount=5, nearestMi=0.02, medianDepthFt=280]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Stevens channery silt loam, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Stevens channery silt loam, 8 to 25 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=17, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 8.1%, max 19.4% [gradePct=8.1, maxGradePct=19.4, reliefFt=91, sampleCount=9]
+- **Terrain**: ok. avg grade 15.5%, max 52.9% [gradePct=15.5, maxGradePct=52.9, reliefFt=42, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=34, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=1]
@@ -156,10 +168,10 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Wells**: ok. 94 well record(s), 5 of nearest 5 report depth [wellCount=94, nearestDepthsCount=5, nearestMi=0.15, medianDepthFt=200]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Aits loam, 0 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Aits loam, 0 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=8, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 5.7%, max 10.5% [gradePct=5.7, maxGradePct=10.5, reliefFt=21, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 8.5% [cellCount=16, avgSlopePct=8.5, maxSlopePct=14.6, partial=false]
+- **Terrain**: ok. avg grade 8.8%, max 16.7% [gradePct=8.8, maxGradePct=16.7, reliefFt=20, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 8.9% [cellCount=16, avgSlopePct=8.9, maxSlopePct=21.4, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
+- **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=9]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~106 ft to mapped power [provider=AVISTA CORP, distanceFt=106, confidence=moderate, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -177,8 +189,8 @@ Why: Unincorporated 5-40 ac parcel with a city-named situs (picked by discovery 
 - **Wells**: ok. 114 well record(s), 5 of nearest 5 report depth [wellCount=114, nearestDepthsCount=5, nearestMi=0.05, medianDepthFt=142]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. moderate (Martella ashy silt loam, 5 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Martella ashy silt loam, 5 to 15 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=10, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 6.3%, max 12.1% [gradePct=6.3, maxGradePct=12.1, reliefFt=58, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 7.9% [cellCount=16, avgSlopePct=7.9, maxSlopePct=14.4, partial=false]
+- **Terrain**: ok. avg grade 8.8%, max 23% [gradePct=8.8, maxGradePct=23, reliefFt=61, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 8.8% [cellCount=16, avgSlopePct=8.8, maxSlopePct=17.6, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=29]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
@@ -198,15 +210,15 @@ Why: Unincorporated 5-40 ac parcel with a blank situs city (picked by discovery 
 - **Wells**: ok. 84 well record(s), 5 of nearest 5 report depth [wellCount=84, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=178]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Hodgson silt loam, 15 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Hodgson silt loam, 15 to 25 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=20, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 4.9%, max 13.8% [gradePct=4.9, maxGradePct=13.8, reliefFt=382, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 8.8% [cellCount=16, avgSlopePct=8.8, maxSlopePct=25.9, partial=false]
+- **Terrain**: ok. avg grade 4.9%, max 21.1% [gradePct=4.9, maxGradePct=21.1, reliefFt=25, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 8.5% [cellCount=16, avgSlopePct=8.5, maxSlopePct=26.7, partial=false]
 - **Flood**: ok. high-risk zone (X, A) (via Stevens County digitized FEMA FIRM) [high=true, intersects=true, zones=X; A, category=high, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
+- **Wetlands**: ok. 11 NWI feature(s) [intersects=true, count=11, coveragePct=33.5]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~30 ft to mapped power [provider=AVISTA CORP, distanceFt=30, confidence=moderate, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
-- **Zoning**: error. request failed: fetch failed
-- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
+- **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
+- **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
 - **Assessment**: ok. assessed n/a, class 99 Other undeveloped land, no tax amount [taxPresent=false, taxYear=2026, propertyClass=99, propertyClassDescription=Other undeveloped land, source=Stevens County Assessor (RealPropertyParcels_Public)]
 - **Property tax**: ok. billed 2026 tax $0.00 [taxTotal=0, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -219,8 +231,8 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Wells**: ok. 61 well record(s), 5 of nearest 5 report depth [wellCount=61, nearestDepthsCount=5, nearestMi=1.14, medianDepthFt=200]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Aits loam, 15 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Aits loam, 15 to 25 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=20, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 5.5%, max 12.4% [gradePct=5.5, maxGradePct=12.4, reliefFt=236, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 13.4% [cellCount=16, avgSlopePct=13.4, maxSlopePct=30.4, partial=false]
+- **Terrain**: ok. avg grade 18.5%, max 64.3% [gradePct=18.5, maxGradePct=64.3, reliefFt=344, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 13.9% [cellCount=16, avgSlopePct=13.9, maxSlopePct=30.3, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1.1]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
@@ -240,7 +252,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Wells**: ok. 42 well record(s), 5 of nearest 5 report depth [wellCount=42, nearestDepthsCount=5, nearestMi=0.36, medianDepthFt=460]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Bridgeson silt loam, drained) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Bridgeson silt loam, drained, hydrologicGroup=C, drainage=Somewhat poorly drained, soilSlopePct=2, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 7.4%, max 22.2% [gradePct=7.4, maxGradePct=22.2, reliefFt=507, sampleCount=9]
+- **Terrain**: ok. avg grade 23.8%, max 112.6% [gradePct=23.8, maxGradePct=112.6, reliefFt=491, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 14.8% [cellCount=16, avgSlopePct=14.8, maxSlopePct=35.6, partial=false]
 - **Flood**: ok. high-risk zone (X, A) (via Stevens County digitized FEMA FIRM) [high=true, intersects=true, zones=X; A, category=high, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 15 NWI feature(s) [intersects=true, count=15, coveragePct=24]
@@ -261,8 +273,8 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42).
 - **Wells**: ok. 77 well record(s), 5 of nearest 5 report depth [wellCount=77, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=140]
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Aits stony loam, 40 to 65 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Aits stony loam, 40 to 65 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=53, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
-- **Terrain**: ok. avg grade 6.5%, max 14.7% [gradePct=6.5, maxGradePct=14.7, reliefFt=315, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 23% [cellCount=16, avgSlopePct=23, maxSlopePct=55.9, partial=false]
+- **Terrain**: ok. avg grade 13%, max 103.8% [gradePct=13, maxGradePct=103.8, reliefFt=336, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 21.8% [cellCount=16, avgSlopePct=21.8, maxSlopePct=53, partial=false]
 - **Flood**: ok. zones X (via Stevens County digitized FEMA FIRM) [high=false, intersects=true, zones=X, category=minimal, provider=Stevens County digitized FEMA FIRM, coverage=paper-firm-copy]
 - **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=1.5]
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]

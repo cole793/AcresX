@@ -1,49 +1,110 @@
 {
-  "runId": "44183637837",
+  "runId": "44401658417",
   "county": "Stevens",
-  "alerting": false,
-  "aboveThreshold": false,
+  "alerting": true,
+  "aboveThreshold": true,
   "changed": true,
-  "title": "Validation: Stevens — 0 layers broken",
-  "body": "The scheduled county validation for Stevens, WA found broken layers (run 2026-11-17T21:56:28.693Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 2 of 12 (2214900, 8673053)\n- Zoning: 1 of 12 (8673053)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 3, still broken 0, recovered 12, newly unavailable 1.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 2214900 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Zoning | ok | error | request failed: fetch failed |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8974701 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 0763202 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 0231200 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 0000500 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2371220 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2378200 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2214900 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2611300 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 8673053 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2342700 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 5320900 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 5317201 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8673053 | Zoning rules | ok | unavailable | not requested: no zoning code returned \\(the browser skips this call too\\) |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-17T21:56:28.693Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 2 of 12 (2214900, 8673053)\n- Zoning: 1 of 12 (8673053)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 3, still broken 0, recovered 12, newly unavailable 1.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 2214900 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Zoning | ok | error | request failed: fetch failed |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8974701 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 0763202 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 0231200 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 0000500 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2371220 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2378200 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2214900 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2611300 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 8673053 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 2342700 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 5320900 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n| 5317201 | Soil | error | ok | USDA soil service returned 502 with an invalid response. |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8673053 | Zoning rules | ok | unavailable | not requested: no zoning code returned \\(the browser skips this call too\\) |\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-17T21:56:28.693Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44183637837\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Wetlands: 2 of 12 (2214900, 8673053)\n- Zoning: 1 of 12 (8673053)\n",
+  "title": "Validation: Stevens — 2 layers broken",
+  "body": "The scheduled county validation for Stevens, WA found broken layers (run 2026-11-18T21:35:36.788Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44401658417\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Zoning | 4 of 12 | broken for 4 of 12 parcels in this run | 8974701 | mismatch | zoning.code: expected \"RA-5\", got null |\n|  |  |  | 0763202 | mismatch | zoning.code: expected \"R-1\", got null |\n|  |  |  | 0231200 | mismatch | zoning.code: expected \"R1\", got null |\n|  |  |  | 0000500 | mismatch | zoning.code: expected \"C-2\", got null |\n| Assessment | 3 of 12 | broken for 3 of 12 parcels in this run | 8974701 | mismatch | assessment.propertyClass: expected \"99\", got null |\n|  |  |  | 0763202 | error | Stevens County Assessor timed out |\n|  |  |  | 0231200 | mismatch | assessment.propertyClass: expected \"11\", got null |\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Public water/sewer: 2 of 12 (8974701, 0000500)\n- Zoning rules: 2 of 12 (8974701, 0763202)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 11, still broken 0, recovered 3, newly unavailable 4.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8974701 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"not\\_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not\\_found\", got \"unavailable\" |\n| 8974701 | Zoning | ok | mismatch | zoning.code: expected \"RA-5\", got null |\n| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected \"RA-5\", got null |\n| 8974701 | Assessment | ok | mismatch | assessment.propertyClass: expected \"99\", got null |\n| 0763202 | Zoning | ok | mismatch | zoning.code: expected \"R-1\", got null |\n| 0763202 | Zoning rules | ok | mismatch | zoningRules.code: expected \"R-1\", got null |\n| 0763202 | Assessment | ok | error | Stevens County Assessor timed out |\n| 0231200 | Zoning | ok | mismatch | zoning.code: expected \"R1\", got null |\n| 0231200 | Assessment | ok | mismatch | assessment.propertyClass: expected \"11\", got null |\n| 0000500 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"likely\", got \"unavailable\" |\n| 0000500 | Zoning | ok | mismatch | zoning.code: expected \"C-2\", got null |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 2214900 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Zoning | error | ok | request failed: fetch failed |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0763202 | Public water/sewer | ok | unavailable | water likely \\(Stevens Co Pud - Suncrest\\); sewer unavailable |\n| 0763202 | Property tax | ok | unavailable | unavailable: property tax not available |\n| 0231200 | Public water/sewer | ok | unavailable | water likely \\(Chewelah Water Dept South\\); sewer unavailable |\n| 0231200 | Property tax | ok | unavailable | unavailable: property tax not available |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-18T21:35:36.788Z: Zoning 4 of 12, Assessment 3 of 12.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44401658417\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Zoning | 4 of 12 | broken for 4 of 12 parcels in this run | 8974701 | mismatch | zoning.code: expected \"RA-5\", got null |\n|  |  |  | 0763202 | mismatch | zoning.code: expected \"R-1\", got null |\n|  |  |  | 0231200 | mismatch | zoning.code: expected \"R1\", got null |\n|  |  |  | 0000500 | mismatch | zoning.code: expected \"C-2\", got null |\n| Assessment | 3 of 12 | broken for 3 of 12 parcels in this run | 8974701 | mismatch | assessment.propertyClass: expected \"99\", got null |\n|  |  |  | 0763202 | error | Stevens County Assessor timed out |\n|  |  |  | 0231200 | mismatch | assessment.propertyClass: expected \"11\", got null |\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Public water/sewer: 2 of 12 (8974701, 0000500)\n- Zoning rules: 2 of 12 (8974701, 0763202)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 11, still broken 0, recovered 3, newly unavailable 4.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8974701 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"not\\_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not\\_found\", got \"unavailable\" |\n| 8974701 | Zoning | ok | mismatch | zoning.code: expected \"RA-5\", got null |\n| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected \"RA-5\", got null |\n| 8974701 | Assessment | ok | mismatch | assessment.propertyClass: expected \"99\", got null |\n| 0763202 | Zoning | ok | mismatch | zoning.code: expected \"R-1\", got null |\n| 0763202 | Zoning rules | ok | mismatch | zoningRules.code: expected \"R-1\", got null |\n| 0763202 | Assessment | ok | error | Stevens County Assessor timed out |\n| 0231200 | Zoning | ok | mismatch | zoning.code: expected \"R1\", got null |\n| 0231200 | Assessment | ok | mismatch | assessment.propertyClass: expected \"11\", got null |\n| 0000500 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"likely\", got \"unavailable\" |\n| 0000500 | Zoning | ok | mismatch | zoning.code: expected \"C-2\", got null |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 2214900 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 8673053 | Zoning | error | ok | request failed: fetch failed |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0763202 | Public water/sewer | ok | unavailable | water likely \\(Stevens Co Pud - Suncrest\\); sewer unavailable |\n| 0763202 | Property tax | ok | unavailable | unavailable: property tax not available |\n| 0231200 | Public water/sewer | ok | unavailable | water likely \\(Chewelah Water Dept South\\); sewer unavailable |\n| 0231200 | Property tax | ok | unavailable | unavailable: property tax not available |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-18T21:35:36.788Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44401658417\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Public water/sewer: 2 of 12 (8974701, 0000500)\n- Zoning rules: 2 of 12 (8974701, 0763202)\n",
   "decision": {
-    "alerting": false,
-    "aboveThreshold": false,
-    "alertLayers": [],
+    "alerting": true,
+    "aboveThreshold": true,
+    "alertLayers": [
+      {
+        "layer": "zoning",
+        "label": "Zoning",
+        "count": 4,
+        "total": 12,
+        "previousCount": 1,
+        "parcels": [
+          {
+            "parcelId": "8974701",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"RA-5\", got null"
+          },
+          {
+            "parcelId": "0763202",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"R-1\", got null"
+          },
+          {
+            "parcelId": "0231200",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"R1\", got null"
+          },
+          {
+            "parcelId": "0000500",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"C-2\", got null"
+          }
+        ],
+        "reason": "broken for 4 of 12 parcels in this run"
+      },
+      {
+        "layer": "assessment",
+        "label": "Assessment",
+        "count": 3,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "8974701",
+            "status": "mismatch",
+            "detail": "assessment.propertyClass: expected \"99\", got null"
+          },
+          {
+            "parcelId": "0763202",
+            "status": "error",
+            "detail": "Stevens County Assessor timed out"
+          },
+          {
+            "parcelId": "0231200",
+            "status": "mismatch",
+            "detail": "assessment.propertyClass: expected \"11\", got null"
+          }
+        ],
+        "reason": "broken for 3 of 12 parcels in this run"
+      }
+    ],
     "watchLayers": [],
     "belowThreshold": [
       {
-        "layer": "wetlands",
-        "label": "Wetlands",
+        "layer": "publicUtilities",
+        "label": "Public water/sewer",
         "count": 2,
         "total": 12,
         "previousCount": 0,
         "parcels": [
           {
-            "parcelId": "2214900",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+            "parcelId": "8974701",
+            "status": "mismatch",
+            "detail": "publicUtilities.water: expected \"not_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not_found\", got \"unavailable\""
           },
           {
-            "parcelId": "8673053",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+            "parcelId": "0000500",
+            "status": "mismatch",
+            "detail": "publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"likely\", got \"unavailable\""
           }
         ]
       },
       {
-        "layer": "zoning",
-        "label": "Zoning",
-        "count": 1,
+        "layer": "zoningRules",
+        "label": "Zoning rules",
+        "count": 2,
         "total": 12,
         "previousCount": 0,
         "parcels": [
           {
-            "parcelId": "8673053",
-            "status": "error",
-            "detail": "request failed: fetch failed"
+            "parcelId": "8974701",
+            "status": "mismatch",
+            "detail": "zoningRules.code: expected \"RA-5\", got null"
+          },
+          {
+            "parcelId": "0763202",
+            "status": "mismatch",
+            "detail": "zoningRules.code: expected \"R-1\", got null"
           }
         ]
       }
@@ -57,121 +118,135 @@
     "reason": null,
     "newlyBroken": [
       {
-        "parcelId": "2214900",
-        "layer": "wetlands",
+        "parcelId": "8974701",
+        "layer": "publicUtilities",
         "was": "ok",
-        "now": "error",
-        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+        "now": "mismatch",
+        "detail": "publicUtilities.water: expected \"not_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not_found\", got \"unavailable\""
       },
       {
-        "parcelId": "8673053",
-        "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
-        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
-      },
-      {
-        "parcelId": "8673053",
+        "parcelId": "8974701",
         "layer": "zoning",
         "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"RA-5\", got null"
+      },
+      {
+        "parcelId": "8974701",
+        "layer": "zoningRules",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoningRules.code: expected \"RA-5\", got null"
+      },
+      {
+        "parcelId": "8974701",
+        "layer": "assessment",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "assessment.propertyClass: expected \"99\", got null"
+      },
+      {
+        "parcelId": "0763202",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"R-1\", got null"
+      },
+      {
+        "parcelId": "0763202",
+        "layer": "zoningRules",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoningRules.code: expected \"R-1\", got null"
+      },
+      {
+        "parcelId": "0763202",
+        "layer": "assessment",
+        "was": "ok",
         "now": "error",
-        "detail": "request failed: fetch failed"
+        "detail": "Stevens County Assessor timed out"
+      },
+      {
+        "parcelId": "0231200",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"R1\", got null"
+      },
+      {
+        "parcelId": "0231200",
+        "layer": "assessment",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "assessment.propertyClass: expected \"11\", got null"
+      },
+      {
+        "parcelId": "0000500",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"likely\", got \"unavailable\""
+      },
+      {
+        "parcelId": "0000500",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"C-2\", got null"
       }
     ],
     "stillBroken": [],
     "recovered": [
       {
-        "parcelId": "8974701",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "0763202",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "0231200",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "0000500",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "2371220",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "2378200",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
         "parcelId": "2214900",
-        "layer": "soil",
+        "layer": "wetlands",
         "was": "error",
         "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "2611300",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
+        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       },
       {
         "parcelId": "8673053",
-        "layer": "soil",
+        "layer": "wetlands",
         "was": "error",
         "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
+        "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       },
       {
-        "parcelId": "2342700",
-        "layer": "soil",
+        "parcelId": "8673053",
+        "layer": "zoning",
         "was": "error",
         "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "5320900",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
-      },
-      {
-        "parcelId": "5317201",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "USDA soil service returned 502 with an invalid response."
+        "detail": "request failed: fetch failed"
       }
     ],
     "newlyUnavailable": [
       {
-        "parcelId": "8673053",
-        "layer": "zoningRules",
+        "parcelId": "0763202",
+        "layer": "publicUtilities",
         "was": "ok",
         "now": "unavailable",
-        "detail": "not requested: no zoning code returned (the browser skips this call too)"
+        "detail": "water likely (Stevens Co Pud - Suncrest); sewer unavailable"
+      },
+      {
+        "parcelId": "0763202",
+        "layer": "tax",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "unavailable: property tax not available"
+      },
+      {
+        "parcelId": "0231200",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water likely (Chewelah Water Dept South); sewer unavailable"
+      },
+      {
+        "parcelId": "0231200",
+        "layer": "tax",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "unavailable: property tax not available"
       }
     ]
   }
