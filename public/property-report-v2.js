@@ -583,11 +583,12 @@
     const wOver = (f.zp.overlays || []).filter(o => /wetland/.test(o.type || ''));
     const wOverLine = wOver.length ? `County map: ${wOver.map(o => `${String(o.name || o.type).replace(/^[^:]*:\s*/, '').replace(/\bfoot\b/g, 'ft')}${num(o.share) != null ? ` on ${Math.round(o.share * 100)}%` : ''}`).join('; ')}` : '';
     card('Wetlands', f.wet.category === 'present' || f.wet.category === 'unmeasured' ? 'risk' : chipOf(f.wet.cls), f.wet.label, [`${f.wet.detail}${types ? ` · ${types}` : ''}`, wOverLine], [w.available ? S.add('USFWS National Wetlands Inventory', { date: '' }) : null]);
-    // Terrain
+    // Terrain. slopeClasses / p90GradePct come from the slope raster (src/services/slope-raster.js).
+    const slopeClassLine = tt => Array.isArray(tt.slopeClasses) && tt.slopeClasses.length ? `Slope classes: ${tt.slopeClasses.map(c => `${c.label} ${c.pct}%`).join(' · ')}` : '';
     const t = f.terrain;
     if (t.available && num(t.gradePct) != null) {
       const g = Number(t.gradePct), lc = data.land?.landCover;
-      card('Terrain', g <= 8 ? 'good' : g <= 15 ? 'verify' : 'risk', g <= 8 ? 'Low slope' : g <= 15 ? 'Moderate' : 'Steep', [`${g.toFixed(1)}% average grade${num(t.maxGradePct) != null ? `, ${Number(t.maxGradePct).toFixed(1)}% max` : ''}${num(t.reliefFt) != null ? ` · ${Math.round(t.reliefFt)} ft relief` : ''}`, lc?.available && num(lc.openPct) != null ? `About ${lc.openPct}% open, ${lc.woodedPct}% wooded (satellite estimate)` : ''], [S.add(t.source || 'USGS 3DEP elevation', { date: '' })]);
+      card('Terrain', g <= 8 ? 'good' : g <= 15 ? 'verify' : 'risk', g <= 8 ? 'Low slope' : g <= 15 ? 'Moderate' : 'Steep', [`${g.toFixed(1)}% average grade${num(t.p90GradePct) != null ? `, steepest 10% of the parcel: ${Math.round(t.p90GradePct)}%+` : num(t.maxGradePct) != null ? `, ${Number(t.maxGradePct).toFixed(1)}% max` : ''}${num(t.reliefFt) != null ? ` · ${Math.round(t.reliefFt)} ft relief` : ''}`, slopeClassLine(t), lc?.available && num(lc.openPct) != null ? `About ${lc.openPct}% open, ${lc.woodedPct}% wooded (satellite estimate)` : ''], [S.add(t.source || 'USGS 3DEP elevation', { date: '' })]);
     } else card('Terrain', 'verify', NA, ['Elevation data not available']);
     return `<div class="sites">${cards.join('')}</div>`;
   }

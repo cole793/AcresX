@@ -155,6 +155,7 @@ const CASES = [
   ['buildable-area', post('/api/buildable-area', { state: 'WA', county: 'Spokane', ...parcel })],
   ['land-analysis', post('/api/land-analysis', parcel)],
   ['slope-grid', post('/api/slope-grid', parcel)],
+  ['slope-raster', post('/api/slope-raster', parcel)],
   ['hazards wetlands', post('/api/hazards', { kind: 'wetlands', ...parcel })],
   ['hazards flood', post('/api/hazards', { kind: 'flood', ...parcel })],
   ['hazards (legacy kind)', post('/api/hazards', { kind: 'other', ...parcel })],

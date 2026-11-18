@@ -22,7 +22,7 @@
   const style = document.createElement('style');
   style.id = 'slopeMapStyles';
   style.textContent = `
-    .slope-legend{position:absolute;z-index:451;left:12px;bottom:84px;background:rgba(255,255,255,.96);border:1px solid rgba(23,35,28,.14);border-radius:11px;padding:10px 12px;font-size:10px;box-shadow:0 4px 14px rgba(0,0,0,.1);display:none;min-width:150px}
+    .slope-legend{position:absolute;z-index:451;left:12px;top:84px;background:rgba(255,255,255,.96);border:1px solid rgba(23,35,28,.14);border-radius:11px;padding:10px 12px;font-size:10px;box-shadow:0 4px 14px rgba(0,0,0,.1);display:none;min-width:150px;max-width:230px}
     .slope-legend.show{display:block}.slope-legend strong{display:block;font-size:11px;margin-bottom:6px}.slope-legend-row{display:flex;align-items:center;gap:7px;margin:5px 0;color:#48554d}.slope-swatch{width:18px;height:10px;border-radius:3px;border:1px solid rgba(0,0,0,.12)}
     .slope-legend-note{margin-top:7px;padding-top:7px;border-top:1px solid #e1e7e2;color:#748077;line-height:1.35}
   `;
@@ -70,8 +70,39 @@
     } catch {}
   }
 
+  // Slope raster (POST /api/slope-raster, src/services/slope-raster.js): per-pixel slope classes
+  // as rectangles, one canvas-drawn layer per class. The 5 x 5 slope grid (/api/slope-grid) is the
+  // fallback when the raster is unavailable.
+  const RASTER_COLORS = { '0-8': '#2f8a58', '8-15': '#d4a72c', '15-25': '#d97824', '25-30': '#c4512b', '30+': '#8e1f1a' };
+  const GRID_LEGEND = legend.innerHTML;
+  function rasterLegend(data) {
+    const rows = (data.classes || []).map(c => `<div class="slope-legend-row"><span class="slope-swatch" style="background:${RASTER_COLORS[c.key] || '#999'}"></span><span>${c.label} · ${c.pct}%</span></div>`).join('');
+    return `<strong>Slope (${data.pixelM} m pixels)</strong>${rows}<div class="slope-legend-note">Average ${Number(data.meanPct).toFixed(1)}% · steepest 10%: ${Number(data.p90Pct).toFixed(0)}%+<br>Over 30% is removed from the buildable estimate. USGS elevation; not a survey.</div>`;
+  }
+  function renderRaster() {
+    let renderer;
+    try { renderer = L.canvas({ padding: 0.2 }); } catch { renderer = undefined; }
+    const byClass = {};
+    for (const r of slopeData.displayRects || []) (byClass[r.cls] ||= []).push(r.b);
+    for (const c of slopeData.classes || []) {
+      const rects = byClass[c.key];
+      if (!rects?.length) continue;
+      const geo = { type: 'MultiPolygon', coordinates: rects.map(([w, s, e, n]) => [[[w, s], [e, s], [e, n], [w, n], [w, s]]]) };
+      L.geoJSON(geo, { renderer, style: { stroke: false, fill: true, fillColor: RASTER_COLORS[c.key] || '#999', fillOpacity: 0.55 } })
+        .bindPopup(`<strong>${c.label} slope</strong><br>About ${c.pct}% of the parcel`).addTo(slopeLayer);
+    }
+    legend.innerHTML = rasterLegend(slopeData);
+  }
+
   function renderSlope() {
     slopeLayer.clearLayers();
+    if (slopeData?.available && Array.isArray(slopeData.displayRects)) {
+      renderRaster();
+      if (slopeEnabled && !map.hasLayer(slopeLayer)) slopeLayer.addTo(map);
+      bringParcelFront();
+      return;
+    }
+    legend.innerHTML = GRID_LEGEND;
     if (!slopeData?.available || !Array.isArray(slopeData.cells)) return;
 
     slopeData.cells.forEach(cell => {
@@ -105,12 +136,22 @@
     slopeBtn.textContent = 'Loading…';
     slopeBtn.disabled = true;
     try {
-      const response = await fetch('/api/slope-grid', {
+      const post = route => fetch(route, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ geometry: last.parcel.geometry })
       });
-      const data = await response.json();
+      let response = null, data = null;
+      try {
+        response = await post('/api/slope-raster');
+        data = await response.json();
+      } catch (error) {
+        console.warn('Slope raster unavailable; using the slope grid', error);
+      }
+      if (!response?.ok || !data?.available) {
+        response = await post('/api/slope-grid');
+        data = await response.json();
+      }
       if (!response.ok || !data?.available) throw new Error(data?.error || `Slope service returned ${response.status}`);
       slopeData = data;
       slopeCacheKey = key;
