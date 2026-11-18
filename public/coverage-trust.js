@@ -54,7 +54,10 @@
 
   function wellOnParcel(data = currentData()) {
     const m = data?.existingWell?.available ? data.existingWell.match : null;
-    return Boolean(m && (m.evidence?.insideParcel || m.evidence?.ownerMatch));
+    if (!m) return false;
+    // Montana answers carry evidence.onParcel (src/services/existing-well-montana.js).
+    if (typeof m.evidence?.onParcel === 'boolean') return m.evidence.onParcel;
+    return Boolean(m.evidence?.insideParcel || m.evidence?.ownerMatch);
   }
 
   // Well feasibility chip: nearby well logs are not a record of a well on this parcel.

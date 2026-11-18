@@ -18,7 +18,7 @@ export const MONTANA_PARCEL_CACHE_PREFIX = 'https://acresx.internal/cache/montan
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 const YELLOWSTONE_TAX_PARCEL = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1';
-const MONTANA_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0';
+export const MONTANA_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0';
 const YELLOWSTONE_PROPERTY_SEARCH = 'https://www.yellowstonecountymt.gov/Treasurer/PropertySearch/';
 const MONTANA_CADASTRAL_APP = 'https://svc.mt.gov/msl/cadastral/';
 

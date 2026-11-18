@@ -777,3 +777,34 @@ test('cost-tables.js and local-cost-model.js are injected, in order, after the s
   assert.ok(at('local-cost-model') < at('property-report-v2'));
   assert.equal(at('spokane-cost-model'), -1);
 });
+
+// ---- Existing well (owner request 2026-11-18, Yellowstone 03113503101110000)
+
+// A Montana answer from src/services/existing-well-montana.js (evidence.onParcel decides; its
+// score stays under 55 when the well is not on the parcel).
+const MT_RECORDED = { available: true, state: 'MT', status: 'strong_match', confidence: 'High', score: 65, summary: 'Recorded well on this parcel (GWIC #161578, 25 ft, 1994)',
+  match: { source: 'gwic', gwicId: '161578', completedDepth: 25, completionYear: 1994, evidence: { onParcel: true, insideParcel: true, ownerMatch: false } } };
+const MT_NEARBY = { available: true, state: 'MT', status: 'likely_match', confidence: 'Moderate', score: 54, summary: 'Possible well record near this parcel (moderate confidence)',
+  match: { source: 'gwic', gwicId: '9', completedDepth: 180, evidence: { onParcel: false, insideParcel: false, ownerMatch: true } } };
+
+test('Montana existing well on the parcel: inspection and pump check instead of a new well', () => {
+  const w = estimate({ county: 'Yellowstone', provider: YVEC, existingWell: MT_RECORDED }).components.well;
+  assert.equal(w.label, 'Existing well (due diligence)');
+  assert.deepEqual([w.low, w.high], [700, 1800]);
+  assert.match(w.basis, /^Existing well recorded \(GWIC #161578, 25 ft, 1994\) — drilling may not be needed; verify condition\/yield\. AcresX allowance for a well inspection, pump check/);
+});
+
+test('Montana well record near (not on) the parcel: still priced as a new well', () => {
+  const w = estimate({ county: 'Yellowstone', provider: YVEC, existingWell: MT_NEARBY }).components.well;
+  assert.equal(w.label, 'Well');
+  assert.ok(w.low > 1800);
+});
+
+test('Spokane existing-well pricing is unchanged: score >= 55 without onParcel', () => {
+  const ex = { available: true, confidence: 'Moderate', score: 60, match: { evidence: { nearParcel: true, ownerMatch: false, insideParcel: false } } };
+  const w = estimate({ county: 'Spokane', existingWell: ex }).components.well;
+  assert.equal(w.label, 'Existing well (due diligence)');
+  assert.match(w.basis, /^Existing well association detected \(Moderate confidence\)\./);
+  const none = estimate({ county: 'Spokane', existingWell: { ...ex, score: 54 } }).components.well;
+  assert.equal(none.label, 'Well');
+});

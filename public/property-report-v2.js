@@ -525,7 +525,11 @@
     const card = (title, level, status, lines, refs = []) => cards.push(`<article class="site"><div class="site-top"><h3>${esc(title)}${S.mark(refs)}</h3>${chip(level, status)}</div>${lines.filter(Boolean).slice(0, 2).map(l => `<p>${esc(sentence(l))}</p>`).join('') || `<p>${NA}.</p>`}</article>`);
     // Water / well
     const ex = data.existingWell || {}, exm = ex.best || ex.match || {}, ev = exm.evidence || {};
-    const wellNote = ex.available && ex.match ? (ev.insideParcel ? 'A recorded well maps inside the parcel; verify it' : `Possible well record ${num(ev.distanceToParcelFt) != null ? `${Math.round(ev.distanceToParcelFt).toLocaleString('en-US')} ft from the parcel` : 'nearby'} (${String(ex.confidence || 'low').toLowerCase()} confidence)`) : '';
+    // Montana answers carry their own line (summary) and evidence.onParcel; Spokane answers do not.
+    const exOnParcel = typeof ev.onParcel === 'boolean' ? ev.onParcel : Boolean(ev.insideParcel);
+    const wellNote = !(ex.available && ex.match) ? ''
+      : ex.summary ? (exOnParcel ? `${ex.summary}; verify its condition and yield` : ex.summary)
+      : exOnParcel ? 'A recorded well maps inside the parcel; verify it' : `Possible well record ${num(ev.distanceToParcelFt) != null ? `${Math.round(ev.distanceToParcelFt).toLocaleString('en-US')} ft from the parcel` : 'nearby'} (${String(ex.confidence || 'low').toLowerCase()} confidence)`;
     const WDr = window.AcresXWellDepth;
     const depthLine = f.well ? (WDr && f.well.stats ? WDr.reportLine(f.well.stats) : `Median nearby well depth (${f.well.count} well${f.well.count === 1 ? '' : 's'}): ${Math.round(f.well.depth)} ft`) : 'No nearby well depths on record';
     // The caution (few comparable wells, drainage, elevation not checked) rides on the second line.
@@ -974,14 +978,14 @@ table{border-collapse:collapse;width:100%}
   const pick = (o, keys) => { const out = {}; if (o && typeof o === 'object') for (const k of keys) if (o[k] !== undefined) out[k] = o[k]; return out; };
   function snapshotData(data) {
     const ex = data.existingWell || {};
-    const exMatch = m => (m ? { evidence: pick(m.evidence, ['insideParcel', 'distanceToParcelFt']) } : undefined);
+    const exMatch = m => (m ? { evidence: pick(m.evidence, ['insideParcel', 'onParcel', 'distanceToParcelFt']) } : undefined);
     const listing = data.resoListings || data.listingContext || {};
     const rec = listing.best || listing.match || null;
     const b = data.buildableArea;
     return {
       parcel: data.parcel?.geometry ? { type: 'Feature', properties: {}, geometry: geometryOnly(data.parcel.geometry) } : null,
       buildableArea: b && typeof b === 'object' ? { ...b, geometry: geometryOnly(b.geometry), removedGeometry: geometryOnly(b.removedGeometry), bufferGeometry: geometryOnly(b.bufferGeometry) } : null,
-      existingWell: { available: ex.available, confidence: ex.confidence, match: exMatch(ex.match), best: exMatch(ex.best) },
+      existingWell: { available: ex.available, confidence: ex.confidence, summary: typeof ex.summary === 'string' ? ex.summary : undefined, match: exMatch(ex.match), best: exMatch(ex.best) },
       publicUtilities: data.publicUtilities || null,
       flood: pick(data.flood, ['available', 'sharePct', 'share', 'source']),
       wetlands: pick(data.wetlands, ['available', 'types']),

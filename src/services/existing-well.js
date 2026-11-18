@@ -1,5 +1,7 @@
 import { json } from '../shared/http.js';
 import { upstreamJson } from '../shared/upstream.js';
+import { nameSimilarity } from '../shared/owner-match.js';
+import { handleMontanaExistingWell } from './existing-well-montana.js';
 
 const SPOKANE_ASSESSOR = 'https://gismo.spokanecounty.org/arcgis/rest/services/Assessor/SCOUTSimple/MapServer/0/query';
 const ECOLOGY_WELLS = 'https://services.arcgis.com/6lCKYNJLvwTXqrmp/ArcGIS/rest/services/WR/FeatureServer/9/query';
@@ -17,13 +19,6 @@ const ECOLOGY_TIMEOUTS = { timeoutMs: 12000, retryTimeoutMs: 8000 };
 // the owner's surname) is neither requested nor returned; nothing in the match used it.
 
 function normParcel(value) { return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
-function normName(value) { return String(value || '').toUpperCase().replace(/\b(LLC|L\.L\.C|INC|CORP|CORPORATION|COMPANY|CO|TRUST|TRUSTEE|ET AL|ESTATE)\b/g, ' ').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
-function nameTokens(value) { return normName(value).split(' ').filter(token => token.length > 1); }
-function nameSimilarity(a, b) {
-  const aa = nameTokens(a), bb = nameTokens(b); if (!aa.length || !bb.length) return 0;
-  const setA = new Set(aa), setB = new Set(bb); const shared = [...setA].filter(token => setB.has(token)).length; const union = new Set([...aa, ...bb]).size;
-  const surnameBoost = aa[0] && bb.includes(aa[0]) ? 0.15 : 0; return Math.min(1, (union ? shared / union : 0) + surnameBoost);
-}
 function normAddress(value) { return String(value || '').toUpperCase().replace(/\b(STREET|ST)\b/g, 'ST').replace(/\b(ROAD|RD)\b/g, 'RD').replace(/\b(AVENUE|AVE)\b/g, 'AVE').replace(/\b(DRIVE|DR)\b/g, 'DR').replace(/\b(LANE|LN)\b/g, 'LN').replace(/\b(HIGHWAY|HWY)\b/g, 'HWY').replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
 
 function pointInRing(point, ring) {
@@ -110,6 +105,8 @@ function classify(best) {
 
 export async function handleExistingWell(request) {
   const body = await request.json(), state = String(body.state || 'WA').toUpperCase(), county = String(body.county || '').replace(/\s+County$/i, '').trim();
+  // Montana (every county): GWIC well logs + DNRC groundwater rights, src/services/existing-well-montana.js.
+  if (state === 'MT') return handleMontanaExistingWell(body, county);
   if (state !== 'WA' || !/^spokane$/i.test(county)) return json({ available: false, status: 'not_supported', label: 'Existing-well matching is not configured for this county yet.' }, 200, 'no-store');
   if (!body.parcelId || !body.geometry) return json({ error: 'parcelId and geometry are required.' }, 400, 'no-store');
   const [assessor, wells] = await Promise.all([queryAssessor(body.parcelId), queryNearbyWells(body.geometry)]);

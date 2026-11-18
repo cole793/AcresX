@@ -268,11 +268,22 @@
     const both = [start, ...also];
     const fixed = both.reduce((a, x) => a + x.value, 0);
     const fees = `${both.map(x => `${x.label} ${usd(x.value)}`).join(' + ')}${extra ? `; ${extra.label} ${usd(extra.value)}` : ''}`;
-    if (ex.available && ex.match && Number(ex.score || 0) >= 55) {
+    // Montana answers say whether the well is on the parcel (evidence.onParcel; their score stays
+    // under 55 otherwise). Spokane answers keep the score >= 55 rule.
+    const ev = ex.match?.evidence || {};
+    const recorded = ex.available && ex.match && (typeof ev.onParcel === 'boolean' ? ev.onParcel : Number(ex.score || 0) >= 55);
+    if (recorded) {
       const a = P.existingWellDueDiligence;
+      const onParcel = typeof ev.onParcel === 'boolean' ? ev.onParcel : Boolean(ev.insideParcel || ev.ownerMatch);
+      const m = ex.match;
+      const ids = m.source === 'gwic' ? [`GWIC #${m.gwicId}`, m.completedDepth ? `${Math.round(m.completedDepth)} ft` : '', m.completionYear || ''].filter(Boolean)
+        : m.source === 'dnrc_water_right' ? [`DNRC water right ${m.waterRightNumber}`] : [];
+      const what = onParcel
+        ? `Existing well recorded${ids.length ? ` (${ids.join(', ')})` : ''} — drilling may not be needed; verify condition/yield.`
+        : `Existing well association detected (${ex.confidence || 'screening'} confidence).`;
       return line('well', a.low, a.high, 'Existing well (due diligence)',
-        `Existing well association detected (${ex.confidence || 'screening'} confidence). AcresX allowance for inspection, flow and water-quality testing instead of a new well (unsourced; get a well inspector's quote).`,
-        [planningRef()], { confidence: 'Moderate' });
+        `${what} AcresX allowance for a well inspection, pump check, flow and water-quality testing instead of a new well (unsourced; get a well inspector's quote).`,
+        [planningRef()], { confidence: 'Moderate', existingWell: onParcel });
     }
     const d = wellDepth(l);
     const drill = d
