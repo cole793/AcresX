@@ -302,3 +302,22 @@ test('terrain factor: the dashboard score uses the gradual scale (14.9% vs 15.1%
   assert.ok(Math.abs(a.score - b.score) < 0.05, `${a.score} vs ${b.score}`);
   assert.equal(at(7.4).factors.terrain.score, 89.3);
 });
+
+// Both scorers run the real terrain-score lines against AcresXTerrain (score-cost.js feeds the
+// cost card's score, screening-refinements.js the dashboard and report).
+for (const file of ['score-cost.js', 'screening-refinements.js']) {
+  test(`${file}: the terrain factor comes from AcresXTerrain (gradual scale), the steps only without it`, async () => {
+    const vm = await import('node:vm');
+    const src = readPublic(file);
+    const start = src.indexOf('const TX = window.AcresXTerrain;');
+    const end = src.indexOf('\n', src.indexOf('const terrainScore', start));
+    assert.ok(start >= 0 && end > start, 'terrain score lines not found');
+    const h = makeLazyContext();
+    h.run(readPublic('screening-inputs.js'));
+    const run = (win, gradePct) => vm.runInNewContext(`${src.slice(start, end)}\nterrainScore`, { window: win, terrain: { available: true, gradePct } });
+    assert.equal(run(h.context, 14.9), 62.4);
+    assert.equal(run(h.context, 15.1), 61.7);
+    assert.equal(run(h.context, 7.4), 89.3);
+    assert.equal(run({}, 15.1), 35, 'old step without screening-inputs.js');
+  });
+}

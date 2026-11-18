@@ -152,7 +152,7 @@
     </div><div>
       <ul class="buildable-list">${removed || '<li class="none"><span>No mapped flood zone, wetland or steep slope removed</span><span>0 ac</span></li>'}${overlap}</ul>
       ${mayAlsoHtml(b)}
-      ${b.homesite ? `<div class="buildable-notes">Gentlest ~1 ac outside these constraints (dashed outline on the map): ${esc(Number(b.homesite.slopePct).toFixed(1))}% slope; septic is graded on it.</div>` : b.homesiteStatus === 'none_clear' ? '<div class="buildable-notes">No ~1 acre site clear of mapped constraints; septic is graded on the parcel average slope.</div>' : ''}
+      ${b.homesite ? `<div class="buildable-notes">Gentlest ~1 ac outside these constraints (dashed outline on the map): ${esc(Number(b.homesite.slopePct).toFixed(1))}% slope; septic is graded on it.</div>` : b.homesiteStatus === 'none_clear' ? '<div class="buildable-notes">No ~1 acre site clear of mapped constraints; septic is graded on the parcel average slope.</div>' : b.homesiteStatus === 'not_checked' ? '<div class="buildable-notes">The mapped constraints are too detailed to check a ~1 acre site; septic is graded on the parcel average slope.</div>' : ''}
       ${slopeLine(b) ? `<div class="buildable-notes">${esc(slopeLine(b))}. Over 30% is removed; 15–30% is shown, not removed.</div>` : ''}
       <div class="buildable-notes">${missing.length ? `<strong>Not counted:</strong> ${esc(missing.join(', '))}. ` : ''}${esc((b.notes || []).join(' '))}</div>
     </div>`;

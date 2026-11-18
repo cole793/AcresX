@@ -16,7 +16,8 @@ import {
   slopeRaster, clearSlopeRasterMemo, boundsRing, homesiteCandidates, SLOPE_CLASSES, STEEP_REMOVED_PCT, RASTER_MAX_TILES, RASTER_MAX_PIXELS
 } from '../src/services/slope-raster.js';
 import { clearTerrainTileMemo, TERRAIN_TILES_URL } from '../src/services/terrain-tiles.js';
-import { buildableFromLayers } from '../src/services/buildable-area.js';
+import { SLOPE_RASTER_CACHE_PREFIX } from '../src/services/slope-raster.js';
+import { buildableFromLayers, pickHomesite, HOMESITE_MAX_OVERLAP } from '../src/services/buildable-area.js';
 import { ringsFromGeometry } from '../src/shared/polygon-coverage.js';
 import { configureUpstream } from '../src/shared/upstream.js';
 import { makeLazyContext, readPublic } from './ui-harness.js';
@@ -408,4 +409,52 @@ test('Yellowstone (recorded tiles): a near-flat homesite acre in the west, repor
   const body = await res.json();
   assert.equal(body.homesite.slopePct, r.homesites[0].slopePct);
   assert.match(body.homesite.basis, /Gentlest ~1 acre/);
+});
+
+test('homesite pick: the 5% overlap boundary (4% covered is clear, 6% is not)', () => {
+  assert.equal(HOMESITE_MAX_OVERLAP, 0.05);
+  const cand = { slopePct: 2, acres: 1, center: [0.0005, 0.0005], bounds: [0, 0, 0.001, 0.001] };
+  const strip = f => ({ flood: [[[[-1, -1], [f * 0.001, -1], [f * 0.001, 1], [-1, 1], [-1, -1]]]] });
+  assert.equal(pickHomesite([cand], strip(0.04), null).homesiteStatus, 'found');
+  assert.equal(pickHomesite([cand], strip(0.06), null).homesiteStatus, 'none_clear');
+  assert.equal(pickHomesite([cand], strip(0.049), null).homesiteStatus, 'found');
+  assert.equal(pickHomesite([cand], strip(0.051), null).homesiteStatus, 'none_clear');
+  // A flagged group (shown-only wetland buffers) never blocks a homesite.
+  assert.equal(pickHomesite([cand], { buffer: strip(0.5).flood }, 'buffer').homesiteStatus, 'found');
+  assert.equal(pickHomesite([], strip(0), null).homesiteStatus, 'unavailable');
+});
+
+test('homesite pick: CPU stays bounded with a 40,000-vertex comb-shaped wetland (< 200 ms)', () => {
+  const r = computeSlopeRaster(benchDem(), win, interior);
+  assert.ok(r.homesites.length > 50, `${r.homesites.length} candidates`);
+  // 10,000 teeth across the parcel, each half the pitch wide: half of every square is wetland.
+  const [[w, s], [e], , [, n]] = [interior[0][0], interior[0][1], interior[0][2], interior[0][3]];
+  const teeth = 10000, pitch = (e - w) / teeth, ring = [[w, s - 0.001]];
+  for (let i = 0; i < teeth; i++) { const x = w + i * pitch; ring.push([x, s - 0.0005], [x, n + 0.001], [x + pitch / 2, n + 0.001], [x + pitch / 2, s - 0.0005]); }
+  ring.push([e, s - 0.001], [w, s - 0.001]);
+  assert.ok(ring.length >= 40000, `${ring.length} vertices`);
+  // Best of 3 runs, so a busy CI machine does not flake the bound.
+  let result, ms = Infinity;
+  for (let i = 0; i < 3; i++) {
+    const started = performance.now();
+    result = pickHomesite(r.homesites, { wetland: [[ring]] }, null);
+    ms = Math.min(ms, performance.now() - started);
+  }
+  assert.ok(ms < 200, `took ${Math.round(ms)} ms`);
+  assert.equal(result.homesiteStatus, 'none_clear', 'every square is half wetland');
+});
+
+test('homesite pick: past the work cap the search is skipped (not_checked), never slow', () => {
+  const cand = { slopePct: 2, acres: 1, center: [0.05, 0.05], bounds: [0, 0, 0.1, 0.1] };
+  // 400,000 tall edges over 10 rows each -> 4,000,000 crossings: over the cap.
+  const ring = [];
+  for (let i = 0; i < 100000; i++) { const x = i * 1e-6; ring.push([x, -1], [x, 1], [x + 5e-7, 1], [x + 5e-7, -1]); }
+  ring.push([0, -1]);
+  const started = performance.now();
+  assert.equal(pickHomesite([cand], { wetland: [[ring]] }, null).homesiteStatus, 'not_checked');
+  assert.ok(performance.now() - started < 200);
+});
+
+test('slope raster cache prefix: v3 (400 spread homesite candidates)', () => {
+  assert.equal(SLOPE_RASTER_CACHE_PREFIX, 'https://acresx.internal/cache/slope-raster/v3/');
 });

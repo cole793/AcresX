@@ -121,6 +121,7 @@
     if (fromBuildable != null) return { slopePct: fromBuildable, homesite: b.homesite };
     // No ~1 acre site clear of mapped constraints: the parcel average, not a site in a flood zone.
     if (b?.homesiteStatus === 'none_clear') return { noneClear: true };
+    if (b?.homesiteStatus === 'not_checked') return { noneClear: true, notChecked: true };
     const t = land?.terrain;
     const fromTerrain = t?.available ? finite(t.homesiteSlopePct) : null;
     if (fromTerrain != null) return { slopePct: fromTerrain, homesite: t.homesite || null };
@@ -145,7 +146,7 @@
     const mapSlope = range ? `soil map unit spans ${range[0]}–${range[1]}% slopes` : soilSlope != null ? `soil map unit's typical slope ${soilSlope}%` : '';
     let context;
     if (site) context = [`drainfield-area slope ${pct1(site.slopePct)} (gentlest ~1 ac)`, average != null ? `parcel average ${pct1(average)}` : '', mapSlope].filter(Boolean).join('; ');
-    else if (measured != null) context = [mapSlope, `measured parcel grade ${pct1(measured)}`, noneClear ? 'no ~1 acre site clear of mapped constraints' : ''].filter(Boolean).join('; ');
+    else if (measured != null) context = [mapSlope, `measured parcel grade ${pct1(measured)}`, noneClear ? (input.notChecked ? 'mapped constraints too detailed to check a ~1 acre site' : 'no ~1 acre site clear of mapped constraints') : ''].filter(Boolean).join('; ');
     else context = `measured parcel grade not available${soilSlope != null ? `; soil map slope ${soilSlope}% used` : ''}`;
     context = context.charAt(0).toUpperCase() + context.slice(1);
     const limits = c.limits.map(x => (x.startsWith('slope') && measured != null ? `${site ? 'drainfield-area slope' : 'measured grade'} ${pct1(measured)} (over ${LIMITED_OVER_PCT}%)` : x));
