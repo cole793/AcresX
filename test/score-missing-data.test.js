@@ -132,7 +132,7 @@ test('fewer than 4 measured factors: the score is Provisional on the dashboard a
 test('data that says bad is still scored: limited soil and steep terrain keep their low factors', () => {
   const data = fixture();
   data.land.soil = { ...data.land.soil, drainage: 'Poorly drained', hydrologicGroup: 'D', feasibility: 'limited' };
-  data.land.terrain = { ...data.land.terrain, gradePct: 22 };
+  data.land.terrain = { ...data.land.terrain, gradePct: 30 };
   const dash = dashboard(data);
   assert.equal(dash.calc.completeness.complete, true);
   assert.equal(dash.calc.factors.terrain.score, 35);
@@ -269,4 +269,36 @@ test('soil backup answer: scored like the SDA answer (complete score), and the r
   const sda = report(fixture(), full.score);
   assert.match(sda.text, /USDA NRCS Soil Data Access \(SSURGO\)/);
   assert.doesNotMatch(sda.text, /Esri Living Atlas \(backup/);
+});
+
+// ---- Terrain factor: gradual scale (owner decision 2026-11-18, PR #93)
+
+test('terrain factor: piecewise-linear through the old step values (screening-inputs.js AcresXTerrain)', () => {
+  const h = makeLazyContext();
+  h.run(readPublic('screening-inputs.js'));
+  const TX = h.context.AcresXTerrain;
+  for (const [g, s] of [[0, 96], [5, 96], [7.5, 89], [10, 82], [12.5, 72], [15, 62], [20, 48.5], [25, 35], [43.5, 35]]) assert.equal(TX.score(g), s, `${g}%`);
+  assert.equal(TX.score(null), 50, 'no grade: neutral');
+  // No cliff at 15%: 14.9% and 15.1% differ by less than one point (the steps differed by 27).
+  const a = TX.score(14.9), b = TX.score(15.1);
+  assert.ok(a > b && a - b < 1, `${a} vs ${b}`);
+  // Never rises with grade.
+  for (let g = 0; g < 40; g += 0.5) assert.ok(TX.score(g + 0.5) <= TX.score(g), `${g}%`);
+});
+
+test('terrain factor: the dashboard score uses the gradual scale (14.9% vs 15.1% move the score only slightly)', () => {
+  // Septic has its own slope rule (AcresXSeptic: limited over 15%); a poorly drained soil keeps
+  // septic limited on both sides, so only the terrain factor moves here.
+  const at = g => {
+    const d = fixture();
+    d.land.soil = { ...d.land.soil, drainage: 'Poorly drained', hydrologicGroup: 'D', feasibility: 'limited' };
+    d.land.terrain = { ...d.land.terrain, gradePct: g };
+    return dashboard(d).calc;
+  };
+  const a = at(14.9), b = at(15.1);
+  assert.equal(a.factors.terrain.score, 62.4);
+  assert.equal(b.factors.terrain.score, 61.7);
+  assert.equal(a.factors.soil.score, b.factors.soil.score);
+  assert.ok(Math.abs(a.score - b.score) < 0.05, `${a.score} vs ${b.score}`);
+  assert.equal(at(7.4).factors.terrain.score, 89.3);
 });

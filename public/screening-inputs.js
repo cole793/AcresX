@@ -161,6 +161,26 @@
 
   root.AcresXSeptic = { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, BACKUP_LABEL, sourceLabel, classify, soilSlopeRange, assess, apply, score };
 
+  // ---- Terrain factor (owner decision 2026-11-18, PR #93): a gradual scale instead of steps.
+  // Piecewise-linear through the old step values, so a parcel at 15.1% no longer scores 27 points
+  // below one at 14.9%: 0-5% -> 96, then 96 -> 82 by 10%, 82 -> 62 by 15%, 62 -> 35 by 25%, and
+  // 35 beyond. gradePct is the parcel's mean grade (the slope raster's mean when measured,
+  // src/services/slope-raster.js). The one definition for score-cost.js and
+  // screening-refinements.js (and so the dashboard and the report).
+  const TERRAIN_ANCHORS = Object.freeze([[0, 96], [5, 96], [10, 82], [15, 62], [25, 35]]);
+  function terrainScore(gradePct) {
+    const g = gradePct === null || gradePct === undefined || gradePct === '' ? NaN : Number(gradePct);
+    if (!Number.isFinite(g)) return 50;
+    const A = TERRAIN_ANCHORS;
+    if (g <= A[0][0]) return A[0][1];
+    for (let i = 1; i < A.length; i++) {
+      const [x0, y0] = A[i - 1], [x1, y1] = A[i];
+      if (g <= x1) return Math.round((y0 + (y1 - y0) * (g - x0) / (x1 - x0)) * 10) / 10;
+    }
+    return A[A.length - 1][1];
+  }
+  root.AcresXTerrain = { ANCHORS: TERRAIN_ANCHORS, score: terrainScore };
+
   // The land answer is graded once, as it arrives, so the card, the detail tab, the score, the
   // cost model and the report all read the same septic grade (progressive-loading.js looks the
   // function up on window at call time).

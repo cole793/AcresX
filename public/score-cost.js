@@ -63,7 +63,9 @@
     const soilSeptic = window.AcresXSeptic ? window.AcresXSeptic.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
     const water = PU ? PU.waterScore(wellWater, last) : wellWater;
     const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
-    const terrainScore = !terrain.available ? 50 : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
+    // Gradual scale from screening-inputs.js (window.AcresXTerrain); the old steps only without it.
+    const TX = window.AcresXTerrain;
+    const terrainScore = !terrain.available ? 50 : TX ? TX.score(terrain.gradePct) : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
     const FX = window.AcresXFlood;
     // Without flood-status.js loaded yet: the older scale, without throwing.
     const floodScore = FX ? FX.score(flood) : !flood.available || flood.source?.emptyResult ? 50 : flood.high ? 20 : flood.intersects ? 55 : 96;
