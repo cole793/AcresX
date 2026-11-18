@@ -3,6 +3,7 @@ import { getSpokaneCityZoneRules } from '../zoning/spokane-city-rules.js';
 import { getYellowstoneZoneDevelopmentPotential } from '../zoning/yellowstone-rules.js';
 import { getKootenaiZoneDevelopmentPotential } from '../zoning/kootenai-rules.js';
 import { getStevensZoneRules } from '../zoning/stevens-rules.js';
+import { getGallatinZoneRules } from '../zoning/gallatin-rules.js';
 import { json } from '../shared/http.js';
 
 export async function handleZoningRules(request) {
@@ -57,6 +58,16 @@ export async function handleZoningRules(request) {
     const potential = getKootenaiZoneDevelopmentPotential(zoneCode);
     if (!potential) return json({ available: false, county: 'Kootenai', zoneCode, status: 'zone_not_mapped' }, 200, 'public, max-age=3600');
     return json({ available: true, county: 'Kootenai', jurisdiction: body.jurisdiction || 'Kootenai County', ...potential }, 200, 'public, max-age=86400, s-maxage=604800');
+  }
+
+  if (/^gallatin$/i.test(county)) {
+    // Rules per zoning district (src/zoning/gallatin-rules.js): codes repeat across districts, so
+    // the layer's district (zoning.district, e.g. 'Hyalite zoning district') picks the table.
+    // City zones (Bozeman 'R-1', 'R-3') share letters with county zones but not their rules.
+    const jurisdiction = String(body.jurisdiction || '').trim();
+    if (jurisdiction && !/^gallatin county$/i.test(jurisdiction)) return json({ available: false, county: 'Gallatin', jurisdiction, zoneCode, status: 'zone_not_mapped', note: "City zoning rules aren't mapped in AcresX yet; see the city's zoning code." }, 200, 'public, max-age=3600');
+    const rules = getGallatinZoneRules(zoneCode, String(body.district || '').trim());
+    return json(rules, 200, rules.available ? 'public, max-age=86400, s-maxage=604800' : 'public, max-age=3600');
   }
 
   return json({ available: false, county, zoneCode, status: 'adapter_not_built' }, 200, 'public, max-age=3600');

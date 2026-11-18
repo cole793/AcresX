@@ -35,23 +35,31 @@
     const zp = last?.zoningPermits || {};
     const z = zp.zoning || {};
     if (!z.code) return null;
+    const county = zp.county || last?.parcel?.properties?._countyDisplay || last?.parcel?.properties?.COUNTY_NM || '';
     return {
-      county: zp.county || last?.parcel?.properties?._countyDisplay || last?.parcel?.properties?.COUNTY_NM || '',
+      county,
       zoneCode: z.code,
       zoneName: z.name || '',
       jurisdiction: zp.jurisdiction || zp.permitJurisdiction?.name || '',
       jurisdictionType: z.jurisdictionType || '',
       rules: z.rules || '', rulesNote: z.rulesNote || '', rulesUrl: z.rulesUrl || '', rulesUrlLabel: z.rulesUrlLabel || '',
+      // Gallatin County codes repeat across zoning districts (src/zoning/gallatin-rules.js).
+      district: /^gallatin\b/i.test(String(county)) ? (z.district || zp.source?.attributes?.DISTRICT_N || '') : '',
       uga: Boolean(zp.urbanGrowthArea?.intersects),
       developmentAgreement: z.developmentAgreement || zp.comprehensivePlan?.developmentAgreement || ''
     };
+  }
+
+  // One key per zone: county, jurisdiction, zone code, plus the Gallatin zoning district when known.
+  function potentialKey(county, identity) {
+    return [county, identity.jurisdiction, ...(identity.district ? [identity.district] : []), identity.zoneCode].join('|');
   }
 
   async function loadPotential() {
     const identity = currentZoningIdentity();
     if (!identity) return null;
     const county = String(identity.county).replace(/\s+County$/i, '').trim();
-    if (!/^(spokane|stevens|yellowstone|kootenai)$/i.test(county)) return null;
+    if (!/^(spokane|stevens|yellowstone|kootenai|gallatin)$/i.test(county)) return null;
     // Spokane County rules are for unincorporated land only: a city zone code (City of Spokane,
     // Spokane Valley, Cheney, ...) never gets them, even if it shares letters with a county zone.
     // A city zone is asked for only when the server says the city has a table with it
@@ -61,8 +69,10 @@
     // Same for Stevens County rules: a city or town zone (Chewelah 'R1', Colville 'R-1', Kettle
     // Falls 'I') never gets them. The county answer's jurisdiction is 'Stevens County'.
     if (/^stevens$/i.test(county) && ((identity.jurisdictionType && identity.jurisdictionType !== 'county') || (identity.jurisdiction && !/^stevens county\b/i.test(identity.jurisdiction)))) return null;
+    // And Gallatin County rules: a zone inside Bozeman, Belgrade or another town never gets them.
+    if (/^gallatin$/i.test(county) && identity.jurisdiction && !/^gallatin county$/i.test(identity.jurisdiction)) return null;
 
-    const cacheKey = `${county}|${identity.jurisdiction}|${identity.zoneCode}`;
+    const cacheKey = potentialKey(county, identity);
     if (last?.zoningDevelopmentPotential?._cacheKey === cacheKey) return last.zoningDevelopmentPotential;
 
     // The summary re-renders as sections arrive (progressive-loading.js): reuse a request in flight.
@@ -117,12 +127,16 @@
       ? [power.jurisdiction || 'Yellowstone County', power.sourceChapter || 'Zoning regulations']
       : county === 'kootenai'
         ? [power.jurisdiction || 'Kootenai County', power.sourceChapter || 'County zoning code']
-        : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
+        : county === 'gallatin'
+          ? (power.code === 'UNZONED' ? ['Gallatin County: no zoning district'] : [/zoning district/i.test(power.district || '') ? power.district : `${power.district || 'Gallatin County'} zoning district`, `Code ${power.sourceChapter}`])
+          : [power.uga ? 'Inside mapped UGA' : 'Outside / no mapped UGA', power.developmentAgreement ? `Development agreement: ${power.developmentAgreement}` : 'No development agreement flagged', `Code ${power.sourceChapter}`];
     const sourceLabel = city ? (power.codeLabel || `${power.jurisdiction} zoning code`) : county === 'stevens' ? 'Stevens County Title 3 zoning regulations' : county === 'yellowstone'
       ? `${power.jurisdiction || 'Yellowstone County'} zoning regulations`
       : county === 'kootenai'
         ? 'Kootenai County Zoning Code'
-        : 'Spokane County Zoning Code';
+        : county === 'gallatin'
+          ? (power.code === 'UNZONED' ? 'Gallatin County zoning regulations' : (power.source || power.codeLabel || 'Gallatin County zoning regulation'))
+          : 'Spokane County Zoning Code';
 
     const block = document.createElement('div');
     block.className = 'zone-potential';
@@ -164,12 +178,15 @@
 
   function notMappedInfo() {
     const identity = currentZoningIdentity();
-    if (!identity || !/^spokane$/i.test(String(identity.county).replace(/\s+County$/i, '').trim())) return null;
+    const county = identity ? String(identity.county).replace(/\s+County$/i, '').trim() : '';
+    if (!identity || !/^(spokane|gallatin)$/i.test(county)) return null;
     const cached = typeof last !== 'undefined' ? last?.zoningDevelopmentPotential : null;
-    const cacheKey = `Spokane|${identity.jurisdiction}|${identity.zoneCode}`;
+    const cacheKey = potentialKey(county, identity);
+    // A Gallatin County zone without plain-language rules: the answer links its district regulation.
     if (cached && cached._cacheKey === cacheKey && !cached.available && cached.status === 'zone_not_mapped' && cached.codeUrl) {
       return { code: identity.zoneCode, jurisdiction: identity.jurisdiction, note: cached.note, url: cached.codeUrl, label: `Open ${cached.codeLabel || 'city zoning code'} ↗` };
     }
+    if (/^gallatin$/i.test(county)) return null;
     if (identity.jurisdictionType !== 'city' || identity.rules !== 'not_mapped') return null;
     return { code: identity.zoneCode, jurisdiction: identity.jurisdiction, note: identity.rulesNote, url: identity.rulesUrl, label: identity.rulesUrlLabel };
   }
