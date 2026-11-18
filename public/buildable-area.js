@@ -124,6 +124,7 @@
       @media(max-width:860px){.buildable-card{grid-template-columns:1fr}}
       .legend-buildable{display:inline-block;width:14px;height:10px;border-radius:2px;background:rgba(47,138,88,.45);border:1px solid #2f8a58}
       .legend-buffer{display:inline-block;width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,#d39a2a 0 3px,rgba(240,190,90,.3) 3px 6px)}
+      .legend-homesite{display:inline-block;width:14px;height:10px;border-radius:2px;border:2px dashed #1f4e79;box-sizing:border-box}
       .legend-removed{display:inline-block;width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,#c0392b 0 3px,rgba(192,57,43,.25) 3px 6px)}
     `;
     document.head?.appendChild(s);
@@ -151,6 +152,7 @@
     </div><div>
       <ul class="buildable-list">${removed || '<li class="none"><span>No mapped flood zone, wetland or steep slope removed</span><span>0 ac</span></li>'}${overlap}</ul>
       ${mayAlsoHtml(b)}
+      ${b.homesite ? `<div class="buildable-notes">Gentlest ~1 ac outside these constraints (dashed outline on the map): ${esc(Number(b.homesite.slopePct).toFixed(1))}% slope; septic is graded on it.</div>` : ''}
       ${slopeLine(b) ? `<div class="buildable-notes">${esc(slopeLine(b))}. Over 30% is removed; 15–30% is shown, not removed.</div>` : ''}
       <div class="buildable-notes">${missing.length ? `<strong>Not counted:</strong> ${esc(missing.join(', '))}. ` : ''}${esc((b.notes || []).join(' '))}</div>
     </div>`;
@@ -198,6 +200,13 @@
     if (b.geometry) L.geoJSON(b.geometry, { interactive: false, style: { stroke: false, fillColor: '#2f8a58', fillOpacity: 0.42 } }).addTo(layer);
     const hatched = [];
     if (b.removedGeometry) hatched.push([L.geoJSON(b.removedGeometry, { interactive: false, style: { stroke: false, fillColor: '#c0392b', fillOpacity: 0.5 } }).addTo(layer), 'buildableHatch']);
+    // The gentlest ~1 ac clear of constraints (the septic slope input): a dashed outline.
+    const h = b.homesite;
+    if (h && Array.isArray(h.bounds) && h.bounds.length === 4) {
+      const [w, s, e, n] = h.bounds;
+      L.rectangle([[s, w], [n, e]], { color: '#1f4e79', weight: 2, dashArray: '5 4', fill: false, interactive: true })
+        .bindTooltip(`Gentlest ~1 ac: drainfield-area slope ${Number(h.slopePct).toFixed(1)}%`).addTo(layer);
+    }
     if (b.bufferGeometry) hatched.push([L.geoJSON(b.bufferGeometry, { interactive: false, style: { stroke: false, fillColor: '#d39a2a', fillOpacity: 0.35 } }).addTo(layer), 'bufferHatch']);
     if (hatched.length) {
       layer.addTo(map);
@@ -229,7 +238,7 @@
     }
     const legend = document.querySelector('.map-legend');
     if (legend && !legend.querySelector('.legend-buildable')) {
-      legend.insertAdjacentHTML('beforeend', '<div class="legend-row"><span class="legend-buildable"></span>Buildable (estimate)</div><div class="legend-row"><span class="legend-removed"></span>Removed: flood, wetland, steep slope</div><div class="legend-row"><span class="legend-buffer"></span>Mapped wetland buffer (not removed)</div>');
+      legend.insertAdjacentHTML('beforeend', '<div class="legend-row"><span class="legend-buildable"></span>Buildable (estimate)</div><div class="legend-row"><span class="legend-removed"></span>Removed: flood, wetland, steep slope</div><div class="legend-row"><span class="legend-buffer"></span>Mapped wetland buffer (not removed)</div><div class="legend-row"><span class="legend-homesite"></span>Gentlest ~1 ac (septic slope)</div>');
     }
   }
 

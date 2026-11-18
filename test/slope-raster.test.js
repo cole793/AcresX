@@ -13,12 +13,13 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
 import {
   computeSlopeRaster, hornSlopePct, clipMask, runRects, chooseZoom, rasterWindow, lonToX, latToY, xToLon, yToLat, pixelMeters,
-  slopeRaster, clearSlopeRasterMemo, boundsRing, SLOPE_CLASSES, STEEP_REMOVED_PCT, RASTER_MAX_TILES, RASTER_MAX_PIXELS
+  slopeRaster, clearSlopeRasterMemo, boundsRing, homesiteCandidates, SLOPE_CLASSES, STEEP_REMOVED_PCT, RASTER_MAX_TILES, RASTER_MAX_PIXELS
 } from '../src/services/slope-raster.js';
 import { clearTerrainTileMemo, TERRAIN_TILES_URL } from '../src/services/terrain-tiles.js';
 import { buildableFromLayers } from '../src/services/buildable-area.js';
 import { ringsFromGeometry } from '../src/shared/polygon-coverage.js';
 import { configureUpstream } from '../src/shared/upstream.js';
+import { makeLazyContext, readPublic } from './ui-harness.js';
 import { ELEVATION_IMAGE_SERVICE, configureElevation } from '../src/services/elevation.js';
 import { TERRAIN_CACHE_PREFIX, POINT_ONLY_TTL_SECONDS, TILE_ANSWER_TTL_SECONDS } from '../src/services/land-analysis.js';
 
@@ -232,6 +233,7 @@ test('Yellowstone: /api/land-analysis average grade is the raster mean, with the
     assert.ok(terrain.pointGradePct < 4, `9-point grade ${terrain.pointGradePct}`);
     assert.equal(terrain.slopeClasses.length, 5);
     near(terrain.reliefFt, 144, 3, 'relief inside the parcel');
+    assert.ok(terrain.homesiteSlopePct < 3 && Array.isArray(terrain.homesite.bounds), `homesite ${terrain.homesiteSlopePct}`);
   } finally { restore(); }
 });
 
@@ -311,4 +313,81 @@ test('terrain cache: a point-only answer (no raster) is kept 10 minutes; the ras
     const ttl = Number(/max-age=(\d+)/.exec(terrainEntry().headers.get('Cache-Control'))[1]);
     assert.ok(ttl >= TILE_ANSWER_TTL_SECONDS, `raster answer TTL ${ttl}`);
   } finally { restore(); }
+});
+
+// ---- Homesite / drainfield area (owner decision 2026-11-18)
+
+// A 25% plane rising east with a flat 16 x 16 pixel bench (about 1.1 ac at 6.7 m) in its middle.
+const bench = (r, c) => r >= 22 && r < 38 && c >= 22 && c < 38;
+const benchDem = () => demOf((r, c, m) => (bench(r, c) ? 0.25 * 22 * m : 0.25 * c * m));
+
+test('homesite: the gentlest ~1 ac square of a steep parcel is the flat bench', () => {
+  const r = computeSlopeRaster(benchDem(), win, interior);
+  near(r.meanPct, 25, 4, 'the parcel is steep on average');
+  const [best, ...rest] = r.homesites;
+  assert.equal(best.slopePct, 0, 'the bench interior is flat');
+  near(best.acres, 1, 0.15, 'about one acre');
+  const [w, s, e, n] = best.bounds;
+  const c0 = lonToX(w, Z) - win.x0, c1 = lonToX(e, Z) - win.x0, r0 = latToY(n, Z) - win.y0, r1 = latToY(s, Z) - win.y0;
+  assert.ok(c0 >= 22 && c1 <= 38 && r0 >= 22 && r1 <= 38, `inside the bench: cols ${c0}-${c1}, rows ${r0}-${r1}`);
+  assert.ok(rest.length > 0 && rest.every(h => h.slopePct >= best.slopePct), 'other candidates are steeper');
+  // Candidates do not overlap.
+  for (const h of rest) assert.ok(h.bounds[0] >= e - 1e-9 || h.bounds[2] <= w + 1e-9 || h.bounds[1] >= n - 1e-9 || h.bounds[3] <= s + 1e-9, 'no overlap with the best');
+});
+
+test('homesite: a parcel smaller than an acre is its own candidate; all-steep parcels have none', () => {
+  const small = computeSlopeRaster(demOf((r, c, m) => 0.05 * c * m), win, pixelBox(20, 20, 26, 26));
+  assert.equal(small.homesites.length, 1);
+  assert.equal(small.homesites[0].wholeParcel, true);
+  near(small.homesites[0].slopePct, 5, 0.1, 'its slope');
+  const cliff = computeSlopeRaster(demOf((r, c, m) => 0.5 * c * m), win, interior);
+  assert.deepEqual(cliff.homesites, [], 'nothing under 30%');
+});
+
+test('homesite: buildable-area skips a candidate inside a flood zone and takes the next gentlest', () => {
+  const r = computeSlopeRaster(benchDem(), win, interior);
+  const geometry = { type: 'Polygon', coordinates: interior };
+  const slope = { key: 'slope', label: 'Slopes over 30%', status: 'none', rings: [], slopeClasses: r.classes, homesites: r.homesites };
+  const clear = buildableFromLayers(geometry, [{ key: 'flood', label: 'Flood', status: 'none', rings: [] }, slope]);
+  assert.deepEqual(clear.homesite.bounds, r.homesites[0].bounds);
+  assert.equal(clear.homesite.slopePct, 0);
+  const flooded = buildableFromLayers(geometry, [{ key: 'flood', label: 'Flood', status: 'counted', rings: [boundsRing(r.homesites[0].bounds)] }, slope]);
+  assert.notDeepEqual(flooded.homesite.bounds, r.homesites[0].bounds, 'the flooded bench is skipped');
+  assert.equal(flooded.homesite.slopePct, r.homesites[1].slopePct);
+});
+
+test('septic: graded on the homesite slope, not the parcel average; re-graded when the buildable homesite arrives; parcel average without a raster', () => {
+  const h = makeLazyContext();
+  h.run(readPublic('screening-inputs.js'));
+  const SX = h.context.AcresXSeptic;
+  const soil = () => ({ available: true, drainage: 'Well drained', hydrologicGroup: 'B', feasibility: 'favorable', mapUnit: 'Test loam, 15 to 35 percent slopes' });
+  // A steep parcel (25% average) with a flat acre: not limited.
+  const land = { soil: soil(), terrain: { available: true, gradePct: 25, homesiteSlopePct: 2.1 } };
+  SX.apply(land);
+  assert.equal(land.soil.feasibility, 'favorable');
+  assert.equal(land.soil.septic.slopeSource, 'homesite');
+  assert.match(land.soil.septic.context, /^Drainfield-area slope 2\.1% \(gentlest ~1 ac\); parcel average 25\.0%/);
+  assert.equal(SX.score(land), 92);
+  // The buildable homesite (outside flood/wetlands) is steeper: re-graded on it.
+  h.context.last = { land, buildableArea: { homesite: { slopePct: 18.4, bounds: [0, 0, 1, 1] } } };
+  assert.equal(SX.score(land), 38);
+  assert.equal(land.soil.feasibility, 'limited');
+  assert.match(land.soil.septic.limits.join(' '), /drainfield-area slope 18\.4% \(over 15%\)/);
+  // No raster: the parcel average, as before.
+  h.context.last = null;
+  const old = { soil: soil(), terrain: { available: true, gradePct: 25 } };
+  SX.apply(old);
+  assert.equal(old.soil.feasibility, 'limited');
+  assert.equal(old.soil.septic.slopeSource, 'measured');
+});
+
+test('Yellowstone (recorded tiles): a near-flat homesite acre in the west, reported by land-analysis and buildable-area', async () => {
+  stubTiles();
+  const r = await slopeRaster(YS);
+  assert.ok(r.homesites.length >= 3);
+  assert.ok(r.homesites[0].slopePct < 3, `homesite slope ${r.homesites[0].slopePct}`);
+  const res = await worker.fetch(new Request('https://acresx.test/api/buildable-area', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: 'MT', county: 'Yellowstone', geometry: YS }) }), {}, {});
+  const body = await res.json();
+  assert.equal(body.homesite.slopePct, r.homesites[0].slopePct);
+  assert.match(body.homesite.basis, /Gentlest ~1 acre/);
 });

@@ -643,8 +643,8 @@ test('cache guard: a slope answer that mixes getSamples and identify values is n
   } finally { restore(); }
 });
 
-test('cache: terrain v3 (raster mean grade) and slope-grid v2 prefixes (answers carry elevationSources)', () => {
-  assert.equal(TERRAIN_CACHE_PREFIX, 'https://acresx.internal/cache/terrain/v3/');
+test('cache: terrain v4 (raster mean grade, homesite slope) and slope-grid v2 prefixes (answers carry elevationSources)', () => {
+  assert.equal(TERRAIN_CACHE_PREFIX, 'https://acresx.internal/cache/terrain/v4/');
   assert.equal(SLOPE_CACHE_PREFIX, 'https://acresx.internal/cache/slope-grid/v2/');
 });
 

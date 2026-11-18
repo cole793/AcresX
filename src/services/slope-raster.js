@@ -54,7 +54,7 @@ import { ringsFromGeometry, SQM_PER_ACRE } from '../shared/polygon-coverage.js';
 import { openGeometryCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 import { json } from '../shared/http.js';
 
-export const SLOPE_RASTER_CACHE_PREFIX = 'https://acresx.internal/cache/slope-raster/v1/';
+export const SLOPE_RASTER_CACHE_PREFIX = 'https://acresx.internal/cache/slope-raster/v2/';
 export const SLOPE_RASTER_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const RASTER_ZOOMS = Object.freeze([14, 13, 12]);
 export const RASTER_MAX_TILES = 16;
@@ -62,6 +62,9 @@ export const RASTER_MAX_PIXELS = 160000;
 export const RASTER_TILE_CONCURRENCY = 8;
 export const STEEP_REMOVED_PCT = 30;
 export const MAY_LIMIT_PCT = 15;
+// Homesite / drainfield area (owner decision 2026-11-18): the gentlest ~1 acre square.
+export const HOMESITE_SQM = 4046.8564224;
+export const HOMESITE_CANDIDATES = 6;
 export const MASK_MAX_RECTS = 2500;
 export const DISPLAY_MAX_RECTS = 3000;
 export const RASTER_SOURCE = 'USGS 3DEP elevation (AWS Terrain Tiles copy), per-pixel slope';
@@ -315,8 +318,69 @@ export function computeSlopeRaster(dem, win, rings, { steepPct = STEEP_REMOVED_P
     steepPct,
     steepMask: maskRects.map(rect => rectBounds(rect, win)),
     steepMaskTruncated: maskTruncated,
+    homesites: homesiteCandidates(slope, inside, count, win, steepPct, pxM),
     displayRects: displayRects(slope, inside, win)
   };
+}
+
+// Gentlest homesite areas (owner decision 2026-11-18: septic uses the slope of the best homesite
+// area, not the parcel average). Squares of k x k pixels, k = ceil(sqrt(1 acre) / pixel size),
+// wholly inside the parcel, every pixel measured and none over steepPct; ranked by mean slope
+// (summed-area tables), up to HOMESITE_CANDIDATES that do not overlap, gentlest first. A parcel
+// with fewer than k x k pixels: one candidate, its non-steep pixels. buildable-area.js picks the
+// first candidate clear of flood zones and wetlands; land-analysis.js reports the first.
+// [{ slopePct, acres, center: [lon, lat], bounds: [w, s, e, n] }].
+export function homesiteCandidates(slope, inside, count, win, steepPct = STEEP_REMOVED_PCT, pxM = pixelMeters(yToLat(win.y0 + win.height / 2, win.z), win.z)) {
+  const { width, height } = win;
+  const ok = i => inside[i] && Number.isFinite(slope[i]) && slope[i] <= steepPct;
+  const k = Math.max(1, Math.ceil(Math.sqrt(HOMESITE_SQM) / pxM));
+  const acresOf = n => round2(n * pxM * pxM / SQM_PER_ACRE);
+  if (count < k * k) {
+    let sum = 0, n = 0, c0 = Infinity, c1 = -1, r0 = Infinity, r1 = -1;
+    for (let r = 0; r < height; r++) for (let c = 0; c < width; c++) {
+      const i = r * width + c;
+      if (!ok(i)) continue;
+      sum += slope[i]; n++;
+      if (c < c0) c0 = c; if (c > c1) c1 = c; if (r < r0) r0 = r; if (r > r1) r1 = r;
+    }
+    if (!n) return [];
+    const b = rectBounds({ c0, c1, r0, r1 }, win);
+    return [{ slopePct: round1(sum / n), acres: acresOf(n), center: [r6((b[0] + b[2]) / 2), r6((b[1] + b[3]) / 2)], bounds: b, wholeParcel: true }];
+  }
+  // Summed-area tables of valid pixels and their slopes, (width + 1) x (height + 1).
+  const W1 = width + 1;
+  const cnt = new Float64Array(W1 * (height + 1)), sum = new Float64Array(W1 * (height + 1));
+  for (let r = 0; r < height; r++) {
+    let rc = 0, rs = 0;
+    for (let c = 0; c < width; c++) {
+      const i = r * width + c;
+      if (ok(i)) { rc++; rs += slope[i]; }
+      cnt[(r + 1) * W1 + c + 1] = cnt[r * W1 + c + 1] + rc;
+      sum[(r + 1) * W1 + c + 1] = sum[r * W1 + c + 1] + rs;
+    }
+  }
+  const box = (t, r, c) => t[(r + k) * W1 + c + k] - t[r * W1 + c + k] - t[(r + k) * W1 + c] + t[r * W1 + c];
+  const pw = width - k + 1, ph = height - k + 1;
+  if (pw < 1 || ph < 1) return [];
+  const means = new Float32Array(pw * ph).fill(Infinity);
+  const order = [];
+  for (let r = 0; r < ph; r++) for (let c = 0; c < pw; c++) {
+    if (box(cnt, r, c) !== k * k) continue;
+    means[r * pw + c] = box(sum, r, c) / (k * k);
+    order.push(r * pw + c);
+  }
+  order.sort((a, b) => means[a] - means[b]);
+  const blocked = new Uint8Array(pw * ph);
+  const out = [];
+  for (const j of order) {
+    if (blocked[j]) continue;
+    const r = Math.floor(j / pw), c = j % pw;
+    const b = rectBounds({ c0: c, c1: c + k - 1, r0: r, r1: r + k - 1 }, win);
+    out.push({ slopePct: round1(means[j]), acres: acresOf(k * k), center: [r6((b[0] + b[2]) / 2), r6((b[1] + b[3]) / 2)], bounds: b });
+    if (out.length >= HOMESITE_CANDIDATES) break;
+    for (let rr = Math.max(0, r - k + 1); rr < Math.min(ph, r + k); rr++) for (let cc = Math.max(0, c - k + 1); cc < Math.min(pw, c + k); cc++) blocked[rr * pw + cc] = 1;
+  }
+  return out;
 }
 
 // Per-class rectangles of the clipped pixels for the map; coarsened 2 x 2 (mean slope) while over
@@ -413,6 +477,10 @@ export function terrainFromRaster(raster) {
     p90GradePct: raster.p90Pct,
     slopeClasses: raster.classes,
     gradeMethod: 'raster',
+    // Gentlest ~1 ac inside the parcel and under 30% (flood zones and wetlands are checked later
+    // by buildable-area.js); the septic slope input (public/screening-inputs.js AcresXSeptic).
+    homesiteSlopePct: raster.homesites?.[0]?.slopePct ?? null,
+    homesite: raster.homesites?.[0] || null,
     gradeResolution: `${raster.pixelM} m pixels (zoom ${raster.zoom}), ${raster.measuredPixels} parcel pixels`,
     ...(raster.reliefFt != null ? { minFt: raster.minFt, maxFt: raster.maxFt, reliefFt: raster.reliefFt } : {})
   };

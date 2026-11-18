@@ -110,11 +110,28 @@
     return m ? [Number(m[1]), Number(m[2])] : null;
   }
 
-  function assess(land) {
+  // Septic slope input (owner decision 2026-11-18, PR #93): the slope of the best homesite area,
+  // not the parcel average. In order: the buildable-area homesite (gentlest ~1 ac outside flood
+  // zones, wetlands and slopes over 30%: last.buildableArea.homesite), the slope raster's gentlest
+  // ~1 ac (land.terrain.homesiteSlopePct, before the buildable answer arrives), then the parcel
+  // average grade (no raster), then the soil map unit's slope.
+  function homesiteInput(land, buildable) {
+    const b = buildable === undefined ? (() => { try { return typeof last !== 'undefined' ? last?.buildableArea : root.last?.buildableArea; } catch { return root.last?.buildableArea; } })() : buildable;
+    const fromBuildable = finite(b?.homesite?.slopePct);
+    if (fromBuildable != null) return { slopePct: fromBuildable, homesite: b.homesite };
+    const t = land?.terrain;
+    const fromTerrain = t?.available ? finite(t.homesiteSlopePct) : null;
+    if (fromTerrain != null) return { slopePct: fromTerrain, homesite: t.homesite || null };
+    return null;
+  }
+
+  function assess(land, buildable) {
     const soil = land?.soil;
     if (!soil?.available) return null;
     const t = land?.terrain;
-    const measured = t?.available ? finite(t.gradePct) : null;
+    const average = t?.available ? finite(t.gradePct) : null;
+    const site = homesiteInput(land, buildable);
+    const measured = site ? site.slopePct : average;
     const soilSlope = finite(soil.soilSlopePct);
     const slopePct = measured ?? soilSlope;
     const c = classify({ drainage: soil.drainage, hydrologicGroup: soil.hydrologicGroup, slopePct });
@@ -123,27 +140,34 @@
     const range = soilSlopeRange(soil);
     const mapSlope = range ? `soil map unit spans ${range[0]}–${range[1]}% slopes` : soilSlope != null ? `soil map unit's typical slope ${soilSlope}%` : '';
     let context;
-    if (measured != null) context = [mapSlope, `measured parcel grade ${pct1(measured)}`].filter(Boolean).join('; ');
+    if (site) context = [`drainfield-area slope ${pct1(site.slopePct)} (gentlest ~1 ac)`, average != null ? `parcel average ${pct1(average)}` : '', mapSlope].filter(Boolean).join('; ');
+    else if (measured != null) context = [mapSlope, `measured parcel grade ${pct1(measured)}`].filter(Boolean).join('; ');
     else context = `measured parcel grade not available${soilSlope != null ? `; soil map slope ${soilSlope}% used` : ''}`;
     context = context.charAt(0).toUpperCase() + context.slice(1);
-    const limits = c.limits.map(x => (x.startsWith('slope') && measured != null ? `measured grade ${pct1(measured)} (over ${LIMITED_OVER_PCT}%)` : x));
+    const limits = c.limits.map(x => (x.startsWith('slope') && measured != null ? `${site ? 'drainfield-area slope' : 'measured grade'} ${pct1(measured)} (over ${LIMITED_OVER_PCT}%)` : x));
     return {
       feasibility,
-      slopePct, slopeSource: measured != null ? 'measured' : soilSlope != null ? 'soil_map' : 'none',
+      slopePct, slopeSource: site ? 'homesite' : measured != null ? 'measured' : soilSlope != null ? 'soil_map' : 'none',
+      parcelGradePct: average, homesite: site?.homesite || null,
       soilSlopeRange: range, limits, context,
       note: 'USDA screening only; a site evaluation sets the system type.'
     };
   }
 
-  // Once per land answer (idempotent). Returns the same object.
+  // Grades the land answer (idempotent for the same slope input). Re-grades when the input
+  // changes, i.e. when the buildable-area homesite arrives after the land answer. Returns land.
+  const inputKey = land => { const s = homesiteInput(land); return s ? `h:${s.slopePct}` : 'avg'; };
   function apply(land) {
     const soil = land?.soil;
-    if (!soil?.available || soil.septic) return land;
+    if (!soil?.available) return land;
+    const key = inputKey(land);
+    if (soil.septic && soil.septic.inputKey === key) return land;
+    if (soil.septic) soil.feasibility = soil.soilMapFeasibility;
     const a = assess(land);
     if (!a) return land;
     soil.soilMapFeasibility = soil.feasibility;
     soil.feasibility = a.feasibility;
-    soil.septic = { slopePct: a.slopePct, slopeSource: a.slopeSource, soilSlopeRange: a.soilSlopeRange, limits: a.limits, context: a.context, note: a.note };
+    soil.septic = { slopePct: a.slopePct, slopeSource: a.slopeSource, parcelGradePct: a.parcelGradePct, homesite: a.homesite, soilSlopeRange: a.soilSlopeRange, limits: a.limits, context: a.context, note: a.note, inputKey: key };
     return land;
   }
 
@@ -151,6 +175,7 @@
   function score(land) {
     const soil = land?.soil || {};
     if (!soil.available) return 50;
+    if (soil.septic) apply(land);
     const f = soil.septic ? soil.feasibility : assess(land)?.feasibility || soil.feasibility;
     return f === 'favorable' ? 92 : f === 'limited' ? 38 : 66;
   }
@@ -159,7 +184,7 @@
   const BACKUP_LABEL = 'Source: USDA SSURGO via Esri (backup — USDA service unavailable)';
   const sourceLabel = soil => (soil?.available && soil.backup ? BACKUP_LABEL : '');
 
-  root.AcresXSeptic = { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, BACKUP_LABEL, sourceLabel, classify, soilSlopeRange, assess, apply, score };
+  root.AcresXSeptic = { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, BACKUP_LABEL, sourceLabel, classify, soilSlopeRange, homesiteInput, assess, apply, score };
 
   // ---- Terrain factor (owner decision 2026-11-18, PR #93): a gradual scale instead of steps.
   // Piecewise-linear through the old step values, so a parcel at 15.1% no longer scores 27 points

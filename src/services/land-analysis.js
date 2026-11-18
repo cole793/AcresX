@@ -9,8 +9,9 @@ import { slopeRaster, terrainFromRaster } from './slope-raster.js';
 
 // v2 (2026-11-02): every terrain answer carries elevationSources; v1 entries are left to expire.
 // v3 (2026-11-17): gradePct is the per-pixel slope raster's parcel mean (slope-raster.js) when the
-// terrain tiles answer; v2 entries (9-point average) are left to expire.
-export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v3/';
+// terrain tiles answer; v2 entries (9-point average) are left to expire. v4 (2026-11-18): adds
+// homesiteSlopePct / homesite (the gentlest ~1 ac, the septic slope input).
+export const TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/terrain/v4/';
 export const CANOPY_CACHE_PREFIX = 'https://acresx.internal/cache/canopy/v1/';
 export const CANOPY_FALLBACK_MAX_POINTS = 12;
 const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60;

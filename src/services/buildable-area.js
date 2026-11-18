@@ -197,6 +197,7 @@ async function slopeLayer(geometry, env, ctx) {
       source: `${raster.source} (${raster.pixelM} m pixels)`,
       rings: (raster.steepMask || []).map(boundsRing),
       slopeClasses: rasterClasses(raster),
+      homesites: raster.homesites || [],
       limitingShare: limiting,
       note: limiting >= 0.005
         ? `About ${Math.round(limiting * 1000) / 10}% of the parcel is ${MAY_LIMIT_PCT}–${STEEP_SLOPE_PCT}% slope: it may limit building (driveways, septic, foundations; some counties ask for an engineer's review over 25%), so it is shown, not subtracted.`
@@ -269,6 +270,7 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
   const buildableSqM = Math.max(0, total - areas.removedSqM);
   const shape = maskGeometry(parcel, groups, { setbackM, flag });
   const slope = layers.find(l => l.key === 'slope');
+  const homesite = pickHomesite(slope?.homesites, groups, flag);
   const slopeClasses = Array.isArray(slope?.slopeClasses)
     ? slope.slopeClasses.map(c => ({ key: c.key, label: c.label, pct: c.pct, acres: toAcres((c.share || 0) * total) }))
     : null;
@@ -282,8 +284,28 @@ export function buildableFromLayers(geometry, layers, { setbackFt = null, setbac
     removedGeometry: shape.removed.length ? { type: 'MultiPolygon', coordinates: shape.removed } : null,
     bufferGeometry: shape.flagged.length ? { type: 'MultiPolygon', coordinates: shape.flagged } : null,
     // Additive: slope classes of the parcel from the slope raster (null on the coarse grid).
-    slopeClasses
+    slopeClasses,
+    // Additive: the gentlest ~1 ac clear of removed constraints (null without the raster or when
+    // none is clear); the septic slope input on the page (public/screening-inputs.js).
+    homesite
   };
+}
+
+// The first (gentlest) slope-raster homesite candidate with under 5% of its area in a removed
+// constraint (flood, wetlands, steep slope; the zoning setback is not checked: it depends on the
+// parcel lines, and a 1 ac square fits inside it on any parcel big enough to have one).
+export const HOMESITE_MAX_OVERLAP = 0.05;
+function pickHomesite(candidates, groups, flag) {
+  if (!Array.isArray(candidates) || !candidates.length) return null;
+  const removing = Object.fromEntries(Object.entries(groups).filter(([k]) => k !== flag));
+  for (const c of candidates) {
+    const ring = [[[c.bounds[0], c.bounds[1]], [c.bounds[2], c.bounds[1]], [c.bounds[2], c.bounds[3]], [c.bounds[0], c.bounds[3]], [c.bounds[0], c.bounds[1]]]];
+    const a = maskAreas(ring, removing, { strips: 40 });
+    if (!(a.parcelSqM > 0) || a.removedSqM / a.parcelSqM < HOMESITE_MAX_OVERLAP) {
+      return { slopePct: c.slopePct, acres: c.acres, center: c.center, bounds: c.bounds, basis: 'Gentlest ~1 acre of the parcel outside mapped flood zones, wetlands and slopes over 30% (slope raster)' };
+    }
+  }
+  return null;
 }
 
 export async function buildableArea(body, env, ctx) {
