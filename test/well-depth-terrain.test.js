@@ -120,53 +120,56 @@ test('similar-elevation wells: moderate confidence, median and quartile range', 
   assert.equal(e.waterLevelDepthFt, 80);
 });
 
-test('deep wells: with comparable wells two raise the high end and one only adds a note; with none, one sets the top', () => {
-  const base = [120, 140, 100, 160, 130].map((depthFt, i) => ({ id: String(i), distanceMi: 0.2 + i * 0.1, depthFt, staticFt: null, elevationFt: 2400 }));
-  const deep = (n, at = 0.25) => Array.from({ length: n }, (_, i) => ({ id: `d${i}`, distanceMi: at + i * 0.01, depthFt: 900 + i * 100, staticFt: null, elevationFt: 2480 }));
-  const one = estimateWellDepth({ parcelElevationFt: 2400, wells: [...base, ...deep(1)].sort((a, b) => a.distanceMi - b.distanceMi) });
+// Deep-well rules (owner decisions 2026-11-18; rules version 4): with 0-2 comparable wells one deep
+// well at similar or higher ground (anywhere in the search) sets the top of the range; with 3 or
+// more comparable wells two are needed and a single one is a note only.
+const comparableWells = n => Array.from({ length: n }, (_, i) => ({ id: `c${i}`, distanceMi: 0.15 + i * 0.1, depthFt: 60 + i * 10, staticFt: null, elevationFt: 2400 + (i % 2 ? 10 : -10) }));
+const valleyWells = n => Array.from({ length: n }, (_, i) => ({ id: `v${i}`, distanceMi: 0.12 + i * 0.1, depthFt: 40, staticFt: null, elevationFt: 2250 }));
+const deepWells = (n, at = 0.42) => Array.from({ length: n }, (_, i) => ({ id: `d${i}`, distanceMi: at + i * 0.01, depthFt: 900 + i * 100, staticFt: null, elevationFt: 2480 }));
+const byDistance = list => list.sort((a, b) => a.distanceMi - b.distanceMi);
+
+for (const n of [0, 1, 2]) {
+  test(`deep wells: ${n} comparable + one deep well -> it sets the top of the range (low confidence)`, () => {
+    const e = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...valleyWells(8), ...comparableWells(n), ...deepWells(1, 3.5)]) });
+    assert.equal(e.comparableCount, n);
+    assert.equal(e.confidence, 'low');
+    assert.equal(e.highFt, 900, 'even beyond the wells used (3.5 mi)');
+    assert.equal(e.deepWells.raisedHigh, true);
+    assert.equal(e.deepWells.single.depthFt, 900);
+  });
+}
+
+test('deep wells: 3 comparable + one deep well -> note only; two deep wells raise the high end', () => {
+  const base = [120, 140, 100, 160, 130].slice(0, 3).map((depthFt, i) => ({ id: String(i), distanceMi: 0.2 + i * 0.1, depthFt, staticFt: null, elevationFt: 2400 }));
+  const one = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...base, ...deepWells(1, 0.25)]) });
+  assert.equal(one.comparableCount, 3);
   assert.equal(one.confidence, 'moderate');
-  assert.equal(one.highFt, 140, 'one deep well does not move the range (p75 of the five comparable)');
-  assert.deepEqual({ ...one.deepWells.single }, { id: 'd0', depthFt: 900, dzFt: 80, distanceMi: 0.25, flowing: false, approximateLocation: false });
+  assert.equal(one.highFt, 130, 'p75 of the three comparable; the deep well does not move it');
   assert.equal(one.deepWells.raisedHigh, false);
-  const two = estimateWellDepth({ parcelElevationFt: 2400, wells: [...base, ...deep(2)].sort((a, b) => a.distanceMi - b.distanceMi) });
-  assert.equal(two.highFt, 950, 'two deep wells raise the high end to their median');
+  assert.deepEqual({ ...one.deepWells.single }, { id: 'd0', depthFt: 900, dzFt: 80, distanceMi: 0.25, flowing: false, approximateLocation: false });
+  const two = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...base, ...deepWells(2, 0.25)]) });
+  assert.equal(two.highFt, 950, 'two deep wells: their median');
   assert.equal(two.deepWells.raisedHigh, true);
-  assert.equal(two.deepWells.single, null);
   assert.equal(two.depthFt, one.depthFt, 'the central estimate is unchanged');
-  // No comparable well (all in a valley 150 ft down): one deep well anywhere in the search sets
-  // the top of the range, even beyond the wells used.
-  const valley = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}`, distanceMi: 0.1 * (i + 1), depthFt: 40, staticFt: null, elevationFt: 2250 }));
-  const farDeep = [{ id: 'far', distanceMi: 3.5, depthFt: 1200, staticFt: -20, elevationFt: 2500, coarseLocation: true }];
-  const zeroOne = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...farDeep] });
-  assert.equal(zeroOne.confidence, 'low');
-  assert.equal(zeroOne.comparableCount, 0);
-  assert.equal(zeroOne.highFt, 1200);
-  assert.equal(zeroOne.deepWells.raisedHigh, true);
-  assert.deepEqual({ ...zeroOne.deepWells.single }, { id: 'far', depthFt: 1200, dzFt: 100, distanceMi: 3.5, flowing: true, approximateLocation: true });
-  // Low confidence but with comparable wells (mostly drainage): one deep well is a note only.
-  const near = [{ id: 'c1', distanceMi: 0.15, depthFt: 60, staticFt: null, elevationFt: 2400 }, { id: 'c2', distanceMi: 0.25, depthFt: 70, staticFt: null, elevationFt: 2410 }];
-  const lowOne = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...near, ...deep(1, 0.7)].sort((a, b) => a.distanceMi - b.distanceMi) });
-  assert.equal(lowOne.confidence, 'low');
-  assert.equal(lowOne.comparableCount, 2);
-  assert.ok(lowOne.highFt < 900, `with comparables, one deep: high ${lowOne.highFt}`);
-  assert.equal(lowOne.deepWells.raisedHigh, false);
-  const lowTwo = estimateWellDepth({ parcelElevationFt: 2400, wells: [...valley, ...near, ...deep(2, 0.42)].sort((a, b) => a.distanceMi - b.distanceMi) });
-  assert.equal(lowTwo.highFt, 950);
+  // Three comparable wells but mostly drainage (low confidence): still the two-well rule.
+  const drained = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...valleyWells(8), ...comparableWells(3).map(w => ({ ...w, distanceMi: w.distanceMi + 0.9 })), ...deepWells(1, 0.3)]) });
+  assert.equal(drained.comparableCount, 3);
+  assert.equal(drained.confidence, 'low');
+  assert.equal(drained.deepWells.raisedHigh, false);
 
   const h = makeLazyContext();
   h.run(readPublic('screening-inputs.js'));
   const WD = h.context.AcresXWellDepth;
   const wells = [{ properties: { CompletedDepth: 120 } }];
   wells.terrain = { available: true, estimate: one };
-  const s = WD.stats({ wells });
-  assert.equal(WD.deepText(s), 'One nearby well on higher ground went to 900 ft; deeper wells are possible.');
-  assert.match(WD.note(s), /One nearby well on higher ground went to 900 ft/);
+  assert.equal(WD.deepText(WD.stats({ wells })), 'One nearby well on higher ground went to 900 ft; deeper wells are possible.');
   wells.terrain = { available: true, estimate: two };
   assert.equal(WD.deepText(WD.stats({ wells })), '');
-  wells.terrain = { available: true, estimate: zeroOne };
+  const raised = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...valleyWells(10), { id: 'far', distanceMi: 3.5, depthFt: 1200, staticFt: -20, elevationFt: 2500, coarseLocation: true }]) });
+  wells.terrain = { available: true, estimate: raised };
   const z = WD.stats({ wells });
   assert.equal(WD.deepText(z), 'Top of the range: one well 3.5 mi away on ground about 100 ft higher went to 1,200 ft (flowing artesian; location approximate (section centre)); ask a local driller.');
-  assert.equal(WD.value(z), `${zeroOne.lowFt}–1,200 ft`);
+  assert.equal(WD.value(z), `${raised.lowFt}–1,200 ft`);
 });
 
 test('mostly drainage wells keep confidence low even with three comparable wells', () => {
@@ -255,6 +258,29 @@ test('point elevations: terrain tiles first within the tile budget, 3DEP getSamp
 
 // ---- The browser wrapper (public/well-terrain.js)
 
+const SQUARE = { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[-108.546, 45.701], [-108.544, 45.701], [-108.544, 45.703], [-108.546, 45.703], [-108.546, 45.701]]] } };
+
+test('homesite point: the area centroid when inside; a true interior point for a concave parcel', () => {
+  const { ctx } = wrapperContext({ terrainAnswer: {}, wells: () => [] });
+  const H = ctx.AcresXWellTerrain.homesite;
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // A trapezoid: the vertex average (turf.centroid) and the area centroid differ.
+  const trap = { type: 'Polygon', coordinates: [[[0, 0], [4, 0], [3, 1], [1, 1], [0, 0]]] };
+  const [tx, ty] = H({ geometry: trap });
+  assert.ok(near(tx, 2) && near(ty, 4 / 9), `area centroid (2, 0.444), got (${tx}, ${ty}); the vertex average would be (2, 0.5)`);
+  // A C-shaped parcel whose area centroid falls in the notch, outside the parcel.
+  const c = { type: 'Polygon', coordinates: [[[0, 0], [3, 0], [3, 1], [1, 1], [1, 2], [3, 2], [3, 3], [0, 3], [0, 0]]] };
+  const [cx, cy] = H({ geometry: c });
+  const insideC = (x, y) => x > 0 && x < 3 && y > 0 && y < 3 && !(x > 1 && y > 1 && y < 2);
+  assert.ok(insideC(cx, cy), `interior point (${cx}, ${cy})`);
+  assert.ok(cx > 0 && cx < 1, 'in the spine of the C, the only inside span at that latitude');
+  // MultiPolygon: the largest part.
+  const multi = { type: 'MultiPolygon', coordinates: [[[[10, 10], [10.1, 10], [10.1, 10.1], [10, 10.1], [10, 10]]], trap.coordinates] };
+  const [mx, my] = H({ geometry: multi });
+  assert.ok(near(mx, 2) && near(my, 4 / 9));
+  assert.equal(H({ properties: {} }), null, 'no geometry: no point (no request)');
+});
+
 function wrapperContext({ terrainAnswer, terrainDelayMs = 0, wells }) {
   const fetches = [];
   const ctx = {
@@ -277,15 +303,15 @@ function wrapperContext({ terrainAnswer, terrainDelayMs = 0, wells }) {
 test('well-terrain.js attaches the terrain answer to the wells list; failures and lookups that failed pass through', async () => {
   const answer = { available: true, estimate: { confidence: 'low', depthFt: 250 } };
   const { ctx, fetches } = wrapperContext({ terrainAnswer: answer, wells: () => [{ properties: { CompletedDepth: 53 } }] });
-  const wells = await ctx.findWells({ type: 'Feature', properties: {} });
+  const wells = await ctx.findWells(SQUARE);
   assert.equal(wells.length, 1);
   assert.equal(wells.terrain.estimate.depthFt, 250);
   assert.equal(fetches[0].url, '/api/well-depth-terrain');
-  assert.deepEqual(fetches[0].body, { state: 'MT', lat: 45.702, lon: -108.545 });
+  assert.deepEqual(fetches[0].body, { state: 'MT', lat: 45.702, lon: -108.545 }, 'the square parcel\'s centre');
   assert.equal(ctx.findWells.__terrain, true);
 
   const failedList = () => { const f = []; f.lookupFailed = true; return f; };
-  const failed = await wrapperContext({ terrainAnswer: answer, wells: failedList }).ctx.findWells({ properties: {} });
+  const failed = await wrapperContext({ terrainAnswer: answer, wells: failedList }).ctx.findWells(SQUARE);
   assert.equal(failed.lookupFailed, true);
   assert.equal(failed.terrain, undefined, 'a failed well lookup stays a failure');
 });
@@ -293,7 +319,7 @@ test('well-terrain.js attaches the terrain answer to the wells list; failures an
 test('well-terrain.js: a slow terrain answer is dropped at the wait limit (fallback, not a timeout)', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { ctx } = wrapperContext({ terrainAnswer: { available: true }, terrainDelayMs: 60000, wells: () => [{ properties: { CompletedDepth: 53 } }] });
-  const pending = ctx.findWells({ properties: {} });
+  const pending = ctx.findWells(SQUARE);
   for (let i = 0; i < 20; i++) await Promise.resolve();
   t.mock.timers.tick(12500);
   const wells = await pending;
