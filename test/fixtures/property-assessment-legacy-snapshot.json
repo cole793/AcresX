@@ -78,6 +78,29 @@
           "TotalBuildingValue": 260000,
           "TaxYear": 2025
         }
+      ],
+      "cadastralSource": "Montana Cadastral (Department of Revenue ORION)",
+      "cadastralRecords": [
+        {
+          "parcelNumber": null,
+          "geocode": null,
+          "taxYear": 2025,
+          "totalValue": 410000,
+          "landValue": 150000,
+          "improvementValue": 260000,
+          "assessorAcres": null,
+          "propertyClass": null,
+          "propertyClassDescription": null,
+          "propertyTypeNote": null,
+          "landUse": [],
+          "agricultural": false,
+          "agriculturalNote": null,
+          "levyDistrict": null,
+          "legalDescription": null,
+          "subdivision": null,
+          "certificateOfSurvey": null,
+          "propertySearchUrl": null
+        }
       ]
     }
   },
@@ -97,6 +120,29 @@
           "TotalLandValue": 150000,
           "TotalBuildingValue": 260000,
           "TaxYear": 2025
+        }
+      ],
+      "cadastralSource": "Montana Cadastral (Department of Revenue ORION)",
+      "cadastralRecords": [
+        {
+          "parcelNumber": null,
+          "geocode": null,
+          "taxYear": 2025,
+          "totalValue": 410000,
+          "landValue": 150000,
+          "improvementValue": 260000,
+          "assessorAcres": null,
+          "propertyClass": null,
+          "propertyClassDescription": null,
+          "propertyTypeNote": null,
+          "landUse": [],
+          "agricultural": false,
+          "agriculturalNote": null,
+          "levyDistrict": null,
+          "legalDescription": null,
+          "subdivision": null,
+          "certificateOfSurvey": null,
+          "propertySearchUrl": null
         }
       ]
     }
