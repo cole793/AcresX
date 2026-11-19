@@ -33,7 +33,7 @@ test('GET /api/county-coverage: every registry county, with its badge, and no up
     const by = Object.fromEntries(body.counties.map(c => [key(c), c]));
     assert.equal(by['ID:Kootenai'].coverage.label, 'Validated county');
     assert.equal(by['WA:Spokane'].coverage.label, 'Validated county');
-    assert.equal(by['MT:Gallatin'].coverage.label, 'Partially validated');
+    assert.equal(by['MT:Gallatin'].coverage.label, 'Validated county');
     assert.equal(by['MT:Flathead'].coverage.label, LIMITED);
     assert.equal(by['MT:Flathead'].coverage.limited, true);
     assert.equal(by['MT:Flathead'].zoningValidated, false);
@@ -44,7 +44,9 @@ test('GET /api/county-coverage: every registry county, with its badge, and no up
 test('badge explanations say what is missing', () => {
   const by = Object.fromEntries(COUNTY_COVERAGE.map(c => [c.key, c]));
   assert.match(describeCoverage(by['MT:Flathead']).summary, /has not validated this county\. County assessor values, property tax, zoning map and zoning rules sources are not set up; the other layers come from statewide or national data\..*Verify every finding with the county\./);
-  assert.match(describeCoverage(by['MT:Gallatin']).summary, /Property tax partly covered; zoning rules not set up\./);
+  assert.equal(describeCoverage(by['MT:Gallatin']).summary, 'Results are checked against county records in daily validation runs (last 2026-11-19). Zoning rules partly covered.');
+  // A level 2 county keeps the "partly covered / not set up" wording.
+  assert.match(describeCoverage({ ...by['MT:Gallatin'], level: 2, capabilities: { ...by['MT:Gallatin'].capabilities, tax: 'partial', zoningRules: 'not_configured' } }).summary, /Property tax partly covered; zoning rules not set up\./);
   // Property tax validated in Spokane and Stevens (2026-11-15 and 11-16 daily runs): no longer "partly covered".
   assert.match(describeCoverage(by['WA:Spokane']).summary, /daily validation runs \(last 2026-11-14\)\. Zoning rules partly covered\./);
   assert.doesNotMatch(describeCoverage(by['WA:Spokane']).summary, /Property tax/);

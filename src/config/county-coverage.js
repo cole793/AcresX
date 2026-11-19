@@ -78,14 +78,15 @@ const overrides = {
     capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'partial'}
   },
   'MT:Gallatin': {
-    level: 2,
+    level: 3,
     priority: 2,
-    lastValidated: '2026-11-03',
+    lastValidated: '2026-11-19',
     checklistScore: 75,
     checklistScoreDate: '2026-11-03',
-    notes: 'Validation run 2026-11-03T23:25Z had 1 terrain error; zoning answered for 10 of 12 parcels. No zoning rules table for Gallatin.',
-    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'partial',zoning:'validated',zoningRules:'not_configured'}
+    notes: 'Level 3 (checklist section 7): two consecutive clean live validation runs (0 parcels with an error or mismatch) on 2026-11-18 (run 44401658417) and 2026-11-19 (run 44620839493; 173 ok, 19 unavailable: listing on 12 parcels, zoning rules on 4, zoning on 2, tax on 1). Owner signed off on 2026-11-18 after comparing 06069905302080000 (Hyalite RR-10) and 06033804413010000 (Big Sky RC-SF-10) with the county regulations. Zoning rules from PR #92 cover residential, agricultural and rural zones (8 of 12 parcels); tax ok on 11 of 12 in both runs.',
+    capabilities: {parcel:'validated',wells:'validated',soil:'validated',terrain:'validated',flood:'validated',wetlands:'validated',utilities:'validated',assessment:'validated',tax:'validated',zoning:'validated',zoningRules:'partial'}
   },
+
   // Stevens was re-derived from the latest published daily run (2026-11-12, run 43304774155,
   // `latest/stevens.json` on the validation-results branch).
   'WA:Stevens': {
