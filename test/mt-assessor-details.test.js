@@ -7,6 +7,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
+import { findMontanaStateRecord, montanaStateWhere } from '../src/services/property-tax-test.js';
 import { mapMontanaAssessment, montanaPropertyType, montanaLandUse, montanaPropertyCardUrl, MONTANA_AG_NOTE } from '../src/states/montana/assessment.js';
 
 const fx = JSON.parse(readFileSync(new URL('./fixtures/mt-cadastral-assessment.json', import.meta.url), 'utf8'));
@@ -17,15 +18,19 @@ const arcgis = list => new Response(JSON.stringify({ features: list.map(attribut
 
 // Answers the DNRC cadastral and Yellowstone tax-parcel queries from the fixture, by the id in
 // the where clause; `dnrcDown` makes the state layer fail.
+let dnrcWheres = [];
 function stubMontana({ dnrcDown = false } = {}) {
+  dnrcWheres = [];
   globalThis.fetch = async input => {
     const url = new URL(String(input instanceof Request ? input.url : input));
     const where = url.searchParams.get('where') || '';
     const id = (/'([^']+)'/.exec(where) || [])[1] || '';
     if (url.hostname === 'gis.dnrc.mt.gov') {
       if (dnrcDown) throw new Error('DNRC down');
-      // Only the PARCELID form matches on the live layer (Geocode is the dashed form).
-      return arcgis(/^ParcelID=/i.test(where) && fx.records[id] ? [fx.records[id]] : []);
+      // One combined query; the 17-digit PARCELID form is what matches on the live layer.
+      dnrcWheres.push(where);
+      const hit = [...where.matchAll(/'([^']+)'/g)].map(m => m[1]).find(i => fx.records[i]);
+      return arcgis(/^PARCELID IN \(/.test(where) && hit ? [fx.records[hit]] : []);
     }
     if (url.hostname === 'gis.yellowstonecountymt.gov') return arcgis(fx.yellowstoneTaxParcel[id] ? [fx.yellowstoneTaxParcel[id]] : []);
     throw new Error(`unexpected upstream ${url.hostname}`);
@@ -99,7 +104,53 @@ test('state cadastral down: Yellowstone still answers with the county record and
   assert.equal(body.available, true);
   assert.deepEqual(body.statewideRecords, []);
   assert.deepEqual(body.cadastralRecords, []);
+  // The county layer's short legal description is still shown.
+  assert.equal(body.countyLegalDescription, 'HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD (25)');
   noOwner(body);
+});
+
+test('state cadastral down: Gallatin (no county layer) answers available:false with no legal fallback', async () => {
+  stubMontana({ dnrcDown: true });
+  const { status, body } = await assess('Gallatin', '06069905302080000');
+  assert.equal(status, 200);
+  assert.equal(body.available, false);
+  assert.equal(body.countyLegalDescription, undefined);
+});
+
+test('state record found: no county legal fallback is added', async () => {
+  stubMontana();
+  const { body } = await assess('Yellowstone', '03092732390050000');
+  assert.equal(body.countyLegalDescription, undefined);
+});
+
+test('state lookup: one combined query, the 17-digit geocode first', async () => {
+  stubMontana();
+  const { body } = await assess('Yellowstone', '03092732390050000');
+  assert.equal(body.cadastralRecords.length, 1);
+  assert.equal(dnrcWheres.length, 1, 'one DNRC request (was up to 9 in a row)');
+  assert.equal(dnrcWheres[0], "PARCELID IN ('03092732390050000','03-0927-32-3-90-05-0000') OR Geocode IN ('03092732390050000','03-0927-32-3-90-05-0000') OR AssessmentCode IN ('03092732390050000','03-0927-32-3-90-05-0000')");
+  // A dashed geocode still puts the 17-digit form first; quotes are escaped.
+  assert.match(montanaStateWhere('03-0927-32-3-90-05-0000').where, /^PARCELID IN \('03092732390050000','03-0927-32-3-90-05-0000'\)/);
+  assert.match(montanaStateWhere("x'y").where, /'x''y'/);
+});
+
+test('state lookup: an AssessmentCode match on another parcel gives way to the exact geocode match', async () => {
+  const other = { ...fx.records['06069905302080000'], AssessmentCode: '03092732390050000' };
+  globalThis.fetch = async () => arcgis([other, fx.records['03092732390050000']]);
+  const { records } = await findMontanaStateRecord('03092732390050000');
+  assert.deepEqual(records.map(r => r.attributes.PARCELID), ['03092732390050000']);
+});
+
+test('state lookup: a hanging server is cut off by the overall budget (first try + retry together)', async () => {
+  let calls = 0;
+  globalThis.fetch = (input, init = {}) => { calls++; return new Promise((_, reject) => init.signal?.addEventListener('abort', () => reject(init.signal.reason))); };
+  const started = Date.now();
+  const result = await findMontanaStateRecord('03092732390050000', { budgetMs: 400 });
+  const took = Date.now() - started;
+  assert.deepEqual(result.records, []);
+  assert.equal(result.formatted, '03-0927-32-3-90-05-0000');
+  assert.ok(took < 1500, `stopped at the budget (${took} ms)`);
+  assert.ok(calls <= 2, `at most one retry (${calls} requests)`);
 });
 
 test('property type: "CODE - Label" split, certain bare codes labelled, anything else shown as written', () => {

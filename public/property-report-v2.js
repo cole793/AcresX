@@ -138,7 +138,8 @@
         }, d.cadastralSource || d.statewideSource);
       }
       const r = d.statewideRecords?.[0];
-      if (!r) return null;
+      // No state record: Yellowstone's tax-parcel layer still gives the short legal description.
+      if (!r) return d.countyLegalDescription ? out({ total: null, land: null, improvements: null, year: '', propertyClass: '', acres: null, legalDescription: String(d.countyLegalDescription) }, `${d.county || 'Yellowstone'} County tax parcel record (Montana Cadastral values did not load)`) : null;
       const t = num(r.TotalValue), l = num(r.TotalLandValue);
       return out({ total: t, land: l, improvements: num(r.TotalBuildingValue) ?? (t != null && l != null ? t - l : null), year: r.TaxYear || '', propertyClass: String(r.PropType || '').trim(), acres: num(r.TotalAcres) }, d.statewideSource);
     }

@@ -27,19 +27,39 @@ function digits(value) { return String(value || '').replace(/\D/g, ''); }
 function safe(value) { return String(value || '').replace(/'/g, "''"); }
 function compact(value) { return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
-async function findMontanaStateRecord(parcelId) {
+// The whole state lookup has one budget (was up to 9 queries in a row, 3 id forms x 3 fields,
+// each up to 20 s, so a slow DNRC server could stall the assessment for minutes). Now one
+// combined query (every id form against PARCELID, Geocode and AssessmentCode), with one retry
+// inside the same budget; when the budget runs out the answer has no state record and the page
+// degrades this layer only. Exported for tests (budgetMs).
+export const MT_STATE_LOOKUP_BUDGET_MS = 8000;
+export function montanaStateWhere(parcelId) {
   const compactId = digits(parcelId);
   const formatted = compactId.length === 17 ? `${compactId.slice(0,2)}-${compactId.slice(2,6)}-${compactId.slice(6,8)}-${compactId.slice(8,9)}-${compactId.slice(9,11)}-${compactId.slice(11,13)}-${compactId.slice(13)}` : parcelId;
-  const candidates = [...new Set([parcelId, compactId, formatted].filter(Boolean))];
-  for (const candidate of candidates) {
-    for (const field of ['ParcelID','Geocode','AssessmentCode']) {
-      try {
-        const records = await arcgis(MT_CADASTRAL, { where: `${field}='${safe(candidate)}'`, outFields: MONTANA_CADASTRAL_FIELDS }, { retries: 0, label: 'mt-cadastral-assessment' });
-        if (records.length) return { records, formatted };
-      } catch (_) {}
-    }
-  }
-  return { records: [], formatted };
+  // The 17-digit geocode first: it is what the app searches with and what PARCELID holds.
+  const candidates = [...new Set([compactId.length === 17 ? compactId : '', parcelId, compactId, formatted].filter(Boolean))];
+  const list = candidates.map(c => `'${safe(c)}'`).join(',');
+  return { where: `PARCELID IN (${list}) OR Geocode IN (${list}) OR AssessmentCode IN (${list})`, formatted, compactId };
+}
+export async function findMontanaStateRecord(parcelId, { budgetMs = MT_STATE_LOOKUP_BUDGET_MS } = {}) {
+  const { where, formatted, compactId } = montanaStateWhere(parcelId);
+  const budget = new AbortController();
+  const timer = setTimeout(() => budget.abort(new Error('Montana cadastral lookup budget spent')), budgetMs);
+  try {
+    const q = new URL(MT_CADASTRAL);
+    for (const [key, value] of Object.entries({ where, outFields: MONTANA_CADASTRAL_FIELDS, f: 'json', returnGeometry: 'false' })) q.searchParams.set(key, value);
+    const data = await upstreamJson(q, {
+      timeoutMs: Math.round(budgetMs * 0.6), retryTimeoutMs: Math.round(budgetMs * 0.4), retries: 1, signal: budget.signal,
+      arcgis: true, label: 'mt-cadastral-assessment', agency: 'Montana cadastral', arcgisMessage: 'ArcGIS query failed'
+    });
+    const records = withoutPersonalFields(data.features || []);
+    // An AssessmentCode can match another parcel; keep the exact geocode match when there is one.
+    const exact = records.filter(f => digits(f?.attributes?.PARCELID) === compactId || digits(f?.attributes?.Geocode) === compactId);
+    return { records: exact.length ? exact : records, formatted };
+  } catch (error) {
+    console.warn('Montana cadastral assessment lookup failed', error?.message || error);
+    return { records: [], formatted };
+  } finally { clearTimeout(timer); }
 }
 
 export async function handlePropertyTaxTest(request) {
@@ -76,16 +96,24 @@ export async function handlePropertyTaxTest(request) {
   }
 
   if (state === 'MT') {
-    const statewide = await findMontanaStateRecord(parcelId);
-    let countyRecords = [];
-    if (/^yellowstone$/i.test(county)) {
+    // The state record and the Yellowstone tax-parcel record are asked at the same time (was one
+    // after the other). A Yellowstone county failure leaves countyRecords empty (this layer only).
+    const yellowstone = async () => {
+      if (!/^yellowstone$/i.test(county)) return [];
       const compactId = digits(parcelId);
-      const candidates = [...new Set([parcelId, compactId, statewide.formatted].filter(Boolean))];
-      for (const candidate of candidates) {
-        countyRecords = await arcgis(YELLOWSTONE, { where: `GEOCODE='${safe(candidate)}' OR GEO_CODE='${safe(candidate)}'`, outFields: 'GEOCODE,GEO_CODE,TAX_ID,TAXID,PROP_ID,FULLADD,SHORTLEGAL' }, { label: 'yellowstone-taxparcel-assessment' });
-        if (countyRecords.length) break;
-      }
-    }
+      const { formatted } = montanaStateWhere(parcelId);
+      try {
+        for (const candidate of [...new Set([parcelId, compactId, formatted].filter(Boolean))]) {
+          const found = await arcgis(YELLOWSTONE, { where: `GEOCODE='${safe(candidate)}' OR GEO_CODE='${safe(candidate)}'`, outFields: 'GEOCODE,GEO_CODE,TAX_ID,TAXID,PROP_ID,FULLADD,SHORTLEGAL' }, { label: 'yellowstone-taxparcel-assessment' });
+          if (found.length) return found;
+        }
+      } catch (error) { console.warn('Yellowstone tax-parcel assessment lookup failed', error?.message || error); }
+      return [];
+    };
+    const [statewide, countyRecords] = await Promise.all([findMontanaStateRecord(parcelId), yellowstone()]);
+    // State record missing (DNRC down or slow): the Yellowstone tax-parcel layer's short legal
+    // description is still shown (additive field; the values stay "Not available").
+    const countyLegal = !statewide.records.length ? String(countyRecords[0]?.attributes?.SHORTLEGAL || '').replace(/\s+/g, ' ').trim() : '';
     return json({
       available: Boolean(countyRecords.length || statewide.records.length), state, county, parcelId,
       formattedGeocode: statewide.formatted,
@@ -95,7 +123,8 @@ export async function handlePropertyTaxTest(request) {
       // type with its label, assessed land-use acres, levy district, legal description, checked
       // record link; src/states/montana/assessment.js). Yellowstone and Gallatin both get it: the
       // Yellowstone tax-parcel layer has no values, so the statewide record is always asked too.
-      cadastralSource: MONTANA_ASSESSMENT_SOURCE, cadastralRecords: statewide.records.map(f => mapMontanaAssessment(f.attributes || {}))
+      cadastralSource: MONTANA_ASSESSMENT_SOURCE, cadastralRecords: statewide.records.map(f => mapMontanaAssessment(f.attributes || {})),
+      ...(countyLegal ? { countyLegalDescription: countyLegal } : {})
     }, 200, 'no-store');
   }
 

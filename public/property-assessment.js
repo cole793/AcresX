@@ -77,7 +77,16 @@
     if (data.state === 'MT') {
       const m = data.cadastralRecords?.[0];
       const r = data.statewideRecords?.[0] || {};
-      if (!m && !data.statewideRecords?.length) return null;
+      // No state record (DNRC down or slow): values stay "Not available", but Yellowstone's own
+      // tax-parcel layer still gives the short legal description (countyLegalDescription).
+      if (!m && !data.statewideRecords?.length) {
+        const legal = String(data.countyLegalDescription || '').trim();
+        return legal ? {
+          totalValue: NaN, landValue: NaN, improvementValue: NaN, year: null, assessorAcres: NaN, propertyClass: '', landUse: [],
+          legalDescription: legal, valuesNote: 'The Montana Cadastral values did not load; try again later.',
+          label: 'Assessor value', source: `${data.county || 'Yellowstone'} County tax parcel record`
+        } : null;
+      }
       const parcelNumber = m?.parcelNumber || r.PARCELID || data.parcelId;
       const cadastral = cadastralUrl(m ? m.propertySearchUrl : r.PropertyCardLink, parcelNumber);
       const landUse = Array.isArray(m?.landUse) ? m.landUse.filter(u => u && u.label && Number.isFinite(Number(u.acres)) && Number(u.acres) > 0).map(u => ({ label: String(u.label), acres: Number(u.acres) })) : [];

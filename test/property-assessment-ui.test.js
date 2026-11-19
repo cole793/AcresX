@@ -388,7 +388,8 @@ async function mtAnswer(county, parcelId) {
     const url = new URL(String(input instanceof Request ? input.url : input));
     const where = url.searchParams.get('where') || '';
     const id = (/'([^']+)'/.exec(where) || [])[1] || '';
-    const list = url.hostname === 'gis.dnrc.mt.gov' ? (/^ParcelID=/i.test(where) && mtFixture.records[id] ? [mtFixture.records[id]] : [])
+    const hit = [...where.matchAll(/'([^']+)'/g)].map(m => m[1]).find(i => mtFixture.records[i]);
+    const list = url.hostname === 'gis.dnrc.mt.gov' ? (/^PARCELID IN \(/.test(where) && hit ? [mtFixture.records[hit]] : [])
       : url.hostname === 'gis.yellowstonecountymt.gov' ? (mtFixture.yellowstoneTaxParcel[id] ? [mtFixture.yellowstoneTaxParcel[id]] : []) : null;
     if (!list) throw new Error(`unexpected upstream ${url.hostname}`);
     return new Response(JSON.stringify({ features: list.map(attributes => ({ attributes })) }), { headers: { 'Content-Type': 'application/json' } });
@@ -484,4 +485,19 @@ test('report: Gallatin has no land-use row; a saved/shared snapshot renders the 
   y.generatedAt = model.generatedAt;
   const ySnap = JSON.parse(JSON.stringify(R.snapshot(y)));
   assert.match(R.renderHtml(ySnap, { brand: null, date: ySnap.generatedAt }), /<span>Assessed land use<\/span><strong>38\.6 ac wild hay · 14\.4 ac grazing<\/strong><small>Part of this parcel/);
+});
+
+test('Montana state record missing: Yellowstone county legal description is still shown on the dashboard and the report', () => {
+  const data = { available: true, state: 'MT', county: 'Yellowstone', parcelId: '03092732390050000', countyRecords: [{ GEOCODE: '03092732390050000', SHORTLEGAL: 'HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD (25)' }], statewideRecords: [], cadastralRecords: [], countyLegalDescription: 'HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD (25)' };
+  const { A, fact, document, report } = page();
+  A.renderAssessment(A.normalize(data));
+  assert.equal(fact('overviewAssessorValue'), 'Not available');
+  assert.equal(fact('overviewLandValue'), 'Not available');
+  assert.equal(document.getElementById('overviewAssessorClassWrap'), null);
+  assert.equal(document.getElementById('propertyAssessmentSource').innerHTML, '<strong>Assessment source:</strong> Yellowstone County tax parcel record · Legal: HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD (25). The Montana Cadastral values did not load; try again later. Assessor values are informational and are not the current tax bill.');
+  const html = report({ parcel: mtParcel('03092732390050000'), propertyAssessment: data });
+  assert.match(html, /<span>Assessed value<\/span><strong>Not available<\/strong>/);
+  assert.match(html, /<span>Legal description<\/span><strong>HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD \(25\)<\/strong>/);
+  assert.match(html, /Yellowstone County tax parcel record \(Montana Cadastral values did not load\)/);
+  assert.doesNotMatch(html, /undefined|NaN|\$0/);
 });
