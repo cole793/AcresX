@@ -6,6 +6,7 @@ import { getSpokaneAssessment, SPOKANE_ASSESSOR, SPOKANE_ASSESSOR_SOURCE } from 
 import { FALLBACK_KINDS, fallbackHint } from '../shared/fallback.js';
 import { MONTANA_CADASTRAL_FIELDS } from '../states/montana/parcels.js';
 import { withoutPersonalFields } from '../shared/personal-fields.js';
+import { mapMontanaAssessment, MONTANA_ASSESSMENT_SOURCE } from '../states/montana/assessment.js';
 
 const YELLOWSTONE = 'https://gis.yellowstonecountymt.gov/arcgis/rest/services/Parcel/TaxparcelOrion/MapServer/1/query';
 const MT_CADASTRAL = 'https://gis.dnrc.mt.gov/arcgis/rest/services/DNRALL/Cadastral/FeatureServer/0/query';
@@ -89,7 +90,12 @@ export async function handlePropertyTaxTest(request) {
       available: Boolean(countyRecords.length || statewide.records.length), state, county, parcelId,
       formattedGeocode: statewide.formatted,
       ...(countyRecords.length ? { countySource: 'Yellowstone County TaxparcelOrion', countyRecords: countyRecords.map(f => f.attributes || {}) } : {}),
-      statewideSource: 'Montana Cadastral / ORION integration', statewideRecords: statewide.records.map(f => f.attributes || {})
+      statewideSource: 'Montana Cadastral / ORION integration', statewideRecords: statewide.records.map(f => f.attributes || {}),
+      // Additive (2026-11-19): the same cadastral record mapped to named fields (values, property
+      // type with its label, assessed land-use acres, levy district, legal description, checked
+      // record link; src/states/montana/assessment.js). Yellowstone and Gallatin both get it: the
+      // Yellowstone tax-parcel layer has no values, so the statewide record is always asked too.
+      cadastralSource: MONTANA_ASSESSMENT_SOURCE, cadastralRecords: statewide.records.map(f => mapMontanaAssessment(f.attributes || {}))
     }, 200, 'no-store');
   }
 
