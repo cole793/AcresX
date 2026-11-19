@@ -70,23 +70,38 @@
       };
     }
 
+    // Montana (Gallatin, Yellowstone): the state cadastral record, mapped by the Worker
+    // (cadastralRecords, src/states/montana/assessment.js). The Yellowstone tax-parcel layer
+    // (countyRecords) has no values, so it is never read here. An answer without cadastralRecords
+    // (older Worker) falls back to the raw statewide record's values.
     if (data.state === 'MT') {
+      const m = data.cadastralRecords?.[0];
       const r = data.statewideRecords?.[0] || {};
-      const cadastral = cadastralUrl(r.PropertyCardLink, r.PARCELID || data.parcelId);
+      if (!m && !data.statewideRecords?.length) return null;
+      const parcelNumber = m?.parcelNumber || r.PARCELID || data.parcelId;
+      const cadastral = cadastralUrl(m ? m.propertySearchUrl : r.PropertyCardLink, parcelNumber);
+      const landUse = Array.isArray(m?.landUse) ? m.landUse.filter(u => u && u.label && Number.isFinite(Number(u.acres)) && Number(u.acres) > 0).map(u => ({ label: String(u.label), acres: Number(u.acres) })) : [];
       return {
-        totalValue: Number(r.TotalValue),
-        landValue: Number(r.TotalLandValue),
-        improvementValue: Number(r.TotalBuildingValue),
-        year: r.TaxYear || null,
+        totalValue: amount(m ? m.totalValue : r.TotalValue),
+        landValue: amount(m ? m.landValue : r.TotalLandValue),
+        improvementValue: amount(m ? m.improvementValue : r.TotalBuildingValue),
+        year: (m ? m.taxYear : r.TaxYear) || null,
         // TotalAcres is the assessor acreage on the Montana cadastral record (the Yellowstone
         // county tax-parcel layer has none); AddressLine1 + CityStateZip is the property address.
-        assessorAcres: amount(r.TotalAcres),
+        assessorAcres: amount(m ? m.assessorAcres : r.TotalAcres),
+        propertyClass: m ? classText(m) : String(r.PropType || '').trim(),
+        propertyTypeNote: String(m?.propertyTypeNote || ''),
+        landUse,
+        agriculturalNote: m?.agricultural ? String(m.agriculturalNote || '') : '',
+        levyDistrict: String(m?.levyDistrict || '').trim(),
+        legalDescription: String(m?.legalDescription || '').trim(),
         situsAddress: String(r.AddressLine1 || '').trim(),
         situsCity: String(r.CityStateZip || '').trim(),
         propertySearchUrl: cadastral,
         propertySearchLabel: cadastral ? CADASTRAL_LABEL : '',
+        valuesNote: 'Montana Department of Revenue appraisal for the tax year.',
         label: 'Assessor value',
-        source: 'Montana Cadastral / ORION'
+        source: 'Montana Cadastral / ORION (Department of Revenue)'
       };
     }
 
@@ -104,6 +119,16 @@
     }
 
     return null;
+  }
+
+  // "38.6 ac wild hay · 14.4 ac grazing" from the Montana assessed land use, or ''.
+  function acresText(acres) {
+    const n = Number(acres);
+    return `${n >= 10 ? n.toFixed(1).replace(/\.0$/, '') : n.toFixed(2).replace(/\.?0+$/, '')} ac`;
+  }
+  function landUseText(landUse) {
+    if (!Array.isArray(landUse) || !landUse.length) return '';
+    return landUse.map(u => `${acresText(u.acres)} ${String(u.label).toLowerCase()}`).join(' · ');
   }
 
   // "512 – Rural residential tract", or '' when the record has no class.
@@ -273,7 +298,27 @@
       note.className = 'assessor-class-note';
       wrap.appendChild(note);
     }
-    note.textContent = CLASS_NOTE;
+    note.textContent = result.propertyTypeNote ? `${CLASS_NOTE}. ${result.propertyTypeNote}` : CLASS_NOTE;
+  }
+
+  // Montana only: the assessed land-use acres (grazing, wild hay, ...), with the agricultural
+  // classification note when any of it is agricultural or forest land; removed otherwise.
+  function renderLandUse(result) {
+    const text = landUseText(result?.landUse);
+    const existing = document.getElementById('overviewAssessorLandUseWrap');
+    if (!text) { existing?.remove(); return; }
+    const el = addFact('overviewAssessorLandUse', 'Assessed land use');
+    if (!el) return;
+    el.textContent = text;
+    const wrap = document.getElementById('overviewAssessorLandUseWrap');
+    let note = wrap.querySelector('small.assessor-class-note');
+    if (!result.agriculturalNote) { note?.remove(); return; }
+    if (!note) {
+      note = document.createElement('small');
+      note.className = 'assessor-class-note';
+      wrap.appendChild(note);
+    }
+    note.textContent = result.agriculturalNote;
   }
 
   function renderAssessment(result) {
@@ -286,6 +331,7 @@
     const yearEl = addFact('overviewAssessmentYear', 'Assessment / tax year');
 
     renderAssessorClass(result);
+    renderLandUse(result);
 
     if (!result) {
       if (valueEl) valueEl.textContent = 'Not available';
@@ -323,11 +369,14 @@
     const net = Number.isFinite(result.netValue) ? ` · Net taxable ${money(result.netValue)}` : '';
     const market = Number.isFinite(result.marketValue) ? ` · Market value ${money(result.marketValue)}` : '';
     const currentUse = result.currentUse ? ` · ${escapeText(result.currentUse)}` : '';
+    const acres = Number.isFinite(result.assessorAcres) && result.assessorAcres > 0 && Array.isArray(result.landUse) ? ` · Assessor acres ${result.assessorAcres.toFixed(2)} ac` : '';
+    const levy = result.levyDistrict ? ` · Levy district ${escapeText(result.levyDistrict)}` : '';
+    const legal = result.legalDescription ? ` · Legal: ${escapeText(result.legalDescription)}` : '';
     const valuesNote = result.valuesNote ? ` ${escapeText(result.valuesNote)}` : '';
     const link = result.propertySearchUrl
       ? ` <a href="${escapeText(result.propertySearchUrl)}" target="_blank" rel="noopener">${escapeText(result.propertySearchLabel || PROPERTY_SEARCH_LABEL)} ↗</a>`
       : '';
-    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${marketLand}${exemption}${exemptionNote}${net}${market}${currentUse}${tax}.${valuesNote} Assessor values are informational and are not the current tax bill.${link}`;
+    source.innerHTML = `<strong>Assessment source:</strong> ${result.source}${improvements}${marketLand}${exemption}${exemptionNote}${net}${market}${currentUse}${acres}${levy}${legal}${tax}.${valuesNote} Assessor values are informational and are not the current tax bill.${link}`;
   }
 
   async function loadAssessment() {
@@ -340,6 +389,7 @@
     const stale = () => (sections && !sections.isCurrent(searchId));
     const requestId = ++assessmentRequestId;
     document.getElementById('overviewAssessorClassWrap')?.remove();
+    document.getElementById('overviewAssessorLandUseWrap')?.remove();
 
     addFact('overviewAssessorValue', 'Assessor value');
     addFact('overviewLandValue', 'Land value');
@@ -378,7 +428,7 @@
     else if (state === 'WA') location.textContent = `${county} County, Washington`;
   }
 
-  window.AcresXAssessment = { normalize, classText, CLASS_NOTE, renderAssessment, shareAssessorAcres, shareRecordDetails, cadastralUrl };
+  window.AcresXAssessment = { normalize, classText, landUseText, CLASS_NOTE, renderAssessment, shareAssessorAcres, shareRecordDetails, cadastralUrl };
 
   if (typeof renderSummary === 'function') {
     const base = renderSummary;

@@ -375,3 +375,113 @@ test('report: page 2 assessor record gains the property tax line', () => {
   const without = report({ parcel, propertyAssessment: kootenai });
   assert.doesNotMatch(without, /Property tax/);
 });
+
+// ---- Montana (Yellowstone, Gallatin): the mapped state cadastral record (cadastralRecords,
+// src/states/montana/assessment.js). The answers come from the Worker itself, with the DNRC and
+// Yellowstone layers stubbed from test/fixtures/mt-cadastral-assessment.json (records recorded
+// 2026-11-19, fake PLACEHOLDER_* owner fields added).
+const mtFixture = JSON.parse(read('test/fixtures/mt-cadastral-assessment.json'));
+async function mtAnswer(county, parcelId) {
+  const { default: worker } = await import('../src/index.js');
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async input => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    const where = url.searchParams.get('where') || '';
+    const id = (/'([^']+)'/.exec(where) || [])[1] || '';
+    const list = url.hostname === 'gis.dnrc.mt.gov' ? (/^ParcelID=/i.test(where) && mtFixture.records[id] ? [mtFixture.records[id]] : [])
+      : url.hostname === 'gis.yellowstonecountymt.gov' ? (mtFixture.yellowstoneTaxParcel[id] ? [mtFixture.yellowstoneTaxParcel[id]] : []) : null;
+    if (!list) throw new Error(`unexpected upstream ${url.hostname}`);
+    return new Response(JSON.stringify({ features: list.map(attributes => ({ attributes })) }), { headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const response = await worker.fetch(new Request('https://acresx.test/api/property-assessment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: 'MT', county, parcelId }) }), { ASSETS: { fetch: async () => new Response('', { status: 404 }) } }, { waitUntil() {} });
+    return await response.json();
+  } finally { globalThis.fetch = realFetch; }
+}
+const mtParcel = pid => ({ type: 'Feature', properties: { ORIG_PARCEL_ID: pid, _stateCode: 'MT', _stateDisplay: 'Montana' }, geometry: null });
+const AG = /assessed by use as agricultural or forest land\. Montana values that land on what it produces/;
+
+test('overview: Yellowstone vacant parcel shows the property type as a tax category, the land use with the ag note, levy, legal and the record link', async () => {
+  const data = await mtAnswer('Yellowstone', '03092732390050000');
+  const { A, fact, document } = page();
+  A.renderAssessment(A.normalize(data));
+  assert.equal(fact('overviewAssessorValue'), '$12,666');
+  assert.equal(fact('overviewLandValue'), '$12,666');
+  assert.equal(fact('overviewAssessmentYear'), '2026');
+  assert.equal(fact('overviewAssessorClass'), 'Vacant Land');
+  assert.equal(document.getElementById('overviewAssessorClassWrap').querySelector('small.assessor-class-note').textContent, 'Tax category, not zoning. The assessor lists no taxable buildings.');
+  assert.equal(fact('overviewAssessorLandUse'), '38.6 ac wild hay · 14.4 ac grazing');
+  assert.match(document.getElementById('overviewAssessorLandUseWrap').querySelector('small.assessor-class-note').textContent, AG);
+  const source = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.equal(source, '<strong>Assessment source:</strong> Montana Cadastral / ORION (Department of Revenue) · Improvements $0 · Assessor acres 53.09 ac · Levy district 03-0968-3 · Legal: HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD (25). Montana Department of Revenue appraisal for the tax year. Assessor values are informational and are not the current tax bill. <a href="https://svc.mt.gov/msl/cadastral/?page=PropertyDetails&amp;geocode=03092732390050000" target="_blank" rel="noopener">View on the Montana Cadastral property record ↗</a>');
+  assert.doesNotMatch(JSON.stringify(document.body.textContent) + source, /PLACEHOLDER/);
+});
+
+test('overview: Yellowstone improved parcel shows the building value; Gallatin with no land-use classes shows no land-use fact', async () => {
+  const { A, fact, document } = page();
+  A.renderAssessment(A.normalize(await mtAnswer('Yellowstone', '03113503101110000')));
+  assert.equal(fact('overviewAssessorValue'), '$98,204');
+  assert.equal(fact('overviewAssessorClass'), 'Improved Property');
+  assert.equal(fact('overviewAssessorLandUse'), '32.7 ac irrigated · 3.85 ac grazing · 1 ac farmsite (homesite)');
+  assert.match(document.getElementById('propertyAssessmentSource').innerHTML, / · Improvements \$55,720 · Assessor acres 37\.58 ac · Levy district 03-0982-24 · /);
+  // A later Gallatin search removes the stale land-use fact.
+  A.renderAssessment(A.normalize(await mtAnswer('Gallatin', '06069905302080000')));
+  assert.equal(document.getElementById('overviewAssessorLandUseWrap'), null);
+  assert.equal(fact('overviewAssessorValue'), '$1,228,455');
+  assert.equal(fact('overviewAssessorClass'), 'Vacant Land');
+  assert.match(document.getElementById('propertyAssessmentSource').innerHTML, /Legal: S05, T03 S, R06 E, C\.O\.S\. 1103K, PARCEL 8A-2, ACRES 10\.001\./);
+});
+
+test('overview: Montana with no state record (DNRC down) shows "Not available", never $0; missing values stay missing', async () => {
+  const { A, fact, document } = page();
+  const county = { available: true, state: 'MT', county: 'Yellowstone', parcelId: '03092732390050000', countyRecords: [{ GEOCODE: '03092732390050000' }], statewideRecords: [], cadastralRecords: [] };
+  assert.equal(A.normalize(county), null);
+  A.renderAssessment(A.normalize(county));
+  assert.equal(fact('overviewAssessorValue'), 'Not available');
+  const sparse = { ...county, cadastralRecords: [{ parcelNumber: '03092732390050000', totalValue: 5000, landValue: null, improvementValue: null, taxYear: null, landUse: [], propertyClass: null, propertyClassDescription: null }] };
+  A.renderAssessment(A.normalize(sparse));
+  assert.equal(fact('overviewAssessorValue'), '$5,000');
+  assert.equal(fact('overviewLandValue'), 'Not available');
+  assert.equal(document.getElementById('overviewAssessorClassWrap'), null);
+  assert.equal(document.getElementById('overviewAssessorLandUseWrap'), null);
+  const source = document.getElementById('propertyAssessmentSource').innerHTML;
+  assert.doesNotMatch(source, /\$0|Improvements|Levy|Legal|<a /);
+});
+
+test('report: Yellowstone assessor record reads the state record (not the value-less county layer), with land use, levy and legal', async () => {
+  const data = await mtAnswer('Yellowstone', '03092732390050000');
+  const { report } = page();
+  const html = report({ parcel: mtParcel('03092732390050000'), propertyAssessment: data });
+  assert.match(html, /<span>Assessed value \(2026\)<\/span><strong>\$12,666<\/strong><small>Land only; no assessed improvements<\/small>/);
+  assert.match(html, /<span>Tax category<\/span><strong>Vacant Land<\/strong><small>Tax category, not zoning\. The assessor lists no taxable buildings\.<\/small>/);
+  assert.match(html, /<span>Assessor acres<\/span><strong>53\.09 ac<\/strong>/);
+  assert.match(html, /<span>Assessed land use<\/span><strong>38\.6 ac wild hay · 14\.4 ac grazing<\/strong><small>Part of this parcel is assessed by use/);
+  assert.match(html, /<span>Levy district<\/span><strong>03-0968-3<\/strong>/);
+  assert.match(html, /<span>Legal description<\/span><strong>HARVEY SUBD, S32, T01 S, R26 E, BLOCK 1, Lot 5A, AMD \(25\)<\/strong>/);
+  assert.match(html, /Montana Cadastral \(Department of Revenue ORION\), tax year 2026 <span class="url">svc\.mt\.gov<\/span>/);
+  assert.doesNotMatch(html, /PLACEHOLDER|undefined|NaN/);
+  const improved = report({ parcel: mtParcel('03113503101110000'), propertyAssessment: await mtAnswer('Yellowstone', '03113503101110000') });
+  assert.match(improved, /<span>Land<\/span><strong>\$42,484<\/strong><\/div><div><span>Improvements<\/span><strong>\$55,720<\/strong>/);
+  assert.match(improved, /<span>Tax category<\/span><strong>Improved Property<\/strong>/);
+});
+
+test('report: Gallatin has no land-use row; a saved/shared snapshot renders the same Montana assessor record', async () => {
+  const { window } = page();
+  const R = window.AcresXReport;
+  const model = R.buildModel('Gallatin test', { parcel: mtParcel('06069905302080000'), propertyAssessment: await mtAnswer('Gallatin', '06069905302080000') });
+  model.generatedAt = '2026-11-19T00:00:00.000Z';
+  const live = R.renderHtml(model, { brand: null, date: model.generatedAt });
+  assert.match(live, /<span>Assessed value \(2026\)<\/span><strong>\$1,228,455<\/strong>/);
+  assert.match(live, /<span>Assessor acres<\/span><strong>10\.00 ac<\/strong>/);
+  assert.match(live, /<span>Levy district<\/span><strong>06-235036-7R 36<\/strong>/);
+  assert.doesNotMatch(live, /Assessed land use/);
+  const snap = JSON.parse(JSON.stringify(R.snapshot(model)));
+  assert.equal(snap.f.assess.levyDistrict, '06-235036-7R 36');
+  assert.doesNotMatch(JSON.stringify(snap), /PLACEHOLDER/);
+  assert.equal(R.renderHtml(snap, { brand: null, date: snap.generatedAt }), live);
+  // Yellowstone (land use + ag note) survives the snapshot too.
+  const y = R.buildModel('Yellowstone test', { parcel: mtParcel('03092732390050000'), propertyAssessment: await mtAnswer('Yellowstone', '03092732390050000') });
+  y.generatedAt = model.generatedAt;
+  const ySnap = JSON.parse(JSON.stringify(R.snapshot(y)));
+  assert.match(R.renderHtml(ySnap, { brand: null, date: ySnap.generatedAt }), /<span>Assessed land use<\/span><strong>38\.6 ac wild hay · 14\.4 ac grazing<\/strong><small>Part of this parcel/);
+});

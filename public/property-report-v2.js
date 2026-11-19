@@ -118,6 +118,30 @@
     const d = data?.propertyAssessment || {};
     if (!d.available) return null;
     const out = (o, src) => ({ ...o, source: src || d.countySource || d.statewideSource || d.source || '' });
+    // Montana first: its countyRecords (Yellowstone tax-parcel layer) carry no values, so reading
+    // them left every Yellowstone assessor cell "Not available". The values, property type,
+    // land use, levy district and legal description come from the mapped state cadastral record
+    // (cadastralRecords, src/states/montana/assessment.js). Strings and numbers only, so a saved or
+    // shared report (snapshot f.assess) renders without the page scripts.
+    if (d.state === 'MT') {
+      const m = d.cadastralRecords?.[0];
+      if (m) {
+        const code = String(m.propertyClass || '').trim(), descr = String(m.propertyClassDescription || '').trim();
+        const t = num(m.totalValue), l = num(m.landValue);
+        const link = window.AcresXAssessment?.cadastralUrl?.(m.propertySearchUrl, m.parcelNumber) || '';
+        const landUse = (Array.isArray(m.landUse) ? m.landUse : []).filter(u => u && u.label && num(u.acres) > 0).map(u => ({ label: String(u.label), acres: num(u.acres) }));
+        return out({
+          total: t, land: l, improvements: num(m.improvementValue) ?? (t != null && l != null ? t - l : null), year: m.taxYear || '',
+          propertyClass: code && descr ? `${code} – ${descr}` : code || descr, propertyTypeNote: String(m.propertyTypeNote || ''),
+          acres: num(m.assessorAcres), landUse, agriculturalNote: m.agricultural ? String(m.agriculturalNote || '') : '',
+          levyDistrict: String(m.levyDistrict || ''), legalDescription: String(m.legalDescription || ''), recordUrl: link
+        }, d.cadastralSource || d.statewideSource);
+      }
+      const r = d.statewideRecords?.[0];
+      if (!r) return null;
+      const t = num(r.TotalValue), l = num(r.TotalLandValue);
+      return out({ total: t, land: l, improvements: num(r.TotalBuildingValue) ?? (t != null && l != null ? t - l : null), year: r.TaxYear || '', propertyClass: String(r.PropType || '').trim(), acres: num(r.TotalAcres) }, d.statewideSource);
+    }
     if (Array.isArray(d.countyRecords) && d.countyRecords.length) {
       const r = d.countyRecords[0] || {}, code = String(r.propertyClass || '').trim(), descr = String(r.propertyClassDescription || '').trim();
       const total = num(r.totalValue) ?? num(r.landValue), land = num(r.landValue);
@@ -125,7 +149,6 @@
       return out({ total, land, improvements: imp, year: r.taxYear || '', propertyClass: code && descr ? `${code} – ${descr}` : code || descr, acres: num(r.assessorAcres) });
     }
     if (d.state === 'WA') { const r = d.records?.[0] || {}; return out({ total: num(r.land_value), land: num(r.land_value), improvements: null, year: r.tax_year || r.asmt_year || '', acres: num(r.acreage) }); }
-    if (d.state === 'MT') { const r = d.statewideRecords?.[0] || {}; const t = num(r.TotalValue), l = num(r.TotalLandValue); return out({ total: t, land: l, improvements: num(r.TotalBuildingValue) ?? (t != null && l != null ? t - l : null), year: r.TaxYear || '', propertyClass: String(r.PropType || '').trim(), acres: num(r.TotalAcres) }); }
     if (d.state === 'ID') { const r = d.statewideRecords?.[0] || {}; return out({ total: num(r.VAL_TOTAL) ?? num(r.VAL_LAND), land: num(r.VAL_LAND), improvements: null, year: r.UPDATED ? new Date(Number(r.UPDATED)).getFullYear() : '', acres: null }); }
     return null;
   }
@@ -619,7 +642,7 @@
     const a = f.assess;
     const tax = taxCell(data, S);
     if (!a) return tax ? `<div class="assessor">${tax}</div><p class="muted">Assessor values not available for this parcel.</p>` : `<p class="muted">Assessor values not available for this parcel.</p>`;
-    const ref = S.mark([S.add(a.source, { date: a.year ? `tax year ${a.year}` : '' })]);
+    const ref = S.mark([S.add(a.source, { url: a.recordUrl || '', date: a.year ? `tax year ${a.year}` : '' })]);
     const cells = [];
     // Land equal to the total is shown once, with a note, instead of the same amount twice.
     const landOnly = a.total != null && a.land != null && Math.round(a.total) === Math.round(a.land) && !(a.improvements > 0);
@@ -629,10 +652,22 @@
       cells.push(`<div><span>Land</span><strong>${a.land != null ? esc(usd(a.land)) : NA}</strong></div>`);
       cells.push(`<div><span>Improvements</span><strong>${a.improvements != null ? (a.improvements > 0 ? esc(usd(a.improvements)) : 'None assessed') : NA}</strong></div>`);
     }
-    cells.push(`<div><span>Tax category</span><strong>${esc(a.propertyClass || NA)}</strong><small>Tax category, not zoning</small></div>`);
+    cells.push(`<div><span>Tax category</span><strong>${esc(a.propertyClass || NA)}</strong><small>Tax category, not zoning${a.propertyTypeNote ? `. ${esc(a.propertyTypeNote)}` : ''}</small></div>`);
     cells.push(`<div><span>Assessor acres</span><strong>${a.acres != null ? `${a.acres.toFixed(2)} ac` : NA}</strong></div>`);
+    // Montana: the assessed land use (grazing, wild hay, ...) and the agricultural note, the
+    // levy district and the short legal description, each only when the record has it.
+    const uses = (Array.isArray(a.landUse) ? a.landUse : []).filter(u => u && u.label && num(u.acres) > 0);
+    if (uses.length) cells.push(`<div><span>Assessed land use</span><strong>${uses.map(u => `${esc(acresLabel(u.acres))} ${esc(String(u.label).toLowerCase())}`).join(' · ')}</strong>${a.agriculturalNote ? `<small>${esc(a.agriculturalNote)}</small>` : ''}</div>`);
+    if (a.levyDistrict) cells.push(`<div><span>Levy district</span><strong>${esc(a.levyDistrict)}</strong></div>`);
+    if (a.legalDescription) cells.push(`<div><span>Legal description</span><strong>${esc(a.legalDescription)}</strong><small>Short form from the assessor; the deed is the authority</small></div>`);
     if (tax) cells.push(tax);
     return `<div class="assessor">${cells.join('')}</div><p class="muted">${esc(a.source || 'County assessor')}${ref}</p>`;
+  }
+
+  // 38.645 -> "38.6 ac", 3.854 -> "3.85 ac", 1 -> "1 ac".
+  function acresLabel(acres) {
+    const n = Number(acres);
+    return `${n >= 10 ? n.toFixed(1).replace(/\.0$/, '') : n.toFixed(2).replace(/\.?0+$/, '')} ac`;
   }
 
   // Page 3 "Recorded restrictions" from f.restrictions (strings only, so a snapshot renders it
