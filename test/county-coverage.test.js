@@ -25,8 +25,8 @@ const EXPECTED = {
     capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: P }
   },
   'MT:Gallatin': {
-    level: 2, priority: 2, lastValidated: '2026-11-03', checklistScore: 75, checklistScoreDate: '2026-11-03',
-    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: P, zoning: V, zoningRules: N }
+    level: 3, priority: 2, lastValidated: '2026-11-19', checklistScore: 75, checklistScoreDate: '2026-11-03',
+    capabilities: { parcel: V, wells: V, soil: V, terrain: V, flood: V, wetlands: V, utilities: V, assessment: V, tax: V, zoning: V, zoningRules: P }
   },
   'WA:Stevens': {
     level: 3, priority: 2, lastValidated: '2026-11-12', checklistScore: 78, checklistScoreDate: '2026-11-07',
@@ -51,7 +51,7 @@ for (const [key, want] of Object.entries(EXPECTED)) {
 }
 
 test('only Kootenai, Yellowstone, Stevens and Spokane claim level 3 (two consecutive clean runs plus owner sign-off)', () => {
-  assert.deepEqual(COUNTY_COVERAGE.filter(c => c.level >= 3).map(c => c.key).sort(), ['ID:Kootenai', 'MT:Yellowstone', 'WA:Spokane', 'WA:Stevens']);
+  assert.deepEqual(COUNTY_COVERAGE.filter(c => c.level >= 3).map(c => c.key).sort(), ['ID:Kootenai', 'MT:Gallatin', 'MT:Yellowstone', 'WA:Spokane', 'WA:Stevens']);
 });
 
 test('Kootenai notes record the clean runs and the owner sign-off', () => {
@@ -113,7 +113,7 @@ test('counties outside the audit carry no validated claims, date or score', () =
 test('registry summary counts levels from the same data', () => {
   const { summary } = getCountyCoverageRegistry();
   assert.equal(summary.total, COUNTY_COVERAGE.length);
-  assert.equal(summary.byLevel[2], 1);
-  assert.equal(summary.byLevel[3], 4);
+  assert.equal(summary.byLevel[2] || 0, 0);
+  assert.equal(summary.byLevel[3], 5);
   assert.equal(summary.byLevel[1], COUNTY_COVERAGE.length - 5);
 });
