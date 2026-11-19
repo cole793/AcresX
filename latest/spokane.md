@@ -1,9 +1,9 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-18T21:34:35.282Z
-- Parcels: 12, with an error or mismatch: 2
-- Layer results: ok 164, unavailable 16, error 11, mismatch 1, skipped 0
+- Run: 2026-11-19T21:44:40.724Z
+- Parcels: 12, with an error or mismatch: 1
+- Layer results: ok 174, unavailable 17, error 1, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -16,9 +16,9 @@
 | 46301.9025 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 57302.9016 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 37094.9101 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48121.9001 | ok | ok | ok | error | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | error | error |
+| 48121.9001 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 48136.9052 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 32322.9002 | ok | ok | error | error | error | error | ok | ok | ok | ok | error | error | unavailable | mismatch | ok | error |
+| 32322.9002 | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 
 ## Parcel details
 
@@ -27,9 +27,9 @@
 Why: Small lot inside the City of Spokane (picked by discovery 2026-11-02, seed 42, stratum "under 1 ac | city-named locality"). Spokane County's zoning layer has no polygon here (https://gismo.spokanecounty.org/arcgis/rest/services/SCOUT/ZoningLookup/MapServer/3/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONECLASS,ZONEDESC&returnGeometry=false returns no features); the City of Spokane's own zoning layer says R1 Residential 1 (https://services.arcgis.com/3PDwyTturHqnGCu0/arcgis/rest/services/Zoning/FeatureServer/5/query?f=json&geometry=-117.390737,47.644811&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneLabel,ZoneCode,ZoneDesc,ZoneGen&returnGeometry=false, checked 2026-11-02; this is the layer src/counties/spokane-cities.js reads, code from ZoneLabel). The jurisdiction comes from the City of Spokane zoning added in PR #32. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): WA DOH service area 'SPOKANE CITY OF' (Group A, Comm, Active); City of Spokane Water_Main/2 distribution main 6.6 m and Sewer_Gravity_Main/1 main 9.1 m from the outline. Assessor property class 77 Churches hand-checked 2026-11-10 on the county's SCOUT page (https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=35204.2729, Parcel Class) and the assessor parcel table (https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0/query?f=json&where=PID_NUM%3D%2735204.2729%27&outFields=PID_NUM,prop_use_code,prop_use_desc&returnGeometry=false); a tax category, not zoning.
 
 - **Parcel**: ok. parcel 35204.2729, 0.14 ac [parcelId=35204.2729, acres=0.14, address=1317 E 12TH AVE, SPOKANE, lat=47.644811, lon=-117.390737]
-- **Wells**: ok. 1881 well record(s), 5 of nearest 5 report depth [wellCount=1881, nearestDepthsCount=5, nearestMi=0.28, medianDepthFt=30]
+- **Wells**: ok. 1879 well record(s), 5 of nearest 5 report depth [wellCount=1879, nearestDepthsCount=5, nearestMi=0.28, medianDepthFt=30]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
-- **Soil**: ok. moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes, soilSlopePct=3, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes) [feasibility=moderate, mapUnit=Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 3.3%, max 5% [gradePct=3.3, maxGradePct=5, reliefFt=4, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 3.6% [cellCount=16, avgSlopePct=3.6, maxSlopePct=5.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
@@ -50,9 +50,9 @@ Why: Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zo
 - **Parcel**: ok. parcel 35234.0602, 0.42 ac [parcelId=35234.0602, acres=0.42, address=5407 E 16TH AVE, SPOKANE VALLEY, 99212, lat=47.642933, lon=-117.331913]
 - **Wells**: ok. 1892 well record(s), 5 of nearest 5 report depth [wellCount=1892, nearestDepthsCount=5, nearestMi=0.2, medianDepthFt=25]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
-- **Soil**: ok. moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Urban land-Lenz, disturbed complex, 3 to 15 percent slopes, soilSlopePct=5, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Urban land-Lenz, disturbed complex, 3 to 15 percent slopes, soilSlopePct=5, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 6.8%, max 12.1% [gradePct=6.8, maxGradePct=12.1, reliefFt=6, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 7.3% [cellCount=16, avgSlopePct=7.3, maxSlopePct=14.3, partial=false]
+- **Slope grid**: ok. 16 cells, avg 6.6% [cellCount=16, avgSlopePct=6.6, maxSlopePct=11.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -69,9 +69,9 @@ Why: Small lot inside the City of Spokane Valley (5407 E 16th Ave). No county zo
 Why: Small lot inside the City of Cheney (3175 Pheasant St). No county zoning polygon at the centroid (-117.575987,47.510249), so city zoning applies. The City of Cheney layer used by src/counties/spokane-cities.js says R-1, Single Family Residential (https://services.arcgis.com/yP5WvH3YqutU0LDh/arcgis/rest/services/Cheney__WA___Zoning_Map___2025_WFL1/FeatureServer/4/query?f=json&geometry=-117.575987,47.510249&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneCODE,ZONE&returnGeometry=false, checked 2026-11-10; layer 3 until the city renumbered the service around 2026-11-10, when layer 3 became the PUD Overlay). Assessor property class 11 Single Unit hand-checked 2026-11-10 on the county's SCOUT page (https://cp.spokanecounty.org/SCOUT/propertyinformation/Summary.aspx?PID=13013.2211, Parcel Class) and the assessor parcel table (https://gismo.spokanecounty.org/arcgis/rest/services/ISDSDE/LandCapacityAnalysis/MapServer/0/query?f=json&where=PID_NUM%3D%2713013.2211%27&outFields=PID_NUM,prop_use_code,prop_use_desc&returnGeometry=false); a tax category, not zoning.
 
 - **Parcel**: ok. parcel 13013.2211, 0.16 ac [parcelId=13013.2211, acres=0.16, address=3175 PHEASANT ST, CHENEY, lat=47.510249, lon=-117.575987]
-- **Wells**: ok. 353 well record(s), 5 of nearest 5 report depth [wellCount=353, nearestDepthsCount=5, nearestMi=0.13, medianDepthFt=20]
+- **Wells**: ok. 353 well record(s), 5 of nearest 5 report depth [wellCount=353, nearestDepthsCount=5, nearestMi=0.13, medianDepthFt=17]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
-- **Soil**: ok. favorable (Cheney ashy silt loam, 0 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Cheney ashy silt loam, 0 to 8 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. favorable (Cheney ashy silt loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Cheney ashy silt loam, 0 to 8 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0%, max 0% [gradePct=0, maxGradePct=0, reliefFt=0, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.7% [cellCount=16, avgSlopePct=6.7, maxSlopePct=13.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
@@ -92,7 +92,7 @@ Why: Small unincorporated lot with a FEMA high-risk zone and mapped NWI wetlands
 - **Parcel**: ok. parcel 57344.0125, 0.35 ac [parcelId=57344.0125, acres=0.35, address=14324 N MEADOW LN, NEWMAN LAKE, lat=47.787979, lon=-117.095636]
 - **Wells**: ok. 193 well record(s), 5 of nearest 5 report depth [wellCount=193, nearestDepthsCount=5, nearestMi=0.14, medianDepthFt=360]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
-- **Soil**: ok. favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=8, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes) [feasibility=favorable, mapUnit=Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=8, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 16%, max 27.9% [gradePct=16, maxGradePct=27.9, reliefFt=35, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 24.1% [cellCount=16, avgSlopePct=24.1, maxSlopePct=58, partial=false]
 - **Flood**: ok. high-risk zone (AE, X) (via FEMA NFHL) [high=true, intersects=true, zones=AE; X, category=high, provider=FEMA NFHL]
@@ -113,7 +113,7 @@ Why: Unincorporated 1-5 ac parcel with mapped wetlands (picked by discovery 2026
 - **Parcel**: ok. parcel 43341.0110, 1.5 ac [parcelId=43341.0110, acres=1.5, address=22522 S DARKNELL RD, SPOKANE, lat=47.448652, lon=-117.217847]
 - **Wells**: ok. 39 well record(s), 5 of nearest 5 report depth [wellCount=39, nearestDepthsCount=5, nearestMi=0.06, medianDepthFt=160]
 - **Existing well**: ok. Possible well association [status=possible_match, confidence=Low, score=45]
-- **Soil**: ok. moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Glenrose ashy silt loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Glenrose ashy silt loam, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 3.5%, max 7.5% [gradePct=3.5, maxGradePct=7.5, reliefFt=11, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.6% [cellCount=16, avgSlopePct=5.6, maxSlopePct=11.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
@@ -134,9 +134,9 @@ Why: Unincorporated 1-5 ac parcel (picked by discovery 2026-11-02, seed 42; its 
 - **Parcel**: ok. parcel 47071.9003, 2.27 ac [parcelId=47071.9003, acres=2.27, address=8316 E BIG MEADOWS RD, CHATTAROY, 99003, lat=47.859658, lon=-117.293143]
 - **Wells**: ok. 232 well record(s), 5 of nearest 5 report depth [wellCount=232, nearestDepthsCount=5, nearestMi=0.18, medianDepthFt=448]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
-- **Soil**: ok. moderate (Lenz-Spokane complex, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=moderate, mapUnit=Lenz-Spokane complex, 3 to 15 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=9, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. moderate (Lenz-Spokane complex, 3 to 15 percent slopes) [feasibility=moderate, mapUnit=Lenz-Spokane complex, 3 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=9, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 11.8%, max 26.8% [gradePct=11.8, maxGradePct=26.8, reliefFt=32, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 15.8% [cellCount=16, avgSlopePct=15.8, maxSlopePct=26.2, partial=false]
+- **Slope grid**: ok. 16 cells, avg 10.8% [cellCount=16, avgSlopePct=10.8, maxSlopePct=19.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -155,9 +155,9 @@ Why: Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2
 - **Parcel**: ok. parcel 46301.9025, 4.58 ac [parcelId=46301.9025, acres=4.58, lat=47.728449, lon=-117.288869]
 - **Wells**: ok. 310 well record(s), 5 of nearest 5 report depth [wellCount=310, nearestDepthsCount=5, nearestMi=0.19, medianDepthFt=265]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
-- **Soil**: ok. favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Scrabblers ashy fine sandy loam, 3 to 8 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=5, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [feasibility=favorable, mapUnit=Scrabblers ashy fine sandy loam, 3 to 8 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=5, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 5.3%, max 17.7% [gradePct=5.3, maxGradePct=17.7, reliefFt=29, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 6.9% [cellCount=16, avgSlopePct=6.9, maxSlopePct=17.7, partial=false]
+- **Slope grid**: ok. 16 cells, avg 6.8% [cellCount=16, avgSlopePct=6.8, maxSlopePct=17.6, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION]
@@ -176,9 +176,9 @@ Why: Unincorporated 5-40 ac parcel with mapped wetlands (picked by discovery 202
 - **Parcel**: ok. parcel 57302.9016, 9.77 ac [parcelId=57302.9016, acres=9.77, address=17238 N MOUNTAIN TOP LN, MEAD, lat=47.813929, lon=-117.173978]
 - **Wells**: ok. 181 well record(s), 5 of nearest 5 report depth [wellCount=181, nearestDepthsCount=5, nearestMi=0.21, medianDepthFt=345]
 - **Existing well**: ok. Likely existing well [status=strong_match, confidence=High, score=100]
-- **Soil**: ok. limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Quinnamose-Micapeak complex, 30 to 55 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=42, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes) [feasibility=limited, mapUnit=Quinnamose-Micapeak complex, 30 to 55 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=42, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 22.7%, max 39% [gradePct=22.7, maxGradePct=39, reliefFt=152, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 22% [cellCount=16, avgSlopePct=22, maxSlopePct=32.5, partial=false]
+- **Slope grid**: ok. 16 cells, avg 17.9% [cellCount=16, avgSlopePct=17.9, maxSlopePct=28.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.8]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -197,9 +197,9 @@ Why: 5-40 ac parcel with a SPOKANE situs city that is outside city limits (count
 - **Parcel**: ok. parcel 37094.9101, 5 ac [parcelId=37094.9101, acres=5, address=2211 E WHISPERING SPRING LN, SPOKANE, lat=47.849368, lon=-117.37833]
 - **Wells**: ok. 285 well record(s), 5 of nearest 5 report depth [wellCount=285, nearestDepthsCount=5, nearestMi=0.16, medianDepthFt=178]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
-- **Soil**: ok. favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=favorable, mapUnit=Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 2.1%, max 27.1% [gradePct=2.1, maxGradePct=27.1, reliefFt=20, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.6% [cellCount=16, avgSlopePct=1.6, maxSlopePct=8.8, partial=false]
+- **Slope grid**: ok. 16 cells, avg 1.5% [cellCount=16, avgSlopePct=1.5, maxSlopePct=8.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -218,9 +218,9 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Parcel**: ok. parcel 48121.9001, 158.65 ac [parcelId=48121.9001, acres=158.65, address=ELK, 99009, lat=47.94369, lon=-117.177667]
 - **Wells**: ok. 49 well record(s), 5 of nearest 5 report depth [wellCount=49, nearestDepthsCount=5, nearestMi=0.49, medianDepthFt=400]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
-- **Soil**: error. HTTP 503
-- **Terrain**: error. HTTP 503
-- **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=41.4, partial=false]
+- **Soil**: ok. limited (Keeler-Kruse complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Keeler-Kruse complex, 15 to 30 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=23, source=USDA NRCS Soil Data Access, backup=false]
+- **Terrain**: ok. avg grade 27.4%, max 72.3% [gradePct=27.4, maxGradePct=72.3, reliefFt=623, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=40.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=0.6]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -229,8 +229,8 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Zoning**: ok. FZ (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=FZ, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=none, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
 - **Zoning rules**: ok. FZ: Resource Lands (8 uses) [code=FZ, family=Resource Lands, useCount=8]
 - **Assessment**: ok. assessed $10,280, class 88 Designated Forest Lnd, no tax amount [assessedValue=10280, taxPresent=false, netValue=10280, taxYear=2027, propertyClass=88, propertyClassDescription=Designated Forest Lnd, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
-- **Property tax**: error. HTTP 503
-- **Listing**: error. HTTP 503
+- **Property tax**: ok. billed 2026 tax $177.96 [taxTotal=177.96, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
+- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 48136.9052 (Colbert, 51.9 ac, RCV, wetlands)
 
@@ -239,9 +239,9 @@ Why: Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026
 - **Parcel**: ok. parcel 48136.9052, 50.23 ac [parcelId=48136.9052, acres=50.23, address=15510 E DEER CREEK RD, COLBERT, lat=47.928279, lon=-117.194683]
 - **Wells**: ok. 68 well record(s), 5 of nearest 5 report depth [wellCount=68, nearestDepthsCount=5, nearestMi=0.25, medianDepthFt=300]
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
-- **Soil**: ok. limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable] [feasibility=limited, mapUnit=Blackprince-Ardtoo complex, 15 to 30 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=22, source=USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable), backup=true]
+- **Soil**: ok. limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Blackprince-Ardtoo complex, 15 to 30 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=22, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 15.7%, max 40.4% [gradePct=15.7, maxGradePct=40.4, reliefFt=162, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 12.3% [cellCount=16, avgSlopePct=12.3, maxSlopePct=22.2, partial=false]
+- **Slope grid**: ok. 16 cells, avg 11.5% [cellCount=16, avgSlopePct=11.5, maxSlopePct=18.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.7]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
@@ -259,20 +259,19 @@ Why: Unincorporated 40+ ac farm parcel (picked by discovery 2026-11-02, seed 42;
 
 - **Parcel**: ok. parcel 32322.9002, 156.55 ac [parcelId=32322.9002, acres=156.55, address=SPANGLE, 99031, lat=47.357266, lon=-117.40896]
 - **Wells**: ok. 26 well record(s), 5 of nearest 5 report depth [wellCount=26, nearestDepthsCount=5, nearestMi=1.13, medianDepthFt=200]
-- **Existing well**: error. HTTP 503
-- **Soil**: error. HTTP 503
-- **Terrain**: error. HTTP 503
-- **Slope grid**: error. HTTP 503
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
+- **Soil**: ok. moderate (Naff-Thatuna complex, 8 to 25 percent slopes) [feasibility=moderate, mapUnit=Naff-Thatuna complex, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=15, source=USDA NRCS Soil Data Access, backup=false]
+- **Terrain**: ok. avg grade 7.7%, max 24.8% [gradePct=7.7, maxGradePct=24.8, reliefFt=95, sampleCount=9]
+- **Slope grid**: ok. 16 cells, avg 3.3% [cellCount=16, avgSlopePct=3.3, maxSlopePct=5.8, partial=false]
+- **Flood**: error. HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=1.2]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION]
 - **Power**: ok. INLAND POWER & LIGHT COMPANY [provider=INLAND POWER & LIGHT COMPANY, confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: error. HTTP 503
-- **Zoning**: error. HTTP 503
-- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
-- **Assessment**: mismatch. HTTP 503
-  - mismatch `assessment.propertyClass`: expected 83, got null
+- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Zoning**: ok. LTA (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility [code=LTA, jurisdiction=Spokane County, countyStatus=official_adapter, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=Critical aquifer recharge area: low susceptibility, overlayTypes=aquifer_recharge, overlaysUnavailable=(none)]
+- **Zoning rules**: ok. LTA: Resource Lands (8 uses) [code=LTA, family=Resource Lands, useCount=8]
+- **Assessment**: ok. assessed $62,690, class 83 Cur - Use - Ag, no tax amount [assessedValue=62690, taxPresent=false, netValue=62690, taxYear=2027, propertyClass=83, propertyClassDescription=Cur - Use - Ag, source=Spokane County Assessor (assessor parcel table, Spokane County GIS)]
 - **Property tax**: ok. billed 2026 tax $476.71 [taxTotal=476.71, taxYear=2026, taxBasis=billed, taxSource=Spokane County Treasurer (SCOUT property summary)]
-- **Listing**: error. HTTP 503
+- **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.

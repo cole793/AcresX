@@ -2,8 +2,8 @@
   "county": "Spokane",
   "state": "WA",
   "baseUrl": "https://acresx.cole-groshens.workers.dev",
-  "startedAt": "2026-11-18T21:34:35.282Z",
-  "finishedAt": "2026-11-18T21:40:16.312Z",
+  "startedAt": "2026-11-19T21:44:40.724Z",
+  "finishedAt": "2026-11-19T21:51:33.389Z",
   "results": [
     {
       "parcelId": "35204.2729",
@@ -13,7 +13,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 771,
+          "ms": 590,
           "status": "ok",
           "detail": "parcel 35204.2729, 0.14 ac",
           "values": {
@@ -27,11 +27,11 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 977,
+          "ms": 388,
           "status": "ok",
-          "detail": "1881 well record(s), 5 of nearest 5 report depth",
+          "detail": "1879 well record(s), 5 of nearest 5 report depth",
           "values": {
-            "wellCount": 1881,
+            "wellCount": 1879,
             "nearestDepthsCount": 5,
             "nearestMi": 0.28,
             "medianDepthFt": 30
@@ -40,7 +40,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 312,
+          "ms": 371,
           "status": "ok",
           "detail": "AVISTA CORP; MODERN ELECTRIC WATER COMPANY",
           "values": {
@@ -53,7 +53,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 337,
+          "ms": 716,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -71,7 +71,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 272,
+          "ms": 455,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -83,7 +83,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 5418,
+          "ms": 5926,
           "status": "ok",
           "detail": "R1 (City of Spokane) · overlays: Critical aquifer recharge area: high susceptibility",
           "values": {
@@ -107,7 +107,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 515,
+          "ms": 552,
           "status": "ok",
           "detail": "water served (City of Spokane) 7 m; sewer served (City of Spokane) 9 m",
           "values": {
@@ -131,23 +131,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2467,
+          "ms": 6039,
           "status": "ok",
-          "detail": "moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "moderate (Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes)",
           "values": {
             "feasibility": "moderate",
             "mapUnit": "Urban land-Lakespring, disturbed complex, 3 to 8 percent slopes",
             "hydrologicGroup": null,
             "drainage": null,
             "soilSlopePct": 3,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2467,
+          "ms": 6039,
           "status": "ok",
           "detail": "avg grade 3.3%, max 5%",
           "values": {
@@ -160,7 +160,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 238,
+          "ms": 183,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -172,7 +172,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 256,
+          "ms": 211,
           "status": "ok",
           "detail": "assessed $72,900, class 77 Churches, no tax amount",
           "values": {
@@ -191,7 +191,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 2523,
+          "ms": 2085,
           "status": "ok",
           "detail": "billed 2026 tax $15.00",
           "values": {
@@ -204,7 +204,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1023,
+          "ms": 1277,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -216,7 +216,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9102,
+          "ms": 9026,
           "status": "ok",
           "detail": "AVISTA CORP, ~1 ft to mapped power",
           "values": {
@@ -229,7 +229,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 64,
+          "ms": 25,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -239,7 +239,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 3733,
+          "ms": 225,
           "status": "ok",
           "detail": "16 cells, avg 3.6%",
           "values": {
@@ -260,7 +260,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 431,
+          "ms": 346,
           "status": "ok",
           "detail": "parcel 35234.0602, 0.42 ac",
           "values": {
@@ -274,7 +274,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 813,
+          "ms": 391,
           "status": "ok",
           "detail": "1892 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -287,7 +287,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 350,
+          "ms": 356,
           "status": "ok",
           "detail": "AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -301,7 +301,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 359,
+          "ms": 4648,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -319,7 +319,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 234,
+          "ms": 317,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -331,7 +331,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 5111,
+          "ms": 731,
           "status": "ok",
           "detail": "R-3 (City of Spokane Valley) · overlays: Critical aquifer recharge area: high susceptibility",
           "values": {
@@ -355,7 +355,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 478,
+          "ms": 653,
           "status": "ok",
           "detail": "water served (Spokane County Water District #3 System #1); sewer likely (Spokane County Utilities) 5 m",
           "values": {
@@ -381,23 +381,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1558,
+          "ms": 3316,
           "status": "ok",
-          "detail": "moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "moderate (Urban land-Lenz, disturbed complex, 3 to 15 percent slopes)",
           "values": {
             "feasibility": "moderate",
             "mapUnit": "Urban land-Lenz, disturbed complex, 3 to 15 percent slopes",
             "hydrologicGroup": null,
             "drainage": null,
             "soilSlopePct": 5,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1558,
+          "ms": 3316,
           "status": "ok",
           "detail": "avg grade 6.8%, max 12.1%",
           "values": {
@@ -410,7 +410,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 438,
+          "ms": 199,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -422,7 +422,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 290,
+          "ms": 215,
           "status": "ok",
           "detail": "assessed $589,000, class 11 Single Unit, no tax amount",
           "values": {
@@ -441,7 +441,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 2147,
+          "ms": 1922,
           "status": "ok",
           "detail": "billed 2026 tax $1,449.88",
           "values": {
@@ -454,7 +454,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1174,
+          "ms": 1094,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -466,7 +466,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9019,
+          "ms": 9017,
           "status": "ok",
           "detail": "AVISTA CORP, ~2 ft to mapped power",
           "values": {
@@ -479,7 +479,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 22,
+          "ms": 23,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -489,13 +489,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 1210,
+          "ms": 6113,
           "status": "ok",
-          "detail": "16 cells, avg 7.3%",
+          "detail": "16 cells, avg 6.6%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 7.3,
-            "maxSlopePct": 14.3,
+            "avgSlopePct": 6.6,
+            "maxSlopePct": 11.1,
             "partial": false
           }
         }
@@ -510,7 +510,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 204,
+          "ms": 186,
           "status": "ok",
           "detail": "parcel 13013.2211, 0.16 ac",
           "values": {
@@ -524,20 +524,20 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 345,
+          "ms": 173,
           "status": "ok",
           "detail": "353 well record(s), 5 of nearest 5 report depth",
           "values": {
             "wellCount": 353,
             "nearestDepthsCount": 5,
             "nearestMi": 0.13,
-            "medianDepthFt": 20
+            "medianDepthFt": 17
           }
         },
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 433,
+          "ms": 425,
           "status": "ok",
           "detail": "CITY OF CHENEY - (WA)",
           "values": {
@@ -549,7 +549,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 144,
+          "ms": 166,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -567,7 +567,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 136,
+          "ms": 331,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -579,7 +579,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 853,
+          "ms": 1178,
           "status": "ok",
           "detail": "R-1 (City of Cheney) · overlays: Critical aquifer recharge area: moderate susceptibility; Planned Unit Development overlay: PUD (R-1)",
           "values": {
@@ -605,7 +605,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 360,
+          "ms": 493,
           "status": "ok",
           "detail": "water served (City of Cheney) 6 m; sewer served (City of Cheney) 9 m",
           "values": {
@@ -629,23 +629,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5014,
+          "ms": 3555,
           "status": "ok",
-          "detail": "favorable (Cheney ashy silt loam, 0 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "favorable (Cheney ashy silt loam, 0 to 8 percent slopes)",
           "values": {
             "feasibility": "favorable",
             "mapUnit": "Cheney ashy silt loam, 0 to 8 percent slopes",
             "hydrologicGroup": "B",
             "drainage": "Well drained",
             "soilSlopePct": 3,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 5014,
+          "ms": 3555,
           "status": "ok",
           "detail": "avg grade 0%, max 0%",
           "values": {
@@ -658,7 +658,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 177,
+          "ms": 154,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -670,7 +670,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 188,
+          "ms": 195,
           "status": "ok",
           "detail": "assessed $401,500, class 11 Single Unit, no tax amount",
           "values": {
@@ -689,7 +689,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 1717,
+          "ms": 1459,
           "status": "ok",
           "detail": "billed 2026 tax $4,141.86",
           "values": {
@@ -702,7 +702,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1125,
+          "ms": 8372,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -714,7 +714,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9035,
+          "ms": 9020,
           "status": "ok",
           "detail": "CITY OF CHENEY - (WA)",
           "values": {
@@ -727,7 +727,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 13,
+          "ms": 21,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -737,7 +737,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 674,
+          "ms": 2607,
           "status": "ok",
           "detail": "16 cells, avg 6.7%",
           "values": {
@@ -772,7 +772,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 293,
+          "ms": 190,
           "status": "ok",
           "detail": "193 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -785,7 +785,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 374,
+          "ms": 516,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -799,7 +799,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 83,
+          "ms": 394,
           "status": "ok",
           "detail": "high-risk zone (AE, X) (via FEMA NFHL)",
           "values": {
@@ -818,7 +818,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 113,
+          "ms": 758,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -830,7 +830,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 659,
+          "ms": 432,
           "status": "ok",
           "detail": "RCV (Spokane County) · overlays: Shoreline designation: Rural Conservancy; Critical aquifer recharge area: low susceptibility; Mapped wetland buffer: 190 foot buffer; Mapped wetland buffer: 250 foot buffer",
           "values": {
@@ -859,7 +859,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 454,
+          "ms": 319,
           "status": "ok",
           "detail": "water likely (Moab Irrigation Dist #20); sewer not_found",
           "values": {
@@ -881,23 +881,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1254,
+          "ms": 6068,
           "status": "ok",
-          "detail": "favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes)",
           "values": {
             "feasibility": "favorable",
             "mapUnit": "Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes",
             "hydrologicGroup": "A",
             "drainage": "Well drained",
             "soilSlopePct": 8,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1254,
+          "ms": 6068,
           "status": "ok",
           "detail": "avg grade 16%, max 27.9%",
           "values": {
@@ -910,7 +910,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 226,
+          "ms": 169,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -922,7 +922,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 80,
+          "ms": 156,
           "status": "ok",
           "detail": "assessed $387,870, class 91 Vacant Land, no tax amount",
           "values": {
@@ -941,7 +941,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 1454,
+          "ms": 1349,
           "status": "ok",
           "detail": "billed 2026 tax $3,864.93",
           "values": {
@@ -954,7 +954,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1122,
+          "ms": 1165,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -966,7 +966,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9095,
+          "ms": 9038,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -979,7 +979,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 124,
+          "ms": 43,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -991,7 +991,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 416,
+          "ms": 2731,
           "status": "ok",
           "detail": "16 cells, avg 24.1%",
           "values": {
@@ -1012,7 +1012,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 188,
+          "ms": 254,
           "status": "ok",
           "detail": "parcel 43341.0110, 1.5 ac",
           "values": {
@@ -1026,7 +1026,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 221,
+          "ms": 150,
           "status": "ok",
           "detail": "39 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1039,7 +1039,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 419,
+          "ms": 350,
           "status": "ok",
           "detail": "AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1053,7 +1053,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 146,
+          "ms": 166,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1071,7 +1071,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 438,
+          "ms": 285,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -1083,7 +1083,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 572,
+          "ms": 792,
           "status": "ok",
           "detail": "LTA (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility",
           "values": {
@@ -1107,7 +1107,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 513,
+          "ms": 829,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -1127,23 +1127,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 3212,
+          "ms": 2770,
           "status": "ok",
-          "detail": "moderate (Glenrose ashy silt loam, 8 to 25 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "moderate (Glenrose ashy silt loam, 8 to 25 percent slopes)",
           "values": {
             "feasibility": "moderate",
             "mapUnit": "Glenrose ashy silt loam, 8 to 25 percent slopes",
             "hydrologicGroup": "C",
             "drainage": "Well drained",
             "soilSlopePct": 15,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 3212,
+          "ms": 2770,
           "status": "ok",
           "detail": "avg grade 3.5%, max 7.5%",
           "values": {
@@ -1156,7 +1156,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 141,
+          "ms": 215,
           "status": "ok",
           "detail": "Possible well association",
           "values": {
@@ -1168,7 +1168,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 165,
+          "ms": 159,
           "status": "ok",
           "detail": "assessed $382,790, class 11 Single Unit, no tax amount",
           "values": {
@@ -1187,7 +1187,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 2142,
+          "ms": 1897,
           "status": "unavailable",
           "detail": "unavailable: property tax not available",
           "values": {
@@ -1197,7 +1197,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 650,
+          "ms": 1143,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1209,7 +1209,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9014,
+          "ms": 9019,
           "status": "ok",
           "detail": "AVISTA CORP, ~48 ft to mapped power",
           "values": {
@@ -1222,7 +1222,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 45,
+          "ms": 20,
           "status": "ok",
           "detail": "LTA: Resource Lands (8 uses)",
           "values": {
@@ -1234,7 +1234,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 746,
+          "ms": 203,
           "status": "ok",
           "detail": "16 cells, avg 5.6%",
           "values": {
@@ -1255,7 +1255,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 186,
+          "ms": 182,
           "status": "ok",
           "detail": "parcel 47071.9003, 2.27 ac",
           "values": {
@@ -1269,7 +1269,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 365,
+          "ms": 166,
           "status": "ok",
           "detail": "232 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1282,7 +1282,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 272,
+          "ms": 424,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1295,7 +1295,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 241,
+          "ms": 206,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1313,7 +1313,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 126,
+          "ms": 350,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1325,7 +1325,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 516,
+          "ms": 763,
           "status": "ok",
           "detail": "RT (Spokane County) · overlays: Critical aquifer recharge area: moderate susceptibility",
           "values": {
@@ -1349,7 +1349,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 368,
+          "ms": 480,
           "status": "ok",
           "detail": "water likely (Whitworth Water District #2); sewer not_found",
           "values": {
@@ -1372,23 +1372,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6026,
+          "ms": 2110,
           "status": "ok",
-          "detail": "moderate (Lenz-Spokane complex, 3 to 15 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "moderate (Lenz-Spokane complex, 3 to 15 percent slopes)",
           "values": {
             "feasibility": "moderate",
             "mapUnit": "Lenz-Spokane complex, 3 to 15 percent slopes",
-            "hydrologicGroup": "C",
+            "hydrologicGroup": "B",
             "drainage": "Well drained",
             "soilSlopePct": 9,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6026,
+          "ms": 2110,
           "status": "ok",
           "detail": "avg grade 11.8%, max 26.8%",
           "values": {
@@ -1401,7 +1401,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 144,
+          "ms": 387,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1413,7 +1413,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 218,
+          "ms": 176,
           "status": "ok",
           "detail": "assessed $247,350, class 18 Other Residential, no tax amount",
           "values": {
@@ -1432,7 +1432,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 1891,
+          "ms": 1770,
           "status": "ok",
           "detail": "billed 2026 tax $2,459.95",
           "values": {
@@ -1445,7 +1445,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 992,
+          "ms": 1113,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1457,7 +1457,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9013,
+          "ms": 9028,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1470,7 +1470,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 15,
+          "ms": 14,
           "status": "ok",
           "detail": "RT: Rural (10 uses)",
           "values": {
@@ -1482,13 +1482,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 1324,
+          "ms": 6025,
           "status": "ok",
-          "detail": "16 cells, avg 15.8%",
+          "detail": "16 cells, avg 10.8%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 15.8,
-            "maxSlopePct": 26.2,
+            "avgSlopePct": 10.8,
+            "maxSlopePct": 19.3,
             "partial": false
           }
         }
@@ -1503,7 +1503,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 380,
+          "ms": 202,
           "status": "ok",
           "detail": "parcel 46301.9025, 4.58 ac",
           "values": {
@@ -1517,7 +1517,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 429,
+          "ms": 154,
           "status": "ok",
           "detail": "310 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1530,7 +1530,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 321,
+          "ms": 379,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1544,7 +1544,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 618,
+          "ms": 271,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1562,7 +1562,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 248,
+          "ms": 125,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -1574,7 +1574,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 616,
+          "ms": 485,
           "status": "ok",
           "detail": "RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility",
           "values": {
@@ -1598,7 +1598,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 425,
+          "ms": 357,
           "status": "ok",
           "detail": "water likely (Pasadena Park Irr Dist 17); sewer not_found",
           "values": {
@@ -1620,23 +1620,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 3869,
+          "ms": 1116,
           "status": "ok",
-          "detail": "favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes)",
           "values": {
             "feasibility": "favorable",
             "mapUnit": "Scrabblers ashy fine sandy loam, 3 to 8 percent slopes",
             "hydrologicGroup": "A",
             "drainage": "Well drained",
             "soilSlopePct": 5,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 3869,
+          "ms": 1116,
           "status": "ok",
           "detail": "avg grade 5.3%, max 17.7%",
           "values": {
@@ -1649,7 +1649,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 237,
+          "ms": 153,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -1661,7 +1661,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 246,
+          "ms": 194,
           "status": "ok",
           "detail": "assessed $199,510, class 85 Mining, no tax amount",
           "values": {
@@ -1680,7 +1680,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 1341,
+          "ms": 1279,
           "status": "ok",
           "detail": "billed 2026 tax $23.50",
           "values": {
@@ -1693,7 +1693,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 912,
+          "ms": 1151,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1705,7 +1705,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9056,
+          "ms": 9053,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1718,7 +1718,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 76,
+          "ms": 18,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -1730,13 +1730,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 432,
+          "ms": 6088,
           "status": "ok",
-          "detail": "16 cells, avg 6.9%",
+          "detail": "16 cells, avg 6.8%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 6.9,
-            "maxSlopePct": 17.7,
+            "avgSlopePct": 6.8,
+            "maxSlopePct": 17.6,
             "partial": false
           }
         }
@@ -1751,7 +1751,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 487,
+          "ms": 180,
           "status": "ok",
           "detail": "parcel 57302.9016, 9.77 ac",
           "values": {
@@ -1765,7 +1765,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 349,
+          "ms": 250,
           "status": "ok",
           "detail": "181 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1778,7 +1778,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 515,
+          "ms": 442,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -1791,7 +1791,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 339,
+          "ms": 308,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -1809,7 +1809,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 636,
+          "ms": 535,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -1821,7 +1821,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 728,
+          "ms": 440,
           "status": "ok",
           "detail": "RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility",
           "values": {
@@ -1845,7 +1845,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 646,
+          "ms": 370,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -1865,23 +1865,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6039,
+          "ms": 4747,
           "status": "ok",
-          "detail": "limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "limited (Quinnamose-Micapeak complex, 30 to 55 percent slopes)",
           "values": {
             "feasibility": "limited",
             "mapUnit": "Quinnamose-Micapeak complex, 30 to 55 percent slopes",
             "hydrologicGroup": "B",
             "drainage": "Well drained",
             "soilSlopePct": 42,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6039,
+          "ms": 4747,
           "status": "ok",
           "detail": "avg grade 22.7%, max 39%",
           "values": {
@@ -1894,7 +1894,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 182,
+          "ms": 200,
           "status": "ok",
           "detail": "Likely existing well",
           "values": {
@@ -1906,7 +1906,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 243,
+          "ms": 292,
           "status": "ok",
           "detail": "assessed $469,010, class 18 Other Residential, no tax amount",
           "values": {
@@ -1925,7 +1925,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 2924,
+          "ms": 2426,
           "status": "unavailable",
           "detail": "unavailable: property tax not available",
           "values": {
@@ -1935,7 +1935,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1118,
+          "ms": 1331,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1947,7 +1947,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9056,
+          "ms": 9045,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -1960,7 +1960,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 84,
+          "ms": 45,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -1972,13 +1972,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 2850,
+          "ms": 6026,
           "status": "ok",
-          "detail": "16 cells, avg 22%",
+          "detail": "16 cells, avg 17.9%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 22,
-            "maxSlopePct": 32.5,
+            "avgSlopePct": 17.9,
+            "maxSlopePct": 28.1,
             "partial": false
           }
         }
@@ -1993,7 +1993,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 186,
+          "ms": 182,
           "status": "ok",
           "detail": "parcel 37094.9101, 5 ac",
           "values": {
@@ -2007,7 +2007,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 515,
+          "ms": 223,
           "status": "ok",
           "detail": "285 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2020,7 +2020,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 345,
+          "ms": 461,
           "status": "ok",
           "detail": "AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -2034,7 +2034,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 139,
+          "ms": 920,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2052,7 +2052,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 120,
+          "ms": 144,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -2064,7 +2064,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 547,
+          "ms": 496,
           "status": "ok",
           "detail": "RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility",
           "values": {
@@ -2088,7 +2088,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 470,
+          "ms": 554,
           "status": "ok",
           "detail": "water likely (Whitworth Water District #2); sewer not_found",
           "values": {
@@ -2111,23 +2111,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 3880,
+          "ms": 6033,
           "status": "ok",
-          "detail": "favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes)",
           "values": {
             "feasibility": "favorable",
             "mapUnit": "Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes",
             "hydrologicGroup": "A",
             "drainage": "Somewhat excessively drained",
             "soilSlopePct": 4,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 3880,
+          "ms": 6033,
           "status": "ok",
           "detail": "avg grade 2.1%, max 27.1%",
           "values": {
@@ -2140,7 +2140,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 159,
+          "ms": 151,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -2152,7 +2152,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 279,
+          "ms": 162,
           "status": "ok",
           "detail": "assessed $862,700, class 11 Single Unit, no tax amount",
           "values": {
@@ -2171,7 +2171,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 1966,
+          "ms": 2004,
           "status": "ok",
           "detail": "billed 2026 tax $8,598.87",
           "values": {
@@ -2184,7 +2184,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1114,
+          "ms": 1088,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2196,7 +2196,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9014,
+          "ms": 9024,
           "status": "ok",
           "detail": "AVISTA CORP, ~3 ft to mapped power",
           "values": {
@@ -2209,7 +2209,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 15,
+          "ms": 24,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -2221,12 +2221,12 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 765,
+          "ms": 6025,
           "status": "ok",
-          "detail": "16 cells, avg 1.6%",
+          "detail": "16 cells, avg 1.5%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 1.6,
+            "avgSlopePct": 1.5,
             "maxSlopePct": 8.8,
             "partial": false
           }
@@ -2242,7 +2242,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 207,
+          "ms": 231,
           "status": "ok",
           "detail": "parcel 48121.9001, 158.65 ac",
           "values": {
@@ -2256,7 +2256,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 204,
+          "ms": 176,
           "status": "ok",
           "detail": "49 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2269,7 +2269,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 390,
+          "ms": 351,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -2282,7 +2282,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 202,
+          "ms": 185,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2300,7 +2300,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 778,
+          "ms": 1051,
           "status": "ok",
           "detail": "3 NWI feature(s)",
           "values": {
@@ -2312,7 +2312,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 499,
+          "ms": 402,
           "status": "ok",
           "detail": "FZ (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility",
           "values": {
@@ -2336,7 +2336,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 347,
+          "ms": 317,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -2355,24 +2355,37 @@
         },
         "soil": {
           "route": "/api/land-analysis",
-          "httpStatus": 503,
-          "ms": 661,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 4338,
+          "status": "ok",
+          "detail": "limited (Keeler-Kruse complex, 15 to 30 percent slopes)",
+          "values": {
+            "feasibility": "limited",
+            "mapUnit": "Keeler-Kruse complex, 15 to 30 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 23,
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
+          }
         },
         "terrain": {
           "route": "/api/land-analysis",
-          "httpStatus": 503,
-          "ms": 661,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 4338,
+          "status": "ok",
+          "detail": "avg grade 27.4%, max 72.3%",
+          "values": {
+            "gradePct": 27.4,
+            "maxGradePct": 72.3,
+            "reliefFt": 623,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 152,
+          "ms": 171,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -2384,7 +2397,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 227,
+          "ms": 157,
           "status": "ok",
           "detail": "assessed $10,280, class 88 Designated Forest Lnd, no tax amount",
           "values": {
@@ -2402,24 +2415,33 @@
         },
         "tax": {
           "route": "/api/property-tax",
-          "httpStatus": 503,
-          "ms": 1475,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1396,
+          "status": "ok",
+          "detail": "billed 2026 tax $177.96",
+          "values": {
+            "taxTotal": 177.96,
+            "taxYear": 2026,
+            "taxBasis": "billed",
+            "taxSource": "Spokane County Treasurer (SCOUT property summary)"
+          }
         },
         "listing": {
           "route": "/api/reso-listings",
-          "httpStatus": 503,
-          "ms": 594,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1121,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
         },
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9016,
+          "ms": 9044,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -2432,7 +2454,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 48,
+          "ms": 55,
           "status": "ok",
           "detail": "FZ: Resource Lands (8 uses)",
           "values": {
@@ -2444,13 +2466,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 1432,
+          "ms": 6084,
           "status": "ok",
           "detail": "16 cells, avg 19.4%",
           "values": {
             "cellCount": 16,
             "avgSlopePct": 19.4,
-            "maxSlopePct": 41.4,
+            "maxSlopePct": 40.1,
             "partial": false
           }
         }
@@ -2465,7 +2487,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 193,
+          "ms": 237,
           "status": "ok",
           "detail": "parcel 48136.9052, 50.23 ac",
           "values": {
@@ -2479,7 +2501,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 321,
+          "ms": 180,
           "status": "ok",
           "detail": "68 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2492,7 +2514,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 439,
+          "ms": 461,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -2505,7 +2527,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 68,
+          "ms": 1375,
           "status": "ok",
           "detail": "zones X (via FEMA NFHL)",
           "values": {
@@ -2523,7 +2545,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 534,
+          "ms": 507,
           "status": "ok",
           "detail": "7 NWI feature(s)",
           "values": {
@@ -2535,7 +2557,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 591,
+          "ms": 450,
           "status": "ok",
           "detail": "RCV (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility; County-mapped wetland: permanent lake; Mapped wetland buffer: 190 foot buffer; Mapped wetland buffer: 250 foot buffer",
           "values": {
@@ -2564,7 +2586,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 373,
+          "ms": 773,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -2584,23 +2606,23 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1431,
+          "ms": 6087,
           "status": "ok",
-          "detail": "limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [backup: Esri SSURGO copy; USDA Soil Data Access unavailable]",
+          "detail": "limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes)",
           "values": {
             "feasibility": "limited",
             "mapUnit": "Blackprince-Ardtoo complex, 15 to 30 percent slopes",
             "hydrologicGroup": "B",
             "drainage": "Well drained",
             "soilSlopePct": 22,
-            "source": "USDA SSURGO via Esri Living Atlas (backup; USDA Soil Data Access unavailable)",
-            "backup": true
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
           }
         },
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 1431,
+          "ms": 6087,
           "status": "ok",
           "detail": "avg grade 15.7%, max 40.4%",
           "values": {
@@ -2613,7 +2635,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 220,
+          "ms": 145,
           "status": "ok",
           "detail": "No existing well match found",
           "values": {
@@ -2625,7 +2647,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 70,
+          "ms": 184,
           "status": "ok",
           "detail": "assessed $99,910, class 88 Designated Forest Lnd, no tax amount",
           "values": {
@@ -2644,7 +2666,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 2183,
+          "ms": 1891,
           "status": "ok",
           "detail": "billed 2026 tax $790.25",
           "values": {
@@ -2657,7 +2679,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 949,
+          "ms": 1077,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2669,7 +2691,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9060,
+          "ms": 9028,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -2682,7 +2704,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 75,
+          "ms": 21,
           "status": "ok",
           "detail": "RCV: Rural (10 uses)",
           "values": {
@@ -2694,13 +2716,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 92,
+          "ms": 6059,
           "status": "ok",
-          "detail": "16 cells, avg 12.3%",
+          "detail": "16 cells, avg 11.5%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 12.3,
-            "maxSlopePct": 22.2,
+            "avgSlopePct": 11.5,
+            "maxSlopePct": 18.2,
             "partial": false
           }
         }
@@ -2715,7 +2737,7 @@
         "parcel": {
           "route": "/api/parcel-search",
           "httpStatus": 200,
-          "ms": 227,
+          "ms": 563,
           "status": "ok",
           "detail": "parcel 32322.9002, 156.55 ac",
           "values": {
@@ -2729,7 +2751,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 161,
+          "ms": 316,
           "status": "ok",
           "detail": "26 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2742,7 +2764,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 428,
+          "ms": 510,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION",
           "values": {
@@ -2755,26 +2777,16 @@
         },
         "flood": {
           "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 137,
-          "status": "ok",
-          "detail": "zones X (via FEMA NFHL)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "FEMA NFHL",
-            "coverage": null,
-            "emptyResult": null
-          }
+          "httpStatus": 502,
+          "ms": 15004,
+          "status": "error",
+          "detail": "HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404",
+          "values": {}
         },
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 546,
+          "ms": 859,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -2785,64 +2797,112 @@
         },
         "zoning": {
           "route": "/api/zoning-permits",
-          "httpStatus": 503,
-          "ms": 350,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 637,
+          "status": "ok",
+          "detail": "LTA (Spokane County) · overlays: Critical aquifer recharge area: low susceptibility",
+          "values": {
+            "code": "LTA",
+            "jurisdiction": "Spokane County",
+            "countyStatus": "official_adapter",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "unavailable",
+            "source": "primary",
+            "sourceAsOf": null,
+            "overlays": [
+              "Critical aquifer recharge area: low susceptibility"
+            ],
+            "overlayTypes": [
+              "aquifer_recharge"
+            ],
+            "overlaysUnavailable": []
+          }
         },
         "publicUtilities": {
           "route": "/api/public-utilities",
-          "httpStatus": 503,
-          "ms": 229,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 617,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
         },
         "soil": {
           "route": "/api/land-analysis",
-          "httpStatus": 503,
-          "ms": 551,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1393,
+          "status": "ok",
+          "detail": "moderate (Naff-Thatuna complex, 8 to 25 percent slopes)",
+          "values": {
+            "feasibility": "moderate",
+            "mapUnit": "Naff-Thatuna complex, 8 to 25 percent slopes",
+            "hydrologicGroup": "C",
+            "drainage": "Well drained",
+            "soilSlopePct": 15,
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
+          }
         },
         "terrain": {
           "route": "/api/land-analysis",
-          "httpStatus": 503,
-          "ms": 551,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1393,
+          "status": "ok",
+          "detail": "avg grade 7.7%, max 24.8%",
+          "values": {
+            "gradePct": 7.7,
+            "maxGradePct": 24.8,
+            "reliefFt": 95,
+            "sampleCount": 9
+          }
         },
         "existingWell": {
           "route": "/api/existing-well",
-          "httpStatus": 503,
-          "ms": 591,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 189,
+          "status": "ok",
+          "detail": "No existing well match found",
+          "values": {
+            "status": "no_match",
+            "confidence": "Low",
+            "score": 0
+          }
         },
         "assessment": {
           "route": "/api/property-assessment",
-          "httpStatus": 503,
-          "ms": 506,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {},
-          "mismatches": [
-            {
-              "key": "assessment.propertyClass",
-              "layer": "assessment",
-              "expected": "83",
-              "actual": null
-            }
-          ]
+          "httpStatus": 200,
+          "ms": 261,
+          "status": "ok",
+          "detail": "assessed $62,690, class 83 Cur - Use - Ag, no tax amount",
+          "values": {
+            "assessedValue": 62690,
+            "landValue": null,
+            "improvementValue": null,
+            "taxPresent": false,
+            "netValue": 62690,
+            "homeownerExemption": null,
+            "taxYear": 2027,
+            "propertyClass": "83",
+            "propertyClassDescription": "Cur - Use - Ag",
+            "source": "Spokane County Assessor (assessor parcel table, Spokane County GIS)"
+          }
         },
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 1276,
+          "ms": 1333,
           "status": "ok",
           "detail": "billed 2026 tax $476.71",
           "values": {
@@ -2854,16 +2914,20 @@
         },
         "listing": {
           "route": "/api/reso-listings",
-          "httpStatus": 503,
-          "ms": 1044,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 1156,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
         },
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 9016,
+          "ms": 9078,
           "status": "ok",
           "detail": "INLAND POWER & LIGHT COMPANY",
           "values": {
@@ -2874,40 +2938,42 @@
           }
         },
         "zoningRules": {
-          "status": "unavailable",
-          "detail": "not requested: no zoning code returned (the browser skips this call too)",
-          "values": {},
-          "route": null,
-          "httpStatus": null,
-          "ms": null
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 76,
+          "status": "ok",
+          "detail": "LTA: Resource Lands (8 uses)",
+          "values": {
+            "code": "LTA",
+            "family": "Resource Lands",
+            "useCount": 8
+          }
         },
         "slope": {
           "route": "/api/slope-grid",
-          "httpStatus": 503,
-          "ms": 57,
-          "status": "error",
-          "detail": "HTTP 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 301,
+          "status": "ok",
+          "detail": "16 cells, avg 3.3%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 3.3,
+            "maxSlopePct": 5.8,
+            "partial": false
+          }
         }
       },
-      "mismatches": [
-        {
-          "key": "assessment.propertyClass",
-          "layer": "assessment",
-          "expected": "83",
-          "actual": null
-        }
-      ]
+      "mismatches": []
     }
   ],
   "summary": {
     "parcels": 12,
-    "failed": 2,
+    "failed": 1,
     "layerCounts": {
-      "ok": 164,
-      "unavailable": 16,
-      "error": 11,
-      "mismatch": 1,
+      "ok": 174,
+      "unavailable": 17,
+      "error": 1,
+      "mismatch": 0,
       "skipped": 0
     }
   }
