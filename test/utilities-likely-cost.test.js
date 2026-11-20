@@ -128,7 +128,7 @@ test('report page 3 matches the dashboard: same total, the alternatives under th
   const d = dashboard(last);
   const r = report(last);
   const usd = n => `$${Math.round(n).toLocaleString('en-US')}`;
-  assert.ok(r.page3.includes(`Total (matches page 1) ${usd(d.e.low)}–${usd(d.e.high)}`), `report total is the dashboard total ${usd(d.e.low)}–${usd(d.e.high)}`);
+  assert.ok(r.page3.includes(`Total (matches page 1) ${usd(d.e.central)} ${usd(d.e.low)}–${usd(d.e.high)}`), `report total is the dashboard total ~${usd(d.e.central)} (${usd(d.e.low)}–${usd(d.e.high)})`);
   for (const a of d.e.alternatives) assert.ok(r.page3.includes(a.text), `page 3 shows: ${a.text}`);
   assert.match(r.page3, /Alternative, not in the total/);
   assert.match(r.page3, /Listing says: no public water or sewer; well and septic \(unverified\)\. Not used in the estimate or the score\./);

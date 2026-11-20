@@ -48,16 +48,25 @@ test('cost total: page 1 = page 4 total = sum of the lines = AcresXCostModel.est
   const data = fixture();
   const { pages, h } = generate(data);
   const page1 = /<div class="t-num t-range">([^<]+)<\/div>/.exec(pages[0])[1];
-  const total = /<tfoot><tr><td colspan="2">Total \(matches page 1\)<\/td><td class="amt">([^<]+)<\/td>/.exec(pages[3])[1];
+  const [, mostLikely, total] = /<tfoot><tr><td colspan="2">Total \(matches page 1\)<\/td><td class="amt">([^<]+)<\/td><td class="amt">([^<]+)<\/td>/.exec(pages[3]);
   assert.equal(page1, total);
-  const lines = [...pages[3].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
+  const rows = [...pages[3].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><td class="amt">([^<]+)<\/td><\/tr>/g)];
+  const lines = rows.map(m => amounts(m[2]));
   assert.equal(lines.length, 6);
   const sum = lines.reduce((a, [lo, hi]) => [a[0] + lo, a[1] + hi], [0, 0]);
   assert.deepEqual(amounts(total), sum);
+  // Most likely total = the sum of the lines' most likely values (owner request 2026-11-20).
+  assert.equal(dollars(mostLikely), rows.reduce((a, m) => a + dollars(m[1]), 0));
   const e = h.context.AcresXCostModel.estimate(data);
   assert.deepEqual(amounts(total), [e.low, e.high]);
-  // The well line's high end is the high end of the depth range (230 ft, was the 100 ft median): +130 ft x $60.
-  assert.equal(total, '$45,437–$97,366');
+  assert.equal(dollars(mostLikely), e.central);
+  assert.ok(pages[0].includes(`<p class="t-label">Most likely about $${Math.round(e.central / 1000)}k</p>`));
+  // Spokane 23123.9051: the well priced at its 170 ft median (likely 100-230 ft) and Inland power at
+  // the 578 ft road run (Long Overhead) instead of low x low to high x high ($45,437-$97,366 before).
+  assert.equal(total, '$50,804–$80,441');
+  // Worst cases stated in words, under the table and named on page 1, never in the total.
+  assert.ok(pages[3].includes('<p class="cost-tails"><strong>Could be higher (not in the likely range):</strong> Could exceed $33,485 if the utility must extend a line ~1,320 ft.</p>'));
+  assert.match(pages[0], /Higher if: power extension \(page 4\)\./);
 });
 
 test('page 5: the assumptions of each cost line, with the same source numbers as the cost table', () => {
@@ -262,7 +271,7 @@ test('a county without the local cost model uses its generic estimate on both pa
   const noModel = MODULES.filter(f => f !== 'local-cost-model.js' && f !== 'cost-tables.js');
   const { pages } = generate(data, { modules: noModel });
   const page1 = /<div class="t-num t-range">([^<]+)<\/div>/.exec(pages[0])[1];
-  const total = /<tfoot>[\s\S]*?<td class="amt">([^<]+)<\/td>/.exec(pages[3])[1];
+  const total = /<tfoot>[\s\S]*?<td class="amt">[^<]+<\/td><td class="amt">([^<]+)<\/td>/.exec(pages[3])[1];
   assert.equal(page1, total);
   assert.match(pages[3], /Generic regional ranges/);
 });

@@ -145,11 +145,21 @@ for (const [name, terrain, want] of [
   });
 }
 
-test('well depth: the cost line prices the upper end of the range, wider when confidence is low', () => {
+// Owner request 2026-11-20: the well line prices the most likely depth x the central rate
+// ($51/ft + $4,500 pump package: midpoints of $42-$60/ft and $3,500-$5,500), the likely range is
+// the likely depth range x the same rate, and the deep well is a "could reach" note outside it.
+// Spokane: Ecology $200 on every figure, SRHD $180 on the high end and the tail.
+test('well depth: the cost line prices the most likely depth; the deep well is a note, not the range', () => {
   const at = terrain => dashboard(baseLast({ wells: wellsWith(terrain) })).page.run('window.AcresXCostModel.estimate(last)').components.well;
   const m = at(MODERATE), u = at(UPLAND);
-  assert.equal(m.high - at(MODERATE).high, 0);
-  assert.ok(u.high - m.high >= (1370 - 130) * 59, `upland high ${u.high} vs ${m.high}`);
+  // Moderate: central = the 100 ft median; likely 90-130 ft (the comparable 25th-75th percentile).
+  assert.deepEqual([m.central, m.low, m.high], [100 * 51 + 4500 + 200, 90 * 51 + 4500 + 200, 130 * 51 + 4500 + 200 + 180]);
+  assert.equal(m.tail, null);
+  // Low confidence, 250-1,370 ft: central = the 810 ft midpoint (static water 220 ft + 50 is shallower);
+  // likely 610-1,010 ft (+/- 25%); the 1,370 ft deep well is the tail at $60/ft + $5,500.
+  assert.deepEqual([u.central, u.low, u.high], [810 * 51 + 4500 + 200, 610 * 51 + 4500 + 200, 1010 * 51 + 4500 + 200 + 180]);
+  assert.equal(u.tail.value, 1370 * 60 + 5500 + 200 + 180);
+  assert.match(u.tail.text, /^Could reach ~\$88k if drilling to 1,370 ft \(one well 1\.0 mi away went to 1,365 ft/);
   assert.equal(m.confidence, 'Moderate');
   assert.equal(u.confidence, 'Low');
 });

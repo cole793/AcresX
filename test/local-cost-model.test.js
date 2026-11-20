@@ -70,25 +70,34 @@ const estimate = (opts, o) => page(facts(opts), o).est();
 
 // ---- Power
 
-// Avista Schedule 51 (2026-05-15), one home, assumed 100 ft service:
-//   overhead basic    = 5,952 + 12.04 d + 5,222 + 5.56 x 100 = 11,730 + 12.04 d
-//   underground basic = 2,754 + 14.31 d + 9,134 + 10.78 x 100 = 12,966 + 14.31 d
-//   secondary circuit, high end only: overhead + 2,466; underground + 688 + 13.18 x 100 = + 2,006
+// Avista Schedule 51 (2026-05-15), one home, primary d ft + service s ft:
+//   overhead basic    = 5,952 + 12.04 d + 5,222 + 5.56 s
+//   underground basic = 2,754 + 14.31 d + 9,134 + 10.78 s
+//   secondary circuit ("could exceed" only): overhead + 2,466; underground + 688 + 13.18 x 100
 //   cost = max(0, basic - allowance); WA allowance $7,210, ID $2,755.
-// Low = the cheaper of overhead and underground without a secondary; high = the dearest of the four.
-const OH = d => 11730 + 12.04 * d, UG = d => 12966 + 14.31 * d;
+// Most likely (owner request 2026-11-20): ONE design. A run (d + 100 ft service) of 150 ft or less
+// is an underground service, a longer one overhead. Mapped distance: likely range +/- 20% of that
+// design's cost; the dearest of the four designs is the "could exceed" note when above the range.
+const OHs = (d, s) => 11174 + 12.04 * d + 5.56 * s, UGs = (d, s) => 11888 + 14.31 * d + 10.78 * s;
+const OH = d => OHs(d, 100), UG = d => UGs(d, 100);
 const OH2 = d => OH(d) + 2466, UG2 = d => UG(d) + 688 + 13.18 * 100;
+const r = Math.round;
 for (const [county, provider, allowance] of [['Spokane', 'Avista Utilities', 7210], ['Kootenai', 'Avista Corp', 2755]]) {
-  test(`Avista ${STATE[county]} power: Schedule 51 range minus the $${allowance} allowance, secondary in the high end`, () => {
+  test(`Avista ${STATE[county]} power: one likely design at the mapped distance, +/- 20%, the dearest design as a note`, () => {
     for (const d of [0, 500, 1320, 2640]) {
       const e = estimate({ county, provider, distanceFt: d }).components.electric;
-      const lows = [OH(d), UG(d)].map(x => Math.round(x - allowance));
-      const highs = [OH(d), UG(d), OH2(d), UG2(d)].map(x => Math.round(x - allowance));
-      assert.deepEqual([e.low, e.high], [Math.min(...lows), Math.max(...highs)], `${county} at ${d} ft`);
+      const design = d + 100 <= 150 ? 'underground' : 'overhead';
+      const c = Math.max(0, (design === 'overhead' ? OH(d) : UG(d)) - allowance);
+      assert.deepEqual([e.central, e.low, e.high], [r(c), r(c * 0.8), r(c * 1.2)], `${county} at ${d} ft`);
+      assert.equal(e.design, design);
+      assert.equal(e.alternativeCost, r(Math.max(0, (design === 'overhead' ? UG(d) : OH(d)) - allowance)));
+      const dearest = Math.max(OH(d), UG(d), OH2(d), UG2(d)) - allowance;
+      if (dearest > r(c * 1.2)) assert.equal(e.tail.value, r(dearest)); else assert.equal(e.tail, null);
       assert.equal(e.quoteRecommended, true);
+      assert.equal(e.confidence, 'Moderate');
       assert.match(e.basis, new RegExp(`Avista ${STATE[county] === 'WA' ? 'Washington' : 'Idaho'} Schedule 51`));
-      assert.match(e.basis, new RegExp(`${d.toLocaleString('en-US')} ft of new primary`));
-      assert.match(e.basis, /secondary circuit, used only if Avista's design needs one \(overhead \$2,466; underground \$688 \+ \$13\.18\/ft over an assumed 100 ft\)/);
+      assert.match(e.basis, new RegExp(`${d.toLocaleString('en-US')} ft of new primary plus 100 ft of service`));
+      assert.match(e.basis, /secondary circuit, used only if Avista's design needs one \(overhead \$2,466; underground \$688 \+ \$13\.18\/ft over an assumed 100 ft\), is in the "could exceed" figure only/);
       assert.match(e.basis, /applies to homes meeting Avista's usage conditions \(at least (4,800|2,500) kWh a year of new load\)/);
       assert.match(e.basis, /A \$150 design fee, if Avista charged one up front, is credited/);
       assert.ok(e.sources.some(s => s.asOf === '2026-05-15' && s.verified), 'rate sheet date');
@@ -96,12 +105,15 @@ for (const [county, provider, allowance] of [['Spokane', 'Avista Utilities', 721
   });
 }
 
-test('Avista hand-checked values at 500 ft: WA $10,540-$14,917; ID $14,995-$19,372', () => {
-  // WA: 11,730 + 6,020 - 7,210 = 10,540; 12,966 + 7,155 + 2,006 - 7,210 = 14,917. ID: the same - 2,755.
+test('Avista hand-checked values at 500 ft: WA ~$10,540 ($8,432-$12,648), ID ~$14,995 ($11,996-$17,994)', () => {
+  // WA: 11,730 + 6,020 - 7,210 = 10,540 overhead; +/- 20%. Could exceed: underground + secondary
+  // 12,966 + 7,155 + 2,006 - 7,210 = 14,917. ID: the same with the $2,755 allowance.
   const wa = estimate({ county: 'Spokane', provider: 'Avista Utilities', distanceFt: 500 }).components.electric;
   const id = estimate({ county: 'Kootenai', provider: 'Avista Utilities', distanceFt: 500 }).components.electric;
-  assert.deepEqual([wa.low, wa.high], [10540, 14917]);
-  assert.deepEqual([id.low, id.high], [14995, 19372]);
+  assert.deepEqual([wa.central, wa.low, wa.high, wa.tail.value], [10540, 8432, 12648, 14917]);
+  assert.deepEqual([id.central, id.low, id.high, id.tail.value], [14995, 11996, 17994, 19372]);
+  assert.match(wa.summary, /^Power ~\$10,540 \(likely \$8,432–\$12,648\) — based on ~600 ft from the nearest line on Avista's published distribution line map; could exceed \$14,917 if the utility's design needs underground or extra equipment\.$/);
+  assert.match(wa.basis, /Alternative design: underground ~\$12,911 \(not in the total\)/);
   assert.equal(id.allowance, 2755);
   assert.equal(wa.allowance, 7210);
   // Idaho cites the filed tariff and the IPUC order that approved it as filed.
@@ -110,60 +122,115 @@ test('Avista hand-checked values at 500 ft: WA $10,540-$14,917; ID $14,995-$19,3
   assert.ok(!wa.sources.some(s => /37042/.test(s.name)));
 });
 
-test('Avista with the distance unknown: a labeled 100-1,320 ft range', () => {
-  const wa = estimate({ county: 'Spokane', provider: 'Avista Utilities' }).components.electric;
-  assert.deepEqual([wa.low, wa.high], [Math.round(OH(100) - 7210), Math.round(UG2(1320) - 7210)]);
-  assert.match(wa.basis, /Distance to Avista's line not mapped/);
-  assert.equal(wa.confidence, 'Low');
-  const id = estimate({ county: 'Kootenai', provider: 'Avista Utilities' }).components.electric;
-  assert.deepEqual([id.low, id.high], [Math.round(OH(100) - 2755), Math.round(UG2(1320) - 2755)]);
+test('Avista without a mapped line: the road distance is the likely run, priced as one design (no low x low to high x high)', () => {
+  // ROAD(300): run 300 ft (200 ft primary + 100 ft service), overhead; range 225-500 ft of run.
+  const e = estimate({ county: 'Spokane', provider: 'Avista Utilities', road: ROAD(300) }).components.electric;
+  assert.deepEqual([e.central, e.low, e.high], [r(OH(200) - 7210), r(OH(125) - 7210), r(OH(400) - 7210)]);
+  assert.equal(e.design, 'overhead');
+  assert.equal(e.runSource, 'road');
+  // Could exceed: the dearest design for a line extended 1,320 ft (twice 300 ft, at least a quarter mile).
+  assert.equal(e.tail.value, r(UG2(1220) - 7210));
+  assert.match(e.summary, /based on ~300 ft from Test Rd; could exceed \$[\d,]+ if the utility must extend a line farther \(~1,320 ft\)/);
+  assert.match(e.basis, /distribution usually follows roads, so the likely run is the 300 ft from the assumed homesite \(parcel interior point\) to Test Rd/);
+  assert.equal(e.confidence, 'Low');
+  // The old "100-1,320 ft x overhead-to-underground-with-secondary" span was $5,724-$38,284 for WA.
+  assert.ok(e.high - e.low < 4000, `likely range ${e.low}-${e.high}`);
+  // No road and no mapped line: a 500 ft planning run (range 200-1,000 ft), could exceed at 2,640 ft.
+  const u = estimate({ county: 'Spokane', provider: 'Avista Utilities' }).components.electric;
+  assert.deepEqual([u.central, u.low, u.high, u.tail.value], [r(OH(400) - 7210), r(OH(100) - 7210), r(OH(900) - 7210), r(UG2(2540) - 7210)]);
+  assert.match(u.basis, /Line distance not mapped and no road distance measured: an assumed ~500 ft run \(range 200-1,000 ft\)/);
+  assert.equal(u.runSource, 'unknown');
 });
 
-test('Kootenai Electric: $750 engineering fee plus a labeled generic range', () => {
+test('power design by distance: an underground service for a short run, overhead from the road beyond 150 ft', () => {
+  // ROAD(120): a 120 ft run = 20 ft of primary + the 100 ft service, underground.
+  const short = estimate({ county: 'Spokane', provider: 'Avista Utilities', road: ROAD(120) }).components.electric;
+  assert.equal(short.design, 'underground');
+  assert.equal(short.central, r(UG(20) - 7210));
+  assert.equal(short.alternativeCost, r(OH(20) - 7210));
+  assert.match(short.basis, /Likely design: an underground service from the nearest pole or transformer \(short run\)\. Alternative design: overhead/);
+  const long = estimate({ county: 'Spokane', provider: 'Avista Utilities', road: ROAD(600) }).components.electric;
+  assert.equal(long.design, 'overhead');
+  assert.match(long.basis, /Likely design: overhead from the road or line\. Alternative design: underground/);
+  // Inland: the short design under 150 ft, Long Overhead beyond.
+  const i1 = estimate({ county: 'Spokane', provider: 'Inland Power & Light', road: ROAD(120) }).components.electric;
+  assert.equal(i1.central, 8000);
+  assert.match(i1.basis, /"Short Underground from Overhead" at ~120 ft to the meter/);
+  const i2 = estimate({ county: 'Spokane', provider: 'Inland Power & Light', road: ROAD(600) }).components.electric;
+  assert.match(i2.basis, /"Long Overhead" at ~600 ft to the meter/);
+  // Long Overhead 500 ft 13,900 -> 1,000 ft 24,000: 600 ft = 13,900 + 10,100 x 100/500 = 15,920.
+  assert.equal(i2.central, 15920);
+});
+
+test('existing improvements on the parcel: service is likely already near, a ~150 ft run', () => {
+  const data = facts({ county: 'Yellowstone', provider: 'NORTHWESTERN ENERGY LLC - (MT)', road: ROAD(506) });
+  const p = page(data);
+  p.run('window.AcresXCoverage = { existingStructure: () => ({ improvements: 55720 }) };');
+  const e = p.est().components.electric;
+  // Generic rate $4,750 + $18/ft at 150 ft = 7,450, minus NorthWestern's $400 allowance.
+  assert.equal(e.runSource, 'structure');
+  assert.equal(e.central, 4750 + 150 * 18 - 400);
+  assert.equal(e.design, 'underground');
+  assert.match(e.basis, /the assessor lists improvements on the parcel \(\$55,720\), so service is likely already on or next to the site: an assumed ~150 ft run/);
+  // A road nearer than 150 ft sets the run.
+  const near = page(facts({ county: 'Yellowstone', provider: 'NORTHWESTERN ENERGY LLC - (MT)', road: ROAD(90) }));
+  near.run('window.AcresXCoverage = { existingStructure: () => ({ improvements: 55720 }) };');
+  assert.equal(near.est().components.electric.runFt, 90);
+});
+
+test('Kootenai Electric: $750 engineering fee floor on an AcresX planning-rate central value', () => {
+  // OSM pole at 400 ft: $4,750 + 400 x $18 = 11,950 central; +/- 25%; could exceed 6,000 + 400 x 22 =
+  // 14,800 is inside the range, so no note.
   const near = estimate({ county: 'Kootenai', provider: 'Kootenai Electric Cooperative', distanceFt: 400, distStatus: 'osm_mapped_proximity' }).components.electric;
-  assert.deepEqual([near.low, near.high], [3500 + 400 * 14, 6000 + 400 * 22]);
+  assert.deepEqual([near.central, near.low, near.high, near.tail], [11950, r(11950 * 0.75), r(11950 * 1.25), null]);
   assert.match(near.basis, /KEC prices each job; get a KEC estimate/);
   assert.match(near.basis, /\$750 engineering fee/);
+  assert.match(near.basis, /AcresX planning rate: \$4,750 \+ \$18\/ft \(midpoints of \$3,500-\$6,000 and \$14-\$22\/ft\)/);
   assert.ok(near.sources.some(s => /Kootenai Electric/.test(s.name) && s.verified));
   assert.ok(near.sources.some(s => !s.verified), 'the generic part is marked unverified');
+  // Nothing mapped, no road: 500 ft planning run (200-1,000 ft), could exceed 6,000 + 2,640 x 22.
   const far = estimate({ county: 'Kootenai', provider: 'Kootenai Electric Cooperative' }).components.electric;
-  assert.deepEqual([far.low, far.high], [5000, 25000]);
+  assert.deepEqual([far.central, far.low, far.high, far.tail.value], [13750, 8350, 22750, 64080]);
 });
 
-// Inland Power estimator, recorded 2026-11-12 (cost-tables.js power.inland.points): at each
-// recorded distance the cheapest-dearest design; linear between distances; meter = line distance + 100 ft.
-//   100 ft (short designs, nearest facility not a transformer): $8,000-$9,200; transformer: $1,600-$2,700
-//   200 ft: $10,300-$14,400 · 400 ft: $11,700-$17,800 · 1,000 ft: $15,600-$28,100 · 2,640 ft: $30,900-$55,700
-test('Inland Power: its online estimator, interpolated, with the transformer case and the 2,640 ft limit', () => {
+// Inland Power estimator, recorded 2026-11-12 (cost-tables.js power.inland.points): the likely
+// design's own curve (Short Underground from Overhead at 100 ft; Long Overhead from 200 ft),
+// linear between recorded distances; meter = line distance + 100 ft.
+test('Inland Power: the likely design from its online estimator, the transformer case and the 2,640 ft limit', () => {
   const at = d => estimate({ county: 'Spokane', provider: 'Inland Power & Light', distanceFt: d, distStatus: 'osm_mapped_proximity' }).components.electric;
+  // 300 ft OSM line + 100 ft: Long Overhead at 400 ft = $13,700, +/- 25%; the dearest design there
+  // (Long Overhead & Underground $17,800) is above the range: the note.
   const e300 = at(300);
-  assert.deepEqual([e300.low, e300.high], [11700, 17800]);
+  assert.deepEqual([e300.central, e300.low, e300.high, e300.tail.value], [13700, 10275, 17125, 17800]);
+  assert.equal(e300.alternativeCost, 14500);
   assert.match(e300.basis, /Inland Power online estimator, recorded 2026-11-12/);
   assert.match(e300.basis, /excludes trenching, conduit and vaults/);
   assert.ok(e300.sources.some(s => s.url === 'https://www.inlandpower.com/residential-service-estimator' && s.asOf === '2026-11-12' && s.verified));
+  // 0 ft + 100 ft: Short Underground from Overhead $8,000 (transformer: $2,700).
   const e0 = at(0);
-  assert.deepEqual([e0.low, e0.high], [8000, 9200]);
-  assert.match(e0.basis, /if it is a transformer: \$1,600-\$2,700/);
+  assert.deepEqual([e0.central, e0.low, e0.high, e0.tail], [8000, 6000, 10000, null]);
+  assert.match(e0.basis, /if it is a transformer: \$2,700/);
   const far = at(3000);
-  assert.deepEqual([far.low, far.high], [30900, 55700]);
+  assert.deepEqual([far.central, far.low, far.high], [51600, 38700, 64500]);
   assert.match(far.basis, /Beyond the estimator's 2,640 ft limit/);
-  // Unknown distance: 200 ft to 1,420 ft to the meter; 1,420 ft = 1,000 + 420/1,640 of the way to 2,640.
+  // Unknown distance, no road: Long Overhead at 500 ft (200-1,000 ft); could exceed: the dearest
+  // design at 2,640 ft. Before 2026-11-20 this spanned every design from 200 to 1,420 ft: $10,300-$45,201.
   const u = estimate({ county: 'Spokane', provider: 'Inland Power & Light' }).components.electric;
-  assert.deepEqual([u.low, u.high], [10300, Math.round(28100 + (55700 - 28100) * 420 / 1640)]);
+  assert.deepEqual([u.central, u.low, u.high, u.tail.value], [13900, 10300, 24000, 55700]);
   assert.equal(u.confidence, 'Low');
   // Kootenai has no Inland table: generic.
   const k = estimate({ county: 'Kootenai', provider: 'Inland Power & Light', distanceFt: 300, distStatus: 'osm_mapped_proximity' }).components.electric;
-  assert.deepEqual([k.low, k.high], [3500 + 300 * 14, 6000 + 300 * 22]);
+  assert.deepEqual([k.central, k.low, k.high], [10150, r(10150 * 0.75), r(10150 * 1.25)]);
 });
 
 test('Modern, Vera and unknown providers: generic, "no published tariff found"', () => {
   for (const provider of ['Modern Electric Water Co', 'Vera Water & Power']) {
     const e = estimate({ county: 'Spokane', provider, distanceFt: 300, distStatus: 'osm_mapped_proximity' }).components.electric;
-    assert.deepEqual([e.low, e.high], [3500 + 300 * 14, 6000 + 300 * 22]);
+    assert.deepEqual([e.central, e.low, e.high], [10150, r(10150 * 0.75), r(10150 * 1.25)]);
     assert.match(e.basis, new RegExp(`${provider.replace(/[&]/g, '\\&')}: no published line-extension tariff found`));
   }
   const none = estimate({ county: 'Spokane' }).components.electric;
-  assert.deepEqual([none.low, none.high], [5000, 25000]);
+  assert.deepEqual([none.central, none.low, none.high], [13750, 8350, 22750]);
   assert.match(none.basis, /Serving utility not identified/);
 });
 
@@ -229,24 +296,65 @@ const terrainWells = () => {
   return wells;
 };
 
-test('well: exact Ecology $200 / IDWR $75 fee + depth range, driller quote recommended', () => {
+// Most likely well (owner request 2026-11-20): central depth x $51/ft + $4,500 pump package (the
+// midpoints of the $42-$60/ft and $3,500-$5,500 planning rates); the likely range is the likely
+// depth range x the same rate (no low depth x low rate to high depth x high rate).
+test('well: exact Ecology $200 / IDWR $75 fee + the most likely depth, driller quote recommended', () => {
   const wells = terrainWells();
   const wa = estimate({ county: 'Spokane', wells, wria: { available: true, number: 57, name: 'Middle Spokane' } }).components.well;
-  // The range is priced: low end x low rate, high end x high rate.
-  assert.deepEqual([wa.low, wa.high], [190 * 42 + 3500 + 200, 210 * 60 + 5500 + 200 + 180]);
+  // 200 ft median, likely 190-210 ft; SRHD $180 only on the high end.
+  assert.deepEqual([wa.central, wa.low, wa.high], [200 * 51 + 4500 + 200, 190 * 51 + 4500 + 200, 210 * 51 + 4500 + 200 + 180]);
+  assert.equal(wa.tail, null);
   assert.match(wa.basis, /driller quote recommended/);
   assert.match(wa.basis, /Ecology notice of intent/);
   assert.match(wa.basis, /200 ft estimated well depth \(range 190–210 ft; 3 wells at similar elevation\)/);
+  assert.match(wa.basis, /Priced at 200 ft \(median of 3 comparable wells; likely range their 25th-75th percentile\), likely 190-210 ft, x \$51\/ft \+ \$4,500 pump, tank and wiring/);
+  assert.match(wa.summary, /^Well ~\$14,900 \(likely \$14,390–\$15,590\) — 200 ft most likely depth\.$/);
   assert.equal(wa.confidence, 'Moderate');
   const id = estimate({ county: 'Kootenai', wells }).components.well;
-  assert.deepEqual([id.low, id.high], [190 * 42 + 3500 + 75, 210 * 60 + 5500 + 75]);
+  assert.deepEqual([id.central, id.low, id.high], [200 * 51 + 4500 + 75, 190 * 51 + 4500 + 75, 210 * 51 + 4500 + 75]);
   assert.match(id.basis, /IDWR drilling permit \(domestic\) \$75/);
-  // Elevation not checked: the closest-five median, the high end widened to 1.5x, low confidence.
+  // Elevation not checked: the closest-five median 200 ft, range 200-300 ft (1.5x), low confidence:
+  // central = the 250 ft midpoint, likely +/- 25% inside the range (200-300 ft).
   const plain = [210, 190, 200].map(d => ({ properties: { CompletedDepth: d } }));
   const low = estimate({ county: 'Kootenai', wells: plain }).components.well;
-  assert.deepEqual([low.low, low.high], [200 * 42 + 3500 + 75, 300 * 60 + 5500 + 75]);
+  assert.deepEqual([low.central, low.low, low.high], [250 * 51 + 4500 + 75, 200 * 51 + 4500 + 75, 300 * 51 + 4500 + 75]);
   assert.equal(low.confidence, 'Low');
   assert.match(low.basis, /elevation not checked, low confidence/);
+});
+
+const terrainAnswer = estimate => { const w = [300, 320, 340].map(d => ({ properties: { CompletedDepth: d } })); w.terrain = { available: true, estimate: { usedCount: 8, parcelElevationFt: 3000, ...estimate } }; return w; };
+test('well central depth and likely range: comparable percentiles, deep wells as a note, low-confidence weighting', () => {
+  const plan = wells => estimate({ county: 'Kootenai', wells }).components.well;
+  // Moderate, deep wells raised the high end to 890 ft: likely = the comparable 25th-75th
+  // percentile (220-600 ft), the 890 ft deep-well top is the tail at $60/ft + $5,500 + $75.
+  const k = plan(terrainAnswer({ confidence: 'moderate', depthFt: 380, lowFt: 220, highFt: 890, planningDepthFt: 890, comparableCount: 5, comparableMedianFt: 380, comparableP25Ft: 220, comparableP75Ft: 600, deepWells: { count: 14, medianFt: 890, raisedHigh: true, single: null } }));
+  assert.deepEqual([k.depthPlan.centralFt, k.depthPlan.lowFt, k.depthPlan.highFt, k.depthPlan.tailFt], [380, 220, 600, 890]);
+  assert.deepEqual([k.central, k.low, k.high, k.tail.value], [380 * 51 + 4575, 220 * 51 + 4575, 600 * 51 + 4575, 890 * 60 + 5500 + 75]);
+  assert.match(k.tail.text, /^Could reach ~\$59k if drilling to 890 ft \(deep wells nearby; \$60\/ft \+ \$5,500 pump package\)\.$/);
+  assert.match(k.basis, /Not in the total\.$/);
+  // The same answer cached before the percentiles existed: central +/- 25% (290-480 ft).
+  const old = plan(terrainAnswer({ confidence: 'moderate', depthFt: 380, lowFt: 220, highFt: 890, planningDepthFt: 890, comparableCount: 5, deepWells: { count: 14, medianFt: 890, raisedHigh: true, single: null } }));
+  assert.deepEqual([old.depthPlan.lowFt, old.depthPlan.highFt, old.depthPlan.tailFt], [290, 480, 890]);
+  // Low confidence, mostly drainage wells, 4 at similar elevation (median 180 ft), static water 170 ft:
+  // (2 x 345 midpoint + 2 x 180) / 4 = 262.5 -> 260 ft (above 170 + 50); likely 230-330 ft; tail 460 ft.
+  const g = plan(terrainAnswer({ confidence: 'low', depthFt: 230, lowFt: 230, highFt: 460, planningDepthFt: 460, comparableCount: 4, comparableMedianFt: 180, waterLevelDepthFt: 170, waterLevelWells: 12, deepWells: { count: 0, raisedHigh: false, single: null } }));
+  assert.deepEqual([g.depthPlan.centralFt, g.depthPlan.lowFt, g.depthPlan.highFt, g.depthPlan.tailFt], [260, 230, 330, 460]);
+  assert.match(g.basis, /midpoint of the 230-460 ft low-confidence range, weighted toward 2 wells at similar elevation \(180 ft\)/);
+  assert.match(g.tail.text, /the top of the low-confidence depth range/);
+  // Static water 250 ft below the homesite: at least 300 ft, kept inside the 100-200 ft range.
+  const w = plan(terrainAnswer({ confidence: 'low', depthFt: 100, lowFt: 100, highFt: 200, planningDepthFt: 200, comparableCount: 0, waterLevelDepthFt: 250, waterLevelWells: 3, deepWells: { count: 0, raisedHigh: false, single: null } }));
+  assert.deepEqual([w.depthPlan.centralFt, w.depthPlan.lowFt, w.depthPlan.highFt, w.depthPlan.tailFt], [200, 150, 200, null]);
+  // No compounding anywhere: the likely range is depth x one rate, so its width is exactly
+  // (likely high ft - likely low ft) x $51 (+ high-end-only fees).
+  for (const x of [k, g, w]) assert.equal(x.high - x.low, (x.depthPlan.highFt - x.depthPlan.lowFt) * 51);
+});
+
+test('existing well recorded on the parcel: the inspection allowance, unchanged', () => {
+  const existingWell = { available: true, score: 65, match: { source: 'gwic', gwicId: 161578, completedDepth: 25, completionYear: 1994, evidence: { onParcel: true } } };
+  const w = estimate({ county: 'Yellowstone', existingWell, wells: terrainWells() }).components.well;
+  assert.deepEqual([w.label, w.low, w.high, w.central, w.tail], ['Existing well (due diligence)', 700, 1800, 1250, null]);
+  assert.match(w.basis, /Existing well recorded \(GWIC #161578, 25 ft, 1994\)/);
 });
 
 test('well in WRIA 55 adds the $500 surcharge + $3,000-$5,000 mitigation certificate; WRIA 54/56/57 add nothing', () => {
@@ -373,10 +481,13 @@ test('Montana is priced locally: Yellowstone and Gallatin profiles, coverage not
   }
 });
 
-test('Montana power: NorthWestern Rule 6 is the generic range minus the $400 allowance; co-ops add or credit their published fee', () => {
-  // Generic: $3,500-$6,000 + $14-$22/ft (distance known), else $5,000-$25,000.
+// Generic AcresX planning rate (no published per-foot rate): central $4,750 + $18/ft (midpoints of
+// $3,500-$6,000 and $14-$22/ft); mapped distance +/- 25%; nothing mapped and no road: a 500 ft run
+// (200-1,000 ft); could exceed: $6,000 + $22/ft at 2,640 ft.
+test('Montana power: NorthWestern Rule 6 is the planning-rate central value minus the $400 allowance; co-ops add or credit their published fee', () => {
+  const r = Math.round;
   const n = estimate({ county: 'Gallatin', provider: NWE, distanceFt: 400, distStatus: 'osm_mapped_proximity' }).components.electric;
-  assert.deepEqual([n.low, n.high], [3500 + 400 * 14 - 400, 6000 + 400 * 22 - 400]);
+  assert.deepEqual([n.central, n.low, n.high, n.tail], [11950 - 400, r(11950 * 0.75 - 400), r(11950 * 1.25 - 400), null]);
   assert.equal(n.formula, 'nwe-rule6');
   assert.match(n.basis, /NorthWestern Energy Rule No\. 6 \(effective 2020-03-01\)/);
   assert.match(n.basis, /actual construction cost minus a \$400 residential allowance/);
@@ -384,34 +495,39 @@ test('Montana power: NorthWestern Rule 6 is the generic range minus the $400 all
   assert.ok(n.sources.some(s => /Rule No\. 6/.test(s.name) && /rule_6_et\.pdf$/.test(s.url) && s.verified && s.asOf === '2020-03-01'));
   assert.ok(n.sources.some(s => !s.verified), 'the generic part stays an unverified estimate');
   const nu = estimate({ county: 'Yellowstone', provider: NWE }).components.electric;
-  assert.deepEqual([nu.low, nu.high], [4600, 24600]);
+  assert.deepEqual([nu.central, nu.low, nu.high, nu.tail.value], [13350, 7950, 22350, 64080 - 400]);
+  // With a road 430 ft away (Gallatin 06069905302080000, 2026-11-20): run 430 ft (323-645 ft).
+  const road = estimate({ county: 'Gallatin', provider: NWE, road: ROAD(430, 'SKY RIDGE DR') }).components.electric;
+  assert.deepEqual([road.central, road.low, road.high], [4750 + 430 * 18 - 400, r(4750 + 322.5 * 18 - 400), r(4750 + 645 * 18 - 400)]);
+  assert.equal(road.tail.value, 6000 + 1320 * 22 - 400);
   // YVEC: $150 deposit credited toward construction, so it only sets a floor.
   const y = estimate({ county: 'Yellowstone', provider: YVEC }).components.electric;
-  assert.deepEqual([y.label, y.low, y.high], ['Power (Yellowstone Valley Electric Cooperative)', 5000, 25000]);
+  assert.deepEqual([y.label, y.central, y.low, y.high], ['Power (Yellowstone Valley Electric Cooperative)', 13750, 8350, 22750]);
   assert.match(y.basis, /\$150 construction deposit \(non-refundable, credited toward construction charges\)/);
   assert.match(y.basis, /prepay 50% of the estimate up to \$2,000 and 100% above \$2,000/);
   assert.ok(y.sources.some(s => s.url === 'https://www.yvec.com/new-construction/' && s.verified));
   const m = estimate({ county: 'Yellowstone', provider: 'MID-YELLOWSTONE ELEC COOP, INC' }).components.electric;
-  assert.deepEqual([m.label, m.low, m.high], ['Power (Mid-Yellowstone Electric Cooperative)', 5000, 25000]);
+  assert.deepEqual([m.label, m.central, m.low, m.high], ['Power (Mid-Yellowstone Electric Cooperative)', 13750, 8350, 22750]);
   assert.match(m.basis, /may, but is not required to, contribute up to \$1,000/);
-  // Park Electric: $500 site visit fee, credited. Fall River: $250 estimate fee, added.
+  // Park Electric: $500 site visit fee, credited (floor). 0 ft OSM -> the 50 ft minimum run.
   const park = estimate({ county: 'Gallatin', provider: 'PARK ELECTRIC COOP INC', distanceFt: 0, distStatus: 'osm_mapped_proximity' }).components.electric;
-  assert.deepEqual([park.low, park.high], [3500 + 50 * 14, 6000 + 50 * 22]);
+  assert.deepEqual([park.central, park.low, park.high], [5650, r(5650 * 0.75), r(5650 * 1.25)]);
   assert.match(park.basis, /\$500 site visit fee/);
+  // Fall River: $250 estimate fee, added to every figure.
   const fr = estimate({ county: 'Gallatin', provider: 'FALL RIVER RURAL ELEC COOP INC' }).components.electric;
-  assert.deepEqual([fr.low, fr.high], [5250, 25250]);
-  assert.match(fr.basis, /\$250 estimate fee \(charged for every estimate\), added to the range/);
+  assert.deepEqual([fr.central, fr.low, fr.high, fr.tail.value], [14000, 8600, 23000, 64330]);
+  assert.match(fr.basis, /\$250 estimate fee \(charged for every estimate\), added/);
   const v = estimate({ county: 'Gallatin', provider: 'VIGILANTE ELECTRIC COOP INC' }).components.electric;
-  assert.deepEqual([v.low, v.high], [5000, 25000]);
+  assert.deepEqual([v.central, v.low, v.high], [13750, 8350, 22750]);
   assert.match(v.basis, /No published line-extension terms found/);
   for (const e of [n, y, m, park, fr, v]) assert.equal(e.quoteRecommended, true);
 });
 
-test('Montana well: DNRC $400 Notice of Intent + $250 Notice of Completion on both ends; no WRIA charge', () => {
+test('Montana well: DNRC $400 Notice of Intent + $250 Notice of Completion on every figure; no WRIA charge', () => {
   const wells = terrainWells();
   for (const county of ['Yellowstone', 'Gallatin']) {
     const w = estimate({ county, wells, wria: { available: true, number: 55, name: 'x' } }).components.well;
-    assert.deepEqual([w.low, w.high], [190 * 42 + 3500 + 650, 210 * 60 + 5500 + 650], county);
+    assert.deepEqual([w.central, w.low, w.high], [200 * 51 + 4500 + 650, 190 * 51 + 4500 + 650, 210 * 51 + 4500 + 650], county);
     assert.match(w.basis, /DNRC Notice of Intent \(Form 602I\) \$400 \+ DNRC Notice of Completion \(Form 602\) \$250/);
     assert.doesNotMatch(w.basis, /WRIA/);
     assert.ok(w.sources.some(s => /602I\.pdf$/.test(s.url) && s.asOf === '2026-01-01' && s.verified));
@@ -538,18 +654,23 @@ function pageWithSections(last, waiting) {
   // writes into the existing .cost-value element.
   const card = p.document.getElementById('developmentCostCard');
   const value = /class="cost-value">([^<]*)</.exec(card.innerHTML)?.[1] ?? card.querySelector('.cost-value')?.textContent;
-  return { value, est: p.run('window.AcresXCostModel.estimate()') };
+  return { value, html: card.innerHTML, est: p.run('window.AcresXCostModel.estimate()') };
 }
 const usdText = n => `$${n.toLocaleString('en-US')}`;
 
-test('dashboard card: a local county shows the model estimate once its inputs settled, in the report format', () => {
+test('dashboard card: a local county shows the most likely total and the likely range once its inputs settled', () => {
   const r = pageWithSections(facts({ county: 'Spokane', provider: 'Avista Utilities', distanceFt: 500, road: ROAD(250) }), []);
-  assert.equal(r.value, `${usdText(r.est.low)}–${usdText(r.est.high)}`);
+  assert.equal(r.value, `~$${Math.round(r.est.central / 1000)}k`);
+  assert.match(r.html, new RegExp(`Likely range ${usdText(r.est.low).replace('$', '\\$')}–${usdText(r.est.high).replace('$', '\\$')}`));
+  // Higher if: Avista's dearer design at the mapped 500 ft (not in the range).
+  assert.match(r.html, /class="cost-tail">Higher if: power extension\. Could exceed \$14,917/);
   assert.equal(r.est.low, Object.values(r.est.components).reduce((a, x) => a + x.low, 0));
   assert.equal(r.est.high, Object.values(r.est.components).reduce((a, x) => a + x.high, 0));
+  assert.equal(r.est.central, Object.values(r.est.components).reduce((a, x) => a + x.central, 0));
+  assert.ok(r.est.low <= r.est.central && r.est.central <= r.est.high);
   // Inputs still loading: the card is left to progressive-loading.js ("Updating…"), not repainted.
   const waiting = pageWithSections(facts({ county: 'Spokane', provider: 'Avista Utilities', distanceFt: 500 }), ['road access']);
-  assert.notEqual(waiting.value, `${usdText(waiting.est.low)}–${usdText(waiting.est.high)}`);
+  assert.notEqual(waiting.value, `~$${Math.round(waiting.est.central / 1000)}k`);
 });
 
 test('dashboard card: a county without local prices keeps the generic estimate', () => {
@@ -573,6 +694,45 @@ test('cost details show each line with basis, as-of date, source link, unverifie
   assert.match(html, /unverified/);
   assert.match(html, /Screening estimate, not a quote\./);
   assert.equal((html.match(/class="result-item cost-line"/g) || []).length, 6);
+});
+
+// Owner request 2026-11-20: "Most likely ~$X; likely range $A–$B; higher if: power extension, deep
+// well" on the dashboard card, and the same numbers on report pages 1 and 4.
+test('dashboard card and report: the same most likely total, likely range and "higher if" notes', () => {
+  const upland = terrainAnswer({ confidence: 'low', depthFt: 250, lowFt: 250, highFt: 1370, planningDepthFt: 1370, comparableCount: 0, waterLevelDepthFt: 220, waterLevelWells: 7, deepWells: { count: 1, medianFt: 1370, raisedHigh: true, single: { id: 'x', depthFt: 1365, dzFt: 105, distanceMi: 0.96 } } });
+  const data = () => facts({ county: 'Yellowstone', provider: YVEC, road: ROAD(284, 'CREST VIEW DR'), wells: upland, zoning: UNZONED, jurisdiction: 'Yellowstone County' });
+  const r = pageWithSections(data(), []);
+  const e = r.est;
+  assert.deepEqual(e.tails.map(t => t.what), ['deep well', 'power extension']);
+  for (const t of e.tails) assert.ok(t.value > e.components[t.key].high, `${t.what} note is above its line's likely range`);
+  assert.equal(e.high, Object.values(e.components).reduce((a, x) => a + x.high, 0), 'the tails are not added');
+  assert.match(r.html, /class="cost-tail">Higher if: deep well, power extension\. Could reach ~\$88k if drilling to 1,370 ft/);
+  const d = data();
+  const h = makeLazyContext({ mappedSqm: 1000, last: d });
+  for (const f of ['screening-inputs.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'acreage.js', 'property-report-v2.js']) h.run(readPublic(f));
+  h.context.__acresxLast = d;
+  h.generate();
+  const html = h.opened.at(-1);
+  const k = `$${Math.round(e.central / 1000)}k`;
+  assert.equal(r.value, `~${k}`);
+  assert.ok(html.includes(`<p class="t-label">Most likely about ${k}</p>`), 'page 1 most likely');
+  assert.ok(html.includes(`<div class="t-num t-range">${usdText(e.low)}–${usdText(e.high)}</div>`), 'page 1 likely range');
+  assert.ok(r.html.includes(`Likely range ${usdText(e.low)}–${usdText(e.high)}`), 'card likely range');
+  assert.ok(html.includes(`Total (matches page 1)</td><td class="amt">${usdText(e.central)}</td><td class="amt">${usdText(e.low)}–${usdText(e.high)}</td>`), 'page 4 total');
+  assert.match(html, /Higher if: deep well, power extension \(page 4\)\./);
+  assert.match(html, /<p class="cost-tails"><strong>Could be higher \(not in the likely range\):<\/strong> Could reach ~\$88k if drilling to 1,370 ft/);
+});
+
+test('generic counties: the report labels the line midpoints "Midpoint", not "Most likely"', () => {
+  const d = facts({ county: 'Stevens', provider: 'Avista Utilities' });
+  const h = makeLazyContext({ mappedSqm: 1000, last: d });
+  for (const f of ['screening-inputs.js', 'score-cost.js', 'screening-refinements.js', 'cost-tables.js', 'local-cost-model.js', 'public-utilities.js', 'acreage.js', 'property-report-v2.js']) h.run(readPublic(f));
+  h.context.__acresxLast = d;
+  h.generate();
+  const html = h.opened.at(-1);
+  assert.match(html, /<p class="t-label">Midpoint about \$\d+k<\/p>/);
+  assert.match(html, /<th class="amt">Midpoint<\/th><th class="amt">Range<\/th>/);
+  assert.doesNotMatch(html, /Most likely/);
 });
 
 test('the printable report shows the same lines with sources and dates', () => {

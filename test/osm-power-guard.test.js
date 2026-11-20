@@ -126,12 +126,12 @@ test('far OSM line: the cost model keeps the "not mapped" range and says the dis
   const none = page(withPower(await power([]))).electric();
   assert.equal(far.low, none.low);
   assert.equal(far.high, none.high);
-  assert.match(far.basis, /distance to Inland.s line not confirmed \(the nearest line mapped in OpenStreetMap is too far or too uncertain to price/);
+  assert.match(far.basis, /No mapped line distance \(the nearest line mapped in OpenStreetMap is too far or too uncertain to price/);
   assert.doesNotMatch(far.basis, /1,45\d ft/);
-  // Generic providers (no tariff): the planning allowance, not a per-foot price on 1,456 ft.
+  // Generic providers (no tariff): the road-based likely run, not a per-foot price on 1,456 ft.
   const coop = page(withPower(await power(FAR_LINE, { providers: ['NORTHERN LIGHTS INC'] }), 'NORTHERN LIGHTS INC')).electric();
-  assert.match(coop.basis, /line distance not confirmed/);
-  assert.doesNotMatch(coop.basis, /ft to mapped power/);
+  assert.match(coop.basis, /No mapped line distance \(the nearest line mapped in OpenStreetMap is too far/);
+  assert.doesNotMatch(coop.basis, /OpenStreetMap to the parcel/);
 });
 
 test('unknown-type OSM line nearby: never priced, "Distance not confirmed"', async () => {
@@ -160,7 +160,7 @@ test('near OSM pole (<= 1,000 ft): feeds the cost model, labelled "mapped lines 
   assert.match(c.status, /^Nearest power pole mapped in OpenStreetMap ~29\d ft — OSM maps few local lines here; the actual nearest line may be closer\. The utility confirms the route\. © OpenStreetMap contributors$/);
   assert.match(c.grade, /confidence · mapped lines only$/);
   const e = p.electric();
-  assert.match(e.basis, /29\d ft to mapped power \(a line or pole mapped in OpenStreetMap\)/);
+  assert.match(e.basis, /29\d ft from a line or pole mapped in OpenStreetMap to the parcel/);
   assert.match(e.basis, /Distance from mapped lines only: OSM maps few local lines here/);
   assert.match(e.basis, /Line data © OpenStreetMap contributors/);
   assert.equal(e.confidence, 'Moderate');
@@ -169,7 +169,7 @@ test('near OSM pole (<= 1,000 ft): feeds the cost model, labelled "mapped lines 
 test('near OSM minor_line: fed to the cost model (a different range from "not mapped")', async () => {
   const near = page(withPower(await power(NEAR_LINE))).electric();
   const none = page(withPower(await power([]))).electric();
-  assert.match(near.basis, /36\d ft to mapped power/);
+  assert.match(near.basis, /36\d ft from a line or pole mapped in OpenStreetMap to the parcel/);
   assert.notDeepEqual([near.low, near.high], [none.low, none.high]);
 });
 
@@ -187,7 +187,7 @@ test("Avista: its DER hosting-capacity line map takes precedence over a nearer-l
   const c = p.card();
   assert.match(c.status, /^Nearest distribution line on the Avista map ~18\d ft — the utility confirms the route$/);
   assert.doesNotMatch(c.status, /OpenStreetMap/);
-  assert.match(p.electric().basis, /distance from Avista's published distribution line map/);
+  assert.match(p.electric().basis, /18\d ft from Avista's published distribution line map to the parcel/);
 });
 
 test("Avista: its map shows no line nearby and OSM's line is far -> Avista's answer kept, OSM named but not priced", async () => {
@@ -198,7 +198,7 @@ test("Avista: its map shows no line nearby and OSM's line is far -> Avista's ans
   assert.equal(body.nearestLine.mappedOnly, true);
   const p = page(withPower(body, 'AVISTA CORP'));
   assert.equal(p.card().grade, 'Distance not confirmed — likely served, verify with AVISTA CORP');
-  assert.match(p.electric().basis, /Distance to Avista's line not confirmed/);
+  assert.match(p.electric().basis, /No mapped line distance \(the nearest line mapped in OpenStreetMap is too far/);
   // Avista near OSM (no Avista line) still uses OSM, labelled.
   const near = await power(NEAR_LINE, { providers: ['AVISTA CORP'] });
   assert.equal(near.distribution.status, 'osm_mapped_proximity');

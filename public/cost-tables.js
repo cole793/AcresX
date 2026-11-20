@@ -124,7 +124,32 @@
     // road or easement likely serves this parcel"). Both are AcresX assumptions.
     driveway: { widthFt: 12, baseDepthFt: 0.5, excavationDepthFt: 0.5, tonsPerCy: 1.5, unknownLengthFt: { low: 100, high: 500 }, minFt: 50, longFt: 1000, maxFt: 1500 },
     // Building-pad earthwork by slope tier (cy), on a 60 x 80 ft pad (4,800 sf).
-    padCy: { flat: { low: 89, high: 178 }, rolling: { low: 178, high: 356 }, steep: { low: 356, high: 622 }, verySteep: { low: 622, high: 1067 } }
+    padCy: { flat: { low: 89, high: 178 }, rolling: { low: 178, high: 356 }, steep: { low: 356, high: 622 }, verySteep: { low: 622, high: 1067 } },
+    // "Most likely" pricing (owner request 2026-11-20: the total range was too wide, mostly from
+    // power and wells, because lines were priced low quantity x low rate to high quantity x high
+    // rate). public/local-cost-model.js prices each power and well line at a central quantity x the
+    // central rate (the midpoint of the low/high rates above), gives a likely range from the main
+    // unknown only, and states the worst case in words ("could reach ...") outside the range.
+    // All AcresX assumptions (no official source); every one is named in the line's basis.
+    likely: {
+      well: {
+        bandPct: 0.25,          // likely depth range with low confidence: central +/- 25% (inside the depth range)
+        waterPenetrationFt: 50  // a well goes at least ~50 ft below the static water level at the homesite
+      },
+      power: {
+        shortRunFt: 150,        // a run this short or shorter: an underground service from the nearest pole/transformer
+        structureRunFt: 150,    // assessor lists improvements: service is likely already on or next to the site
+        minRunFt: 50,
+        unknownRunFt: 500,      // no mapped line, no improvements and no road answer
+        unknownBandFt: [200, 1000],
+        roadBand: { lowPct: 0.75, highPct: 1.5, minExtraFt: 200 }, // the line may be across the road or a few spans along it
+        mappedBandPct: 0.20,    // a utility-published line distance: +/- 20% (route, rock, design details)
+        osmBandPct: 0.25,       // an OpenStreetMap pole/line within 1,000 ft (mapped lines only)
+        genericMappedBandPct: 0.25, // no published per-foot rate (NorthWestern, co-ops, KEC, others) with a mapped distance
+        tailMinFt: 1320,        // "could exceed": a line extended at least a quarter mile ...
+        tailMaxFt: 2640         // ... and at most half a mile (twice the likely run in between)
+      }
+    }
   });
 
   // Montana, both counties. Neither county issues building permits outside city limits and neither
