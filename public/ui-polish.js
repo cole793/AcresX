@@ -131,6 +131,13 @@
     }
   }
 
+  // Time limit for /api/power-intelligence, counted from the moment the request is sent: the
+  // route's own budget (src/services/power-intelligence.js POWER_BUDGET_MS, 6 s) plus a wide margin
+  // for a cold Worker or a slow connection. When the answer asks the browser to load OpenStreetMap
+  // itself (browser-fallback.js osm-power), that query gets its own fresh limit, and if it still
+  // runs out the Worker's answer (utility map, transmission line) is kept, not thrown away.
+  const POWER_TIMEOUT_MS = 20000;
+
   // Once per search (window.AcresXSections, progressive-loading.js), with a time limit; an answer
   // for an older search is dropped.
   async function loadPowerIntelligence() {
@@ -146,7 +153,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(identity),
-        signal: sections?.timeoutSignal()
+        signal: sections?.timeoutSignal(POWER_TIMEOUT_MS)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `Power intelligence returned ${response.status}`);

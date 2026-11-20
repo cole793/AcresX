@@ -2067,15 +2067,28 @@
       const url = new URL(raw, here);
       if (url.origin !== new URL(here).origin) return response;
       if (!Object.values(KINDS).some(k => k.api === url.pathname) || !/json/i.test(response?.headers?.get?.('Content-Type') || '')) return response;
-      const data = await response.clone().json();
+      // The Worker's answer is read in full first. The page's signal also cancels the body of
+      // `response`, so when that signal fires while the browser query runs (a section or follow-up
+      // time limit), the original response can no longer be read ("The user aborted a request."
+      // on 5 of 6 production power lookups, 2026-11-20). The copy below is not tied to it, so the
+      // Worker's own (partial) answer is kept.
+      const text = await response.clone().text();
+      const data = JSON.parse(text);
       const hint = data?.fallback;
       // Two kinds share /api/zoning-permits (Kootenai, Stevens): the hint names which one.
       const kind = hint && Object.prototype.hasOwnProperty.call(KINDS, hint.kind) && KINDS[hint.kind].api === url.pathname ? hint.kind : null;
       if (!kind || hint.mode !== 'browser') return response;
       const signal = init?.signal || (typeof Request !== 'undefined' && input instanceof Request ? input.signal : undefined);
+      // The original while it can still be read; a copy once the signal has fired.
+      const kept = () => (signal?.aborted ? new Response(text, { status: response.status, statusText: response.statusText, headers: response.headers }) : response);
       try { root.AcresXSections?.extend?.(signal, EXTEND_MS); } catch { /* optional */ }
-      const body = await run(kind, hint.input, { signal, base: data });
-      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+      try {
+        const body = await run(kind, hint.input, { signal, base: data });
+        return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+      } catch (error) {
+        try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ }
+        return kept();
+      }
     } catch (error) {
       try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ }
       return response;
