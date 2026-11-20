@@ -151,6 +151,13 @@ test('deep wells: 3 comparable + one deep well -> note only; two deep wells rais
   assert.equal(two.highFt, 950, 'two deep wells: their median');
   assert.equal(two.deepWells.raisedHigh, true);
   assert.equal(two.depthFt, one.depthFt, 'the central estimate is unchanged');
+  // The comparable wells' own statistics (rules v5, for the cost model's most likely depth and
+  // likely range) stay at their 25th-75th percentile, never raised by the deep wells.
+  assert.deepEqual([two.comparableMedianFt, two.comparableP25Ft, two.comparableP75Ft], [120, 110, 130]);
+  assert.deepEqual([one.comparableMedianFt, one.comparableP25Ft, one.comparableP75Ft], [120, 110, 130]);
+  const none = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...valleyWells(8), ...deepWells(1, 3.5)]) });
+  assert.deepEqual([none.comparableMedianFt, none.comparableP25Ft, none.comparableP75Ft], [null, null, null]);
+  assert.ok(WELL_TERRAIN_RULES_VERSION >= 5, 'the cache key changes with the added fields');
   // Three comparable wells but mostly drainage (low confidence): still the two-well rule.
   const drained = estimateWellDepth({ parcelElevationFt: 2400, wells: byDistance([...valleyWells(8), ...comparableWells(3).map(w => ({ ...w, distanceMi: w.distanceMi + 0.9 })), ...deepWells(1, 0.3)]) });
   assert.equal(drained.comparableCount, 3);

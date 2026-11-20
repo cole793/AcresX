@@ -57,7 +57,9 @@ export const WELL_TERRAIN = Object.freeze({
 //   2  2026-11-18  two deep wells needed to raise the high end
 //   3  2026-11-18  with no comparable well, one deep well sets the top of the range
 //   4  2026-11-18  with fewer than 3 comparable wells, one deep well sets the top of the range
-export const WELL_TERRAIN_RULES_VERSION = 4;
+//   5  2026-11-20  comparableMedianFt / comparableP25Ft / comparableP75Ft added (the cost model's
+//                  "most likely" well depth and likely range, before any deep-well raise)
+export const WELL_TERRAIN_RULES_VERSION = 5;
 export const WELL_TERRAIN_CACHE_PREFIX = 'https://acresx.internal/cache/well-depth-terrain/v2/';
 // ~11 m: one homesite point per parcel; the same parcel always sends the same point.
 export const wellTerrainCacheKey = (state, lat, lon) => ({ rules: WELL_TERRAIN_RULES_VERSION, state, lat: Number(lat.toFixed(4)), lon: Number(lon.toFixed(4)) });
@@ -140,8 +142,12 @@ export function candidateOf(feature, home) {
 //     in the search radius sets the top of the range (deepWells.raisedHigh), and the note names
 //     it (depth, distance, height, flowing artesian, approximate location) with "ask a local
 //     driller".
-// planningDepthFt (the cost model's well line) is the high end; scoreDepthFt (the score's water
-// factor and the card grade) is the median when confidence is moderate, the high end when low.
+// planningDepthFt is the high end (the cost model's "could reach" deep-well note); scoreDepthFt (the
+// score's water factor and the card grade) is the median when confidence is moderate, the high end
+// when low. comparableMedianFt / comparableP25Ft / comparableP75Ft (2026-11-20, null without a
+// comparable well): the comparable wells' own median and 25th-75th percentile, never raised by deep
+// wells, so the cost model (public/local-cost-model.js wellPlan) can price the most likely depth
+// and keep the deep-well tail as a separate note.
 export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRAIN) {
   const Ep = finite(parcelElevationFt);
   if (Ep == null) return null;
@@ -192,6 +198,9 @@ export function estimateWellDepth({ parcelElevationFt, wells }, cfg = WELL_TERRA
     confidence: moderate ? 'moderate' : 'low',
     depthFt: r(depth), lowFt: r(Math.min(low, depth)), highFt: r(Math.max(high, depth)),
     comparableCount: comparable.length,
+    comparableMedianFt: comparable.length ? r(median(comparable.map(w => w.depthFt))) : null,
+    comparableP25Ft: comparable.length ? r(quantile(comparable.map(w => w.depthFt), 0.25)) : null,
+    comparableP75Ft: comparable.length ? r(quantile(comparable.map(w => w.depthFt), 0.75)) : null,
     comparableMaxMi: comparable.length ? Math.round(Math.max(...comparable.map(w => w.distanceMi)) * 100) / 100 : null,
     usedCount: used.length,
     wellsWithElevation: known.length,
