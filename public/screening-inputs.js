@@ -16,7 +16,8 @@
 //   (CompletedDepth > 0) of the residential-comparable wells among the closest five
 //   (nonresidential types left out; all five when none is clearly residential), labelled
 //   "elevation not checked, low confidence", with a widened range.
-//   stats(data).planningDepth: the high end of the range (the cost model's well line);
+//   stats(data).planningDepth: the high end of the range (the cost model's "could reach" deep-well
+//   note; the cost line itself prices the most likely depth, local-cost-model.js wellPlan);
 //   scoreDepth: the depth grade(s) and the score's water factor use (median at moderate
 //   confidence, the high end at low). An on-parcel well record (existing-well.js) is a separate
 //   fact, not this number.
@@ -103,6 +104,9 @@
         scoreDepth: finite(e.scoreDepthFt) ?? (confidence === 'moderate' ? e.depthFt : highFt),
         parcelElevationFt: finite(e.parcelElevationFt ?? t.parcelElevationFt),
         waterLevelDepthFt: finite(e.waterLevelDepthFt), waterLevelWells: e.waterLevelWells || 0,
+        // The comparable wells' own median and 25th-75th percentile, never raised by deep wells
+        // (null without a comparable well, or in a cached answer from before 2026-11-20).
+        comparableMedianFt: finite(e.comparableMedianFt), comparableP25Ft: finite(e.comparableP25Ft), comparableP75Ft: finite(e.comparableP75Ft),
         drainage: e.drainage || null, higher: e.higher || null, deepWells: e.deepWells || null,
         searchRadiusMiles: finite(t.searchRadiusMiles)
       };

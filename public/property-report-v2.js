@@ -305,14 +305,21 @@
     const labels = { well: 'Well / water', septic: 'Septic', electric: 'Power', power: 'Power', driveway: 'Driveway / access', sitework: 'Site work', permits: 'Permits' };
     const lines = Object.entries(e?.components || {}).map(([key, x]) => ({ key, ...x, label: x.label || labels[key] || key, low: num(x.low), high: num(x.high) }))
       .filter(x => x.low != null || x.high != null)
-      .map(x => ({ ...x, low: x.low ?? x.high, high: Math.max(x.high ?? x.low, x.low ?? x.high) }));
+      .map(x => ({ ...x, low: x.low ?? x.high, high: Math.max(x.high ?? x.low, x.low ?? x.high) }))
+      // Most likely value per line (local-cost-model.js `central`, 2026-11-20), inside its range.
+      // Generic counties have no central estimate: their lines' midpoint, labelled "Midpoint".
+      .map(x => ({ ...x, central: Math.min(x.high, Math.max(x.low, num(x.central) ?? (x.low + x.high) / 2)) }));
     if (!lines.length) return null;
-    // The total is the sum of the lines shown (page 1 and page 3 print this same pair).
+    // The total is the sum of the lines shown (page 1 and page 4 print this same pair), and the
+    // most likely total the sum of their central values (the dashboard card shows the same).
     const low = lines.reduce((s, x) => s + Math.round(x.low), 0), high = lines.reduce((s, x) => s + Math.round(x.high), 0);
+    const central = lines.reduce((s, x) => s + Math.round(x.central), 0);
+    // Worst-case notes ("could exceed ...", "could reach ..."): listed, never added.
+    const tails = lines.filter(x => x.tail && num(x.tail.value) > x.high).map(x => ({ key: x.key, label: x.label, what: x.tail.what || x.label, value: x.tail.value, text: x.tail.text }));
     // Connection alternatives of "likely" public water/sewer (public-utilities.js) and the unverified
     // listing note: shown under the table, never in the total (the dashboard card shows the same).
     const alternatives = lines.map(x => x.alternative).filter(Boolean);
-    return { lines, low, high, local: Boolean(e.local), note: e.coverageNote || (e.local ? '' : 'Generic regional ranges; local prices not yet sourced for this county.'), missingNote: e.missingNote || '', alternatives, listingNote: e.listingNote || '' };
+    return { lines, low, high, central, tails, local: Boolean(e.local), note: e.coverageNote || (e.local ? '' : 'Generic regional ranges; local prices not yet sourced for this county.'), missingNote: e.missingNote || '', alternatives, listingNote: e.listingNote || '' };
   }
 
   // Confidence tag per cost line, from the `verified` flags of its sources (cost-tables.js):
@@ -705,12 +712,14 @@
     const rows = c.lines.map((l, i) => {
       const tag = costTag(l);
       const refs = (l.sources || []).filter(s => s.name).map(s => S.add(s.name, { url: s.url, date: !s.asOf ? '' : /^undated$/i.test(s.asOf) ? 'undated' : `as of ${s.asOf}`, verified: s.verified }));
-      if (l.basis) notes.push(`<li><strong>${esc(l.label)}</strong>${S.mark(refs)}<span class="amt-note">${esc(range(l.low, l.high))}</span><p>${esc(l.basis)}</p></li>`);
-      const alt = l.alternative ? `<tr class="alt"><td colspan="3">${esc(l.alternative.text)} <em>Alternative, not in the total.</em></td></tr>` : '';
-      return `<tr><td><strong>${esc(l.label)}</strong>${S.mark(refs)}</td><td><span class="tag ${tag.cls}">${esc(tag.text)}</span></td><td class="amt">${esc(range(l.low, l.high))}</td></tr>${alt}`;
+      if (l.basis) notes.push(`<li><strong>${esc(l.label)}</strong>${S.mark(refs)}<span class="amt-note">${Math.round(l.low) === Math.round(l.high) ? esc(range(l.low, l.high)) : `~${esc(usd(l.central))} (likely ${esc(range(l.low, l.high))})`}</span><p>${esc(l.basis)}</p></li>`);
+      const alt = l.alternative ? `<tr class="alt"><td colspan="4">${esc(l.alternative.text)} <em>Alternative, not in the total.</em></td></tr>` : '';
+      return `<tr><td><strong>${esc(l.label)}</strong>${S.mark(refs)}</td><td><span class="tag ${tag.cls}">${esc(tag.text)}</span></td><td class="amt">${esc(usd(l.central))}</td><td class="amt">${esc(range(l.low, l.high))}</td></tr>${alt}`;
     }).join('');
-    return `<table class="costs"><thead><tr><th>Line</th><th>Confidence</th><th class="amt">Range</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2">Total (matches page 1)</td><td class="amt">${esc(range(c.low, c.high))}</td></tr></tfoot></table>
-${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in the estimate or the score.</p>` : ''}<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} Midpoint about ${esc(kRange((c.low + c.high) / 2, (c.low + c.high) / 2))}. Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.appendixPage ? `<p class="pointer">How each line was estimated: appendix, page ${f.appendixPage}.</p>` : ''}`;
+    // Worst cases, stated in words and never added (owner request 2026-11-20).
+    const tails = c.tails?.length ? `<p class="cost-tails"><strong>Could be higher (not in the likely range):</strong> ${c.tails.map(t => esc(t.text)).join(' ')}</p>` : '';
+    return `<table class="costs"><thead><tr><th>Line</th><th>Confidence</th><th class="amt">${c.local ? 'Most likely' : 'Midpoint'}</th><th class="amt">${c.local ? 'Likely range' : 'Range'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2">Total (matches page 1)</td><td class="amt">${esc(usd(c.central))}</td><td class="amt">${esc(range(c.low, c.high))}</td></tr></tfoot></table>
+${tails}${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in the estimate or the score.</p>` : ''}<p class="muted">Screening estimate, not a quote. ${esc(c.note || '')} ${c.local ? `Most likely about ${esc(kRange(c.central, c.central))}: the sum of each line's most likely value; the likely range is the sum of the lines' likely ranges.` : `Midpoint about ${esc(kRange(c.central, c.central))}.`} Exact fees are used where an official schedule was found; everything else is a labeled planning range.</p>${f.appendixPage ? `<p class="pointer">How each line was estimated: appendix, page ${f.appendixPage}.</p>` : ''}`;
   }
 
   function checklist(data, f) {
@@ -758,9 +767,10 @@ ${c.listingNote ? `<p class="listing-note">${esc(c.listingNote)}. Not used in th
     const acresTile = bx.measured
       ? `<article class="tile t-acres"><h3>Buildable acres</h3><div class="t-num">${esc(bx.acres)}<small> of ${esc(bx.parcelAcres)} ac</small></div><p class="t-label">About ${esc(bx.keep)}% of the parcel</p><p class="t-why">Screening estimate after mapped flood, wetland and steep-slope areas. Breakdown on page ${PAGE_NO.details}.</p></article>`
       : `<article class="tile t-acres"><h3>Buildable acres</h3><div class="t-num t-na">Not measured</div><p class="t-why">${esc(bx.why)}</p></article>`;
-    const mid = cost ? kRange((cost.low + cost.high) / 2, (cost.low + cost.high) / 2) : '';
+    const mid = cost ? kRange(cost.central, cost.central) : '';
+    const higher = cost?.tails?.length ? ` Higher if: ${cost.tails.map(t => t.what).join(', ')} (page ${PAGE_NO.costs}).` : '';
     const costTile = cost
-      ? `<article class="tile t-cost"><h3>Site development cost</h3><div class="t-num t-range">${esc(range(cost.low, cost.high))}</div><p class="t-label">Midpoint about ${esc(mid)}</p><p class="t-why">Screening estimate, not a quote. ${cost.lines.length} cost lines on page ${PAGE_NO.costs}.</p></article>`
+      ? `<article class="tile t-cost"><h3>Site development cost</h3><div class="t-num t-range">${esc(range(cost.low, cost.high))}</div><p class="t-label">${cost.local ? 'Most likely' : 'Midpoint'} about ${esc(mid)}</p><p class="t-why">${cost.local ? 'Likely range shown. ' : ''}Screening estimate, not a quote. ${cost.lines.length} cost lines on page ${PAGE_NO.costs}.${esc(higher)}</p></article>`
       : `<article class="tile t-cost"><h3>Site development cost</h3><div class="t-num t-na">${NA}</div><p class="t-why">Cost inputs were not available when this report was generated. Screening estimate, not a quote.</p></article>`;
     return `<div class="tiles">${scoreTile}${acresTile}${costTile}</div>`;
   }
@@ -962,6 +972,7 @@ table{border-collapse:collapse;width:100%}
 .costs tfoot td{border-top:1px solid var(--rule-2);border-bottom:0;font-weight:600;padding-top:9px}.costs tfoot td.amt{font-size:11.5pt}
 .costs tr{break-inside:avoid}.costs tr.alt td{font-size:var(--fs-cap);color:var(--ink-2);padding-top:0}
 .listing-note{font-size:var(--fs-small);color:var(--caution);margin:8px 0 0}
+.cost-tails{font-size:var(--fs-small);color:var(--caution);margin:8px 0 0}
 .costs+p,.costs~p.muted{margin-top:10px}
 .tag{font-size:var(--fs-cap);color:var(--ink-2);white-space:nowrap}.tag.estimate{color:var(--caution)}.tag.fee,.tag.local{color:var(--accent)}
 .pointer{font-size:var(--fs-small);color:var(--accent);margin-top:6px}

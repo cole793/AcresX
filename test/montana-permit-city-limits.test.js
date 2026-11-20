@@ -115,6 +115,6 @@ test('report page 3 prints the same permit line and total as the dashboard estim
   const usd = n => `$${Math.round(n).toLocaleString('en-US')}`;
   assert.ok(text.includes(`Permits (state electrical, plumbing + approach)`), 'permit line label');
   assert.ok(text.includes(`${usd(e.components.permits.low)}–${usd(e.components.permits.high)}`), 'permit range');
-  assert.ok(text.includes(`Total (matches page 1) ${usd(e.low)}–${usd(e.high)}`), 'total');
+  assert.ok(text.includes(`Total (matches page 1) ${usd(e.central)} ${usd(e.low)}–${usd(e.high)}`), "total: most likely and likely range");
   assert.match(text, /Confirm with City of Billings that a home is allowed in RR3/, 'the zoning checklist still names the City (its zoning applies)');
 });

@@ -74,8 +74,8 @@ test('page 1: header, address line, map, three tiles, at most 5 findings, discla
   assert.match(p1, /<p class="t-why">[^<]+\.<\/p>/);
   // Buildable acres tile.
   assert.match(p1, /<div class="t-num">6\.6<small> of 20\.6 ac<\/small><\/div><p class="t-label">About 32\.1% of the parcel<\/p>/);
-  // Cost tile: range and midpoint.
-  assert.match(p1, /<div class="t-num t-range">\$[\d,]+–\$[\d,]+<\/div><p class="t-label">Midpoint about \$\d+k<\/p>/);
+  // Cost tile: likely range and the most likely total.
+  assert.match(p1, /<div class="t-num t-range">\$[\d,]+–\$[\d,]+<\/div><p class="t-label">Most likely about \$\d+k<\/p>/);
   // Key findings: at most 5, risks first, one dot each, no filled flag boxes.
   const levels = [...p1.split('<ul class="kf">')[1].split('</ul>')[0].matchAll(/<li class="(\w+)"><i class="dot \1"><\/i>/g)].map(m => m[1]);
   assert.ok(levels.length >= 3 && levels.length <= 5, `${levels.length} findings`);
@@ -101,9 +101,9 @@ test('every fact lands on a page: findings, site conditions, cost lines, checkli
   for (const bit of ['<div class="zone-code">', '<table class="uses">', '<ul class="overlays">', '<div class="assessor">']) assert.ok(pages[2].includes(bit), bit);
   // Cost: page 1 tile = page 4 total = sum of the lines; what the total sums is said on page 4.
   const tile = /<div class="t-num t-range">([^<]+)<\/div>/.exec(pages[0])[1];
-  const total = /Total \(matches page 1\)<\/td><td class="amt">([^<]+)<\/td>/.exec(pages[3])[1];
+  const total = /Total \(matches page 1\)<\/td><td class="amt">[^<]+<\/td><td class="amt">([^<]+)<\/td>/.exec(pages[3])[1];
   assert.equal(tile, total);
-  const lines = [...pages[3].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
+  const lines = [...pages[3].split('<tfoot>')[0].matchAll(/<td class="amt">[^<]+<\/td><td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
   assert.deepEqual(lines.reduce((s, [lo, hi]) => [s[0] + lo, s[1] + hi], [0, 0]), amounts(total));
   assert.match(pages[3], /The total is the sum of 6 lines: well, septic, power, driveway, site work, permits\./);
   assert.equal((pages[3].match(/<li><p><strong>/g) || []).length, 7, 'the before-you-buy checklist');
