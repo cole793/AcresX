@@ -372,7 +372,11 @@
     else if (terrain.gradePct <= 15) sitework = { low: 16000, high: 32000, basis: `${terrain.gradePct.toFixed(1)}% estimated average grade` };
     else sitework = { low: 28000, high: 60000, basis: `${terrain.gradePct.toFixed(1)}% estimated average grade` };
 
-    const power = utilityFound ? { low: 5000, high: 25000, basis: 'Utility territory identified; distribution distance not yet mapped' } : { low: 10000, high: 35000, basis: 'Utility service proximity unverified' };
+    // A county with local power prices only (Stevens: public/cost-tables.js scope 'power') prices
+    // power from the utility's tariff and the mapped line (public/local-cost-model.js); the
+    // other lines stay on these generic ranges.
+    const localPower = window.AcresXCostModel?.powerOnlyLine?.(last) || null;
+    const power = localPower || (utilityFound ? { low: 5000, high: 25000, basis: 'Utility territory identified; distribution distance not yet mapped' } : { low: 10000, high: 35000, basis: 'Utility service proximity unverified' });
     const driveway = { low: 5000, high: 20000, basis: 'Placeholder allowance until access/driveway length is modeled' };
     const PU = window.AcresXUtilities;
     if (PU) { well = PU.waterCost(well, last); septic = PU.sewerCost(septic, last); }
@@ -397,7 +401,7 @@
     title.textContent = 'Preliminary Development Cost';
     // Which inputs were missing, when soil / terrain did not load (local-cost-model.js).
     const missing = window.AcresXCostModel?.missingNote ? window.AcresXCostModel.missingNote(window.AcresXCostModel.missingInputs(last)) : '';
-    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${missing ? `<div class="notice cost-missing">${missing}</div>` : ''}${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>${window.AcresXCostModel ? `${window.AcresXCostModel.GENERIC_NOTE} ` : ''}Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
+    root.innerHTML = `<div class="cost-detail-total"><span>Preliminary planning range</span><strong>${money(estimate.low)}–${money(estimate.high)}</strong></div>${missing ? `<div class="notice cost-missing">${missing}</div>` : ''}${Object.entries(estimate.components).map(([key,item]) => `<div class="result-item"><div class="result-top"><h4>${item.label || labels[key]}</h4><span class="badge">${money(item.low)}–${money(item.high)}</span></div><div class="notice">${item.basis}</div></div>`).join('')}<div class="notice"><strong>Screening estimate only.</strong><br>${window.AcresXCostModel ? `${window.AcresXCostModel.coverageNote ? window.AcresXCostModel.coverageNote(last) : window.AcresXCostModel.GENERIC_NOTE} ` : ''}Actual costs depend on final homesite location, utility design, drilling conditions, septic design, access, permitting and contractor pricing.</div>`;
     detail.classList.add('show');
     detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

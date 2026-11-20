@@ -63,6 +63,10 @@
     return { county, state, key: `${state}:${county.toLowerCase()}` };
   }
   function profile(l) { const T = tables(); return T ? T.COUNTIES[where(l).key] || null : null; }
+  // A county with local prices for every line. A profile with scope 'power' (Stevens) has local
+  // power prices only: the other lines stay on the generic ranges (screening-refinements.js).
+  function fullProfile(l) { const C = profile(l); return C && C.scope !== 'power' ? C : null; }
+  function powerOnlyProfile(l) { const C = profile(l); return C && C.scope === 'power' ? C : null; }
 
   const ref = (entry, extra = {}) => ({ name: entry.source?.name || '', url: entry.source?.url || '', asOf: entry.asOf || '', verified: Boolean(entry.verified), ...extra });
   const refs = entry => (entry.sources || [entry.source]).map(s => ({ name: s.name, url: s.url, asOf: entry.asOf || '', verified: Boolean(entry.verified) }));
@@ -720,7 +724,7 @@
   function estimate(l) {
     l = current(l);
     if (!l?.parcel) return null;
-    const C = profile(l);
+    const C = fullProfile(l);
     const missing = missingInputs(l);
     const extra = { missingInputs: missing, missingNote: missingNote(missing) };
     if (C) return { ...localEstimate(l, C), ...extra };
@@ -729,8 +733,28 @@
     if (!base) return null;
     // Generic counties (screening-refinements.js buckets, unchanged): each line's central value is
     // the midpoint of its range, so the dashboard and the report show the same most likely total.
-    const components = Object.fromEntries(Object.entries(base.components || {}).map(([k, x]) => [k, { ...x, central: x.central ?? round((Number(x.low) + Number(x.high)) / 2) }]));
-    return { ...base, components, local: false, ...mostLikely(components), coverageNote: GENERIC_NOTE, ...context(components, l), ...extra };
+    // A power-only profile (Stevens) replaces the power bucket with the local power line.
+    const P1 = powerOnlyLine(l);
+    const merged = P1 ? { ...(base.components || {}), power: P1 } : (base.components || {});
+    const components = Object.fromEntries(Object.entries(merged).map(([k, x]) => [k, { ...x, central: x.central ?? round((Number(x.low) + Number(x.high)) / 2) }]));
+    const low = Object.values(components).reduce((a, x) => a + x.low, 0);
+    const high = Object.values(components).reduce((a, x) => a + x.high, 0);
+    return { ...base, low, high, components, local: false, ...mostLikely(components), coverageNote: coverageText(l), ...context(components, l), ...extra };
+  }
+
+  // The local power line for a power-only profile (Stevens), or null (any other county, or no
+  // parcel). screening-refinements.js uses it in place of its generic power bucket.
+  function powerOnlyLine(l) {
+    l = current(l);
+    const C = l?.parcel ? powerOnlyProfile(l) : null;
+    if (!C) return null;
+    try { return power(l, C, tables().PLANNING); } catch (error) { console.error('AcresX local power line failed', error); return null; }
+  }
+  function coverageText(l) {
+    const C = powerOnlyProfile(l);
+    if (!C) return GENERIC_NOTE;
+    const avista = /\bavista\b/i.test(powerFacts(l).provider) && C.power.avista;
+    return `${avista ? `Power priced from Avista's Washington Schedule 51 for ${C.label}` : `Power priced with the AcresX planning rate and this parcel's likely service run (${C.label})`}; other lines are generic regional ranges (local prices not yet sourced for this county).`;
   }
 
   // ---- Cost context: road access + watershed (/api/cost-context follow-up, local counties only;
@@ -744,7 +768,8 @@
   }
   function claimCostContext() {
     const l = current();
-    if (!l?.parcel || !profile(l) || l.costContext) return null;
+    // Power-only profiles (Stevens) have no county road layer or local well price to feed.
+    if (!l?.parcel || !fullProfile(l) || l.costContext) return null;
     const point = parcelPoint(l.parcel);
     if (!point) return null;
     const S = root.AcresXSections;
@@ -827,9 +852,11 @@
     const S = root.AcresXSections;
     if (S && (typeof S.waitingFor === 'function' ? S.waitingFor('cost').length : !S.ready('cost'))) return;
     addStyles();
-    if (!profile(l)) {
+    if (!fullProfile(l)) {
       // Generic counties: the card from score-cost.js / screening-refinements.js, plus the label.
-      if (!card.querySelector('.cost-coverage')) { const n = document.createElement('div'); n.className = 'cost-coverage'; n.textContent = GENERIC_NOTE; card.appendChild(n); }
+      let n = card.querySelector('.cost-coverage');
+      if (!n) { n = document.createElement('div'); n.className = 'cost-coverage'; card.appendChild(n); }
+      n.textContent = coverageText(l);
       const note = missingNote(missingInputs(l));
       let m = card.querySelector('.cost-missing');
       if (note && !m) { m = document.createElement('div'); m.className = 'cost-missing'; card.appendChild(m); }
@@ -843,7 +870,7 @@
     card.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault?.(); showDetails(); } };
   }
 
-  const M = { estimate, missingInputs, missingNote, local: l => Boolean(profile(l)), profile, avistaCost, drivewayRate, kootenaiPermit, wellPlan, tailsShort, coverageNote: l => (profile(l) ? estimate(l)?.coverageNote || '' : GENERIC_NOTE), GENERIC_NOTE, render, showDetails, detailsHtml, claimCostContext, loadCostContext };
+  const M = { estimate, missingInputs, missingNote, local: l => Boolean(fullProfile(l)), profile, powerOnlyLine, avistaCost, drivewayRate, kootenaiPermit, wellPlan, tailsShort, coverageNote: l => (fullProfile(l) ? estimate(l)?.coverageNote || '' : coverageText(l)), GENERIC_NOTE, render, showDetails, detailsHtml, claimCostContext, loadCostContext };
   root.AcresXCostModel = M;
   // Older callers (property-report-v2.js before this change, tests): the Spokane estimate.
   root.__acresxSpokaneCostEstimate = () => (where().key === 'WA:spokane' ? estimate() : null);

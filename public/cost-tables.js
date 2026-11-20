@@ -87,6 +87,12 @@
     designFeeCredit: { value: 150, unit: 'credited if paid', asOf: '2026-05-15', source, verified: true }
   });
 
+  // Avista Washington Schedule 51 applies across Avista's Washington territory (Spokane and Stevens).
+  const AVISTA_WA_POWER = Object.freeze({
+    ...avistaRates(AVISTA_WA),
+    allowance: { value: 7210, unit: 'per individual residence', asOf: '2025-05-15', source: AVISTA_WA, verified: true, note: 'Sheet 51A; the March 2026 rate filing did not change the allowance. Needs at least 4,800 kWh/yr of new load.', condition: 'at least 4,800 kWh a year of new load' }
+  });
+
   // AcresX allowances shared by both local counties. Not from any official source; always labeled.
   const PLANNING = Object.freeze({
     // Power where no tariff is published (the generic counties' allowance).
@@ -182,10 +188,7 @@
     'WA:spokane': {
       key: 'WA:spokane', state: 'WA', county: 'Spokane', label: 'Spokane County, WA', researched: '2026-11-12',
       power: {
-        avista: {
-          ...avistaRates(AVISTA_WA),
-          allowance: { value: 7210, unit: 'per individual residence', asOf: '2025-05-15', source: AVISTA_WA, verified: true, note: 'Sheet 51A; the March 2026 rate filing did not change the allowance. Needs at least 4,800 kWh/yr of new load.', condition: 'at least 4,800 kWh a year of new load' }
-        },
+        avista: AVISTA_WA_POWER,
         // Inland Power publishes no tariff; its online estimator (JavaScript, public, no login or
         // bot check; robots.txt allows it) was driven in headless Chromium on 2026-11-12 and its
         // "Estimated Cost" recorded per design. Distance = feet from the nearest electrical
@@ -345,6 +348,18 @@
         aggregatePerTon: { low: 29, high: 34.20, asOf: '2026-10-20', sources: [ITD], verified: true, note: '3/4" aggregate type B for base, low-bid medians (District 1 / statewide)' },
         excavationPerCy: { low: 21, high: 24, asOf: '2026-10-20', sources: [ITD], verified: true, note: 'Excavation, low-bid medians (statewide / District 1)' }
       }
+    },
+    // Stevens County, WA: local POWER prices only (scope 'power', 2026-11-20). Avista serves most
+    // of the county (every Stevens validation parcel), and its Washington Schedule 51 is the same
+    // tariff as in Spokane County, so a line on Avista's published map is priced from it. The
+    // other electric utilities whose territory reaches the county (HIFLD retail territories:
+    // Inland Power & Light, PUD No 1 of Pend Oreille County, PUD No 1 of Ferry County, City of
+    // Chewelah) publish no tariff here, so they get the AcresX planning rate with the likely-run
+    // rules (public/local-cost-model.js power()). Wells, septic, permits, driveway and site work
+    // stay on the generic regional ranges: no Stevens price for them is sourced.
+    'WA:stevens': {
+      key: 'WA:stevens', state: 'WA', county: 'Stevens', label: 'Stevens County, WA', researched: '2026-11-20', scope: 'power',
+      power: { avista: AVISTA_WA_POWER }
     },
     'MT:yellowstone': {
       key: 'MT:yellowstone', state: 'MT', county: 'Yellowstone', label: 'Yellowstone County, MT', researched: '2026-11-14',

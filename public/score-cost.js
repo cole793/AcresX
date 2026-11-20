@@ -123,9 +123,10 @@
     else if (terrain.gradePct <= 15) sitework = { low: 16000, high: 32000, basis: `${terrain.gradePct.toFixed(1)}% estimated average grade` };
     else sitework = { low: 28000, high: 60000, basis: `${terrain.gradePct.toFixed(1)}% estimated average grade` };
 
-    const power = utilityFound
+    // Local power prices only (Stevens): the same power line as screening-refinements.js.
+    const power = window.AcresXCostModel?.powerOnlyLine?.(last) || (utilityFound
       ? { low: 5000, high: 25000, basis: 'Utility territory identified; distribution distance not yet mapped' }
-      : { low: 10000, high: 35000, basis: 'Utility service proximity unverified' };
+      : { low: 10000, high: 35000, basis: 'Utility service proximity unverified' });
 
     const driveway = { low: 5000, high: 20000, basis: 'Placeholder allowance until access/driveway length is modeled' };
     const PU = window.AcresXUtilities;
