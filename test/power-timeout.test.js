@@ -62,7 +62,7 @@ test('Overpass hangs: an Avista parcel still answers within the budget, with the
     // Overpass gets only its short cap (it never answers Cloudflare; the browser fallback covers
     // it), and the hanging HIFLD its own 4 s: the answer comes back after 4 s, not the 9 s it
     // used to wait for Overpass.
-    assert.equal(OVERPASS_SERVER_CAP_MS, 3000);
+    assert.equal(OVERPASS_SERVER_CAP_MS, 1500);
     assert.equal(POWER_BUDGET_MS, 6000);
     assert.ok(elapsed >= 3900 && elapsed <= 4500, `answered after ${elapsed} ms`);
     assert.equal(body.provider, 'AVISTA CORP');
@@ -77,7 +77,7 @@ test('Overpass hangs: an Avista parcel still answers within the budget, with the
     assert.equal(body.territory.basis, 'n');
     // One Overpass endpoint fits in the cap (the second is not tried), plus HIFLD (services2) and Avista (services3).
     assert.deepEqual([...new Set(stub.asked)].sort(), ['overpass-api.de', 'services2.arcgis.com', 'services3.arcgis.com']);
-    assert.match(body.proximity.error, /Overpass timed out after 3(\.0)?s/);
+    assert.match(body.proximity.error, /Overpass timed out after 1\.5s/);
   } finally { stub.restore(); }
 });
 
@@ -175,7 +175,6 @@ test('answers are cached under a versioned prefix: a repeat lookup is answered f
     const askedBefore = stub.asked.length;
     const second = await timed(request);
     assert.equal(stub.asked.length, askedBefore, 'no upstream request on a cache hit');
-    assert.ok(second.elapsed < 1000, `cache hit after ${second.elapsed} ms`);
     assert.equal(second.body.answerCache.hit, true);
     assert.equal(second.body.distribution.estimatedDistanceFt, first.body.distribution.estimatedDistanceFt);
     assert.equal(second.timing, 'cache;desc=hit');

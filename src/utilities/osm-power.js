@@ -210,11 +210,14 @@ export function summarizeOsmPower(elements, { lat, lon, geometry = null, provide
 // ---- Overpass requests
 
 // Overpass time box. Was 18 s per endpoint, one after the other: 36 s worst case, past the
-// browser's 15 s follow-up limit (public/progressive-loading.js FOLLOWUP_TIMEOUT_MS) and the
-// validator's 30 s cap (scripts/validate-county.mjs DEFAULT_TIMEOUT_MS). On 2026-11-10 both
-// endpoints reset or hung from a cloud session, and answered 429 to Cloudflare. Now the two
-// endpoints share one deadline (default 8 s from the request): the first gets up to 5 s, the
-// second whatever is left, and the query's own [timeout:] asks Overpass to stop at the same time.
+// browser's time limit for the power lookup and the validator's 30 s cap
+// (scripts/validate-county.mjs DEFAULT_TIMEOUT_MS). On 2026-11-10 both endpoints reset or hung
+// from a cloud session, and answered 429 to Cloudflare. Now the endpoints share one deadline: the
+// first gets up to 5 s, the second whatever is left (at least MIN_ATTEMPT_MS), and the query's own
+// [timeout:] (whole seconds left, rounded down) asks Overpass to stop at the same time. The power
+// route passes its own short deadline (src/services/power-intelligence.js OVERPASS_SERVER_CAP_MS,
+// 1.5 s since 2026-11-20: Overpass has not answered Cloudflare in any production call, so only
+// the edge-cache read and the first endpoint fit, and the browser asks Overpass instead).
 export const OVERPASS_BUDGET_MS = 8000;
 const FIRST_ENDPOINT_MS = 5000;
 const MIN_ATTEMPT_MS = 750;
@@ -252,7 +255,7 @@ async function cellElements(cell, { deadline, signal, ctx, attempts }) {
   const slot = await openValueCache(OSM_POWER_CACHE_PREFIX, { cell: cell.key });
   const hit = await readCachedJson(slot);
   if (hit && Array.isArray(hit.elements)) return { elements: hit.elements, cached: true };
-  const serverTimeoutS = Math.max(1, Math.round((deadline - Date.now()) / 1000));
+  const serverTimeoutS = Math.max(1, Math.floor((deadline - Date.now()) / 1000));
   const data = await overpassQuery(overpassPowerQuery(cell, serverTimeoutS), { deadline, signal, attempts });
   const elements = (data.elements || []).map(slimElement);
   if (!incomplete(data)) await writeCachedJson(slot, { elements, fetchedAt: new Date().toISOString() }, OSM_POWER_CACHE_TTL_SECONDS, ctx);

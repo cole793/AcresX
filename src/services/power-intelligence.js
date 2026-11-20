@@ -19,12 +19,12 @@ import { openValueCache, readCachedJson, writeCachedJson } from '../shared/edge-
 // never answered Cloudflare (12/12 timeouts or 521s) and the route waited the full 9 s for it,
 // while HIFLD and Avista's map had answered long before. The browser then asked Overpass itself
 // (the osm-power fallback) under the same 15 s clock, which ran out 6 s later and threw the
-// server's answer away ("The user aborted a request."). Now Overpass gets a short cap
-// (OVERPASS_SERVER_CAP_MS: an edge-cache hit or a fast answer still counts; the browser fallback
-// covers the rest), the other sources keep their own 4 s limits, and the whole route is boxed at
-// POWER_BUDGET_MS.
+// server's answer away ("The user aborted a request."). Now Overpass gets a short cap,
+// OVERPASS_SERVER_CAP_MS (an edge-cache hit or a fast answer still counts; the browser fallback
+// covers the rest). The other sources keep their own 4 s limits (preview, 2026-11-20: HIFLD
+// 109-279 ms, Avista 62 ms), and the whole route is boxed at POWER_BUDGET_MS.
 export const POWER_BUDGET_MS = 6000;
-export const OVERPASS_SERVER_CAP_MS = 3000;
+export const OVERPASS_SERVER_CAP_MS = 1500;
 const SOURCE_TIMEOUT_MS = 4000;
 
 // Whole answers are cached (edge cache, versioned prefix; bump the version on any change to the
