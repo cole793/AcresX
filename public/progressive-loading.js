@@ -13,6 +13,7 @@
 //   settle(key)          a claimed follow-up finished; score/cost inputs re-render the summary.
 //   isCurrent(searchId)  false once a newer search started (drop that answer).
 //   ready('score'|'cost') whether every input of the buildability score / cost estimate settled.
+//   touch()              re-render after a settled answer in `last` was upgraded later.
 //   extend(signal, ms)   gives the pending section whose request carries `signal` a new time limit
 //                        of ms from now, once per attempt (public/browser-fallback.js calls it when a
 //                        Worker answer asks the browser to load that layer itself). The section
@@ -147,6 +148,9 @@
       if (!run) return true;
       return !run.dirty && S.waitingFor(kind).length === 0;
     },
+    // Data in `last` changed after its section or follow-up settled (power-intelligence upgraded
+    // by the browser's OpenStreetMap answer, ui-polish.js): re-render the summary, score and cost.
+    touch() { if (!run) return; run.dirty = true; scheduleRender(); },
     timedOut() { return run ? SECTION_NAMES.filter(n => run.status[n] === 'timeout') : []; },
     extend(signal, ms) {
       const extendOnce = signal && typeof signal === 'object' ? extenders.get(signal) : null;

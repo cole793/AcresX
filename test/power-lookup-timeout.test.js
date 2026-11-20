@@ -127,3 +127,108 @@ test('ui-polish sends /api/power-intelligence with a 20 s limit created in the f
   assert.ok(log.includes('settle:powerIntelligence'));
   assert.equal(h.context.last.powerIntelligence.nearestLine.distanceFt, 1291);
 });
+
+// ---- The page applies the Worker's answer at once, then upgrades it from the browser's own
+// OpenStreetMap answer when that gives a usable distribution distance (<= 1,000 ft guard).
+
+const CENTER = { lat: 47.6, lon: -117.4 };
+const FT_PER_DEG_LAT = 364000;
+const pole = ft => ({ type: 'node', id: 1, lat: CENTER.lat + ft / FT_PER_DEG_LAT, lon: CENTER.lon, tags: { power: 'pole' } });
+
+// ui-polish.js + browser-fallback.js on the fake DOM. overpass(url) answers the browser query
+// ({ delay, elements } or 'hang'). AcresXSections is a stand-in that records settle/touch.
+function powerPage({ workerMs = 1500, overpass = () => 'hang' } = {}) {
+  const clock = makeClock();
+  const log = [];
+  const fetch = (input, init = {}) => {
+    const url = new URL(String(input), 'https://acresx.test/');
+    log.push(`${clock.now} ${url.hostname}${url.pathname}`);
+    return new Promise((resolve, reject) => {
+      const fail = () => reject(Object.assign(new Error('The user aborted a request.'), { name: 'AbortError' }));
+      if (init.signal?.aborted) return fail();
+      init.signal?.addEventListener?.('abort', fail);
+      if (url.pathname === '/api/power-intelligence') return clock.setTimeout(() => resolve(browserLikeResponse(WORKER_ANSWER, init.signal)), workerMs);
+      const a = overpass(url);
+      if (a !== 'hang') clock.setTimeout(() => resolve(new Response(JSON.stringify({ elements: a.elements }), { status: 200, headers: { 'Content-Type': 'application/json' } })), a.delay || 0);
+    });
+  };
+  const sections = { searchId: 1 };
+  const h = makeContext({
+    body: [['span', { id: 'powerStatus' }, ''], ['span', { id: 'powerGrade' }, ''], ['span', { id: 'powerDot' }, ''], ['div', { id: 'detailCard' }]],
+    clock, fetch, autoIds: true,
+    extra: {
+      URLSearchParams, Response, Headers,
+      location: { href: 'https://acresx.test/', pathname: '/', search: '', hash: '', assign() {} },
+      turf: { centroid: () => ({ geometry: { coordinates: [CENTER.lon, CENTER.lat] } }) },
+      AcresXSections: {
+        get searchId() { return sections.searchId; },
+        claim: () => true, isCurrent: id => id === sections.searchId,
+        settle: key => log.push(`${clock.now} settle:${key}`), touch: () => log.push(`${clock.now} touch`),
+        timeoutSignal: ms => { const c = new AbortController(); clock.setTimeout(() => c.abort(), ms); return c.signal; }
+      }
+    }
+  });
+  h.ctx.__last = { parcel: { type: 'Feature', properties: { ORIG_PARCEL_ID: 'P1' }, geometry: null }, utility: ['INLAND POWER & LIGHT COMPANY'], powerIntelligence: null };
+  h.run('var last = __last; var activeTab = "wells"; var esc = s => String(s ?? ""); function renderSummary() {}', 'inline.js');
+  h.run(readPublic('ui-polish.js'), 'ui-polish.js');
+  h.run(readPublic('browser-fallback.js'), 'browser-fallback.js');
+  return { ...h, clock, log, sections, last: () => h.ctx.last, status: () => h.document.getElementById('powerStatus').textContent };
+}
+
+test('the Worker answer is on the card at once (not after the browser query); a pole 300 ft away then upgrades it', async () => {
+  const p = powerPage({ workerMs: 1500, overpass: () => ({ delay: 4000, elements: [pole(300)] }) });
+  const warn = console.warn; console.warn = () => {};
+  try {
+    p.run('renderSummary()');
+    await p.clock.advance(1600);
+    // Settled with the Worker's answer 1.5 s after the send, while Overpass is still running.
+    assert.equal(p.last().powerIntelligence.nearestLine.distanceFt, 1291);
+    assert.ok(p.log.includes('1500 settle:powerIntelligence'), p.log.join(' | '));
+    assert.ok(p.log.some(l => l.endsWith('overpass-api.de/api/interpreter')), 'the browser query started');
+    assert.match(p.status(), /transmission line ~1,291 ft/);
+    await p.clock.advance(4500);
+    const pi = p.last().powerIntelligence;
+    assert.equal(pi.distribution.status, 'osm_mapped_proximity');
+    assert.ok(Math.abs(pi.distribution.estimatedDistanceFt - 300) <= 2, `${pi.distribution.estimatedDistanceFt} ft`);
+    assert.equal(pi.distribution.usableForCost, true);
+    assert.equal(pi.proximity.loadedFrom, 'browser');
+    assert.ok(p.log.some(l => / touch$/.test(l)), 'the summary, score and cost re-render');
+    assert.match(p.status(), /power pole mapped in OpenStreetMap ~300 ft/);
+    assert.deepEqual({ ...p.ctx.AcresXFallback.loaded() }, { 'osm-power': 'OpenStreetMap (Overpass API)' });
+  } finally { console.warn = warn; }
+});
+
+test('a far OSM line (2,000 ft, over the 1,000 ft guard) does not replace the Worker answer, and no "loaded from" label', async () => {
+  const p = powerPage({ overpass: () => ({ delay: 2000, elements: [pole(2000)] }) });
+  p.run('renderSummary()');
+  await p.clock.advance(10000);
+  assert.equal(p.last().powerIntelligence.distribution.status, 'no_verified_distance');
+  assert.equal(p.last().powerIntelligence.nearestLine.distanceFt, 1291);
+  assert.ok(!p.log.some(l => / touch$/.test(l)));
+  assert.deepEqual({ ...p.ctx.AcresXFallback.loaded() }, {});
+});
+
+test('Overpass hangs in the browser too: the Worker answer stays, the browser query is given up quietly', async () => {
+  const p = powerPage();
+  const warn = console.warn; const warned = []; console.warn = (...a) => warned.push(a.join(' '));
+  try {
+    p.run('renderSummary()');
+    await p.clock.advance(2000);
+    assert.equal(p.last().powerIntelligence.nearestLine.distanceFt, 1291);
+    await p.clock.advance(60000);
+    assert.equal(p.last().powerIntelligence.nearestLine.distanceFt, 1291);
+    assert.equal(p.last().powerIntelligence.error, undefined);
+    assert.ok(!p.log.some(l => / touch$/.test(l)));
+  } finally { console.warn = warn; }
+});
+
+test('a new search before the browser answers: the old parcel\'s OSM answer is dropped', async () => {
+  const p = powerPage({ overpass: () => ({ delay: 4000, elements: [pole(300)] }) });
+  p.run('renderSummary()');
+  await p.clock.advance(2000);
+  p.sections.searchId = 2; // progressive loading started another search
+  p.ctx.AcresXFallback.reset();
+  await p.clock.advance(6000);
+  assert.equal(p.last().powerIntelligence.distribution.status, 'no_verified_distance');
+  assert.ok(!p.log.some(l => / touch$/.test(l)));
+});
