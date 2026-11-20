@@ -1,34 +1,19 @@
 {
-  "runId": "44620839493",
+  "runId": "44818602070",
   "county": "Spokane",
   "alerting": false,
   "aboveThreshold": false,
   "changed": true,
   "title": "Validation: Spokane — 0 layers broken",
-  "body": "The scheduled county validation for Spokane, WA found broken layers (run 2026-11-19T21:44:40.724Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44620839493\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Flood: 1 of 12 (32322.9002)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 1, still broken 0, recovered 12, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 32322.9002 | Flood | ok | error | HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404 |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 48121.9001 | Soil | error | ok | HTTP 503 |\n| 48121.9001 | Terrain | error | ok | HTTP 503 |\n| 48121.9001 | Property tax | error | ok | HTTP 503 |\n| 48121.9001 | Listing | error | unavailable | HTTP 503 |\n| 32322.9002 | Existing well | error | ok | HTTP 503 |\n| 32322.9002 | Soil | error | ok | HTTP 503 |\n| 32322.9002 | Terrain | error | ok | HTTP 503 |\n| 32322.9002 | Slope grid | error | ok | HTTP 503 |\n| 32322.9002 | Public water/sewer | error | ok | HTTP 503 |\n| 32322.9002 | Zoning | error | ok | HTTP 503 |\n| 32322.9002 | Assessment | mismatch | ok | assessment.propertyClass: expected \"83\", got null |\n| 32322.9002 | Listing | error | unavailable | HTTP 503 |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-19T21:44:40.724Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44620839493\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Flood: 1 of 12 (32322.9002)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 1, still broken 0, recovered 12, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 32322.9002 | Flood | ok | error | HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404 |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 48121.9001 | Soil | error | ok | HTTP 503 |\n| 48121.9001 | Terrain | error | ok | HTTP 503 |\n| 48121.9001 | Property tax | error | ok | HTTP 503 |\n| 48121.9001 | Listing | error | unavailable | HTTP 503 |\n| 32322.9002 | Existing well | error | ok | HTTP 503 |\n| 32322.9002 | Soil | error | ok | HTTP 503 |\n| 32322.9002 | Terrain | error | ok | HTTP 503 |\n| 32322.9002 | Slope grid | error | ok | HTTP 503 |\n| 32322.9002 | Public water/sewer | error | ok | HTTP 503 |\n| 32322.9002 | Zoning | error | ok | HTTP 503 |\n| 32322.9002 | Assessment | mismatch | ok | assessment.propertyClass: expected \"83\", got null |\n| 32322.9002 | Listing | error | unavailable | HTTP 503 |\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-19T21:44:40.724Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44620839493\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Flood: 1 of 12 (32322.9002)\n",
+  "body": "The scheduled county validation for Spokane, WA found broken layers (run 2026-11-20T21:20:56.447Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44818602070\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 0, still broken 0, recovered 1, newly unavailable 0.\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 32322.9002 | Flood | error | ok | HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404 |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-20T21:20:56.447Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44818602070\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 0, still broken 0, recovered 1, newly unavailable 0.\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 32322.9002 | Flood | error | ok | HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404 |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-20T21:20:56.447Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/44818602070\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/spokane-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n",
   "decision": {
     "alerting": false,
     "aboveThreshold": false,
     "alertLayers": [],
     "watchLayers": [],
-    "belowThreshold": [
-      {
-        "layer": "flood",
-        "label": "Flood",
-        "count": 1,
-        "total": 12,
-        "previousCount": 0,
-        "parcels": [
-          {
-            "parcelId": "32322.9002",
-            "status": "error",
-            "detail": "HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404"
-          }
-        ]
-      }
-    ],
+    "belowThreshold": [],
     "minParcels": 3,
     "comparable": true,
     "reason": null
@@ -36,100 +21,15 @@
   "changes": {
     "comparable": true,
     "reason": null,
-    "newlyBroken": [
-      {
-        "parcelId": "32322.9002",
-        "layer": "flood",
-        "was": "ok",
-        "now": "error",
-        "detail": "HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404"
-      }
-    ],
+    "newlyBroken": [],
     "stillBroken": [],
     "recovered": [
       {
-        "parcelId": "48121.9001",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "48121.9001",
-        "layer": "terrain",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "48121.9001",
-        "layer": "tax",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "48121.9001",
-        "layer": "listing",
-        "was": "error",
-        "now": "unavailable",
-        "detail": "HTTP 503"
-      },
-      {
         "parcelId": "32322.9002",
-        "layer": "existingWell",
+        "layer": "flood",
         "was": "error",
         "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "soil",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "terrain",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "slope",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "publicUtilities",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "zoning",
-        "was": "error",
-        "now": "ok",
-        "detail": "HTTP 503"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "assessment",
-        "was": "mismatch",
-        "now": "ok",
-        "detail": "assessment.propertyClass: expected \"83\", got null"
-      },
-      {
-        "parcelId": "32322.9002",
-        "layer": "listing",
-        "was": "error",
-        "now": "unavailable",
-        "detail": "HTTP 503"
+        "detail": "HTTP 502: Flood data unavailable: FEMA NFHL timeout after 8s; retry timeout after 6s; Esri USA Flood Hazard Areas returned 404"
       }
     ],
     "newlyUnavailable": []
