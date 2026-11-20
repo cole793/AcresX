@@ -13,6 +13,7 @@
 //   settle(key)          a claimed follow-up finished; score/cost inputs re-render the summary.
 //   isCurrent(searchId)  false once a newer search started (drop that answer).
 //   ready('score'|'cost') whether every input of the buildability score / cost estimate settled.
+//   touch()              re-render after a settled answer in `last` was upgraded later.
 //   extend(signal, ms)   gives the pending section whose request carries `signal` a new time limit
 //                        of ms from now, once per attempt (public/browser-fallback.js calls it when a
 //                        Worker answer asks the browser to load that layer itself). The section
@@ -114,11 +115,23 @@
         scheduleRender();
       }
     },
-    // An AbortSignal that fires after ms (follow-up requests use it as their time limit).
+    // An AbortSignal that fires after ms (follow-up requests use it as their time limit). Call it
+    // in the fetch() call itself, so the clock starts when the request is sent. Like a section's
+    // signal, it can be extended once (extend(signal, ms): the browser fallback does it before it
+    // queries a public server itself), so the browser query is not cut off by the clock that
+    // was running while the Worker answered.
     timeoutSignal(ms = FOLLOWUP_TIMEOUT_MS) {
       if (typeof AbortController !== 'function') return undefined;
       const controller = new AbortController();
-      setTimeout(() => controller.abort(), ms);
+      let timer = setTimeout(() => controller.abort(), ms);
+      let extended = false;
+      extenders.set(controller.signal, more => {
+        if (extended || controller.signal.aborted || !(more > 0)) return false;
+        extended = true;
+        clearTimeout(timer);
+        timer = setTimeout(() => controller.abort(), more);
+        return true;
+      });
       return controller.signal;
     },
     // Score inputs still unsettled (section labels), or [] when the score can be shown.
@@ -135,6 +148,9 @@
       if (!run) return true;
       return !run.dirty && S.waitingFor(kind).length === 0;
     },
+    // Data in `last` changed after its section or follow-up settled (power-intelligence upgraded
+    // by the browser's OpenStreetMap answer, ui-polish.js): re-render the summary, score and cost.
+    touch() { if (!run) return; run.dirty = true; scheduleRender(); },
     timedOut() { return run ? SECTION_NAMES.filter(n => run.status[n] === 'timeout') : []; },
     extend(signal, ms) {
       const extendOnce = signal && typeof signal === 'object' ? extenders.get(signal) : null;

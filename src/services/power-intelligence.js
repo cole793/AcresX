@@ -6,15 +6,34 @@ import { nearestTransmissionLine } from '../utilities/hifld-transmission.js';
 import { publishedLineSource, nearestPublishedLine } from '../utilities/published-lines.js';
 import { FALLBACK_KINDS, fallbackHint, hintGeometry } from '../shared/fallback.js';
 import { json } from '../shared/http.js';
+import { openValueCache, readCachedJson, writeCachedJson } from '../shared/edge-cache.js';
 
-// Time box for the whole route. The browser gives this follow-up 15 s
-// (public/progressive-loading.js FOLLOWUP_TIMEOUT_MS) and the validator 30 s
-// (scripts/validate-county.mjs DEFAULT_TIMEOUT_MS). Profile (2026-11-10): the only slow source was
-// Overpass, asked one endpoint after the other at 18 s each (36 s worst case); the provider
-// adapters are static. Now the sources run in parallel, each under this deadline, and a source
-// that has not answered by then is reported as "distance not verified" instead of holding the
-// answer. 9 s leaves room under the browser's 15 s for the request itself.
-export const POWER_BUDGET_MS = 9000;
+// Time box for the whole route. The browser gives this follow-up POWER_TIMEOUT_MS from the moment
+// the request is sent (public/ui-polish.js) and the validator 30 s (scripts/validate-county.mjs
+// DEFAULT_TIMEOUT_MS). Profile (2026-11-10): the only slow source was Overpass, asked one endpoint
+// after the other at 18 s each; the provider adapters are static. The sources run in parallel,
+// each under this deadline, and a source that has not answered by then is reported as "distance
+// not verified" instead of holding the answer.
+//
+// 2026-11-20 (production, 6 test parcels, 12 calls): every call took 9.05-9.09 s, because Overpass
+// never answered Cloudflare (12/12 timeouts or 521s) and the route waited the full 9 s for it,
+// while HIFLD and Avista's map had answered long before. The browser then asked Overpass itself
+// (the osm-power fallback) under the same 15 s clock, which ran out 6 s later and threw the
+// server's answer away ("The user aborted a request."). Now Overpass gets a short cap,
+// OVERPASS_SERVER_CAP_MS (an edge-cache hit or a fast answer still counts; the browser fallback
+// covers the rest). The other sources keep their own 4 s limits (preview, 2026-11-20: HIFLD
+// 109-279 ms, Avista 62 ms), and the whole route is boxed at POWER_BUDGET_MS.
+export const POWER_BUDGET_MS = 6000;
+export const OVERPASS_SERVER_CAP_MS = 1500;
+const SOURCE_TIMEOUT_MS = 4000;
+
+// Whole answers are cached (edge cache, versioned prefix; bump the version on any change to the
+// answer's rules) so a repeat search is instant. Only answers whose utility map and transmission
+// sources answered are stored: 7 days when OpenStreetMap answered too, 1 day when it did not (the
+// answer then carries the browser fallback hint, and a later lookup may get OSM on the server).
+export const POWER_ANSWER_CACHE_PREFIX = 'https://acresx.internal/cache/power-intelligence/v1/';
+export const POWER_ANSWER_TTL_SECONDS = 7 * 86400;
+export const POWER_ANSWER_PARTIAL_TTL_SECONDS = 86400;
 
 const WHOLESALE_POWER = /\b(?:bonneville|western area|southwestern|southeastern) power administration\b|^(?:bpa|wapa)\b/i;
 
@@ -244,8 +263,13 @@ function applyOverlap(result, alsoListed, ranking) {
   return result;
 }
 
-export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET_MS } = {}) {
-  const body = await request.json();
+const CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400';
+// A source that did not answer (a parcel outside Avista's layer is an answer, not a failure).
+const failed = source => Boolean(source) && source.available === false && ['timed_out', 'source_unavailable'].includes(source.status);
+
+// The answer for one request body, from the sources, and `timing` (diagnostics, sent as a
+// Server-Timing header, not in the body): milliseconds each source took, and the route's total.
+async function buildAnswer(body, { budgetMs, overpassCapMs, ctx }) {
   const listed = Array.isArray(body.providers) ? body.providers : [body.provider].filter(Boolean);
   // Wholesale federal marketers (BPA, WAPA) are never the serving utility; the validator sends
   // the raw list, where BPA could come first.
@@ -256,30 +280,37 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
 
   const started = Date.now();
   const controller = new AbortController();
-  const deadline = started + budgetMs;
+  const osmMs = Math.min(budgetMs, overpassCapMs);
   const point = { lat: body.lat, lon: body.lon };
+  const geometry = body.geometry || null;
+  const sourceMs = {};
+  const timed = (name, promise) => promise.then(value => { if (value) sourceMs[name] = Date.now() - started; return value; });
+  const sourceTimeoutMs = Math.min(SOURCE_TIMEOUT_MS, budgetMs);
+  const notInTime = () => ({ available: false, status: 'timed_out' });
 
-  // Sources, in parallel, each under the same deadline.
-  const proximityTask = withDeadline(
-    getOsmPowerProximity({ provider, ...point, geometry: body.geometry || null, deadline, signal: controller.signal }),
-    budgetMs, () => timedOutProximity(budgetMs));
+  // Sources, in parallel. Overpass (OpenStreetMap) only gets osmMs: it has not answered Cloudflare
+  // since 2026-11 (the browser fallback asks it instead), so it never holds the answer.
+  const proximityTask = timed('osm', withDeadline(
+    getOsmPowerProximity({ provider, ...point, geometry, deadline: started + osmMs, signal: controller.signal, ctx }),
+    osmMs + 250, () => timedOutProximity(osmMs)));
   const avistaLineTask = isAvistaProvider(provider)
-    ? withDeadline(nearestAvistaLine({ ...point, geometry: body.geometry || null, timeoutMs: Math.min(4000, budgetMs), signal: controller.signal }),
-      budgetMs, () => ({ available: false, status: 'timed_out' }))
+    ? timed('avistaLine', withDeadline(nearestAvistaLine({ ...point, geometry, timeoutMs: sourceTimeoutMs, signal: controller.signal }), budgetMs, notInTime))
     : Promise.resolve(null);
   const publishedSource = publishedLineSource(provider);
   const publishedTask = publishedSource
-    ? withDeadline(nearestPublishedLine(publishedSource, { ...point, geometry: body.geometry || null, timeoutMs: Math.min(4000, budgetMs), signal: controller.signal }),
-      budgetMs, () => ({ available: false, status: 'timed_out' }))
+    ? timed('published', withDeadline(nearestPublishedLine(publishedSource, { ...point, geometry, timeoutMs: sourceTimeoutMs, signal: controller.signal }), budgetMs, notInTime))
     : Promise.resolve(null);
-  const transmissionTask = withDeadline(nearestTransmissionLine({ ...point, geometry: body.geometry || null, timeoutMs: Math.min(4000, budgetMs), signal: controller.signal }),
-    budgetMs, () => ({ available: false, status: 'timed_out' }));
+  const transmissionTask = timed('transmission', withDeadline(nearestTransmissionLine({ ...point, geometry, timeoutMs: sourceTimeoutMs, signal: controller.signal }), budgetMs, notInTime));
   const [proximity, avistaLine, published, transmission] = await Promise.all([proximityTask, avistaLineTask, publishedTask, transmissionTask]);
   controller.abort();
   const lines = { proximity, transmission, body };
+  const timing = { totalMs: Date.now() - started, overpassCapMs: osmMs, sources: sourceMs };
+  // Cacheable: every source other than OpenStreetMap answered.
+  const complete = !failed(avistaLine) && !failed(published) && !failed(transmission);
+  const finish = result => ({ result, timing, complete, osmAnswered: Boolean(proximity?.available) });
 
   if (!provider) {
-    return json(addLineFields({
+    return finish(addLineFields({
       available: Boolean(proximity.available),
       status: 'provider_unknown',
       provider: '',
@@ -289,7 +320,7 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
         required: true,
         recommendation: 'Confirm the serving electric utility and parcel-level service availability before purchase.'
       }
-    }, lines), 200, 'public, max-age=3600, s-maxage=86400');
+    }, lines));
   }
 
   if (isAvistaProvider(provider)) {
@@ -305,7 +336,7 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
 
     result.proximity = proximity;
     result.distribution = avistaDistribution(result.distribution, proximity);
-    return json(applyOverlap(addLineFields(result, lines), alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
+    return finish(applyOverlap(addLineFields(result, lines), alsoListed, ranking));
   }
 
   if (isInlandPowerProvider(provider)) {
@@ -316,10 +347,10 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
     });
     result.proximity = proximity;
     result.distribution = inlandDistribution(proximity);
-    return json(applyOverlap(addLineFields(result, lines), alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
+    return finish(applyOverlap(addLineFields(result, lines), alsoListed, ranking));
   }
 
-  return json(applyOverlap(addLineFields({
+  return finish(applyOverlap(addLineFields({
     available: true,
     adapter: 'generic-v2-osm',
     provider,
@@ -339,5 +370,42 @@ export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET
       required: true,
       recommendation: `Contact ${provider} for parcel-level service availability, transformer capacity, and extension pricing.`
     }
-  }, lines), alsoListed, ranking), 200, 'public, max-age=3600, s-maxage=86400');
+  }, lines), alsoListed, ranking));
+}
+
+// What the answer depends on (the cache key; numbers rounded by src/shared/edge-cache.js).
+function answerKey(body) {
+  return {
+    state: String(body.state || ''), parcelId: String(body.parcelId || ''), address: String(body.address || ''),
+    provider: String(body.provider || ''), providers: Array.isArray(body.providers) ? body.providers.map(String) : [],
+    providerRanking: body.providerRanking && typeof body.providerRanking === 'object'
+      ? { basis: String(body.providerRanking.basis || ''), resolved: body.providerRanking.resolved === true, note: String(body.providerRanking.note || '') }
+      : null,
+    lat: Number(body.lat), lon: Number(body.lon), geometry: body.geometry || null
+  };
+}
+
+export async function handlePowerIntelligence(request, { budgetMs = POWER_BUDGET_MS, overpassCapMs = OVERPASS_SERVER_CAP_MS, ctx } = {}) {
+  const body = await request.json();
+  const slot = await openValueCache(POWER_ANSWER_CACHE_PREFIX, answerKey(body || {}));
+  const hit = await readCachedJson(slot);
+  if (hit && typeof hit === 'object' && hit.answer) {
+    return withServerTiming(json({ ...hit.answer, answerCache: { hit: true, storedAt: String(hit.storedAt || '') } }, 200, CACHE_CONTROL), { cache: 'hit' });
+  }
+  const { result, timing, complete, osmAnswered } = await buildAnswer(body || {}, { budgetMs, overpassCapMs, ctx });
+  if (complete) {
+    await writeCachedJson(slot, { answer: result, storedAt: new Date().toISOString() }, osmAnswered ? POWER_ANSWER_TTL_SECONDS : POWER_ANSWER_PARTIAL_TTL_SECONDS, ctx);
+  }
+  return withServerTiming(json(result, 200, CACHE_CONTROL), timing);
+}
+
+// Server-Timing: "osm;dur=2501, transmission;dur=640, total;dur=2510" (or "cache;desc=hit").
+export function withServerTiming(response, timing) {
+  try {
+    const parts = timing?.cache
+      ? [`cache;desc=${timing.cache}`]
+      : [...Object.entries(timing?.sources || {}).map(([name, ms]) => `${name};dur=${Math.round(ms)}`), `total;dur=${Math.round(timing?.totalMs || 0)}`];
+    response.headers.set('Server-Timing', parts.join(', '));
+  } catch { /* headers may be immutable; diagnostics only */ }
+  return response;
 }

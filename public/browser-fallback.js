@@ -1984,7 +1984,10 @@
     'spokane-assessor': { api: '/api/property-assessment', run: spokaneAssessor, agency: () => 'Spokane County Assessor', targets: ['propertyAssessmentSource', 'overviewAssessorValue'] },
     'fema-flood': { api: '/api/hazards', run: femaFlood, agency: body => (body?.source?.provider === STEVENS_FLOOD_PROVIDER ? 'Stevens County GIS' : 'FEMA (National Flood Hazard Layer)'), targets: ['overviewFlood'] },
     'stevens-zoning': { api: '/api/zoning-permits', run: stevensZoning, agency: () => ST_AGENCY, targets: ['zoningNote'] },
-    'osm-power': { api: '/api/power-intelligence', run: osmPower, agency: () => OSM_AGENCY, targets: ['powerStatus'] },
+    // Background kind: when the page provides an upgrade handler (ui-polish.js
+    // window.AcresXPowerLine.upgrade), the Worker's answer is handed back at once and the browser
+    // query runs afterwards; the handler applies its answer only if it gives a usable distance.
+    'osm-power': { api: '/api/power-intelligence', run: osmPower, agency: () => OSM_AGENCY, targets: ['powerStatus'], upgrade: () => root.AcresXPowerLine?.upgrade },
     // Address search labels its own results (public/address-search.js), so no target here.
     'kootenai-address': { api: '/api/address-search', run: kootenaiAddress, agency: () => KC_ADDRESS_AGENCY, targets: [] }
   };
@@ -2030,7 +2033,11 @@
   // Renderers run after the answer is handed back (property assessment renders later still).
   function scheduleLabels() { for (const ms of [0, 400, 1500]) setTimeout(applyLabels, ms); }
 
+  // Browser queries running after their Worker answer was handed back (background kinds).
+  const background = new Set();
   function reset() {
+    background.forEach(c => { try { c.abort(); } catch { /* ignore */ } });
+    background.clear();
     generation++;
     loaded = {};
     const notes = root.document?.querySelectorAll?.('.acresx-fallback-note') || [];
@@ -2067,19 +2074,57 @@
       const url = new URL(raw, here);
       if (url.origin !== new URL(here).origin) return response;
       if (!Object.values(KINDS).some(k => k.api === url.pathname) || !/json/i.test(response?.headers?.get?.('Content-Type') || '')) return response;
-      const data = await response.clone().json();
+      // The Worker's answer is read in full first. The page's signal also cancels the body of
+      // `response`, so when that signal fires while the browser query runs (a section or follow-up
+      // time limit), the original response can no longer be read ("The user aborted a request."
+      // on 5 of 6 production power lookups, 2026-11-20). The copy below is not tied to it, so the
+      // Worker's own (partial) answer is kept.
+      const text = await response.clone().text();
+      const data = JSON.parse(text);
       const hint = data?.fallback;
       // Two kinds share /api/zoning-permits (Kootenai, Stevens): the hint names which one.
       const kind = hint && Object.prototype.hasOwnProperty.call(KINDS, hint.kind) && KINDS[hint.kind].api === url.pathname ? hint.kind : null;
       if (!kind || hint.mode !== 'browser') return response;
       const signal = init?.signal || (typeof Request !== 'undefined' && input instanceof Request ? input.signal : undefined);
+      // The original while it can still be read; a copy once the signal has fired.
+      const kept = () => (signal?.aborted ? new Response(text, { status: response.status, statusText: response.statusText, headers: response.headers }) : response);
+      const upgrade = typeof KINDS[kind].upgrade === 'function' ? KINDS[kind].upgrade() : null;
+      if (typeof upgrade === 'function') {
+        runInBackground(kind, hint.input, data, upgrade);
+        return new Response(text, { status: response.status, statusText: response.statusText, headers: response.headers });
+      }
       try { root.AcresXSections?.extend?.(signal, EXTEND_MS); } catch { /* optional */ }
-      const body = await run(kind, hint.input, { signal, base: data });
-      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+      try {
+        const body = await run(kind, hint.input, { signal, base: data });
+        return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+      } catch (error) {
+        try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ }
+        return kept();
+      }
     } catch (error) {
       try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ }
       return response;
     }
+  }
+
+  // The browser query for a background kind, after the Worker's answer went to the page. Its own
+  // time limit (EXTEND_MS), cancelled by a new search; the answer goes to upgrade(body, base),
+  // which returns true when it used it (only then is the "Loaded directly from" label shown).
+  function runInBackground(kind, input, base, upgrade) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    if (controller) background.add(controller);
+    const timer = controller ? setTimeout(() => controller.abort(), EXTEND_MS) : null;
+    const search = currentSearch();
+    Promise.resolve()
+      .then(() => KINDS[kind].run(input || {}, controller?.signal, base))
+      .then(body => {
+        if (controller?.signal.aborted || search !== currentSearch()) return;
+        let used = false;
+        try { used = upgrade(body, base) === true; } catch (error) { console.warn('AcresX browser fallback upgrade failed', error?.message || error); }
+        if (used) { loaded[kind] = KINDS[kind].agency(body); scheduleLabels(); }
+      })
+      .catch(error => { try { console.warn('AcresX browser fallback did not load this layer', error?.message || error); } catch { /* ignore */ } })
+      .finally(() => { if (timer) clearTimeout(timer); if (controller) background.delete(controller); });
   }
 
   if (baseFetch) {

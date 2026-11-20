@@ -229,7 +229,7 @@ function county(props, extra = {}) {
   return { parcel: { type: 'Feature', geometry: square, properties: props }, wells: [{ properties: { CompletedDepth: 300 } }], utility: ['NORTHWESTERN ENERGY'], land: { soil: { available: true, feasibility: 'moderate', mapUnit: 'Loam' }, terrain: { available: true, gradePct: 6, reliefFt: 20 } }, flood: { available: true, intersects: false, zones: [] }, wetlands: { available: true, intersects: false, category: 'none' }, ...extra };
 }
 
-test('Idaho (Kootenai, local prices), Montana (Gallatin, local prices) and Stevens (generic ranges) render every page', () => {
+test('Idaho (Kootenai, local prices), Montana (Gallatin, local prices) and Stevens (local power, generic ranges) render every page', () => {
   const id = generate(county({ ORIG_PARCEL_ID: 'C1', _countyDisplay: 'Kootenai', _stateCode: 'ID', SITUS_ADDRESS: '5811 N CHRISTOPHER DR', SITUS_CITY_NM: 'COEUR D ALENE' }, { utility: ['KOOTENAI ELECTRIC COOPERATIVE', 'AVISTA CORP'] }));
   assert.equal(id.pages.length, 6);
   assert.match(id.pages[0], /<h1>5811 N Christopher Dr<\/h1>/);
@@ -257,12 +257,16 @@ test('Idaho (Kootenai, local prices), Montana (Gallatin, local prices) and Steve
 
   const wa = generate(county({ ORIG_PARCEL_ID: 'S1', _countyDisplay: 'Stevens', _stateCode: 'WA' }, { utility: ['AVISTA CORP'] }));
   assert.equal(wa.pages.length, 6, 'generic lines carry a basis too');
-  assert.match(wa.html, /Generic regional ranges; local prices not yet sourced for this county\./);
+  // Stevens has local power prices only (cost-tables.js scope 'power'): Avista's Washington
+  // Schedule 51; the other lines stay generic.
+  assert.match(wa.html, /Power priced from Avista(?:'|&#39;)s Washington Schedule 51 for Stevens County, WA; other lines are generic regional ranges/);
+  assert.match(wa.html, /Power \(Avista line extension\)/);
   const page1 = /<div class="t-num t-range">([^<]+)<\/div>/.exec(wa.pages[0])[1];
   const lines = [...wa.pages[3].split('<tfoot>')[0].matchAll(/<td class="amt">([^<]+)<\/td><\/tr>/g)].map(m => amounts(m[1]));
   assert.equal(lines.length, 5);
   assert.deepEqual(amounts(page1), lines.reduce((a, [lo, hi]) => [a[0] + lo, a[1] + hi], [0, 0]));
-  assert.equal([...wa.pages[3].matchAll(/class="tag estimate">Estimate — get a quote/g)].length, 5, 'generic lines are estimates');
+  assert.equal([...wa.pages[3].matchAll(/class="tag estimate">Estimate — get a quote/g)].length, 4, 'the generic lines are estimates');
+  assert.equal(tagOf(wa.pages[3], 'Power'), 'fee', 'power: priced from the published Avista tariff');
   for (const r of [id, mt, wa]) assert.doesNotMatch(text(r.html), /undefined|NaN/);
 });
 

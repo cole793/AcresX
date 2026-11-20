@@ -102,7 +102,27 @@
       grade: `${cap(line.confidence || 'low')} confidence`,
       dot: `traffic-dot ${line.confidence && line.confidence !== 'low' ? 'green' : 'amber'}` };
   }
-  window.AcresXPowerLine = { describe: describePowerLine, servedContext, OSM_ATTRIBUTION_TEXT, OSM_COPYRIGHT_URL };
+  // The browser's own OpenStreetMap answer (browser-fallback.js, kind osm-power) arrives after the
+  // Worker's answer is already on the card. It replaces it only when it gives a distribution
+  // distance the cost model may use (the Worker's OSM guard: a pole, line or transformer within
+  // OSM_COST_MAX_FT; usableForCost) and the card has none yet, for the same parcel and utility.
+  const OSM_COST_MAX_FT = 1000;
+  const usableDistance = d => Boolean(d) && d.usableForCost !== false && d.estimatedDistanceFt !== null && Number.isFinite(Number(d.estimatedDistanceFt));
+  function upgradePower(body) {
+    if (typeof last === 'undefined' || !last?.parcel) return false;
+    const current = last.powerIntelligence;
+    const d = body?.distribution;
+    if (!current || current.available === false && current.error) return false;
+    if (String(current.provider || '') !== String(body?.provider || '')) return false;
+    if (usableDistance(current.distribution)) return false;
+    if (!(usableDistance(d) && d.usableForCost === true && Number(d.estimatedDistanceFt) <= OSM_COST_MAX_FT)) return false;
+    last.powerIntelligence = body;
+    applyPowerIntelligence(body);
+    if (typeof activeTab !== 'undefined' && activeTab === 'power' && document.getElementById('detailCard')?.classList.contains('show')) polishPowerDetails();
+    window.AcresXSections?.touch?.();
+    return true;
+  }
+  window.AcresXPowerLine = { describe: describePowerLine, servedContext, upgrade: upgradePower, OSM_ATTRIBUTION_TEXT, OSM_COPYRIGHT_URL };
 
   function applyPowerIntelligence(power) {
     if (!power) return;
@@ -131,6 +151,14 @@
     }
   }
 
+  // Time limit for /api/power-intelligence, counted from the moment the request is sent: the
+  // route's own budget (src/services/power-intelligence.js POWER_BUDGET_MS, 6 s) plus a wide margin
+  // for a cold Worker or a slow connection. When the answer asks the browser to load OpenStreetMap
+  // itself (browser-fallback.js osm-power), the Worker's answer (utility map, transmission line) is
+  // applied at once and the browser query runs afterwards with its own limit; upgradePower() below
+  // takes its answer only when it gives a usable distance.
+  const POWER_TIMEOUT_MS = 20000;
+
   // Once per search (window.AcresXSections, progressive-loading.js), with a time limit; an answer
   // for an older search is dropped.
   async function loadPowerIntelligence() {
@@ -146,7 +174,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(identity),
-        signal: sections?.timeoutSignal()
+        signal: sections?.timeoutSignal(POWER_TIMEOUT_MS)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `Power intelligence returned ${response.status}`);

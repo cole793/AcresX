@@ -609,19 +609,62 @@ test('Montana driveway and site work: MDT district bid prices per cubic yard', (
 
 // ---- Other counties, score, listings
 
-test('other counties keep the generic estimate, labeled "local prices not yet sourced"', () => {
-  for (const county of ['Stevens']) {
-    const p = page(facts({ county, provider: 'Avista Utilities', distanceFt: 500 }));
-    const generic = p.run('window.__acresxScreeningCostEstimate()');
+// Stevens (cost-tables.js scope 'power', 2026-11-20): local POWER prices only. A line on Avista's
+// map is priced from Avista's Washington Schedule 51 (the Spokane tariff); other utilities get
+// the planning rate with the likely-run rules; every other line keeps the generic range.
+test('Stevens Avista path: a mapped Avista line is priced from WA Schedule 51, the other lines stay generic', () => {
+  for (const d of [8, 500]) {
+    const p = page(facts({ county: 'Stevens', provider: 'AVISTA CORP', distanceFt: d }));
     const e = p.est();
     assert.equal(e.local, false);
-    assert.deepEqual([e.low, e.high], [generic.low, generic.high], county);
-    assert.equal(e.coverageNote, 'Generic regional ranges; local prices not yet sourced for this county.');
-    const without = page(facts({ county, provider: 'Avista Utilities', distanceFt: 500 }), { withModel: false });
-    const before = without.$('developmentCostCard').textContent, now = p.$('developmentCostCard').textContent;
-    assert.ok(now.startsWith(before), 'the card is unchanged apart from the added label');
-    assert.equal(now.slice(before.length), 'Generic regional ranges; local prices not yet sourced for this county.');
+    const spokane = estimate({ county: 'Spokane', provider: 'AVISTA CORP', distanceFt: d }).components.electric;
+    const power = e.components.power;
+    assert.equal(power.formula, 'avista');
+    assert.equal(power.label, 'Power (Avista line extension)');
+    assert.deepEqual([power.low, power.high, power.central, power.runFt], [spokane.low, spokane.high, spokane.central, spokane.runFt], `${d} ft`);
+    assert.equal(power.runFt, d + 100);
+    assert.match(power.basis, /Avista Washington Schedule 51/);
+    // The other lines are exactly the generic ones (no Stevens price is sourced for them).
+    const generic = page(facts({ county: 'Stevens', provider: 'AVISTA CORP', distanceFt: d }), { withModel: false }).run('window.__acresxScreeningCostEstimate()');
+    for (const key of ['well', 'septic', 'driveway', 'sitework']) assert.deepEqual([e.components[key].low, e.components[key].high], [generic.components[key].low, generic.components[key].high], key);
+    assert.deepEqual([generic.components.power.low, generic.components.power.high], [5000, 25000], 'before: the generic bucket');
+    // The dashboard card and the estimate agree; the total is the sum of the lines.
+    const card = p.run('window.__acresxScreeningCostEstimate()');
+    assert.deepEqual([card.low, card.high], [e.low, e.high]);
+    assert.equal(e.low, Object.values(e.components).reduce((a, x) => a + x.low, 0));
+    assert.equal(e.coverageNote, "Power priced from Avista's Washington Schedule 51 for Stevens County, WA; other lines are generic regional ranges (local prices not yet sourced for this county).");
+    assert.match(p.$('developmentCostCard').textContent, /Power priced from Avista's Washington Schedule 51 for Stevens County, WA/);
   }
+  // The 8 ft line (Stevens 0434200 on 2026-11-20): an underground service from the nearest pole,
+  // 108 ft, at the tariff (UG basic 11,888 + 14.31 x 8 + 10.78 x 100 - 7,210 allowance).
+  const near = estimate({ county: 'Stevens', provider: 'AVISTA CORP', distanceFt: 8 }).components.power;
+  assert.equal(near.design, 'underground');
+  assert.equal(r(near.central), r(UG(8) - 7210));
+});
+
+test('Stevens, other utilities: the planning rate with the likely-run rules, no invented tariff', () => {
+  for (const provider of ['INLAND POWER & LIGHT COMPANY', 'PUD NO 1 OF PEND OREILLE COUNTY', 'CITY OF CHEWELAH']) {
+    const mapped = estimate({ county: 'Stevens', provider, distanceFt: 500 }).components.power;
+    assert.equal(mapped.formula, 'generic', provider);
+    // $4,750 + 500 ft x $18/ft (midpoints), +/- 25%.
+    assert.equal(r(mapped.central), 4750 + 500 * 18);
+    assert.deepEqual([r(mapped.low), r(mapped.high)], [r(13750 * 0.75), r(13750 * 1.25)]);
+    const unmapped = estimate({ county: 'Stevens', provider }).components.power;
+    assert.equal(unmapped.runSource, 'unknown');
+    assert.equal(unmapped.runFt, 500);
+    const e = estimate({ county: 'Stevens', provider, distanceFt: 500 });
+    assert.match(e.coverageNote, /AcresX planning rate .*Stevens County, WA.*other lines are generic regional ranges/);
+  }
+});
+
+test('Stevens does not ask for /api/cost-context (no county road layer; its other lines are generic)', () => {
+  const p = page(facts({ county: 'Stevens', provider: 'AVISTA CORP', distanceFt: 8 }));
+  assert.equal(p.run('window.AcresXCostModel.claimCostContext()'), null);
+  assert.equal(p.run('window.AcresXCostModel.local(last)'), false);
+  // Counties without any profile are unchanged.
+  const other = page({ ...facts({ county: 'Spokane', provider: 'AVISTA CORP', distanceFt: 8 }), parcel: { type: 'Feature', geometry: square, properties: { ORIG_PARCEL_ID: 'X', _countyDisplay: 'Lincoln', _stateCode: 'WA' } } });
+  assert.equal(other.run('window.AcresXCostModel.powerOnlyLine(last)'), null);
+  assert.equal(other.est().coverageNote, 'Generic regional ranges; local prices not yet sourced for this county.');
 });
 
 test('the score does not read the cost estimate; listing claims change neither', () => {
@@ -673,7 +716,7 @@ test('dashboard card: a local county shows the most likely total and the likely 
   assert.notEqual(waiting.value, `~$${Math.round(waiting.est.central / 1000)}k`);
 });
 
-test('dashboard card: a county without local prices keeps the generic estimate', () => {
+test('dashboard card: a county without full local prices keeps the generic card (with its local power line)', () => {
   const r = pageWithSections(facts({ county: 'Stevens', provider: 'Avista Utilities' }), []);
   assert.equal(r.est.local, false);
   assert.equal(r.value, `$${Math.round(r.est.low / 1000)}k–$${Math.round(r.est.high / 1000)}k`);
