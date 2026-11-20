@@ -40,7 +40,10 @@ export async function handleUtilityTerritory(request) {
       label: 'hifld-retail-territory', agency: 'Utility territory service', arcgisMessage: 'Utility territory lookup failed'
     });
   } catch (error) {
-    if (error.kind === 'http' || error.kind === 'arcgis') return json({ available: false, error: error.message }, 200, 'public, max-age=3600');
+    // A failed lookup is never cacheable: it was marked public for an hour, so any cache in the
+    // path (a browser, a proxy, a future edge cache) could keep "no utility" for a parcel that has
+    // one (Stevens 0434200 showed "Utility territory not identified" once, 2026-11-20).
+    if (error.kind === 'http' || error.kind === 'arcgis') return json({ available: false, error: error.message }, 200, 'no-store');
     throw error;
   }
 
@@ -74,5 +77,9 @@ export async function handleUtilityTerritory(request) {
     matches,
     confidence: names.length === 1 ? 'moderate' : names.length > 1 ? 'low' : 'low',
     note: names.length ? 'Retail electric service territory intersected the parcel center. Confirm new-service availability directly with the utility.' : 'No mapped retail electric service territory intersected the parcel center.'
-  }, 200, 'public, max-age=3600, s-maxage=86400');
+  }, 200, names.length ? 'public, max-age=3600, s-maxage=86400' : EMPTY_ANSWER_CACHE);
 }
+
+// "No mapped territory" is a real answer outside every territory, but an empty HIFLD answer is
+// also what a briefly broken layer looks like, so it is kept for 5 minutes at most.
+export const EMPTY_ANSWER_CACHE = 'public, max-age=300, s-maxage=300';
