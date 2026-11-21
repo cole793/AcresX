@@ -1,7 +1,7 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-20T21:20:56.447Z
+- Run: 2026-11-21T20:13:31.508Z
 - Parcels: 12, with an error or mismatch: 0
 - Layer results: ok 175, unavailable 17, error 0, mismatch 0, skipped 0
 
@@ -94,7 +94,7 @@ Why: Small unincorporated lot with a FEMA high-risk zone and mapped NWI wetlands
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=25]
 - **Soil**: ok. favorable (Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes) [feasibility=favorable, mapUnit=Bouldercreek ashy silt loam, moist, 3 to 15 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=8, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 16%, max 27.9% [gradePct=16, maxGradePct=27.9, reliefFt=35, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 24.1% [cellCount=16, avgSlopePct=24.1, maxSlopePct=58, partial=false]
+- **Slope grid**: ok. 16 cells, avg 16.2% [cellCount=16, avgSlopePct=16.2, maxSlopePct=25.4, partial=false]
 - **Flood**: ok. high-risk zone (AE, X) (via FEMA NFHL) [high=true, intersects=true, zones=AE; X, category=high, provider=FEMA NFHL]
 - **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=14]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION]
@@ -200,7 +200,7 @@ Why: 5-40 ac parcel with a SPOKANE situs city that is outside city limits (count
 - **Soil**: ok. favorable (Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Wapal gravelly ashy coarse sandy loam, 0 to 8 percent slopes, hydrologicGroup=A, drainage=Somewhat excessively drained, soilSlopePct=4, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 2.1%, max 27.1% [gradePct=2.1, maxGradePct=27.1, reliefFt=20, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.6% [cellCount=16, avgSlopePct=1.6, maxSlopePct=8.8, partial=false]
-- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
+- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=AVISTA CORP; INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
 - **Power**: ok. AVISTA CORP, ~3 ft to mapped power [provider=AVISTA CORP, distanceFt=3, confidence=moderate, distributionStatus=utility_published_proximity]
@@ -221,7 +221,7 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Soil**: ok. limited (Keeler-Kruse complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Keeler-Kruse complex, 15 to 30 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=23, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 27.4%, max 72.3% [gradePct=27.4, maxGradePct=72.3, reliefFt=623, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=40.1, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=0.6]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
 - **Power**: ok. INLAND POWER & LIGHT COMPANY [provider=INLAND POWER & LIGHT COMPANY, confidence=low, distributionStatus=no_verified_distance]
@@ -241,8 +241,8 @@ Why: Unincorporated 40+ ac parcel with mapped wetlands (picked by discovery 2026
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=12]
 - **Soil**: ok. limited (Blackprince-Ardtoo complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Blackprince-Ardtoo complex, 15 to 30 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=22, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 15.7%, max 40.4% [gradePct=15.7, maxGradePct=40.4, reliefFt=162, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 12.3% [cellCount=16, avgSlopePct=12.3, maxSlopePct=22.2, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Slope grid**: ok. 16 cells, avg 11.5% [cellCount=16, avgSlopePct=11.5, maxSlopePct=18.2, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.7]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
 - **Power**: ok. INLAND POWER & LIGHT COMPANY [provider=INLAND POWER & LIGHT COMPANY, confidence=low, distributionStatus=no_verified_distance]
