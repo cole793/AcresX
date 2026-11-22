@@ -1,24 +1,24 @@
 # County validation: Kootenai, ID
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-21T20:08:50.041Z
-- Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 165, unavailable 27, error 0, mismatch 0, skipped 0
+- Run: 2026-11-22T20:24:10.685Z
+- Parcels: 12, with an error or mismatch: 12
+- Layer results: ok 151, unavailable 27, error 14, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 0L8210010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 015270010070 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| C72150030040 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 47N02W035500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 48N03W312100 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0K245001002B | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 49N03W324950 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 007740020050 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0K2660010030 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 0153400A001A | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 47N02W040800 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| C72150040140 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 0L8210010030 | ok | error | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 015270010070 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| C72150030040 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 47N02W035500 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 48N03W312100 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 0K245001002B | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 49N03W324950 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 007740020050 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 0K2660010030 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 0153400A001A | ok | error | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 47N02W040800 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| C72150040140 | ok | ok | unavailable | ok | ok | ok | ok | error | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 
 ## Parcel details
 
@@ -27,13 +27,13 @@
 Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | other/blank locality"; first in locality (blank). Locality is the parcel's situs city field, not proof it is inside city limits. Hand check: outside city limits (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/18/query: blank CITY); county zoning ZONE_NAME RUR (https://map.kcgov.us/arcgis/rest/services/NewServices/Data_Layers/MapServer/21/query with the parcel outline from https://map.kcgov.us/arcgis/rest/services/NewServices/Ownership_Display/MapServer/0/query?f=json&where=PIN%3D%270L8210010030%27&outFields=PIN&returnGeometry=true&outSR=4326 sent as geometryType=esriGeometryPolygon, spatialRel=esriSpatialRelIntersects, outFields=ZONE_NAME), which AcresX shows as RURAL; assessor class 515 Rural residential sub (https://map.kcgov.us/arcgis/rest/services/Assessor_Layers/MapServer/5/query?f=json&where=PIN%3D%270L8210010030%27&outFields=PIN,property_class,Property_ClassDescr&returnGeometry=false); FEMA zone X only (https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query, same outline). Checked by hand 2026-11-02. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): no CdA/Post Falls water area or main within 300 m, tax district layer 25 WATER/SEWER blank, outside city limits.
 
 - **Parcel**: ok. parcel 0L8210010030, 4.79 ac [parcelId=0L8210010030, acres=4.79, lat=47.865654, lon=-116.819488]
-- **Wells**: ok. 137 well record(s), 5 of nearest 5 report depth [wellCount=137, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=360]
+- **Wells**: error. HTTP 502: Idaho well service timed out after 8s
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.6%, max 1.4% [gradePct=0.6, maxGradePct=1.4, reliefFt=4, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.8% [cellCount=16, avgSlopePct=0.8, maxSlopePct=1.9, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -52,9 +52,9 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac |
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Santa ashy silt loam, 15 to 35 percent slopes) [feasibility=limited, mapUnit=Santa ashy silt loam, 15 to 35 percent slopes, hydrologicGroup=C/D, drainage=Moderately well drained, soilSlopePct=16, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 25.5%, max 61.8% [gradePct=25.5, maxGradePct=61.8, reliefFt=118, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 21.3% [cellCount=16, avgSlopePct=21.3, maxSlopePct=31.1, partial=false]
+- **Slope grid**: ok. 16 cells, avg 22.9% [cellCount=16, avgSlopePct=22.9, maxSlopePct=37.5, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=4.7]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -75,7 +75,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 a
 - **Terrain**: ok. avg grade 2.1%, max 3.7% [gradePct=2.1, maxGradePct=3.7, reliefFt=2, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.5% [cellCount=16, avgSlopePct=5.5, maxSlopePct=12.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water served (City of Coeur d'Alene (CDA Water)) 13 m; sewer served (City of Coeur d'Alene) 7 m [water=served, sewer=served, waterProvider=City of Coeur d'Alene (CDA Water), sewerProvider=City of Coeur d'Alene, waterProviders=City of Coeur d'Alene (CDA Water); CDA Water, sewerProviders=City of Coeur d'Alene, waterPublic=true, sewerPublic=true, waterDistanceM=13, sewerDistanceM=7, failedLayers=(none)]
@@ -96,7 +96,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | 
 - **Terrain**: ok. avg grade 6.1%, max 51.1% [gradePct=6.1, maxGradePct=51.1, reliefFt=107, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.3% [cellCount=16, avgSlopePct=6.3, maxSlopePct=21.8, partial=false]
 - **Flood**: ok. high-risk zone (A, X, AE) (via FEMA NFHL) [high=true, intersects=true, zones=A; X; AE, category=high, provider=FEMA NFHL]
-- **Wetlands**: ok. 16 NWI feature(s) [intersects=true, count=16, coveragePct=70.5]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -117,7 +117,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "40+ ac | 
 - **Terrain**: ok. avg grade 14.3%, max 117% [gradePct=14.3, maxGradePct=117, reliefFt=202, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.6% [cellCount=16, avgSlopePct=5.6, maxSlopePct=28.5, partial=false]
 - **Flood**: ok. high-risk zone (AE, X) (via FEMA NFHL) [high=true, intersects=true, zones=AE; X, category=high, provider=FEMA NFHL]
-- **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=64.5]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503
 - **Utility**: ok. AVISTA CORP; KOOTENAI ELECTRIC COOPERATIVE [providers=AVISTA CORP; KOOTENAI ELECTRIC COOPERATIVE]
 - **Power**: ok. AVISTA CORP, ~16 ft to mapped power [provider=AVISTA CORP, distanceFt=16, confidence=moderate, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -138,7 +138,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "1-5 ac | 
 - **Terrain**: ok. avg grade 8.1%, max 15.5% [gradePct=8.1, maxGradePct=15.5, reliefFt=43, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 3.8% [cellCount=16, avgSlopePct=3.8, maxSlopePct=8.2, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -157,9 +157,9 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "5-40 ac |
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Blinn loam, 35 to 65 percent slopes, very stony) [feasibility=limited, mapUnit=Blinn loam, 35 to 65 percent slopes, very stony, hydrologicGroup=C, drainage=Well drained, soilSlopePct=50, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 30.9%, max 58.7% [gradePct=30.9, maxGradePct=58.7, reliefFt=268, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 25.5% [cellCount=16, avgSlopePct=25.5, maxSlopePct=34.3, partial=false]
+- **Slope grid**: ok. 16 cells, avg 28.3% [cellCount=16, avgSlopePct=28.3, maxSlopePct=39, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.3]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
 - **Utility**: ok. AVISTA CORP; KOOTENAI ELECTRIC COOPERATIVE [providers=AVISTA CORP; KOOTENAI ELECTRIC COOPERATIVE]
 - **Power**: ok. AVISTA CORP, ~11 ft to mapped power [provider=AVISTA CORP, distanceFt=11, confidence=moderate, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -178,9 +178,9 @@ Why: Picked by discovery run 40391761739 (2026-10-26): covers stratum "under 1 a
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. limited (Taney silt loam, 7 to 25 percent slopes) [feasibility=limited, mapUnit=Taney silt loam, 7 to 25 percent slopes, hydrologicGroup=C, drainage=Moderately well drained, soilSlopePct=16, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 6.9%, max 8.8% [gradePct=6.9, maxGradePct=8.8, reliefFt=13, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 6.7% [cellCount=16, avgSlopePct=6.7, maxSlopePct=8.6, partial=false]
+- **Slope grid**: ok. 16 cells, avg 7% [cellCount=16, avgSlopePct=7, maxSlopePct=11.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -199,9 +199,9 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ATHOL. 
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Kootenai gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Kootenai gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 2.1%, max 3.3% [gradePct=2.1, maxGradePct=3.3, reliefFt=9, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 2.1% [cellCount=16, avgSlopePct=2.1, maxSlopePct=2.8, partial=false]
+- **Slope grid**: ok. 16 cells, avg 1.7% [cellCount=16, avgSlopePct=1.7, maxSlopePct=4.5, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -216,13 +216,13 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ATHOL. 
 Why: Picked by discovery run 40391761739 (2026-10-26): first in locality POST FALLS. Locality is the parcel's situs city field, not proof it is inside city limits.
 
 - **Parcel**: ok. parcel 0153400A001A, 9.52 ac [parcelId=0153400A001A, acres=9.52, address=8109 N DAISY LN, POST FALLS, lat=47.745887, lon=-116.866026]
-- **Wells**: ok. 73 well record(s), 5 of nearest 5 report depth [wellCount=73, nearestDepthsCount=5, nearestMi=0.09, medianDepthFt=304]
+- **Wells**: error. HTTP 502: Idaho well service timed out after 8s
 - **Existing well**: unavailable. Existing-well matching is not configured for this county yet. [status=not_supported]
 - **Soil**: ok. favorable (Avonville fine gravelly silt loam, 0 to 7 percent slopes) [feasibility=favorable, mapUnit=Avonville fine gravelly silt loam, 0 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=4, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 1%, max 2.3% [gradePct=1, maxGradePct=2.3, reliefFt=8, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 0.9% [cellCount=16, avgSlopePct=0.9, maxSlopePct=1.4, partial=false]
+- **Slope grid**: ok. 16 cells, avg 1.8% [cellCount=16, avgSlopePct=1.8, maxSlopePct=3.9, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~11 ft to mapped power [provider=AVISTA CORP, distanceFt=11, confidence=moderate, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -243,7 +243,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): first in locality ST MARI
 - **Terrain**: ok. avg grade 11.4%, max 49.9% [gradePct=11.4, maxGradePct=49.9, reliefFt=204, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.6% [cellCount=16, avgSlopePct=6.6, maxSlopePct=18, partial=false]
 - **Flood**: ok. high-risk zone (X, AE) (via FEMA NFHL) [high=true, intersects=true, zones=X; AE, category=high, provider=FEMA NFHL]
-- **Wetlands**: ok. 7 NWI feature(s) [intersects=true, count=7, coveragePct=3.4]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -264,7 +264,7 @@ Why: Picked by discovery run 40391761739 (2026-10-26): fills remaining sample sl
 - **Terrain**: ok. avg grade 5.6%, max 6.2% [gradePct=5.6, maxGradePct=6.2, reliefFt=7, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.6% [cellCount=16, avgSlopePct=6.6, maxSlopePct=22.5, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503
 - **Utility**: ok. KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP [providers=KOOTENAI ELECTRIC COOPERATIVE; AVISTA CORP]
 - **Power**: ok. KOOTENAI ELECTRIC COOPERATIVE [provider=KOOTENAI ELECTRIC COOPERATIVE, confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water served (City of Coeur d'Alene (CDA Water)) 5 m; sewer served (City of Coeur d'Alene) 11 m [water=served, sewer=served, waterProvider=City of Coeur d'Alene (CDA Water), sewerProvider=City of Coeur d'Alene, waterProviders=City of Coeur d'Alene (CDA Water); CDA Water, sewerProviders=City of Coeur d'Alene, waterPublic=true, sewerPublic=true, waterDistanceM=5, sewerDistanceM=11, failedLayers=(none)]
