@@ -1,16 +1,16 @@
 # County validation: Yellowstone, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-21T20:17:03.660Z
-- Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 174, unavailable 18, error 0, mismatch 0, skipped 0
+- Run: 2026-11-22T20:37:06.701Z
+- Parcels: 12, with an error or mismatch: 1
+- Layer results: ok 173, unavailable 18, error 1, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 03113520290010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 03072530104010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 03103333215010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233201230000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103233201230000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 03113517000000000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
 | 03072527101010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 03103333303010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
@@ -32,7 +32,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Soil**: ok. limited (Vananda silty clay, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Vananda silty clay, 0 to 1 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.1%, max 0.9% [gradePct=0.1, maxGradePct=0.9, reliefFt=3, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.2% [cellCount=16, avgSlopePct=0.2, maxSlopePct=0.5, partial=false]
-- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
+- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
 - **Power**: ok. YELLOWSTONE VALLEY ELEC CO-OP [provider=YELLOWSTONE VALLEY ELEC CO-OP, confidence=low, distributionStatus=no_verified_distance]
@@ -90,7 +90,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end). Expected values checked by hand on 2026-11-02 (read-only): Billings zoning layer 4 returns ZONE_CODE N3: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?geometry=-108.630387%2C45.791953&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; layer 7 returns BILLINGS: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?geometry=-108.630387%2C45.791953&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard). Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): Zoning/MapServer/7 ZoningJurisdictions_Entity 'BILLINGS'; no MSDI or county water/sewer district polygon; no reachable Billings utility map.
 
 - **Parcel**: ok. parcel 03103233201230000, 0.41 ac (mapped) [parcelId=03103233201230000, acres=0.41, address=4541 EDGEWATER CIR, lat=45.79188, lon=-108.630517, acresSource=mapped outline]
-- **Wells**: ok. 686 well record(s), 5 of nearest 5 report depth [wellCount=686, nearestDepthsCount=5, nearestMi=0.1, medianDepthFt=83]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (McRae loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 1 to 4 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 2.3%, max 2.7% [gradePct=2.3, maxGradePct=2.7, reliefFt=4, sampleCount=9]
@@ -136,7 +136,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural parc
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Maginnis channery clay loam, 15 to 35 percent slopes) [feasibility=limited, mapUnit=Maginnis channery clay loam, 15 to 35 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=25, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 17.1%, max 68.1% [gradePct=17.1, maxGradePct=68.1, reliefFt=313, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 8.3% [cellCount=16, avgSlopePct=8.3, maxSlopePct=15.6, partial=false]
+- **Slope grid**: ok. 16 cells, avg 8.2% [cellCount=16, avgSlopePct=8.2, maxSlopePct=15.8, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 6 NWI feature(s) [intersects=true, count=6, coveragePct=2.3]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
@@ -220,7 +220,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved r
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Absarokee clay loam, 4 to 7 percent slopes) [feasibility=limited, mapUnit=Absarokee clay loam, 4 to 7 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=6, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 13.9%, max 73.3% [gradePct=13.9, maxGradePct=73.3, reliefFt=280, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 6% [cellCount=16, avgSlopePct=6, maxSlopePct=12.4, partial=false]
+- **Slope grid**: ok. 16 cells, avg 5.9% [cellCount=16, avgSlopePct=5.9, maxSlopePct=13.2, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=1.1]
 - **Utility**: ok. YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
