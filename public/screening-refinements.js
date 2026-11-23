@@ -1,168 +1,37 @@
 (() => {
-  const WEIGHTS = { water: 15, soil: 20, terrain: 20, flood: 15, wetlands: 10, power: 10, zoning: 10 };
+  // The score rules (WEIGHTS, factor scores, missing inputs, the buildable-area check and the
+  // weighted score) are in score-core.js (window.AcresXScoreCore, injected first). This file
+  // renders the score card, the well and septic cards and the cost card, and keeps
+  // window.AcresXScore as a thin wrapper over the core that reads the page's `last`.
+  const C = window.AcresXScoreCore;
+  if (!C) throw new Error('AcresX: public/score-core.js must load before screening-refinements.js');
+  const { WEIGHTS, HOMESITE_MIN_AC, MIN_MEASURED, andList } = C;
 
   function number(v) {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   }
 
-  // Nearby well depth: the one definition in screening-inputs.js (window.AcresXWellDepth):
+  const currentLast = () => (typeof last === 'undefined' ? undefined : last);
+
+  // Nearby well depth: the one definition (score-core.js wellDepth.stats, window.AcresXWellDepth):
   // terrain-aware (wells at similar elevation), else the closest-five median at low confidence.
   function wellStats() {
     if (typeof last === 'undefined') return null;
     return window.AcresXWellDepth ? window.AcresXWellDepth.stats(last) : null;
   }
 
-  // ---- Buildable area in the score (owner request 2026-11-14)
-  // window.AcresXBuildable / POST /api/buildable-area: the parcel minus mapped flood zones,
-  // wetlands, steep slopes (and a plain zoning setback). Kept simple on purpose:
-  // - Homesite minimum: 0.5 ac, or half the parcel on a parcel under 1 acre (a small city lot
-  //   that is all buildable is not penalized). The zoning minimum lot is not used: it applies to
-  //   the whole lot, not to the area left outside constraints.
-  // - Buildable acres below that minimum: the score is capped at 2.5 + 2.5 x (buildable / minimum),
-  //   2.5 at 0 ac up to 5.0 at the minimum ("Challenging"): a house may not fit.
-  // - At or above it: no buildable-area penalty. Flood and wetlands are already scored by how much
-  //   of the parcel they cover, so the area they remove is not penalized a second time.
-  // - Not measured (still loading, or unavailable): no change; the score updates when it arrives.
-  const HOMESITE_MIN_AC = 0.5;
-  const REMOVED_NAMES = { flood: 'the flood zone', wetland: 'wetlands', slope: 'steep slopes', setback: 'setbacks' };
-  const andList = list => (list.length <= 1 ? list.join('') : `${list.slice(0, -1).join(', ')} and ${list.at(-1)}`);
+  // The page's inputs to the core: the progressive-loading section states
+  // (window.AcresXSections.status) and the septic grade, which AcresXSeptic.score also stores on
+  // the land answer for the septic card (screening-inputs.js).
+  const pageOptions = () => ({
+    sectionStatus: name => window.AcresXSections?.status?.(name),
+    septicScore: window.AcresXSeptic ? land => window.AcresXSeptic.score(land) : undefined
+  });
 
-  function buildableCheck() {
-    const b = last?.buildableArea;
-    const B = window.AcresXBuildable;
-    const ok = b && (b.status === 'measured' || b.status === 'partial') && number(b.buildableAcres) != null;
-    if (!ok) return { measured: false, pending: !b };
-    const acres = number(b.buildableAcres);
-    const parcel = number(b.parcelAcres);
-    const need = parcel != null && parcel < 1 ? Math.min(HOMESITE_MIN_AC, parcel / 2) : HOMESITE_MIN_AC;
-    const tight = acres < need;
-    const fmt = a => (B ? B.fmtAcres(a, parcel ?? a) : (parcel ?? a) >= 10 ? a.toFixed(1) : a.toFixed(2));
-    const removed = [...new Set((b.removed || []).filter(r => number(r.acres) > 0).map(r => REMOVED_NAMES[r.key] || String(r.reason || r.key).toLowerCase()))];
-    let why;
-    if (tight) why = `Only ${fmt(acres)} ac remain outside ${andList(removed) || 'mapped constraints'}: a homesite may not fit`;
-    else if (removed.length) why = `${fmt(acres)} ac remain outside ${andList(removed)}`;
-    else why = `All ${fmt(acres)} ac outside mapped flood zones, wetlands and steep slopes`;
-    return { measured: true, acres, need, tight, cap: tight ? 2.5 + 2.5 * (acres / need) : null, why };
-  }
-
-  function wetlandsScore(wetlands) {
-    const WX = window.AcresXWetlands;
-    if (WX) return WX.score(wetlands);
-    // Without wetlands-status.js loaded yet. A null coveragePct is unmeasured, not 0%.
-    if (!wetlands?.available) return 50;
-    if (!wetlands.intersects) return 96;
-    const pct = wetlands.coveragePct == null ? null : number(wetlands.coveragePct);
-    if (pct == null) return 55;
-    if (pct < 5) return 90;
-    if (pct < 15) return 80;
-    if (pct < 30) return 65;
-    if (pct < 50) return 45;
-    return 22;
-  }
-
-  function scoreFactors() {
-    const wells = wellStats();
-    const depth = wells?.depth ?? null;
-    const soil = last?.land?.soil || {};
-    const terrain = last?.land?.terrain || {};
-    const flood = last?.flood || {};
-    const wetlands = last?.wetlands || {};
-    const zoning = last?.zoningPermits?.zoning || {};
-    const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
-
-    // Public water / sewer (public-utilities.js) replace the well and septic inputs when served (not when only likely, 2026-11-15).
-    const PU = window.AcresXUtilities;
-    // The water factor is the well grade's score (AcresXWellDepth.grade: never "Shallow" at low
-    // confidence; low confidence grades by the high end of the depth range).
-    const wellGrade = window.AcresXWellDepth?.grade(wells);
-    const wellWater = depth != null ? (wellGrade ? wellGrade.score : depth <= 200 ? 92 : depth <= 400 ? 76 : 55) : 40;
-    // Septic: USDA drainage and hydrologic group with the measured parcel slope (screening-inputs.js).
-    const SX = window.AcresXSeptic;
-    const soilSeptic = SX ? SX.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
-    const water = PU ? PU.waterScore(wellWater, last) : wellWater;
-    const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
-    // Gradual scale from screening-inputs.js (window.AcresXTerrain); the old steps only without it.
-    const TX = window.AcresXTerrain;
-    const terrainScore = !terrain.available ? 50 : TX ? TX.score(terrain.gradePct) : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
-    const FX = window.AcresXFlood;
-    // Without flood-status.js loaded yet: the older scale, without throwing.
-    const floodScore = FX ? FX.score(flood) : !flood.available || flood.source?.emptyResult ? 50 : flood.high ? 20 : flood.intersects ? 55 : 96;
-    // With measured zone shares, the flood factor follows how much of the parcel is in the SFHA
-    // (flood-status.js shareScore); unmeasured shares keep the category score above.
-    const floodShareScore = FX?.shareScore ? FX.shareScore(flood) : null;
-    const floodFactor = floodShareScore ?? floodScore;
-    const powerScore = last?.powerIntelligence?.territory?.confirmed ? 78 : utilityFound ? 70 : 45;
-    const zoningScore = zoning.status === 'gis_match' ? 86 : zoning.status === 'no_match' ? 52 : 45;
-
-    const gaps = missingInputs();
-    const factor = (key, score, label) => ({ score, label, measured: !gaps[key], ...(gaps[key] ? { missing: gaps[key] } : {}) });
-    return {
-      water: factor('water', water, 'Water'),
-      soil: factor('soil', soilScore, 'Septic'),
-      terrain: factor('terrain', terrainScore, 'Terrain'),
-      flood: factor('flood', floodFactor, 'Flood'),
-      wetlands: factor('wetlands', wetlandsScore(wetlands), 'Wetlands'),
-      power: factor('power', powerScore, 'Power'),
-      zoning: factor('zoning', zoningScore, 'Zoning')
-    };
-  }
-
-  // ---- Missing inputs (2026-11-15): "data missing" is not "data says bad"
-  // A factor whose source failed, timed out or has not answered yet is left out of the score
-  // (the other factors' weights are re-normalized), instead of being scored as a low 40-50.
-  // Real answers keep their score: no nearby wells on record, no utility territory found, a
-  // county without a zoning source, the FEMA backup's "limited flood data". Per factor:
-  //   water     no public water, and the well-records lookup failed or timed out
-  //   soil      no public sewer, and the USDA soil answer is unavailable
-  //   terrain   the USGS elevation answer is unavailable
-  //   flood     the FEMA flood answer is unavailable
-  //   wetlands  the NWI wetlands answer is unavailable
-  //   power     no confirmed territory, and the utility-territory lookup failed or timed out
-  //   zoning    the zoning source answered unavailable / error
-  // { what, service, state: 'pending'|'timeout'|'failed', section, reason, text } per missing key.
-  const MISSING = {
-    water: { what: 'Water', service: 'the well-records lookup', section: 'wells' },
-    soil: { what: 'Soil', service: 'USDA soil service', section: 'land' },
-    terrain: { what: 'Terrain', service: 'USGS elevation service', section: 'land' },
-    flood: { what: 'Flood', service: 'FEMA flood map service', section: 'flood' },
-    wetlands: { what: 'Wetlands', service: 'NWI wetlands service', section: 'wetlands' },
-    power: { what: 'Power', service: 'the utility-territory lookup', section: 'utility' },
-    zoning: { what: 'Zoning', service: 'the county zoning source', section: 'zoningPermits' }
-  };
-  const MIN_MEASURED = 4;
-
-  function sectionState(name) {
-    let s;
-    try { s = window.AcresXSections?.status?.(name); } catch { s = undefined; }
-    return s === 'pending' || s === 'timeout' || s === 'failed' ? s : null;
-  }
-
-  function missingInputs(l = last) {
-    const PU = window.AcresXUtilities;
-    const soil = l?.land?.soil, terrain = l?.land?.terrain;
-    const timedOut = x => Boolean(x?.timedOut) || /timed out/i.test(String(x?.error || ''));
-    // A layer whose answer is still null has not arrived yet.
-    const stateOf = (section, answer) => sectionState(section) || (answer == null ? 'pending' : timedOut(answer) ? 'timeout' : 'failed');
-    const out = {};
-    const add = (key, state) => {
-      const m = MISSING[key];
-      const reason = state === 'pending' ? `${m.service} is still loading` : `${m.service} ${state === 'timeout' ? 'timed out' : "didn't answer"}`;
-      const text = `${m.what} not checked (${reason})${state === 'pending' ? '' : ' — try again'}`;
-      out[key] = { key, what: m.what, service: m.service, section: m.section, state, reason, text };
-    };
-    const wellsState = sectionState('wells');
-    if (!PU?.water?.(l) && (wellsState || l?.wells?.lookupFailed)) add('water', wellsState || 'failed');
-    if (!PU?.sewer?.(l) && !soil?.available) add('soil', stateOf('land', l?.land));
-    if (!terrain?.available) add('terrain', stateOf('land', l?.land));
-    if (!l?.flood?.available) add('flood', stateOf('flood', l?.flood));
-    if (!l?.wetlands?.available) add('wetlands', stateOf('wetlands', l?.wetlands));
-    const utilState = sectionState('utility');
-    if (!l?.powerIntelligence?.territory?.confirmed && (utilState || l?.utility?.lookupFailed)) add('power', utilState || 'failed');
-    const zp = l?.zoningPermits;
-    if (zp == null || ['unavailable', 'error'].includes(zp?.zoning?.status)) add('zoning', stateOf('zoningPermits', zp));
-    return out;
-  }
+  // Missing inputs (score-core.js missingInputs): a factor whose source failed, timed out or has
+  // not answered yet is left out of the score, instead of being scored as a low 40-50.
+  const missingInputs = (l = currentLast()) => C.missingInputs(l, pageOptions().sectionStatus);
 
   const factorNames = list => andList(list.map(f => f.label));
 
@@ -218,40 +87,12 @@
     if (note) note.textContent = [`${sx.context}. ${sx.note}`, source].filter(Boolean).join(' ');
   }
 
-  // The buildability score: 7 factors (0-100) weighted by WEIGHTS, shown /10, then the
-  // buildable-area homesite check (buildableCheck above). Listing/MLS data and the cost
-  // estimate never feed it. Factors with missing inputs (missingInputs above) are left out and
-  // the weights of the measured ones re-normalized, so a timed-out layer does not lower the score;
-  // the score is then "Incomplete — N of 7 factors measured", and "Provisional" below 4 measured.
-  function calculateScore() {
-    const factors = scoreFactors();
-    const all = Object.entries(factors);
-    const measured = all.filter(([, f]) => f.measured);
-    const weightSum = measured.reduce((s, [key]) => s + WEIGHTS[key], 0);
-    const weighted = weightSum ? measured.reduce((s, [key, f]) => s + f.score * WEIGHTS[key], 0) / weightSum : null;
-    const buildable = buildableCheck();
-    const factorScore = weighted == null ? null : weighted / 10;
-    const score = factorScore == null ? null : buildable.cap != null ? Math.min(factorScore, buildable.cap) : factorScore;
-    const missing = all.filter(([, f]) => !f.measured).map(([key, f]) => ({ ...f.missing, label: f.label }));
-    const total = all.length;
-    const provisional = measured.length < MIN_MEASURED;
-    const completeness = {
-      measured: measured.length, total, complete: !missing.length, provisional, missing,
-      label: missing.length ? `Incomplete — ${measured.length} of ${total} factors measured` : '',
-      detail: missing.length ? `Not measured: ${missing.map(m => `${m.label} (${m.reason})`).join('; ')}. Left out of the score${provisional ? '; too few factors for a firm rating' : ''}.` : '',
-      // Sections a retry can re-run (settled ones only: a pending one is still on its way).
-      retry: [...new Set(missing.filter(m => m.state !== 'pending').map(m => m.section))]
-    };
-    const band = score == null ? '' : score >= 8.5 ? 'Excellent' : score >= 7 ? 'Good' : score >= 5.5 ? 'Moderate' : 'Challenging';
-    const rating = score == null ? 'Not scored' : provisional ? 'Provisional' : band;
-    const pool = (measured.length ? measured : all).map(([, f]) => f);
-    const constraint = pool.slice().sort((a, b) => a.score - b.score)[0];
-    // One line for "why this score", under the score on the dashboard and on report page 1.
-    const why = buildable.measured ? buildable.why
-      : buildable.pending ? `Buildable area still measuring · main constraint: ${constraint.label.toLowerCase()}`
-      : `Buildable area not measured · main constraint: ${constraint.label.toLowerCase()}`;
-    return { score, factorScore, rating, band, factors, constraint, buildable, why, completeness, weights: { ...WEIGHTS } };
-  }
+  // The buildability score (score-core.js calculate): 7 factors (0-100) weighted by WEIGHTS,
+  // shown /10, then the buildable-area homesite check. Listing/MLS data and the cost estimate
+  // never feed it. Factors with missing inputs are left out and the weights of the measured ones
+  // re-normalized; the score is then "Incomplete — N of 7 factors measured", and "Provisional"
+  // below 4 measured.
+  const calculateScore = () => C.calculate(currentLast(), pageOptions());
   // The same score and factors for the printable report (property-report-v2.js), so its score and
   // its "top drivers" come from the inputs the dashboard card uses.
   window.AcresXScore = { calculate: calculateScore, missingInputs: l => missingInputs(l), wellStats, WEIGHTS, HOMESITE_MIN_AC, MIN_MEASURED, render: () => renderAll() };

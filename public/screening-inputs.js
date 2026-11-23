@@ -1,6 +1,6 @@
 // Shared screening inputs, so every surface (overview, snapshot cards, score, cost model,
 // printable report) reads the same number from the same rule (2026-11-14 consistency fixes).
-// Injected first by maybeInjectUiPolish() in src/index.js; the other scripts call these helpers
+// Injected after score-core.js by maybeInjectUiPolish() in src/index.js; the other scripts call these helpers
 // at render time.
 //
 // window.AcresXWellDepth: nearby well depth, one definition everywhere (dashboard card, overview,
@@ -38,91 +38,25 @@
 //   BACKUP_LABEL / sourceLabel(soil): the source line shown on the septic card and its details
 //   when the soil answer came from the Esri SSURGO backup (src/services/soils.js, soil.backup).
 (function (root) {
-  const finite = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Number(v));
+  // The rules (well depth stats and grade, septic classify, terrain score) are in score-core.js
+  // (window.AcresXScoreCore, injected before this file); this file keeps the text and the page
+  // wiring, and its window names as thin wrappers.
+  const C = root.AcresXScoreCore;
+  if (!C) throw new Error('AcresX: public/score-core.js must load before screening-inputs.js');
+  const WD = C.wellDepth;
 
   // ---- Nearby well depth
 
-  const NEARBY = 5;
-  const NONRESIDENTIAL = /\b(irrigat|agricultur|industrial|monitor|observation|injection|dewater|geothermal|environmental|remediation|municipal)\w*/i;
-  const SIMILAR_FT = 50;
-  const DRAINAGE_FT = 100;
-  const MIN_COMPARABLE = 3;
+  const { NEARBY, SIMILAR_FT, DRAINAGE_FT, MIN_COMPARABLE, excludedWell, median } = WD;
   const FEW_COMPARABLE = 'Few wells at this elevation nearby — depth could be much greater; ask a local driller.';
   const NOT_CHECKED = 'Elevation not checked: nearby wells may sit in a valley or drainage below this parcel; ask a local driller.';
-
-  function wellText(well) {
-    const p = well?.properties || {};
-    return [p.WellProjectType, p.WellSubType, p.ProjectName, p.SiteType, p.WaterUse, p.WELL_USE, p.USE, p.Status, p.STATUS]
-      .filter(Boolean).join(' ').toLowerCase();
-  }
-  const excludedWell = well => NONRESIDENTIAL.test(wellText(well));
-  const depthOf = well => { const n = finite(well?.properties?.CompletedDepth); return n != null && n > 0 ? n : null; };
-  function median(values) {
-    const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
-    if (!sorted.length) return null;
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  }
-  function quantile(values, q) {
-    const s = values.filter(Number.isFinite).sort((a, b) => a - b);
-    if (!s.length) return null;
-    const pos = (s.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
-    return s[lo] + (s[hi] - s[lo]) * (pos - lo);
-  }
-  const round10 = v => Math.round(v / 10) * 10;
-
-  // The closest-five median (the fallback, and context next to the terrain estimate).
-  function nearest(wellsList) {
-    const wells = wellsList.slice(0, NEARBY);
-    const comparable = wells.filter(w => !excludedWell(w)).map(depthOf).filter(v => v != null);
-    const all = wells.map(depthOf).filter(v => v != null);
-    const med = median(comparable);
-    const fallbackMedian = median(all);
-    return { med, fallbackMedian, depths: med != null ? comparable : all, excluded: wells.filter(excludedWell).length, total: wells.length };
-  }
 
   // null when the wells have not loaded. Otherwise { depth, feet, count, lowFt, highFt,
   // confidence ('moderate' | 'low' | null), method ('terrain' | 'nearest' | 'none'), comparable,
   // planningDepth, scoreDepth, elevationChecked, parcelElevationFt, waterLevelDepthFt, drainage,
   // higher, deepWells, residential, median, fallbackMedian, excluded, total, terrainStatus }.
   // depth: the central number (null: no depth on record); count: the wells it rests on.
-  function stats(data) {
-    if (!data || !Array.isArray(data.wells)) return null;
-    const n = nearest(data.wells);
-    const t = data.wells.terrain;
-    const nearestDepth = n.med ?? n.fallbackMedian;
-    const common = { residential: n.med != null, median: n.med, fallbackMedian: n.fallbackMedian, nearestDepth, excluded: n.excluded, total: n.total, terrainStatus: t ? (t.available ? 'estimated' : t.status || 'unavailable') : 'not_checked' };
-    const e = t?.available ? t.estimate : null;
-    if (e && finite(e.depthFt) != null) {
-      const confidence = e.confidence === 'moderate' ? 'moderate' : 'low';
-      const lowFt = finite(e.lowFt) ?? e.depthFt, highFt = finite(e.highFt) ?? e.depthFt;
-      return {
-        ...common, method: 'terrain', confidence, elevationChecked: true,
-        depth: e.depthFt, feet: Math.round(e.depthFt), lowFt, highFt,
-        count: e.comparableCount || 0, comparable: e.comparableCount || 0, usedCount: e.usedCount || 0,
-        planningDepth: finite(e.planningDepthFt) ?? highFt,
-        scoreDepth: finite(e.scoreDepthFt) ?? (confidence === 'moderate' ? e.depthFt : highFt),
-        parcelElevationFt: finite(e.parcelElevationFt ?? t.parcelElevationFt),
-        waterLevelDepthFt: finite(e.waterLevelDepthFt), waterLevelWells: e.waterLevelWells || 0,
-        // The comparable wells' own median and 25th-75th percentile, never raised by deep wells
-        // (null without a comparable well, or in a cached answer from before 2026-11-20).
-        comparableMedianFt: finite(e.comparableMedianFt), comparableP25Ft: finite(e.comparableP25Ft), comparableP75Ft: finite(e.comparableP75Ft),
-        drainage: e.drainage || null, higher: e.higher || null, deepWells: e.deepWells || null,
-        searchRadiusMiles: finite(t.searchRadiusMiles)
-      };
-    }
-    if (nearestDepth == null) {
-      return { ...common, method: 'none', confidence: null, elevationChecked: false, depth: null, feet: null, count: 0, comparable: 0, lowFt: null, highFt: null, planningDepth: null, scoreDepth: null };
-    }
-    // Elevation not checked: today's median, low confidence, the range widened upward.
-    const lowFt = Math.round(nearestDepth);
-    const highFt = Math.max(lowFt, round10(Math.max(nearestDepth * 1.5, quantile(n.depths, 0.75) ?? 0)));
-    return {
-      ...common, method: 'nearest', confidence: 'low', elevationChecked: false,
-      depth: nearestDepth, feet: Math.round(nearestDepth), count: n.depths.length, comparable: 0,
-      lowFt, highFt, planningDepth: highFt, scoreDepth: highFt
-    };
-  }
+  const stats = data => WD.stats(data);
 
   const plural = n => `${n} well${n === 1 ? '' : 's'}`;
   const ft = n => `${Math.round(n).toLocaleString('en-US')} ft`;
@@ -194,17 +128,7 @@
     return [label(s), drainageText(s), deepText(s), caution(s)].filter(Boolean).join(' · ');
   }
   // { key, label, cls, score }: the card grade, the report chip and the score's water factor.
-  function grade(s) {
-    if (!s || s.depth == null) return null;
-    const d = s.scoreDepth ?? s.depth;
-    if (s.confidence === 'moderate') {
-      if (d <= 200) return { key: 'shallow', label: 'Shallow', cls: 'green', score: 92 };
-      if (d <= 400) return { key: 'moderate', label: 'Moderate', cls: 'amber', score: 76 };
-      return { key: 'deep', label: 'Deep', cls: 'red', score: 55 };
-    }
-    if (d <= 400) return { key: 'uncertain', label: 'Uncertain', cls: 'amber', score: 70 };
-    return { key: 'possibly_deep', label: 'Possibly deep', cls: 'red', score: 55 };
-  }
+  const grade = s => WD.grade(s);
   // The cost lines' basis: "100 ft estimated well depth (range 80–140 ft; 5 wells at similar elevation)".
   function basis(s) {
     if (s?.feet == null) return '';
@@ -229,22 +153,9 @@
 
   // ---- Septic
 
-  const FAVORABLE_MAX_PCT = 8;
-  const LIMITED_OVER_PCT = 15;
+  const SX = C.septic;
+  const { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, classify } = SX;
   const pct1 = n => `${Number(n).toFixed(1)}%`;
-
-  function classify({ drainage, hydrologicGroup, slopePct }) {
-    const d = String(drainage || '').toLowerCase();
-    const hyd = String(hydrologicGroup || '').toUpperCase();
-    const slope = finite(slopePct);
-    const limits = [];
-    if (/very poorly|poorly/.test(d)) limits.push(`${String(drainage).toLowerCase()} soil`);
-    if (hyd.includes('D')) limits.push(`hydrologic group ${hyd} (slow infiltration)`);
-    if (slope != null && slope > LIMITED_OVER_PCT) limits.push(`slope over ${LIMITED_OVER_PCT}%`);
-    if (limits.length) return { feasibility: 'limited', limits };
-    if (/well drained|somewhat excessively|excessively/.test(d) && (slope == null || slope <= FAVORABLE_MAX_PCT)) return { feasibility: 'favorable', limits };
-    return { feasibility: 'moderate', limits };
-  }
 
   // "15 to 35 percent slopes" in the map unit name -> [15, 35].
   function soilSlopeRange(soil) {
@@ -257,33 +168,18 @@
   // zones, wetlands and slopes over 30%: last.buildableArea.homesite), the slope raster's gentlest
   // ~1 ac (land.terrain.homesiteSlopePct, before the buildable answer arrives), then the parcel
   // average grade (no raster), then the soil map unit's slope.
-  function homesiteInput(land, buildable) {
-    const b = buildable === undefined ? (() => { try { return typeof last !== 'undefined' ? last?.buildableArea : root.last?.buildableArea; } catch { return root.last?.buildableArea; } })() : buildable;
-    const fromBuildable = finite(b?.homesite?.slopePct);
-    if (fromBuildable != null) return { slopePct: fromBuildable, homesite: b.homesite };
-    // No ~1 acre site clear of mapped constraints: the parcel average, not a site in a flood zone.
-    if (b?.homesiteStatus === 'none_clear') return { noneClear: true };
-    if (b?.homesiteStatus === 'not_checked') return { noneClear: true, notChecked: true };
-    const t = land?.terrain;
-    const fromTerrain = t?.available ? finite(t.homesiteSlopePct) : null;
-    if (fromTerrain != null) return { slopePct: fromTerrain, homesite: t.homesite || null };
-    return null;
-  }
+  // buildable defaults to the page's last.buildableArea (the rule itself is score-core.js
+  // septic.homesiteInput, which takes it as an argument).
+  const pageBuildable = buildable => (buildable === undefined ? (() => { try { return typeof last !== 'undefined' ? last?.buildableArea : root.last?.buildableArea; } catch { return root.last?.buildableArea; } })() : buildable);
+  const homesiteInput = (land, buildable) => SX.homesiteInput(land, pageBuildable(buildable));
 
   function assess(land, buildable) {
     const soil = land?.soil;
     if (!soil?.available) return null;
-    const t = land?.terrain;
-    const average = t?.available ? finite(t.gradePct) : null;
-    const input = homesiteInput(land, buildable);
-    const noneClear = Boolean(input?.noneClear);
-    const site = noneClear ? null : input;
-    const measured = site ? site.slopePct : average;
-    const soilSlope = finite(soil.soilSlopePct);
-    const slopePct = measured ?? soilSlope;
-    const c = classify({ drainage: soil.drainage, hydrologicGroup: soil.hydrologicGroup, slopePct });
-    // An answer without the inputs (older cached answers) keeps the service's grade.
-    const feasibility = soil.drainage || soil.hydrologicGroup ? c.feasibility : (soil.soilMapFeasibility || soil.feasibility || 'moderate');
+    // The grade (score-core.js septic.evaluate); this function adds the context text.
+    const e = SX.evaluate(land, pageBuildable(buildable));
+    const { input, noneClear, site, average, measured, soilSlope, slopePct, feasibility } = e;
+    const c = e.classified;
     const range = soilSlopeRange(soil);
     const mapSlope = range ? `soil map unit spans ${range[0]}–${range[1]}% slopes` : soilSlope != null ? `soil map unit's typical slope ${soilSlope}%` : '';
     let context;
@@ -321,10 +217,10 @@
   // The septic factor (0-100) before public sewer (public-utilities.js) is considered.
   function score(land) {
     const soil = land?.soil || {};
-    if (!soil.available) return 50;
+    if (!soil.available) return SX.SCORES.unavailable;
     if (soil.septic) apply(land);
     const f = soil.septic ? soil.feasibility : assess(land)?.feasibility || soil.feasibility;
-    return f === 'favorable' ? 92 : f === 'limited' ? 38 : 66;
+    return SX.feasibilityScore(f);
   }
 
   // The soil answer came from the backup (USDA Soil Data Access was down): say so where it shows.
@@ -333,25 +229,10 @@
 
   root.AcresXSeptic = { FAVORABLE_MAX_PCT, LIMITED_OVER_PCT, BACKUP_LABEL, sourceLabel, classify, soilSlopeRange, homesiteInput, assess, apply, score };
 
-  // ---- Terrain factor (owner decision 2026-11-18, PR #93): a gradual scale instead of steps.
-  // Piecewise-linear through the old step values, so a parcel at 15.1% no longer scores 27 points
-  // below one at 14.9%: 0-5% -> 96, then 96 -> 82 by 10%, 82 -> 62 by 15%, 62 -> 35 by 25%, and
-  // 35 beyond. gradePct is the parcel's mean grade (the slope raster's mean when measured,
-  // src/services/slope-raster.js). The one definition for score-cost.js and
-  // screening-refinements.js (and so the dashboard and the report).
-  const TERRAIN_ANCHORS = Object.freeze([[0, 96], [5, 96], [10, 82], [15, 62], [25, 35]]);
-  function terrainScore(gradePct) {
-    const g = gradePct === null || gradePct === undefined || gradePct === '' ? NaN : Number(gradePct);
-    if (!Number.isFinite(g)) return 50;
-    const A = TERRAIN_ANCHORS;
-    if (g <= A[0][0]) return A[0][1];
-    for (let i = 1; i < A.length; i++) {
-      const [x0, y0] = A[i - 1], [x1, y1] = A[i];
-      if (g <= x1) return Math.round((y0 + (y1 - y0) * (g - x0) / (x1 - x0)) * 10) / 10;
-    }
-    return A[A.length - 1][1];
-  }
-  root.AcresXTerrain = { ANCHORS: TERRAIN_ANCHORS, score: terrainScore };
+  // ---- Terrain factor (owner decision 2026-11-18, PR #93): a gradual scale instead of steps,
+  // piecewise-linear through the old step values (score-core.js terrain.score). gradePct is the
+  // parcel's mean grade (the slope raster's mean when measured, src/services/slope-raster.js).
+  root.AcresXTerrain = { ANCHORS: C.terrain.ANCHORS, score: gradePct => C.terrain.score(gradePct) };
 
   // The land answer is graded once, as it arrives, so the card, the detail tab, the score, the
   // cost model and the report all read the same septic grade (progressive-loading.js looks the

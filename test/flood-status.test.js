@@ -10,10 +10,12 @@ import { summarizeFloodRows } from '../src/services/flood.js';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const helperSource = read('public/flood-status.js');
+// flood-status.js reads its rules from public/score-core.js (window.AcresXScoreCore), loaded first.
+const coreSource = read('public/score-core.js');
 
 function loadHelper() {
   const window = {};
-  vm.runInNewContext(helperSource, { window });
+  vm.runInNewContext(`${coreSource}\n${helperSource}`, { window });
   return window;
 }
 const window = loadHelper();
@@ -148,10 +150,11 @@ test('flood-status: backup provider name matches the backend constant', async ()
   assert.equal(FX.BACKUP_PROVIDER, ESRI_PROVIDER);
 });
 
-test('flood-status.js is injected first, before every module that uses it', () => {
+test('flood-status.js is injected right after score-core.js, before every module that uses it', () => {
   const list = read('src/index.js').match(/for\(const s of \[([^\]]+)\]\)/)[1].split(',').map(s => s.trim().replace(/'/g, ''));
-  assert.equal(list[0], 'flood-status');
-  for (const user of ['parcel-preview', 'score-cost', 'screening-refinements']) assert.ok(list.indexOf(user) > 0, user);
+  assert.equal(list[0], 'score-core');
+  assert.equal(list[1], 'flood-status');
+  for (const user of ['parcel-preview', 'score-cost', 'screening-refinements']) assert.ok(list.indexOf(user) > 1, user);
 });
 
 // parcel-preview.js: run the real hazardLabel function against each case.
@@ -181,8 +184,8 @@ test('parcel-preview hazardLabel: does not throw before flood-status.js loads', 
   assert.deepEqual(hazardLabel(unavailable, 'flood'), { text: 'Not verified', cls: 'warn' });
 });
 
-// score-cost.js and screening-refinements.js: run the real flood-score lines.
-for (const file of ['public/score-cost.js', 'public/screening-refinements.js']) {
+// score-cost.js: run the real flood-score lines.
+for (const file of ['public/score-cost.js']) {
   const src = read(file);
   const start = src.indexOf('const FX = window.AcresXFlood;');
   const lineEnd = src.indexOf('\n', src.indexOf('const floodScore', start));
@@ -201,6 +204,21 @@ for (const file of ['public/score-cost.js', 'public/screening-refinements.js']) 
     assert.equal(floodScoreOf({}, femaEmpty), 96);
   });
 }
+
+// The score's flood factor (score-core.js, used by screening-refinements.js) is the same score
+// for every category.
+test('score-core.js: the score\'s flood factor is AcresXFlood\'s score for every category', () => {
+  const C = window.AcresXScoreCore;
+  for (const [flood, [, score]] of EXPECTED) {
+    assert.equal(C.flood.score(flood), score, NAMES.get(flood));
+    assert.equal(FX.score(flood), score, NAMES.get(flood));
+    const factors = C.factors({ flood, wells: [], utility: [] });
+    assert.equal(factors.flood.score, C.flood.shareScore(flood) ?? score, NAMES.get(flood));
+  }
+  for (const file of ['public/screening-refinements.js']) {
+    assert.doesNotMatch(read(file), /flood\.high \? 20/, `${file} keeps no flood scale of its own`);
+  }
+});
 
 // index.html renderSummary: run the real grade expression and check the flood traffic light uses it.
 function loadIndexGrade() {

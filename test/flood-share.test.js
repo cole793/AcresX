@@ -364,7 +364,8 @@ test('recorded: Spokane 23123.9051 with FEMA outlines blocked measures zone A 67
 
 function loadFlood() {
   const window = {};
-  vm.runInNewContext(readFileSync(new URL('../public/flood-status.js', import.meta.url), 'utf8'), { window });
+  // flood-status.js reads its rules from public/score-core.js, loaded first (as on the page).
+  for (const f of ['score-core.js', 'flood-status.js']) vm.runInNewContext(readFileSync(new URL(`../public/${f}`, import.meta.url), 'utf8'), { window });
   return window.AcresXFlood;
 }
 const measuredAnswer = (zones, extra = {}) => ({

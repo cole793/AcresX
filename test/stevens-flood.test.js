@@ -23,7 +23,7 @@ const { ae, x, ani } = recorded.cases;
 // A Kootenai County, ID parcel (the one test/flood.test.js uses): outside Stevens.
 const kootenai = { type: 'Polygon', coordinates: [[[-116.8, 47.7], [-116.79, 47.7], [-116.79, 47.71], [-116.8, 47.71], [-116.8, 47.7]]] };
 
-const FX = (() => { const window = {}; vm.runInNewContext(readFileSync(new URL('../public/flood-status.js', import.meta.url), 'utf8'), { window }); return window.AcresXFlood; })();
+const FX = (() => { const window = {}; for (const f of ['score-core.js', 'flood-status.js']) vm.runInNewContext(readFileSync(new URL(`../public/${f}`, import.meta.url), 'utf8'), { window }); return window.AcresXFlood; })();
 const plain = v => JSON.parse(JSON.stringify(v));
 
 const realFetch = globalThis.fetch;

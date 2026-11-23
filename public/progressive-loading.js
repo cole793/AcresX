@@ -45,7 +45,7 @@
     publicUtilities: { fn: 'findPublicUtilities', ms: 15000, label: 'public water/sewer', fallback: why => { const f = { status: 'unavailable', basis: why === 'timeout' ? 'Public water/sewer lookup timed out' : 'Public water/sewer lookup failed' }; return { available: false, water: f, sewer: { ...f }, ...(why === 'timeout' ? { error: 'Timed out', timedOut: true } : {}) }; } }
   };
   const SECTION_NAMES = Object.keys(SECTIONS);
-  // Inputs of the buildability score (score-cost.js / screening-refinements.js scoreFactors()).
+  // Inputs of the buildability score (score-core.js factors(), via screening-refinements.js).
   // publicUtilities swaps the water/septic factors and the well/septic cost lines (public-utilities.js).
   const SCORE_INPUTS = ['wells', 'utility', 'flood', 'wetlands', 'zoningPermits', 'land', 'publicUtilities'];
   // Follow-up requests whose answers feed the score or the cost estimate.

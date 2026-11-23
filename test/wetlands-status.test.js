@@ -10,7 +10,8 @@ import { wetlandCategory, PRESENT_MIN_ACRES, PRESENT_MIN_PCT, PRESENT_FLOOR_ACRE
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const window = {};
-vm.runInNewContext(read('public/wetlands-status.js'), { window });
+// wetlands-status.js reads its rules from public/score-core.js (window.AcresXScoreCore), loaded first.
+vm.runInNewContext(`${read('public/score-core.js')}\n${read('public/wetlands-status.js')}`, { window });
 const WX = window.AcresXWetlands;
 const plain = v => (v && typeof v === 'object' ? JSON.parse(JSON.stringify(v)) : v);
 
@@ -85,7 +86,8 @@ test('wetlands-status.js is injected before every module that uses it', () => {
   const at = list.indexOf('wetlands-status');
   assert.ok(at >= 0, 'wetlands-status must be in the injection list');
   for (const user of ['parcel-preview', 'score-cost', 'screening-refinements']) assert.ok(list.indexOf(user) > at, user);
-  assert.equal(list[0], 'flood-status', 'flood-status stays first');
+  assert.equal(list[0], 'score-core', 'score-core is first');
+  assert.equal(list[1], 'flood-status', 'flood-status stays right after it');
 });
 
 // parcel-preview.js: the real hazardLabel function.
@@ -124,16 +126,24 @@ test('score-cost.js: wetlands score comes from AcresXWetlands, with a fallback',
   assert.equal(run({}, unavailable), 50);
 });
 
-// screening-refinements.js: the real wetlandsScore function and the score-card note.
+// The dashboard score's wetlands factor (score-core.js) is AcresXWetlands' score.
+test('score-core.js: the score\'s wetlands factor is AcresXWetlands\' score', () => {
+  const C = window.AcresXScoreCore;
+  for (const [name, w, , score] of CASES) {
+    assert.equal(C.wetlands.score(w), score, name);
+    assert.equal(C.factors({ wetlands: w, wells: [], utility: [] }).wetlands.score, score, name);
+  }
+});
+
+// screening-refinements.js: the score (score-core.js wetlands.score, as the page uses it) and the
+// real score-card note.
 function loadRefinements() {
   const src = read('public/screening-refinements.js');
-  const fnStart = src.indexOf('  function wetlandsScore(');
-  const fnEnd = src.indexOf('\n  }\n', fnStart);
   const noteStart = src.indexOf('    const w = last?.wetlands || {};');
   const noteEnd = src.indexOf(';\n', src.indexOf('wetlandNote.textContent =', noteStart));
-  assert.ok(fnStart >= 0 && noteStart >= 0, 'screening-refinements wetlands code not found');
+  assert.ok(noteStart >= 0, 'screening-refinements wetlands code not found');
   const numberFn = 'function number(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }';
-  const score = (win, w) => vm.runInNewContext(`${numberFn}\n${src.slice(fnStart, fnEnd + 4)}\nwetlandsScore(w)`, { window: win, w });
+  const score = (win, w) => window.AcresXScoreCore.factors({ wetlands: w, wells: [], utility: [] }).wetlands.score;
   const note = (win, w) => vm.runInNewContext(`${numberFn}\nconst wetlandNote = {};\n${src.slice(noteStart, noteEnd + 1)}\nwetlandNote.textContent`, { window: win, last: { wetlands: w } });
   return { score, note };
 }
