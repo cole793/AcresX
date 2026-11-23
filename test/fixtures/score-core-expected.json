@@ -1,0 +1,522 @@
+{
+  "note": "Recorded 2026-11-23 from AcresXScore.calculate() before the score-core.js refactor (flood-status, screening-inputs, wetlands-status, score-cost, screening-refinements, buildable-area, public-utilities in injection order). Change only together with a SCORE_RULES_VERSION bump in public/score-core.js.",
+  "rulesVersion": 1,
+  "cases": {
+    "spokane_flat_complete": {
+      "score": 9.18,
+      "factorScore": 9.18,
+      "rating": "Excellent",
+      "band": "Excellent",
+      "factors": {
+        "water": {
+          "score": 92,
+          "measured": true
+        },
+        "soil": {
+          "score": 92,
+          "measured": true
+        },
+        "terrain": {
+          "score": 96,
+          "measured": true
+        },
+        "flood": {
+          "score": 96,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 96,
+          "measured": true
+        },
+        "power": {
+          "score": 78,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Power",
+      "why": "9.4 ac remain outside steep slopes",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "stevens_steep": {
+      "score": 4.05,
+      "factorScore": 5.995,
+      "rating": "Challenging",
+      "band": "Challenging",
+      "factors": {
+        "water": {
+          "score": 55,
+          "measured": true
+        },
+        "soil": {
+          "score": 38,
+          "measured": true
+        },
+        "terrain": {
+          "score": 42,
+          "measured": true
+        },
+        "flood": {
+          "score": 70,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 96,
+          "measured": true
+        },
+        "power": {
+          "score": 70,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Septic",
+      "why": "Only 0.3 ac remain outside steep slopes: a homesite may not fit",
+      "buildableCap": 4.05,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "kootenai_flood_share": {
+      "score": 8.3385,
+      "factorScore": 8.3385,
+      "rating": "Good",
+      "band": "Good",
+      "factors": {
+        "water": {
+          "score": 92,
+          "measured": true
+        },
+        "soil": {
+          "score": 92,
+          "measured": true
+        },
+        "terrain": {
+          "score": 96,
+          "measured": true
+        },
+        "flood": {
+          "score": 39.9,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 96,
+          "measured": true
+        },
+        "power": {
+          "score": 78,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Flood",
+      "why": "3.00 ac remain outside the flood zone",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "kootenai_flood_unmeasured": {
+      "score": 6.3,
+      "factorScore": 6.3,
+      "rating": "Moderate",
+      "band": "Moderate",
+      "factors": {
+        "water": {
+          "score": 70,
+          "measured": true
+        },
+        "soil": {
+          "score": 38,
+          "measured": true
+        },
+        "terrain": {
+          "score": 96,
+          "measured": true
+        },
+        "flood": {
+          "score": 20,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 96,
+          "measured": true
+        },
+        "power": {
+          "score": 45,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Flood",
+      "why": "Buildable area still measuring · main constraint: flood",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "gallatin_wetland": {
+      "score": 7.465999999999999,
+      "factorScore": 7.465999999999999,
+      "rating": "Good",
+      "band": "Good",
+      "factors": {
+        "water": {
+          "score": 76,
+          "measured": true
+        },
+        "soil": {
+          "score": 38,
+          "measured": true
+        },
+        "terrain": {
+          "score": 91.8,
+          "measured": true
+        },
+        "flood": {
+          "score": 96,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 65,
+          "measured": true
+        },
+        "power": {
+          "score": 78,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Septic",
+      "why": "15.6 ac remain outside wetlands",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "yellowstone_no_zoning": {
+      "score": 7.056,
+      "factorScore": 7.056,
+      "rating": "Good",
+      "band": "Good",
+      "factors": {
+        "water": {
+          "score": 70,
+          "measured": true
+        },
+        "soil": {
+          "score": 66,
+          "measured": true
+        },
+        "terrain": {
+          "score": 74.8,
+          "measured": true
+        },
+        "flood": {
+          "score": 70,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 92,
+          "measured": true
+        },
+        "power": {
+          "score": 70,
+          "measured": true
+        },
+        "zoning": {
+          "score": 52,
+          "measured": true
+        }
+      },
+      "constraint": "Zoning",
+      "why": "All 4.80 ac outside mapped flood zones, wetlands and steep slopes",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "spokane_public_utilities": {
+      "score": 9.18,
+      "factorScore": 9.18,
+      "rating": "Excellent",
+      "band": "Excellent",
+      "factors": {
+        "water": {
+          "score": 92,
+          "measured": true
+        },
+        "soil": {
+          "score": 92,
+          "measured": true
+        },
+        "terrain": {
+          "score": 96,
+          "measured": true
+        },
+        "flood": {
+          "score": 96,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 96,
+          "measured": true
+        },
+        "power": {
+          "score": 78,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Power",
+      "why": "0.18 ac remain outside setbacks",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "yellowstone_likely_utilities": {
+      "score": 7.220000000000001,
+      "factorScore": 7.220000000000001,
+      "rating": "Good",
+      "band": "Good",
+      "factors": {
+        "water": {
+          "score": 40,
+          "measured": true
+        },
+        "soil": {
+          "score": 92,
+          "measured": true
+        },
+        "terrain": {
+          "score": 96,
+          "measured": true
+        },
+        "flood": {
+          "score": 50,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 55,
+          "measured": true
+        },
+        "power": {
+          "score": 70,
+          "measured": true
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Water",
+      "why": "All 2.50 ac outside mapped flood zones, wetlands and steep slopes",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 7,
+        "provisional": false,
+        "label": "",
+        "detail": "",
+        "retry": []
+      }
+    },
+    "missing_inputs_provisional": {
+      "score": 9.6,
+      "factorScore": 9.6,
+      "rating": "Provisional",
+      "band": "Excellent",
+      "factors": {
+        "water": {
+          "score": 40,
+          "measured": false
+        },
+        "soil": {
+          "score": 50,
+          "measured": false
+        },
+        "terrain": {
+          "score": 50,
+          "measured": false
+        },
+        "flood": {
+          "score": 50,
+          "measured": false
+        },
+        "wetlands": {
+          "score": 96,
+          "measured": true
+        },
+        "power": {
+          "score": 45,
+          "measured": false
+        },
+        "zoning": {
+          "score": 45,
+          "measured": false
+        }
+      },
+      "constraint": "Wetlands",
+      "why": "Buildable area still measuring · main constraint: wetlands",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 1,
+        "provisional": true,
+        "label": "Incomplete — 1 of 7 factors measured",
+        "detail": "Not measured: Water (the well-records lookup didn't answer); Septic (USDA soil service is still loading); Terrain (USGS elevation service is still loading); Flood (FEMA flood map service timed out); Power (the utility-territory lookup didn't answer); Zoning (the county zoning source didn't answer). Left out of the score; too few factors for a firm rating.",
+        "retry": [
+          "wells",
+          "flood",
+          "utility",
+          "zoningPermits"
+        ]
+      }
+    },
+    "sections_timeout_pending": {
+      "score": 8.4,
+      "factorScore": 8.4,
+      "rating": "Good",
+      "band": "Good",
+      "factors": {
+        "water": {
+          "score": 70,
+          "measured": true
+        },
+        "soil": {
+          "score": 50,
+          "measured": false
+        },
+        "terrain": {
+          "score": 84.5,
+          "measured": true
+        },
+        "flood": {
+          "score": 96,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 50,
+          "measured": false
+        },
+        "power": {
+          "score": 45,
+          "measured": false
+        },
+        "zoning": {
+          "score": 86,
+          "measured": true
+        }
+      },
+      "constraint": "Water",
+      "why": "Buildable area not measured · main constraint: water",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 4,
+        "provisional": false,
+        "label": "Incomplete — 4 of 7 factors measured",
+        "detail": "Not measured: Septic (USDA soil service didn't answer); Wetlands (NWI wetlands service timed out); Power (the utility-territory lookup is still loading). Left out of the score.",
+        "retry": [
+          "land",
+          "wetlands"
+        ]
+      }
+    },
+    "gallatin_terrain_missing": {
+      "score": 6.075,
+      "factorScore": 6.075,
+      "rating": "Moderate",
+      "band": "Moderate",
+      "factors": {
+        "water": {
+          "score": 55,
+          "measured": true
+        },
+        "soil": {
+          "score": 92,
+          "measured": true
+        },
+        "terrain": {
+          "score": 50,
+          "measured": false
+        },
+        "flood": {
+          "score": 55,
+          "measured": true
+        },
+        "wetlands": {
+          "score": 22,
+          "measured": true
+        },
+        "power": {
+          "score": 70,
+          "measured": true
+        },
+        "zoning": {
+          "score": 45,
+          "measured": true
+        }
+      },
+      "constraint": "Wetlands",
+      "why": "Buildable area still measuring · main constraint: wetlands",
+      "buildableCap": null,
+      "completeness": {
+        "measured": 6,
+        "provisional": false,
+        "label": "Incomplete — 6 of 7 factors measured",
+        "detail": "Not measured: Terrain (USGS elevation service didn't answer). Left out of the score.",
+        "retry": [
+          "land"
+        ]
+      }
+    }
+  }
+}
