@@ -34,6 +34,7 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
 |---|---|---|---|
 | `claude/small-fixes-nov18` | | | Tiny-parcel homesite centroid, Stevens easement note hidden, this handoff update. |
 | (none else) | | | Everything through #96 is merged. |
+| `claude/explore-index-design` | | | Parcel search index, Phase 1 step 1: design + schema only (`docs/explore-index.md`, `migrations-index/`). No runtime change. |
 
 Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
 HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
