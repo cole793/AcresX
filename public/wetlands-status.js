@@ -1,8 +1,8 @@
 // Shared reading of the /api/hazards wetlands result for the page's labels and scores. This file
-// is the single source of truth for wetland categories, labels, detail text and the wetlands
-// score. Injected by maybeInjectUiPolish() in src/index.js before the modules that use it;
-// index.html, parcel-preview.js, score-cost.js and screening-refinements.js call
-// window.AcresXWetlands at render time (and keep a simple fallback if it has not loaded).
+// is the single source of truth for wetland labels and detail text (the categories and the
+// wetlands score are score-core.js rules). Injected by maybeInjectUiPolish() in src/index.js before the modules that use it;
+// index.html and parcel-preview.js call window.AcresXWetlands at render time (and keep a simple
+// fallback if it has not loaded); the score reads the rules from score-core.js.
 //
 // Categories (rules match wetlandCategory() in src/services/wetlands.js):
 //   present      NWI wetland overlaps the parcel by >= 0.05 ac, or >= 0.5% of the parcel and

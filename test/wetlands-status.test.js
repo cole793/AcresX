@@ -113,26 +113,15 @@ test('parcel-preview hazardLabel: wetlands does not throw before wetlands-status
   assert.deepEqual(hazardLabel(unavailable, 'wetlands'), { text: 'Not verified', cls: 'warn' });
 });
 
-// score-cost.js: the real wetlands-score lines.
-test('score-cost.js: wetlands score comes from AcresXWetlands, with a fallback', () => {
-  const src = read('public/score-cost.js');
-  const start = src.indexOf('const WX = window.AcresXWetlands;');
-  const end = src.indexOf('\n', src.indexOf('const wetlandsScore', start));
-  assert.ok(start >= 0 && end > start, 'wetlands score lines not found');
-  const run = (win, wetlands) => vm.runInNewContext(`${src.slice(start, end)}\nwetlandsScore`, { window: win, wetlands });
-  for (const [name, w, , score] of CASES) assert.equal(run(window, w), score, name);
-  assert.equal(run({}, present), 42);
-  assert.equal(run({}, none), 96);
-  assert.equal(run({}, unavailable), 50);
-});
-
-// The dashboard score's wetlands factor (score-core.js) is AcresXWetlands' score.
-test('score-core.js: the score\'s wetlands factor is AcresXWetlands\' score', () => {
+// score-cost.js no longer scores (R3, docs/explore-index.md section 8): the score card's wetlands
+// factor is the score core's, which is AcresXWetlands' score.
+test('score-core.js: the score\'s wetlands factor is AcresXWetlands\' score; score-cost.js has no scale of its own', () => {
   const C = window.AcresXScoreCore;
   for (const [name, w, , score] of CASES) {
     assert.equal(C.wetlands.score(w), score, name);
     assert.equal(C.factors({ wetlands: w, wells: [], utility: [] }).wetlands.score, score, name);
   }
+  assert.doesNotMatch(read('public/score-cost.js'), /wetlands\.intersects \? 42/);
 });
 
 // screening-refinements.js: the score (score-core.js wetlands.score, as the page uses it) and the

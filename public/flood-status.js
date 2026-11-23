@@ -2,8 +2,8 @@
 // the single source of truth for flood labels and detail text (the categories and the flood score
 // are score-core.js rules, read through window.AcresXScoreCore).
 // Injected right after score-core.js by maybeInjectUiPolish() in src/index.js; index.html, parcel-preview.js,
-// score-cost.js and screening-refinements.js call window.AcresXFlood at render time (and keep
-// their old behaviour if it has not loaded).
+// and property-report-v2.js call window.AcresXFlood at render time (index.html and parcel-preview.js
+// keep their old behaviour if it has not loaded); the score reads the rules from score-core.js.
 //
 // Categories, worst first (the worst intersecting zone wins; ranked by score, lowest first, and
 // moderate beats not_mapped on the tie). Rules match src/services/flood.js (FLOOD_RANK, rowCategory).

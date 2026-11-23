@@ -126,6 +126,12 @@ test('injection order: score-core.js first, before every script that uses it; th
   assert.ok(shared.indexOf('/score-core.js') < shared.indexOf('/public-utilities.js'), 'before public-utilities.js');
 });
 
+test('score-cost.js keeps no score of its own (R3): the card renders from screening-refinements.js', () => {
+  const src = readPublic('score-cost.js');
+  for (const gone of [/const WEIGHTS\b/, /function scoreFactors\b/, /function calculateScore\b/]) assert.doesNotMatch(src, gone);
+  assert.match(src, /AcresXScore\?\.renderCard\?\.\(\)/);
+});
+
 test('the helpers say clearly when score-core.js did not load first', () => {
   for (const file of ['flood-status.js', 'screening-inputs.js', 'wetlands-status.js', 'screening-refinements.js', 'public-utilities.js']) {
     const context = vm.createContext({ window: {} });

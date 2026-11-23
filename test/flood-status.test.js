@@ -184,29 +184,8 @@ test('parcel-preview hazardLabel: does not throw before flood-status.js loads', 
   assert.deepEqual(hazardLabel(unavailable, 'flood'), { text: 'Not verified', cls: 'warn' });
 });
 
-// score-cost.js: run the real flood-score lines.
-for (const file of ['public/score-cost.js']) {
-  const src = read(file);
-  const start = src.indexOf('const FX = window.AcresXFlood;');
-  const lineEnd = src.indexOf('\n', src.indexOf('const floodScore', start));
-  const floodScoreOf = (win, flood) => vm.runInNewContext(`${src.slice(start, lineEnd)}\nfloodScore`, { window: win, flood });
-
-  test(`${file}: flood score comes from AcresXFlood for every category`, () => {
-    assert.ok(start >= 0 && lineEnd > start, 'flood score lines not found');
-    assert.match(src.slice(start, lineEnd), /FX\.score\(flood\)/);
-    for (const [flood, [, score]] of EXPECTED) assert.equal(floodScoreOf(window, flood), score, NAMES.get(flood));
-  });
-
-  test(`${file}: flood score does not throw before flood-status.js loads`, () => {
-    assert.equal(floodScoreOf({}, zoneAE), 20);
-    assert.equal(floodScoreOf({}, limited), 50);
-    assert.equal(floodScoreOf({}, unavailable), 50);
-    assert.equal(floodScoreOf({}, femaEmpty), 96);
-  });
-}
-
 // The score's flood factor (score-core.js, used by screening-refinements.js) is the same score
-// for every category.
+// for every category; score-cost.js no longer scores (R3, docs/explore-index.md section 8).
 test('score-core.js: the score\'s flood factor is AcresXFlood\'s score for every category', () => {
   const C = window.AcresXScoreCore;
   for (const [flood, [, score]] of EXPECTED) {
@@ -215,7 +194,7 @@ test('score-core.js: the score\'s flood factor is AcresXFlood\'s score for every
     const factors = C.factors({ flood, wells: [], utility: [] });
     assert.equal(factors.flood.score, C.flood.shareScore(flood) ?? score, NAMES.get(flood));
   }
-  for (const file of ['public/screening-refinements.js']) {
+  for (const file of ['public/score-cost.js', 'public/screening-refinements.js']) {
     assert.doesNotMatch(read(file), /flood\.high \? 20/, `${file} keeps no flood scale of its own`);
   }
 });

@@ -106,6 +106,8 @@
     return `${head} · ${c.complete ? '7-factor screening' : c.label}`;
   }
   window.AcresXScore.noteText = scoreNoteText;
+  // The score card alone (score-cost.js paints it with the cost card).
+  window.AcresXScore.renderCard = () => renderScore();
 
   function retryMissing(sections) {
     const P = window.AcresXProgress;
