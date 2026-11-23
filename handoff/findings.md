@@ -2,6 +2,63 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-11-23: Parcel index sources
+
+Reader research for the parcel search index (`docs/explore-index.md`), live read-only queries
+2026-11-23, except where marked unconfirmed.
+
+- **Paging:** every bulk layer supports pagination, `returnCountOnly`, statistics and distinct
+  values. maxRecordCount 2000: Spokane Assessor/Parcels/0, Spokane ISDSDE/LandCapacityAnalysis/0,
+  Stevens RealPropertyParcels_Public/0, WA Current_Parcels/0 ("Parcels_2026"), MT DNRC
+  Cadastral/0. 1000: Kootenai Ownership_Display/0 and Assessor_Layers 5-11.
+- **Stevens county layer returns `geometry: null`.** Stevens outlines must come from WA statewide
+  Current_Parcels (`FIPS_NR='065'`, wkid 2927, `Shape__Area` in sq ft, no acres field).
+  `LANDUSE_CD` is filled (102 null of 42,943) and matches the county `property_u`. County
+  attributes are joined by parcel number.
+- **Row counts (all / >= 1 ac):** Spokane 214,839 / 52,303 (`acreage`); Stevens 43,092 / 32,432
+  (`legal_acre`); Kootenai 94,992 / 28,237 (`Acres`; Assessor_Layers 5-11 total 94,987);
+  Yellowstone `COUNTYCD=3` 84,060 / 21,587 (`GISAcres`); Gallatin `COUNTYCD=6` 53,638 / 22,862.
+  County codes 3 and 6 are confirmed by `Geocode` prefixes. About 157k parcels are >= 1 ac; the
+  index is expected at about 160-175k with small rural vacant lots.
+- **No city flag on parcels:** Kootenai Ownership_Display `Incorp`, `CityCD`, `CITY_1` are null on
+  all rows, so "outside city limits" is a spatial overlay.
+- **WA DOR land use codes** (WAC 458-53-030(5), WSR 23-01-006): 41 rail/transit, 42 motor vehicle,
+  43 aircraft, 44 marine, 45 highway/street ROW, 46 parking, 47 communication, 48 utilities,
+  49 other TCU; 14 residential condo, 50 other condo; 67 governmental services; 91/99
+  undeveloped.
+- **Spokane** has `prop_use_code` and `exmp_code` on LandCapacityAnalysis/0, which answers in
+  about 0.3 s per query vs 2.3 s. `exmp_code` GOVT / WATD / CEM are public-ownership hints
+  (meanings unconfirmed).
+- **Kootenai `property_class`:** condo 526 (residential), 527 (commercial); commercial 4xx (413,
+  416, 421, 435, 438, 442, 451); industrial 3xx (314, 317, 322, 336, 339, 343), 441 mixed; exempt
+  or public 681 and 548 "NREV" (meaning unconfirmed); 667 operating property (likely utility or
+  rail, unconfirmed); 525 common areas. Rural residential 512/515/534/537; in-city residential
+  541/520.
+- **MT `PropType` values:** Improved Property, Vacant Land, Condominium, Townhouse, Exempt
+  Property, Partial Exempt Property, Tribal Property, Non-Valued Property, Non-Valued with
+  Specials, "CN - Centrally Assessed Non-Valued Property", "CA - Centrally Assessed", Industrial
+  Property, Apartment, Mobile/RV Parks, Golf Course, Gravel Pit, On Leased Land, and null (about
+  1,300 Yellowstone, 683 Gallatin). No Commercial type (commercial is inside Improved) and no
+  road ROW type.
+- **Public land:** the PAD-US 4.1 service AcresX already uses
+  (`Protection_Mechanism_Category_PADUS/FeatureServer/0`, last edited 2025-06-04) holds Fee
+  records, including state trust lands (WA SDNR, WA SFW, ID SDOL, MT SDNR) as large multipart
+  features. Whether a newer state trust-land source exists is unconfirmed.
+- **City limits:** Kootenai CAD_Map_Polygons/MapServer/3 "City Limits" (15 dissolved features,
+  areas match TIGER), not Data_Layers/18 (tax code areas). Spokane SCOUT/PermittingLookup/0
+  (NAME 'Spokane County' and Fairchild AFB are MUNITYP 'Other'). Stevens
+  Stevens_County_Zoning_Data/0 (6 cities). Yellowstone layer 30 (BILLINGS / LAUREL / BROADVIEW /
+  COUNTY; COUNTY rows with `ISLAND='Y'` look like county islands, unconfirmed). Gallatin
+  FeatureServer/267. Fallback: TIGERweb Places_CouSub_ConCity_SubMCD/MapServer/4 "Incorporated
+  Places".
+- **Cloudflare D1** (developers.cloudflare.com): 10 GB Paid / 500 MB Free; 100 KB per statement;
+  100 bound parameters; 30 s per query; 1,000 queries per invocation on Paid, 50 on Free (a batch
+  counts as one). Rows written: Free 100k per day; Paid 50M per month included, then $1 per
+  million. Index updates count as extra rows written.
+- **GitHub Actions:** 6 h job limit; the repo is public, so standard runners are free.
+- **Timing** (from a container, not a GitHub runner): paging all five counties takes minutes. The
+  per-parcel layers are the expensive part. Runner-IP behaviour is unconfirmed.
+
 ## 2026-10-28: Shared upstream client, per-host cap and /api/upstream-health
 
 Owner-approved 2026-10-28 (backend cleanup step 2, branch `claude/shared-upstream-client`).
