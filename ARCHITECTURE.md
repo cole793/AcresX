@@ -101,3 +101,13 @@ Legacy implementation retained temporarily so unmigrated routes continue to work
 - Listing claims remain unverified context and should not affect buildability scoring unless independently verified.
 - Upstream failures should degrade a single data layer rather than blank the whole property analysis.
 - Call upstream servers through `shared/upstream.js` (no raw `fetch`, no `cf` edge caching); cache only validated answers with `cachedJson()`.
+
+## Parcel search index (planned, Phase 1)
+
+Design only so far: `docs/explore-index.md`, schema `migrations-index/0001_parcel_index.sql`. A
+scheduled GitHub Actions job (not the Worker cron) will pre-score rural-relevant parcels of the
+five covered counties into a separate D1 database `acresx-index` (binding `INDEX_DB`, not
+`MLS_DB`), calling the Worker's own handlers in-process and the same score code as the report
+(after moving it into a shared `public/score-core.js`). Later: a hidden `/explore` page and
+read-only `/api/explore/*` routes behind `EXPLORE_ENABLED`. `wrangler.jsonc` is unchanged until
+the database exists.
