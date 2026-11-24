@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { decide, needsOutline, preExclusion, smallWithoutOutline, INCLUSION_REASONS } from '../pipeline/inclusion.mjs';
 import * as spokane from '../pipeline/counties/spokane.mjs';
-import { preparePolygons, parcelSamples } from '../pipeline/overlay.mjs';
+import { preparePolygons, parcelSamples, pointInIndexed, sharesByKey } from '../pipeline/overlay.mjs';
+import { pointInRings, coverageShares, ringsFromGeometry } from '../src/shared/polygon-coverage.js';
 import { openIndexDb } from '../pipeline/db.mjs';
 import { runIndex, plan, parseArgs } from '../pipeline/build-index.mjs';
 import { scoreParcel } from '../pipeline/score-parcel.mjs';
@@ -237,6 +238,24 @@ test('city limits: the majority of the parcel decides; Fairchild AFB and no poly
   assert.equal(edge.cityName, null);
   assert.equal(spokane.cityOf(at({ x0: -117.66, x1: -117.64, y0: 47.61, y1: 47.62 }), limits).inCity, 0, 'Fairchild AFB is not a city');
   assert.equal(spokane.cityOf(at({ x0: -117.3, x1: -117.29, y0: 47.8, y1: 47.81 }), limits).inCity, 0);
+});
+
+test('the indexed point test is polygon-coverage.js pointInRings, and the shares are coverageShares', () => {
+  // A star with a hole and a second part: concave edges, many vertices, even-odd parts.
+  const star = [];
+  for (let k = 0; k <= 400; k++) { const a = (k % 400) / 400 * 2 * Math.PI, r = k % 2 ? 0.01 : 0.02; star.push([-117.3 + r * Math.cos(a), 47.8 + r * Math.sin(a)]); }
+  const hole = [[-117.302, 47.798], [-117.298, 47.798], [-117.298, 47.802], [-117.302, 47.802], [-117.302, 47.798]];
+  const part = [[-117.25, 47.78], [-117.24, 47.78], [-117.24, 47.79], [-117.25, 47.79], [-117.25, 47.78]];
+  const features = [{ attributes: { NAME: 'A' }, geometry: { rings: [star, hole, part] } }, { attributes: { NAME: 'B' }, geometry: esriRect({ x0: -117.31, x1: -117.29, y0: 47.79, y1: 47.81 }) }];
+  const [prepared] = preparePolygons(features);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let k = 0; k < 3000; k++) {
+    const x = -117.33 + rnd() * 0.1, y = 47.77 + rnd() * 0.05;
+    assert.equal(pointInIndexed(x, y, prepared.indexed), pointInRings(x, y, ringsFromGeometry(features[0].geometry)), `${x},${y}`);
+  }
+  const parcel = parcelSamples({ type: 'Polygon', coordinates: [[[-117.315, 47.795], [-117.285, 47.795], [-117.285, 47.805], [-117.315, 47.805], [-117.315, 47.795]]] });
+  const keyOf = a => a.NAME;
+  assert.deepEqual(sharesByKey(parcel, preparePolygons(features), keyOf), coverageShares(parcel.samples, features, keyOf));
 });
 
 // ---- 4-6. The run: rule, degraded layers, resume/skip, stored score

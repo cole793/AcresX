@@ -155,6 +155,7 @@ export async function runIndex(options) {
         // A failed outline batch: those parcels are not decided this run (stored rows stay as
         // they are, and nothing is marked removed).
         if (!outlines) { pullIncomplete = true; bump(stats.excluded, 'outline_unavailable', Math.min(OUTLINE_BATCH, candidates.length - i)); continue; }
+        if (i && i % 5000 === 0) log(`rule applied to ${i} of ${candidates.length} candidates (${Math.round((Date.now() - t0) / 1000)} s)`);
         for (const r of candidates.slice(i, i + OUTLINE_BATCH)) {
           const bulk = outlines.get(r.pid);
           const parcel = bulk ? parcelSamples(bulk.geometry) : null;
@@ -188,7 +189,7 @@ export async function runIndex(options) {
         const p = options.mode === 'rescore' ? (inputsRow ? { action: 'rescore', why: 'mode' } : { action: 'skip', why: 'no stored inputs' })
           : plan(existing, inputsRow, { sourceHash: cand.sourceHash, inputsVersion, scoreVersion, now, force: options.force });
         bump(stats.plans, `${p.action}:${p.why}`);
-        if (options.mode === 'pull_only') { bump(stats.includedByReason, cand.reason); if (stats.included % 5000 === 0) log(`${stats.included} included so far`); continue; }
+        if (options.mode === 'pull_only') { bump(stats.includedByReason, cand.reason); continue; }
         bump(stats.includedByReason, cand.reason);
         if (p.action === 'skip') { stats.skipped++; continue; }
         if (p.action === 'rescore') {
