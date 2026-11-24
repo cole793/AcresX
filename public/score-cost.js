@@ -1,6 +1,4 @@
 (() => {
-  const WEIGHTS = { water: 15, soil: 20, terrain: 20, flood: 15, wetlands: 10, power: 10, zoning: 10 };
-
   function addStyles() {
     if (document.getElementById('scoreCostStyles')) return;
     const style = document.createElement('style');
@@ -48,54 +46,6 @@
     const WD = window.AcresXWellDepth;
     const s = WD.stats(last);
     return s?.depth == null ? null : { average: s.depth, count: s.count, grade: WD.grade(s), costDepth: s.planningDepth ?? s.depth, basis: WD.basis(s) };
-  }
-
-  function scoreFactors() {
-    const wells = avgWellDepth();
-    const soil = last?.land?.soil || {};
-    const terrain = last?.land?.terrain || {};
-    const flood = last?.flood || {};
-    const wetlands = last?.wetlands || {};
-    const zoning = last?.zoningPermits?.zoning || {};
-    const utilityFound = Array.isArray(last?.utility) && last.utility.length > 0;
-
-    // Public water / sewer (public-utilities.js) replace the well and septic inputs when served (not when only likely, 2026-11-15).
-    const PU = window.AcresXUtilities;
-    const wellWater = wells ? (wells.grade ? wells.grade.score : wells.average <= 200 ? 92 : wells.average <= 400 ? 76 : 55) : 40;
-    const soilSeptic = window.AcresXSeptic ? window.AcresXSeptic.score(last?.land) : !soil.available ? 50 : soil.feasibility === 'favorable' ? 92 : soil.feasibility === 'limited' ? 38 : 66;
-    const water = PU ? PU.waterScore(wellWater, last) : wellWater;
-    const soilScore = PU ? PU.septicScore(soilSeptic, last) : soilSeptic;
-    // Gradual scale from screening-inputs.js (window.AcresXTerrain); the old steps only without it.
-    const TX = window.AcresXTerrain;
-    const terrainScore = !terrain.available ? 50 : TX ? TX.score(terrain.gradePct) : terrain.gradePct <= 5 ? 96 : terrain.gradePct <= 10 ? 82 : terrain.gradePct <= 15 ? 62 : 35;
-    const FX = window.AcresXFlood;
-    // Without flood-status.js loaded yet: the older scale, without throwing.
-    const floodScore = FX ? FX.score(flood) : !flood.available || flood.source?.emptyResult ? 50 : flood.high ? 20 : flood.intersects ? 55 : 96;
-    const WX = window.AcresXWetlands;
-    // Without wetlands-status.js loaded yet: presence only, without throwing.
-    const wetlandsScore = WX ? WX.score(wetlands) : !wetlands.available ? 50 : wetlands.intersects ? 42 : 96;
-    const powerScore = last?.powerIntelligence?.territory?.confirmed ? 78 : utilityFound ? 70 : 45;
-    const zoningScore = zoning.status === 'gis_match' ? 86 : zoning.status === 'no_match' ? 52 : 45;
-
-    return {
-      water: { score: water, label: 'Water' },
-      soil: { score: soilScore, label: 'Septic' },
-      terrain: { score: terrainScore, label: 'Terrain' },
-      flood: { score: floodScore, label: 'Flood' },
-      wetlands: { score: wetlandsScore, label: 'Wetlands' },
-      power: { score: powerScore, label: 'Power' },
-      zoning: { score: zoningScore, label: 'Zoning' }
-    };
-  }
-
-  function calculateScore() {
-    const factors = scoreFactors();
-    let weighted = 0;
-    for (const [key, factor] of Object.entries(factors)) weighted += factor.score * WEIGHTS[key] / 100;
-    const score = weighted / 10;
-    const rating = score >= 8.5 ? 'Excellent' : score >= 7 ? 'Good' : score >= 5.5 ? 'Moderate' : 'Challenging';
-    const constraint = Object.values(factors).sort((a, b) => a.score - b.score)[0];
-    return { score, rating, factors, constraint };
   }
 
   function rangeForCosts() {
@@ -154,31 +104,26 @@
     return card;
   }
 
+  // The score card's factor-chip line and constraint line. The score itself and the card's
+  // text come from screening-refinements.js (window.AcresXScore.renderCard, from the rules in
+  // score-core.js); this file only adds the two lines the card is built around.
   function renderScore() {
-    const result = calculateScore();
     const metric = document.getElementById('scoreMetric');
-    const note = document.getElementById('scoreNote');
     const card = document.querySelector('.overview-grid .score-card');
     if (!metric || !card) return;
 
-    metric.textContent = result.score.toFixed(1);
-    if (note) note.textContent = `${result.rating} buildability · 7-factor screening`;
-
-    let chips = card.querySelector('.score-factor-line');
-    if (!chips) {
-      chips = document.createElement('div');
+    if (!card.querySelector('.score-factor-line')) {
+      const chips = document.createElement('div');
       chips.className = 'score-factor-line';
       card.appendChild(chips);
     }
-    chips.innerHTML = Object.values(result.factors).map(f => `<span class="score-factor-chip">${f.label} ${Math.round(f.score)}</span>`).join('');
-
-    let constraint = card.querySelector('.score-constraint');
-    if (!constraint) {
-      constraint = document.createElement('div');
+    if (!card.querySelector('.score-constraint')) {
+      const constraint = document.createElement('div');
       constraint.className = 'score-constraint';
       card.appendChild(constraint);
     }
-    constraint.textContent = `Primary screening constraint: ${result.constraint.label}`;
+    // A failure here is screening-refinements.js's own, and it repaints the card right after.
+    try { window.AcresXScore?.renderCard?.(); } catch (error) { console.error('AcresX score card failed', error); }
   }
 
   window.__acresxGeneralCostEstimate = () => rangeForCosts();

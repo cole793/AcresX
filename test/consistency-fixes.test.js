@@ -286,8 +286,8 @@ test('septic: the land answer is graded once, and card, score, cost and report a
 test('screening-inputs.js is injected before the modules that read it', () => {
   const src = readPublic('../src/index.js');
   const list = src.match(/for\(const s of \[([^\]]+)\]\)/)[1].split(',').map(s => s.trim().replace(/'/g, ''));
-  assert.equal(list[1], 'screening-inputs');
+  assert.deepEqual(list.slice(0, 3), ['score-core', 'flood-status', 'screening-inputs']);
   for (const user of ['parcel-preview', 'score-cost', 'screening-refinements', 'parcel-summary-insights', 'local-cost-model', 'property-report-v2']) {
-    assert.ok(list.indexOf(user) > 1 || readPublic('index.html').includes(`${user}.js`), user);
+    assert.ok(list.indexOf(user) > 2 || readPublic('index.html').includes(`${user}.js`), user);
   }
 });

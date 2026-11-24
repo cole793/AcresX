@@ -1,7 +1,7 @@
 // Buildable-acres screening estimate on the dashboard: a card above the Improvement Snapshot and
 // shading on the interactive map (green: buildable, hatched red: removed, hatched amber: mapped
 // wetland buffers, shown but not subtracted, owner decision 2026-11-14). The buildability score
-// reads last.buildableArea for its homesite check (screening-refinements.js buildableCheck, owner
+// reads last.buildableArea for its homesite check (score-core.js buildableCheck, owner
 // request 2026-11-14); the answer arriving re-renders the dashboard so the score updates.
 //
 // Data: POST /api/buildable-area (src/services/buildable-area.js), one request per search, sent

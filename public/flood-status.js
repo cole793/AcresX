@@ -1,8 +1,9 @@
 // Shared reading of the /api/hazards flood result for the page's labels and scores. This file is
-// the single source of truth for flood categories, labels, detail text and the flood score.
-// Injected first by maybeInjectUiPolish() in src/index.js; index.html, parcel-preview.js,
-// score-cost.js and screening-refinements.js call window.AcresXFlood at render time (and keep
-// their old behaviour if it has not loaded).
+// the single source of truth for flood labels and detail text (the categories and the flood score
+// are score-core.js rules, read through window.AcresXScoreCore).
+// Injected right after score-core.js by maybeInjectUiPolish() in src/index.js; index.html, parcel-preview.js,
+// and property-report-v2.js call window.AcresXFlood at render time (index.html and parcel-preview.js
+// keep their old behaviour if it has not loaded); the score reads the rules from score-core.js.
 //
 // Categories, worst first (the worst intersecting zone wins; ranked by score, lowest first, and
 // moderate beats not_mapped on the tie). Rules match src/services/flood.js (FLOOD_RANK, rowCategory).
@@ -28,79 +29,36 @@
 // change the category or grade().score. shareScore() is the buildability score's flood factor
 // when the share was measured (see its comment); screening-refinements.js uses it.
 (function (root) {
-  const BACKUP_PROVIDER = 'Esri USA Flood Hazard Areas';
+  // The rules (categories and their scores, the zone-share score) are in score-core.js
+  // (window.AcresXScoreCore, injected before this file); this file keeps the labels and text.
+  const C = root.AcresXScoreCore;
+  if (!C) throw new Error('AcresX: public/score-core.js must load before flood-status.js');
+  const FC = C.flood;
+  const { BACKUP_PROVIDER, CATEGORIES, isLimited, isBackup, rowCategory, rowsOf } = FC;
+  const category = flood => FC.category(flood);
   const LIMITED_LABEL = 'Limited flood data';
   const LIMITED_TEXT = 'Not in a mapped high- or moderate-risk flood area (backup source; FEMA unavailable). Verify with FEMA.';
-  const CATEGORIES = ['high', 'undetermined', 'moderate', 'not_mapped', 'minimal'];
-  const NOT_MAPPED_ZONES = ['AREA NOT INCLUDED', 'OPEN WATER'];
 
   const GRADES = {
-    high: { score: 20, label: 'High risk', cls: 'red', overview: 'High-risk flood zone', overviewCls: 'warn' },
-    moderate: { score: 70, label: 'Moderate risk', cls: 'amber', overview: 'Moderate flood hazard', overviewCls: 'warn' },
-    undetermined: { score: 55, label: 'Undetermined', cls: 'amber', overview: 'Flood risk not determined', overviewCls: 'warn' },
-    minimal: { score: 96, label: 'Minimal', cls: 'green', overview: 'Minimal flood hazard', overviewCls: 'good' },
-    not_mapped: { score: 70, label: 'Not mapped', cls: 'amber', overview: 'No digital FEMA flood map', overviewCls: 'warn' },
-    limited: { score: 50, label: LIMITED_LABEL, cls: 'amber', overview: LIMITED_LABEL, overviewCls: 'warn' },
-    unavailable: { score: 50, label: 'Unavailable', cls: 'amber', overview: 'Not verified', overviewCls: 'warn' }
+    high: { score: FC.SCORES.high, label: 'High risk', cls: 'red', overview: 'High-risk flood zone', overviewCls: 'warn' },
+    moderate: { score: FC.SCORES.moderate, label: 'Moderate risk', cls: 'amber', overview: 'Moderate flood hazard', overviewCls: 'warn' },
+    undetermined: { score: FC.SCORES.undetermined, label: 'Undetermined', cls: 'amber', overview: 'Flood risk not determined', overviewCls: 'warn' },
+    minimal: { score: FC.SCORES.minimal, label: 'Minimal', cls: 'green', overview: 'Minimal flood hazard', overviewCls: 'good' },
+    not_mapped: { score: FC.SCORES.not_mapped, label: 'Not mapped', cls: 'amber', overview: 'No digital FEMA flood map', overviewCls: 'warn' },
+    limited: { score: FC.SCORES.limited, label: LIMITED_LABEL, cls: 'amber', overview: LIMITED_LABEL, overviewCls: 'warn' },
+    unavailable: { score: FC.SCORES.unavailable, label: 'Unavailable', cls: 'amber', overview: 'Not verified', overviewCls: 'warn' }
   };
   const NOT_MAPPED_TEXT = 'No digital FEMA flood map (NFHL) covers this parcel. Verify with the county or FEMA.';
   const BACKUP_NOTE = ' (backup source: Esri copy of FEMA data)';
   const PAPER_MAP_NOTE = 'FEMA has no digital flood map here. Verify with the county or FEMA.';
   const PAPER_MAP_SUFFIX = ' (county copy of FEMA paper map)';
 
-  const isLimited = flood => flood?.available === true && flood?.source?.emptyResult === true;
-  const isBackup = flood => flood?.source?.provider === BACKUP_PROVIDER;
   const backupSuffix = flood => (isBackup(flood) ? ' (backup source)' : '');
   const isPaperMap = flood => flood?.source?.digitalFemaMap === false;
   const paperMapSource = flood => String(flood?.source?.label || flood?.source?.provider || 'county copy of the FEMA paper map');
 
   const upper = v => String(v ?? '').trim().toUpperCase();
   const isPointTwo = subtype => /0\.2\s*(%|PCT|PERCENT)/i.test(String(subtype || ''));
-
-  // { zone, subtype, sfha } -> category, or null for a row without a zone.
-  // A backup-source X with no subtype is moderate: that layer has no minimal X.
-  function rowCategory(row, backup) {
-    const zone = upper(row?.zone);
-    if (!zone) return null;
-    if (NOT_MAPPED_ZONES.includes(zone)) return 'not_mapped';
-    if (row.sfha === true || /^(A|V)/.test(zone)) return 'high';
-    if (zone === 'B') return 'moderate';
-    if (zone === 'C') return 'minimal';
-    if (zone === 'D') return 'undetermined';
-    if (zone === 'X') {
-      const subtype = String(row.subtype || '').trim();
-      if (subtype) return /AREA OF MINIMAL FLOOD HAZARD/i.test(subtype) ? 'minimal' : 'moderate';
-      return backup ? 'moderate' : 'minimal';
-    }
-    return 'undetermined';
-  }
-
-  // Rows for classification: zoneDetails when present, else bare zone codes.
-  function rowsOf(flood) {
-    if (Array.isArray(flood?.zoneDetails) && flood.zoneDetails.length) return flood.zoneDetails;
-    return (Array.isArray(flood?.zones) ? flood.zones : []).map(zone => ({ zone, subtype: null, sfha: null }));
-  }
-
-  // Worst of the given categories; none at all is not_mapped.
-  function worst(categories) {
-    const ranked = categories.map(c => CATEGORIES.indexOf(c)).filter(i => i >= 0);
-    return ranked.length ? CATEGORIES[Math.min(...ranked)] : 'not_mapped';
-  }
-
-  // The flood result's category: unavailable, limited, or one of CATEGORIES.
-  function category(flood) {
-    if (!flood?.available) return 'unavailable';
-    if (isLimited(flood) || flood.category === 'limited') return 'limited';
-    if (CATEGORIES.includes(flood.category)) return flood.category;
-    const backup = isBackup(flood);
-    const found = rowsOf(flood).map(r => rowCategory(r, backup)).filter(Boolean);
-    // Older answers whose `high` came from SFHA_TF or Esri symbology with no zone code to match.
-    // Not when every zone is 'AREA NOT INCLUDED' / 'OPEN WATER': that was the old high bug.
-    const onlyNotMapped = found.length > 0 && found.every(c => c === 'not_mapped');
-    if (flood.high && !onlyNotMapped) found.push('high');
-    if (flood.intersects && !found.length) found.push('undetermined');
-    return worst(found);
-  }
 
   const MEANING = {
     high: () => ' (1% annual chance, Special Flood Hazard Area)',
@@ -150,8 +108,8 @@
 
   // ---- Zone shares
 
-  const measured = flood => flood?.available === true && flood?.floodShare?.status === 'measured' && Array.isArray(flood?.floodZones) && flood.floodZones.length > 0;
-  const finite = v => (v === null || v === undefined || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+  const measured = flood => FC.shareMeasured(flood);
+  const finite = C.finite;
   // 67 -> "67%", 2.44 -> "2.4%", 0.3 -> "under 1%".
   function pctText(value) {
     const n = finite(value) ?? 0;
@@ -210,25 +168,13 @@
     return share < 1 ? 'edge only' : `${pctText(Math.min(100, share)) === 'all' ? 'whole parcel' : `${pctText(Math.min(100, share))} of parcel`}`;
   }
 
-  // The flood factor (0-100) for the buildability score. The second argument is ignored; it was
-  // each consumer's own scale before every consumer shared these scores.
-  const score = flood => grade(flood).score;
+  // The flood factor (0-100) for the buildability score (score-core.js flood.score). The second
+  // argument is ignored; it was each consumer's own scale before every consumer shared these scores.
+  const score = flood => FC.score(flood);
 
-  // The flood factor for the buildability score when FEMA zone shares were measured (2026-11-14),
-  // else null (callers keep score()). Only high-risk (SFHA) answers change:
-  //   SFHA under 1% of the parcel (edge only)   85   small penalty (minimal is 96)
-  //   SFHA 1% to under 95%                      5 + 75 x (share outside the SFHA)^1.5
-  //                                             (10% -> 69, 25% -> 54, 50% -> 32, 67% -> 19)
-  //   SFHA 95% or more (whole parcel)           5    severe
-  // Other categories keep their category score.
-  function shareScore(flood) {
-    if (!measured(flood) || category(flood) !== 'high') return null;
-    const share = finite(flood.sfhaSharePct);
-    if (share == null) return null;
-    if (share < 1) return 85;
-    if (share >= 95) return 5;
-    return Math.round((5 + 75 * Math.pow(1 - share / 100, 1.5)) * 10) / 10;
-  }
+  // The flood factor when FEMA zone shares were measured, else null (callers keep score()); the
+  // rule is score-core.js flood.shareScore (only high-risk SFHA answers change, by their share).
+  const shareScore = flood => FC.shareScore(flood);
 
   root.AcresXFlood = {
     BACKUP_PROVIDER, BACKUP_NOTE, LIMITED_LABEL, LIMITED_TEXT, NOT_MAPPED_TEXT, PAPER_MAP_NOTE, PAPER_MAP_SUFFIX, CATEGORIES, GRADES,

@@ -10,6 +10,7 @@
 //    elements the page would normally have. Enough for public/parcel-preview.js (overview
 //    acreage), public/property-report-v2.js (printable report) and renderSummary() from
 //    public/index.html.
+// Both load public/score-core.js first (loadScoreCore), like the page.
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
@@ -170,6 +171,14 @@ export function makeFetch(clock, routes) {
   return { fetch, calls };
 }
 
+// public/score-core.js (the score rules, window.AcresXScoreCore), loaded into every context first,
+// as maybeInjectUiPolish() in src/index.js injects it before every other script on the page.
+export const SCORE_CORE = 'score-core.js';
+export function loadScoreCore(context) {
+  vm.runInContext(readPublic(SCORE_CORE), context, { filename: SCORE_CORE });
+  return context.AcresXScoreCore;
+}
+
 // A vm context with window === the global, the fake DOM and the clock.
 // autoIds: getElementById(id) creates a missing element (in a div#autoIds at the end of body),
 // for running page code that writes into many ids the test does not care about (the real
@@ -209,6 +218,7 @@ export function makeContext({ body = [], clock, fetch, extra = {}, autoIds = fal
   };
   ctx.window = ctx;
   vm.createContext(ctx);
+  loadScoreCore(ctx);
   return { ctx, document, run: (code, name) => vm.runInContext(code, ctx, { filename: name }) };
 }
 
@@ -271,6 +281,7 @@ export function makeLazyContext({ mappedSqm = null, last = null } = {}) {
     open: () => { throw new Error('window.open must not be used for the report'); }
   });
   context.window = context;
+  loadScoreCore(context);
   const generate = name => {
     getElementById('generateReportBtn').listeners.click(TAP);
     if (name !== undefined) getElementById('acresxReportName').value = name;

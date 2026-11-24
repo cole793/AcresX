@@ -1,8 +1,8 @@
 // Shared reading of the /api/hazards wetlands result for the page's labels and scores. This file
-// is the single source of truth for wetland categories, labels, detail text and the wetlands
-// score. Injected by maybeInjectUiPolish() in src/index.js before the modules that use it;
-// index.html, parcel-preview.js, score-cost.js and screening-refinements.js call
-// window.AcresXWetlands at render time (and keep a simple fallback if it has not loaded).
+// is the single source of truth for wetland labels and detail text (the categories and the
+// wetlands score are score-core.js rules). Injected by maybeInjectUiPolish() in src/index.js before the modules that use it;
+// index.html and parcel-preview.js call window.AcresXWetlands at render time (and keep a simple
+// fallback if it has not loaded); the score reads the rules from score-core.js.
 //
 // Categories (rules match wetlandCategory() in src/services/wetlands.js):
 //   present      NWI wetland overlaps the parcel by >= 0.05 ac, or >= 0.5% of the parcel and
@@ -14,47 +14,24 @@
 // Answers without `category` (older cached ones) are classified from intersects / wetlandAcres /
 // coveragePct. A null coveragePct is "not measured", never 0%.
 (function (root) {
-  const PRESENT_MIN_ACRES = 0.05;
-  const PRESENT_MIN_PCT = 0.5;
-  const PRESENT_FLOOR_ACRES = 0.01;
-  const CATEGORIES = ['present', 'unmeasured', 'nearby', 'none'];
+  // The rules (categories, thresholds and scores) are in score-core.js (window.AcresXScoreCore,
+  // injected before this file); this file keeps the labels and text.
+  const C = root.AcresXScoreCore;
+  if (!C) throw new Error('AcresX: public/score-core.js must load before wetlands-status.js');
+  const WC = C.wetlands;
+  const { PRESENT_MIN_ACRES, PRESENT_MIN_PCT, PRESENT_FLOOR_ACRES, CATEGORIES } = WC;
 
   const GRADES = {
     present: { label: 'Mapped on parcel', cls: 'amber', overview: 'Mapped wetlands present', overviewCls: 'warn' },
-    unmeasured: { score: 55, label: 'Mapped, extent unknown', cls: 'amber', overview: 'Mapped wetlands (extent not measured)', overviewCls: 'warn' },
-    nearby: { score: 92, label: 'Nearby only', cls: '', overview: 'Wetland nearby (not on parcel)', overviewCls: '' },
-    none: { score: 96, label: 'None mapped', cls: 'green', overview: 'No mapped wetlands', overviewCls: 'good' },
-    unavailable: { score: 50, label: 'Unavailable', cls: 'amber', overview: 'Not verified', overviewCls: 'warn' }
+    unmeasured: { score: WC.SCORES.unmeasured, label: 'Mapped, extent unknown', cls: 'amber', overview: 'Mapped wetlands (extent not measured)', overviewCls: 'warn' },
+    nearby: { score: WC.SCORES.nearby, label: 'Nearby only', cls: '', overview: 'Wetland nearby (not on parcel)', overviewCls: '' },
+    none: { score: WC.SCORES.none, label: 'None mapped', cls: 'green', overview: 'No mapped wetlands', overviewCls: 'good' },
+    unavailable: { score: WC.SCORES.unavailable, label: 'Unavailable', cls: 'amber', overview: 'Not verified', overviewCls: 'warn' }
   };
 
   // Number or null; null, undefined and '' are "no value" (Number(null) would be 0).
-  function num(v) {
-    if (v === null || v === undefined || v === '') return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  function category(w) {
-    if (!w?.available) return 'unavailable';
-    if (CATEGORIES.includes(w.category)) return w.category;
-    if (!w.intersects) return 'none';
-    const acres = num(w.overlapAcres ?? w.wetlandAcres);
-    if (acres == null) return 'unmeasured';
-    if (acres >= PRESENT_MIN_ACRES) return 'present';
-    const pct = num(w.coveragePct);
-    if (pct != null && pct >= PRESENT_MIN_PCT && acres >= PRESENT_FLOOR_ACRES) return 'present';
-    return 'nearby';
-  }
-
-  // Present: the share of the parcel that is mapped wetland sets the score.
-  function presentScore(pct) {
-    if (pct == null) return 55;
-    if (pct < 5) return 90;
-    if (pct < 15) return 80;
-    if (pct < 30) return 65;
-    if (pct < 50) return 45;
-    return 22;
-  }
+  const num = C.finite;
+  const category = w => WC.category(w);
 
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
   const acresText = a => (a > 0 && a < 0.001 ? 'under 0.001 ac' : `${a < 0.01 ? a.toFixed(3) : a.toFixed(2)} ac`);
@@ -96,11 +73,11 @@
   function grade(w) {
     const cat = category(w);
     const g = GRADES[cat];
-    const score = cat === 'present' ? presentScore(num(w.coveragePct)) : g.score;
+    const score = WC.score(w);
     return { category: cat, score, label: g.label, cls: g.cls, overview: g.overview, overviewCls: g.overviewCls, detail: detail(w, cat), note: note(w, cat) };
   }
 
-  const score = w => grade(w).score;
+  const score = w => WC.score(w);
 
   root.AcresXWetlands = { PRESENT_MIN_ACRES, PRESENT_MIN_PCT, PRESENT_FLOOR_ACRES, CATEGORIES, GRADES, category, grade, score };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -26,7 +26,7 @@
 //   estimate through it). Both pages show the sum of the lines the table lists.
 // - Flood / wetlands / public utilities: window.AcresXFlood, AcresXWetlands, AcresXUtilities.
 // - Buildable acres: data.buildableArea (/api/buildable-area via public/buildable-area.js);
-//   the score's homesite check reads it (screening-refinements.js buildableCheck: under the homesite
+//   the score's homesite check reads it (score-core.js buildableCheck: under the homesite
 //   minimum caps the score); the score's one-line "why" is printed under the score.
 // Listing data is shown only when a listing matched, as unverified context; it never feeds the score.
 // No owner names are read or shown.

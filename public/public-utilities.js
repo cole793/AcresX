@@ -39,7 +39,11 @@
 // Loaded through maybeInjectUiPolish() (src/index.js), after the score and cost modules, so its
 // renderSummary wrapper paints the water/septic cards last.
 (function (root) {
-  const SCORE = Object.freeze({ served: 92 });
+  // The score rule (served replaces the factor with SCORE.served; likely never counts) is in
+  // score-core.js (window.AcresXScoreCore.utilities, loaded before this file).
+  const C = root.AcresXScoreCore;
+  if (!C) throw new Error('AcresX: public/score-core.js must load before public-utilities.js');
+  const SCORE = C.utilities.SCORE;
   const WATER_COST = Object.freeze({ low: 3000, high: 15000 });
   const SEWER_COST = Object.freeze({ low: 4000, high: 20000 });
   const FEE_BASIS = 'connection/capacity fees vary; check the city or district fee schedule';
@@ -55,10 +59,7 @@
 
   const raw = (service, l) => current(l)?.publicUtilities?.[service] || null;
   // The finding that counts (score and primary cost): served only.
-  function finding(service, l) {
-    const f = raw(service, l);
-    return f && f.status === 'served' ? f : null;
-  }
+  const finding = (service, l) => C.utilities.finding(service, current(l));
   // A "likely" finding: shown as context and as the alternative cost line, never counted.
   function likely(service, l) {
     const f = raw(service, l);
@@ -190,8 +191,8 @@
     sewer: l => finding('sewer', l),
     likely: (service, l) => likely(service, l),
     alternative, alternativeText,
-    waterScore: (base, l) => { const f = finding('water', l); return f ? SCORE[f.status] : base; },
-    septicScore: (base, l) => { const f = finding('sewer', l); return f ? SCORE[f.status] : base; },
+    waterScore: (base, l) => C.utilities.waterScore(base, current(l)),
+    septicScore: (base, l) => C.utilities.septicScore(base, current(l)),
     waterCost: (base, l) => costLine('water', base, l),
     sewerCost: (base, l) => costLine('sewer', base, l),
     waterGrade: l => grade('water', l),
