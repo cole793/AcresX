@@ -6,6 +6,7 @@
 //
 //   node pipeline/parity-check.mjs --db tmp/index.sqlite --n 10
 //   node pipeline/parity-check.mjs --db tmp/index.sqlite --ids 23123.9051,47174.9017
+//   node pipeline/parity-check.mjs --db tmp/index.sqlite --n 5 --against live   (deployed Worker)
 //
 // Each parcel also gets its live-report deep link (?state=WA&county=spokane&parcel=…&report=1)
 // for a by-eye comparison with the deployed site's #scoreMetric, factor chips, buildable acres and
@@ -55,10 +56,23 @@ export function explain(diffs, wellTerrain = {}) {
   return out;
 }
 
-export async function parityCheck({ db, county = 'spokane', ids, n = 10, log = line => console.error(line), fetchImpl, cache = true } = {}) {
+// The same calls sent to a deployed AcresX instead of in process (--against live): the page's
+// request bodies, the deployed Worker's answers, and score-core.js on them, which is the score the
+// report shows (except where the page adds a browser fallback, public/browser-fallback.js).
+// Read-only routes only; nothing here writes.
+export function remoteApi(base, fetchImpl = globalThis.fetch) {
+  return async function api(path, body) {
+    const response = await fetchImpl(new URL(path, base).href, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let data = null;
+    try { data = await response.json(); } catch { data = null; }
+    return { ok: response.ok, status: response.status, data };
+  };
+}
+
+export async function parityCheck({ db, county = 'spokane', ids, n = 10, log = line => console.error(line), fetchImpl, cache = true, against = 'in-process', site = SITE } = {}) {
   const C = COUNTIES[county];
   const runtime = installRuntime({ fetchImpl: fetchImpl || globalThis.fetch, cache });
-  const api = makeApi();
+  const api = against === 'live' ? remoteApi(site) : makeApi();
   const picked = ids?.length ? ids : db.sample(county, n);
   const results = [];
   try {
@@ -93,7 +107,7 @@ export async function parityCheck({ db, county = 'spokane', ids, n = 10, log = l
   } finally { runtime.restore(); }
   const checked = results.filter(r => !r.error);
   return {
-    checked: checked.length, matched: checked.filter(r => r.match).length,
+    against, checked: checked.length, matched: checked.filter(r => r.match).length,
     scoreMatched: checked.filter(r => round1(r.storedScore) === round1(r.freshScore)).length,
     inputsConsistent: results.filter(r => r.inputsConsistent === true).length,
     results
@@ -109,9 +123,12 @@ function parseArgs(argv) {
     else if (a === '--ids') out.ids = String(next()).split(',').map(s => s.trim()).filter(Boolean);
     else if (a === '--county') out.county = String(next()).toLowerCase();
     else if (a === '--no-cache') out.cache = false;
+    else if (a === '--against') out.against = next();
+    else if (a === '--site') out.site = next();
     else throw new Error(`Unknown option ${a}`);
   }
   if (!COUNTIES[out.county]) throw new Error(`County ${out.county} is not supported yet (Spokane only).`);
+  if (out.against && !['in-process', 'live'].includes(out.against)) throw new Error('--against is in-process or live');
   return out;
 }
 

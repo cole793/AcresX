@@ -2,7 +2,7 @@
 // fresh run, and the live-report deep link it prints. No network.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compareRow, deepLink, explain, COMPARED } from '../pipeline/parity-check.mjs';
+import { compareRow, deepLink, explain, remoteApi, COMPARED } from '../pipeline/parity-check.mjs';
 
 test('parity check: differences and the live-report deep link', () => {
   const stored = { score: 7.548, score_rating: 'Good', score_factors_measured: 7, zoning_code: 'RT', flood_share_pct: 30.2, buildable_acres: 6.78 };
@@ -21,4 +21,14 @@ test('a well depth that moved with the terrain estimate is explained', () => {
   const diffs = [{ field: 'well_depth_ft', stored: 440, fresh: 82.5 }];
   assert.deepEqual(explain(diffs, { stored: 'estimated', fresh: 'wells_unavailable' }), ['well terrain estimate estimated -> wells_unavailable']);
   assert.deepEqual(explain(diffs, { stored: 'estimated', fresh: 'estimated' }), []);
+});
+
+test('--against live sends the page\'s request to the deployed Worker (stubbed here)', async () => {
+  const sent = [];
+  const api = remoteApi('https://acresx.example.test', async (url, init) => { sent.push({ url, init }); return new Response(JSON.stringify({ available: true }), { status: 200 }); });
+  const r = await api('/api/hazards', { kind: 'flood', geometry: null });
+  assert.deepEqual(r, { ok: true, status: 200, data: { available: true } });
+  assert.equal(sent[0].url, 'https://acresx.example.test/api/hazards');
+  assert.equal(sent[0].init.method, 'POST');
+  assert.deepEqual(JSON.parse(sent[0].init.body), { kind: 'flood', geometry: null });
 });
