@@ -1,7 +1,7 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-24T01:03:02.350Z
+- Run: 2026-11-24T23:07:38.908Z
 - Parcels: 12, with an error or mismatch: 0
 - Layer results: ok 175, unavailable 17, error 0, mismatch 0, skipped 0
 
