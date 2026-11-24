@@ -1,45 +1,48 @@
 {
-  "runId": "45066209926",
+  "runId": "45301541998",
   "county": "Stevens",
-  "alerting": true,
-  "aboveThreshold": true,
+  "alerting": false,
+  "aboveThreshold": false,
   "changed": true,
-  "title": "Validation: Stevens — 1 layer broken",
-  "body": "The scheduled county validation for Stevens, WA found broken layers (run 2026-11-22T20:31:03.109Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45066209926\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Wetlands | 3 of 12 | broken for 3 of 12 parcels in this run | 0763202 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n|  |  |  | 0231200 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |\n|  |  |  | 0000500 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 3, still broken 0, recovered 0, newly unavailable 1.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0763202 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 0231200 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |\n| 0000500 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 5317201 | Property tax | ok | unavailable | unavailable: property tax not available |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-22T20:31:03.109Z: Wetlands 3 of 12.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45066209926\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Wetlands | 3 of 12 | broken for 3 of 12 parcels in this run | 0763202 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n|  |  |  | 0231200 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |\n|  |  |  | 0000500 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 3, still broken 0, recovered 0, newly unavailable 1.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0763202 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 0231200 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |\n| 0000500 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 5317201 | Property tax | ok | unavailable | unavailable: property tax not available |\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-22T20:31:03.109Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45066209926\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n",
+  "title": "Validation: Stevens — 0 layers broken",
+  "body": "The scheduled county validation for Stevens, WA found broken layers (run 2026-11-24T01:05:42.486Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45301541998\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Zoning: 1 of 12 (8974701)\n- Zoning rules: 1 of 12 (8974701)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 2, still broken 0, recovered 3, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8974701 | Zoning | ok | mismatch | zoning.code: expected \"RA-5\", got null |\n| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected \"RA-5\", got null |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0763202 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 0231200 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |\n| 0000500 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-24T01:05:42.486Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45301541998\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Zoning: 1 of 12 (8974701)\n- Zoning rules: 1 of 12 (8974701)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 2, still broken 0, recovered 3, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 8974701 | Zoning | ok | mismatch | zoning.code: expected \"RA-5\", got null |\n| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected \"RA-5\", got null |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 0763202 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 0231200 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |\n| 0000500 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-24T01:05:42.486Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45301541998\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/stevens-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Zoning: 1 of 12 (8974701)\n- Zoning rules: 1 of 12 (8974701)\n",
   "decision": {
-    "alerting": true,
-    "aboveThreshold": true,
-    "alertLayers": [
+    "alerting": false,
+    "aboveThreshold": false,
+    "alertLayers": [],
+    "watchLayers": [],
+    "belowThreshold": [
       {
-        "layer": "wetlands",
-        "label": "Wetlands",
-        "count": 3,
+        "layer": "zoning",
+        "label": "Zoning",
+        "count": 1,
         "total": 12,
         "previousCount": 0,
         "parcels": [
           {
-            "parcelId": "0763202",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
-          },
-          {
-            "parcelId": "0231200",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503"
-          },
-          {
-            "parcelId": "0000500",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+            "parcelId": "8974701",
+            "status": "mismatch",
+            "detail": "zoning.code: expected \"RA-5\", got null"
           }
-        ],
-        "reason": "broken for 3 of 12 parcels in this run"
+        ]
+      },
+      {
+        "layer": "zoningRules",
+        "label": "Zoning rules",
+        "count": 1,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "8974701",
+            "status": "mismatch",
+            "detail": "zoningRules.code: expected \"RA-5\", got null"
+          }
+        ]
       }
     ],
-    "watchLayers": [],
-    "belowThreshold": [],
     "minParcels": 3,
     "comparable": true,
     "reason": null
@@ -49,37 +52,44 @@
     "reason": null,
     "newlyBroken": [
       {
+        "parcelId": "8974701",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning.code: expected \"RA-5\", got null"
+      },
+      {
+        "parcelId": "8974701",
+        "layer": "zoningRules",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoningRules.code: expected \"RA-5\", got null"
+      }
+    ],
+    "stillBroken": [],
+    "recovered": [
+      {
         "parcelId": "0763202",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       },
       {
         "parcelId": "0231200",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503"
       },
       {
         "parcelId": "0000500",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       }
     ],
-    "stillBroken": [],
-    "recovered": [],
-    "newlyUnavailable": [
-      {
-        "parcelId": "5317201",
-        "layer": "tax",
-        "was": "ok",
-        "now": "unavailable",
-        "detail": "unavailable: property tax not available"
-      }
-    ]
+    "newlyUnavailable": []
   }
 }

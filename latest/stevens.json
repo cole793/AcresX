@@ -2,8 +2,8 @@
   "county": "Stevens",
   "state": "WA",
   "baseUrl": "https://acresx.cole-groshens.workers.dev",
-  "startedAt": "2026-11-22T20:31:03.109Z",
-  "finishedAt": "2026-11-22T20:36:56.640Z",
+  "startedAt": "2026-11-24T01:05:42.486Z",
+  "finishedAt": "2026-11-24T01:09:55.949Z",
   "results": [
     {
       "parcelId": "8974701",
@@ -13,7 +13,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 2255,
+          "ms": 3592,
           "status": "ok",
           "detail": "parcel 8974701, 0.75 ac (mapped)",
           "values": {
@@ -28,7 +28,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 144,
+          "ms": 302,
           "status": "ok",
           "detail": "241 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -41,7 +41,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 256,
+          "ms": 484,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -53,7 +53,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 843,
+          "ms": 684,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -71,7 +71,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 3650,
+          "ms": 545,
           "status": "ok",
           "detail": "no NWI wetlands",
           "values": {
@@ -83,14 +83,14 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 20336,
-          "status": "ok",
-          "detail": "RA-5 (Stevens County)",
+          "ms": 20378,
+          "status": "unavailable",
+          "detail": "Stevens County zoning lookup unavailable",
           "values": {
-            "code": "RA-5",
+            "code": null,
             "jurisdiction": "Stevens County",
             "countyStatus": "stevens-official-adapter-v1",
-            "zoningStatus": "gis_match",
+            "zoningStatus": "unavailable",
             "allowedBuildings": null,
             "permitHistoryStatus": "not_configured",
             "source": "primary",
@@ -98,12 +98,20 @@
             "overlays": null,
             "overlayTypes": null,
             "overlaysUnavailable": null
-          }
+          },
+          "mismatches": [
+            {
+              "key": "zoning.code",
+              "layer": "zoning",
+              "expected": "RA-5",
+              "actual": null
+            }
+          ]
         },
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 169,
+          "ms": 6138,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -123,7 +131,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 905,
+          "ms": 966,
           "status": "ok",
           "detail": "favorable (Dart loamy coarse sand, 0 to 8 percent slopes)",
           "values": {
@@ -139,7 +147,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 905,
+          "ms": 966,
           "status": "ok",
           "detail": "avg grade 2.8%, max 8.1%",
           "values": {
@@ -152,7 +160,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 12,
+          "ms": 91,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -162,7 +170,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 197,
+          "ms": 237,
           "status": "ok",
           "detail": "assessed n/a, class 99 Other undeveloped land, no tax amount",
           "values": {
@@ -181,7 +189,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 298,
+          "ms": 372,
           "status": "unavailable",
           "detail": "not_found: The property search lists no tax statement for this parcel.",
           "values": {
@@ -191,7 +199,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 1016,
+          "ms": 933,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -203,7 +211,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1518,
+          "ms": 1574,
           "status": "ok",
           "detail": "AVISTA CORP, ~1499 ft to mapped power",
           "values": {
@@ -214,21 +222,25 @@
           }
         },
         "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 28,
-          "status": "ok",
-          "detail": "RA-5: Rural (6 uses)",
-          "values": {
-            "code": "RA-5",
-            "family": "Rural",
-            "useCount": 6
-          }
+          "status": "unavailable",
+          "detail": "not requested: no zoning code returned (the browser skips this call too)",
+          "values": {},
+          "route": null,
+          "httpStatus": null,
+          "ms": null,
+          "mismatches": [
+            {
+              "key": "zoningRules.code",
+              "layer": "zoningRules",
+              "expected": "RA-5",
+              "actual": null
+            }
+          ]
         },
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 514,
+          "ms": 4261,
           "status": "ok",
           "detail": "16 cells, avg 3.1%",
           "values": {
@@ -239,7 +251,20 @@
           }
         }
       },
-      "mismatches": []
+      "mismatches": [
+        {
+          "key": "zoning.code",
+          "layer": "zoning",
+          "expected": "RA-5",
+          "actual": null
+        },
+        {
+          "key": "zoningRules.code",
+          "layer": "zoningRules",
+          "expected": "RA-5",
+          "actual": null
+        }
+      ]
     },
     {
       "parcelId": "0763202",
@@ -249,7 +274,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 2031,
+          "ms": 2084,
           "status": "ok",
           "detail": "parcel 0763202, 0.92 ac (mapped)",
           "values": {
@@ -264,7 +289,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 136,
+          "ms": 174,
           "status": "ok",
           "detail": "141 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -277,7 +302,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 287,
+          "ms": 374,
           "status": "unavailable",
           "detail": "No mapped retail electric service territory intersected the parcel center.",
           "values": {
@@ -287,7 +312,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 925,
+          "ms": 699,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -304,16 +329,20 @@
         },
         "wetlands": {
           "route": "/api/hazards",
-          "httpStatus": 502,
-          "ms": 686,
-          "status": "error",
-          "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 454,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
         },
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 144,
+          "ms": 174,
           "status": "ok",
           "detail": "R-1 (Stevens County)",
           "values": {
@@ -333,7 +362,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 139,
+          "ms": 260,
           "status": "ok",
           "detail": "water likely (Stevens Co Pud - Suncrest); sewer not_found",
           "values": {
@@ -355,7 +384,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2046,
+          "ms": 1183,
           "status": "ok",
           "detail": "favorable (Dart loamy coarse sand, 0 to 8 percent slopes)",
           "values": {
@@ -371,7 +400,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 2046,
+          "ms": 1183,
           "status": "ok",
           "detail": "avg grade 0.6%, max 2.3%",
           "values": {
@@ -384,7 +413,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 26,
+          "ms": 61,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -394,7 +423,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 114,
+          "ms": 188,
           "status": "ok",
           "detail": "assessed $67,500, class 18 All other residential not elsewhere coded, no tax amount",
           "values": {
@@ -413,7 +442,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 767,
+          "ms": 800,
           "status": "ok",
           "detail": "billed 2026 tax $645.21",
           "values": {
@@ -426,7 +455,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 638,
+          "ms": 2022,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -446,7 +475,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 9,
+          "ms": 31,
           "status": "ok",
           "detail": "R-1: Residential (6 uses)",
           "values": {
@@ -458,13 +487,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6017,
+          "ms": 1531,
           "status": "ok",
-          "detail": "16 cells, avg 0.4%",
+          "detail": "16 cells, avg 0.7%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 0.4,
-            "maxSlopePct": 1.3,
+            "avgSlopePct": 0.7,
+            "maxSlopePct": 1.1,
             "partial": false
           }
         }
@@ -479,7 +508,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1718,
+          "ms": 1838,
           "status": "ok",
           "detail": "parcel 0231200, 0.12 ac (mapped)",
           "values": {
@@ -494,7 +523,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 132,
+          "ms": 152,
           "status": "ok",
           "detail": "178 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -507,7 +536,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 286,
+          "ms": 348,
           "status": "ok",
           "detail": "CITY OF CHEWELAH",
           "values": {
@@ -519,7 +548,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 269,
+          "ms": 234,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -536,16 +565,20 @@
         },
         "wetlands": {
           "route": "/api/hazards",
-          "httpStatus": 502,
-          "ms": 8629,
-          "status": "error",
-          "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 199,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
         },
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 229,
+          "ms": 295,
           "status": "ok",
           "detail": "R1 (City of Chewelah)",
           "values": {
@@ -565,7 +598,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 140,
+          "ms": 233,
           "status": "ok",
           "detail": "water served (Chewelah Water Dept South); sewer likely (City of Chewelah)",
           "values": {
@@ -590,7 +623,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6029,
+          "ms": 634,
           "status": "ok",
           "detail": "limited (Chewelah fine sandy loam)",
           "values": {
@@ -606,7 +639,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6029,
+          "ms": 634,
           "status": "ok",
           "detail": "avg grade 1.1%, max 1.4%",
           "values": {
@@ -619,7 +652,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 29,
+          "ms": 48,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -629,7 +662,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 112,
+          "ms": 151,
           "status": "ok",
           "detail": "assessed $90,567, class 11 Household, single family units, no tax amount",
           "values": {
@@ -648,7 +681,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 487,
+          "ms": 639,
           "status": "ok",
           "detail": "billed 2026 tax $622.56",
           "values": {
@@ -661,7 +694,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 734,
+          "ms": 700,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -673,7 +706,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1520,
+          "ms": 1560,
           "status": "ok",
           "detail": "CITY OF CHEWELAH",
           "values": {
@@ -686,7 +719,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 9,
+          "ms": 48,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -696,7 +729,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 5222,
+          "ms": 582,
           "status": "ok",
           "detail": "16 cells, avg 1.5%",
           "values": {
@@ -717,7 +750,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1955,
+          "ms": 1792,
           "status": "ok",
           "detail": "parcel 0000500, 0.16 ac (mapped)",
           "values": {
@@ -732,7 +765,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 144,
+          "ms": 191,
           "status": "ok",
           "detail": "393 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -745,7 +778,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 308,
+          "ms": 348,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -757,7 +790,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 701,
+          "ms": 206,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -774,16 +807,20 @@
         },
         "wetlands": {
           "route": "/api/hazards",
-          "httpStatus": 502,
-          "ms": 829,
-          "status": "error",
-          "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503",
-          "values": {}
+          "httpStatus": 200,
+          "ms": 231,
+          "status": "ok",
+          "detail": "no NWI wetlands",
+          "values": {
+            "intersects": false,
+            "count": 0,
+            "coveragePct": 0
+          }
         },
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 220,
+          "ms": 298,
           "status": "ok",
           "detail": "C-2 (City of Colville)",
           "values": {
@@ -803,7 +840,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 131,
+          "ms": 247,
           "status": "ok",
           "detail": "water served (Colville Water Department); sewer likely (City of Colville)",
           "values": {
@@ -828,7 +865,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6045,
+          "ms": 763,
           "status": "ok",
           "detail": "moderate (Hodgson silt loam, 3 to 15 percent slopes)",
           "values": {
@@ -844,7 +881,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6045,
+          "ms": 763,
           "status": "ok",
           "detail": "avg grade 1.4%, max 1.7%",
           "values": {
@@ -857,7 +894,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 40,
+          "ms": 36,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -867,7 +904,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 120,
+          "ms": 183,
           "status": "ok",
           "detail": "assessed $279,262, class 55 Retail trade - Automotive, marine craft, aircraft, and accessories, no tax amount",
           "values": {
@@ -886,7 +923,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 654,
+          "ms": 506,
           "status": "ok",
           "detail": "billed 2026 tax $1,861.39",
           "values": {
@@ -899,7 +936,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 627,
+          "ms": 830,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -911,7 +948,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1523,
+          "ms": 1552,
           "status": "ok",
           "detail": "AVISTA CORP, ~2 ft to mapped power",
           "values": {
@@ -924,7 +961,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 11,
+          "ms": 32,
           "status": "unavailable",
           "detail": "zone_not_mapped",
           "values": {
@@ -934,13 +971,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6016,
+          "ms": 1280,
           "status": "ok",
-          "detail": "16 cells, avg 1.4%",
+          "detail": "16 cells, avg 1.2%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 1.4,
-            "maxSlopePct": 1.7,
+            "avgSlopePct": 1.2,
+            "maxSlopePct": 1.9,
             "partial": false
           }
         }
@@ -955,7 +992,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1707,
+          "ms": 1897,
           "status": "ok",
           "detail": "parcel 2371220, 4.43 ac (mapped)",
           "values": {
@@ -970,7 +1007,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 75,
+          "ms": 156,
           "status": "ok",
           "detail": "67 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -983,7 +1020,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 313,
+          "ms": 292,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -995,7 +1032,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 176,
+          "ms": 475,
           "status": "ok",
           "detail": "high-risk zone (X, AE) (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -1014,7 +1051,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 3813,
+          "ms": 1041,
           "status": "ok",
           "detail": "2 NWI feature(s)",
           "values": {
@@ -1026,7 +1063,246 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 118,
+          "ms": 238,
+          "status": "ok",
+          "detail": "RA-10 (Stevens County)",
+          "values": {
+            "code": "RA-10",
+            "jurisdiction": "Stevens County",
+            "countyStatus": "stevens-official-adapter-v1",
+            "zoningStatus": "gis_match",
+            "allowedBuildings": null,
+            "permitHistoryStatus": "not_configured",
+            "source": "primary",
+            "sourceAsOf": null,
+            "overlays": null,
+            "overlayTypes": null,
+            "overlaysUnavailable": null
+          }
+        },
+        "publicUtilities": {
+          "route": "/api/public-utilities",
+          "httpStatus": 200,
+          "ms": 323,
+          "status": "ok",
+          "detail": "water not_found; sewer not_found",
+          "values": {
+            "water": "not_found",
+            "sewer": "not_found",
+            "waterProvider": null,
+            "sewerProvider": null,
+            "waterProviders": [],
+            "sewerProviders": [],
+            "waterPublic": false,
+            "sewerPublic": false,
+            "waterDistanceM": null,
+            "sewerDistanceM": null,
+            "failedLayers": []
+          }
+        },
+        "soil": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 837,
+          "status": "ok",
+          "detail": "favorable (Springdale sandy loam, 0 to 15 percent slopes)",
+          "values": {
+            "feasibility": "favorable",
+            "mapUnit": "Springdale sandy loam, 0 to 15 percent slopes",
+            "hydrologicGroup": "A",
+            "drainage": "Somewhat excessively drained",
+            "soilSlopePct": 8,
+            "source": "USDA NRCS Soil Data Access",
+            "backup": false
+          }
+        },
+        "terrain": {
+          "route": "/api/land-analysis",
+          "httpStatus": 200,
+          "ms": 837,
+          "status": "ok",
+          "detail": "avg grade 24%, max 61.8%",
+          "values": {
+            "gradePct": 24,
+            "maxGradePct": 61.8,
+            "reliefFt": 149,
+            "sampleCount": 9
+          }
+        },
+        "existingWell": {
+          "route": "/api/existing-well",
+          "httpStatus": 200,
+          "ms": 69,
+          "status": "unavailable",
+          "detail": "Existing-well matching is not configured for this county yet.",
+          "values": {
+            "status": "not_supported"
+          }
+        },
+        "assessment": {
+          "route": "/api/property-assessment",
+          "httpStatus": 200,
+          "ms": 189,
+          "status": "ok",
+          "detail": "assessed $439,033, class 11 Household, single family units, no tax amount",
+          "values": {
+            "assessedValue": 439033,
+            "landValue": 52800,
+            "improvementValue": 386233,
+            "taxPresent": false,
+            "netValue": 439033,
+            "homeownerExemption": null,
+            "taxYear": 2026,
+            "propertyClass": "11",
+            "propertyClassDescription": "Household, single family units",
+            "source": "Stevens County Assessor (RealPropertyParcels_Public)"
+          }
+        },
+        "tax": {
+          "route": "/api/property-tax",
+          "httpStatus": 200,
+          "ms": 631,
+          "status": "ok",
+          "detail": "billed 2026 tax $2,962.61",
+          "values": {
+            "taxTotal": 2962.61,
+            "taxYear": 2026,
+            "taxBasis": "billed",
+            "taxSource": "Stevens County Treasurer (property search hosted by True Automation)"
+          }
+        },
+        "listing": {
+          "route": "/api/reso-listings",
+          "httpStatus": 200,
+          "ms": 724,
+          "status": "unavailable",
+          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
+          "values": {
+            "matchCount": 500,
+            "confidence": "insufficient",
+            "listingStatus": null
+          }
+        },
+        "power": {
+          "route": "/api/power-intelligence",
+          "httpStatus": 200,
+          "ms": 1556,
+          "status": "ok",
+          "detail": "AVISTA CORP, ~57 ft to mapped power",
+          "values": {
+            "provider": "AVISTA CORP",
+            "distanceFt": 57,
+            "confidence": "moderate",
+            "distributionStatus": "utility_published_proximity"
+          }
+        },
+        "zoningRules": {
+          "route": "/api/zoning-rules",
+          "httpStatus": 200,
+          "ms": 135,
+          "status": "ok",
+          "detail": "RA-10: Rural (6 uses)",
+          "values": {
+            "code": "RA-10",
+            "family": "Rural",
+            "useCount": 6
+          }
+        },
+        "slope": {
+          "route": "/api/slope-grid",
+          "httpStatus": 200,
+          "ms": 838,
+          "status": "ok",
+          "detail": "16 cells, avg 20.6%",
+          "values": {
+            "cellCount": 16,
+            "avgSlopePct": 20.6,
+            "maxSlopePct": 31.2,
+            "partial": false
+          }
+        }
+      },
+      "mismatches": []
+    },
+    {
+      "parcelId": "2378200",
+      "label": "Kettle Falls situs, 2.28 ac, RA-20/RA-10 boundary, wetlands",
+      "why": "Unincorporated 1-5 ac parcel with a city-named situs (picked by discovery 2026-11-02, seed 42). Its centroid sits on an RA-20/RA-10 district boundary: the county zoning layer answers RA-10 at -117.903489,48.873808 and RA-20 at -117.9034,48.8738 (MapServer/1, checked 2026-11-02); AcresX reported 20 (RA-20). Neither point is inside the parcel outline (its centroid falls outside it); read across the whole parcel (since 2026-11-04) it is RA-10 only, the RA-20 polygon touching an edge. No expected value is recorded. A real two-zone parcel is 2378001 (about 51% RA-20, 49% RA-10; test/fixtures/stevens-zoning-2378001.json).",
+      "layers": {
+        "parcel": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 1784,
+          "status": "ok",
+          "detail": "parcel 2378200, 2.27 ac (mapped)",
+          "values": {
+            "parcelId": "2378200",
+            "acres": 2.27,
+            "address": "3600 NORTHPORT FLAT CREEK RD, KETTLE FALLS, 99141",
+            "lat": 48.873808,
+            "lon": -117.903489,
+            "acresSource": "mapped outline"
+          }
+        },
+        "wells": {
+          "route": "/api/arcgis",
+          "httpStatus": 200,
+          "ms": 131,
+          "status": "ok",
+          "detail": "75 well record(s), 5 of nearest 5 report depth",
+          "values": {
+            "wellCount": 75,
+            "nearestDepthsCount": 5,
+            "nearestMi": 0.02,
+            "medianDepthFt": 280
+          }
+        },
+        "utility": {
+          "route": "/api/utility-territory",
+          "httpStatus": 200,
+          "ms": 349,
+          "status": "ok",
+          "detail": "AVISTA CORP",
+          "values": {
+            "providers": [
+              "AVISTA CORP"
+            ]
+          }
+        },
+        "flood": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 255,
+          "status": "ok",
+          "detail": "zones X (via Stevens County digitized FEMA FIRM)",
+          "values": {
+            "high": false,
+            "intersects": true,
+            "zones": [
+              "X"
+            ],
+            "category": "minimal",
+            "provider": "Stevens County digitized FEMA FIRM",
+            "coverage": "paper-firm-copy",
+            "emptyResult": null
+          }
+        },
+        "wetlands": {
+          "route": "/api/hazards",
+          "httpStatus": 200,
+          "ms": 446,
+          "status": "ok",
+          "detail": "1 NWI feature(s)",
+          "values": {
+            "intersects": true,
+            "count": 1,
+            "coveragePct": 1
+          }
+        },
+        "zoning": {
+          "route": "/api/zoning-permits",
+          "httpStatus": 200,
+          "ms": 357,
           "status": "ok",
           "detail": "RA-10 (Stevens County)",
           "values": {
@@ -1066,246 +1342,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6015,
-          "status": "ok",
-          "detail": "favorable (Springdale sandy loam, 0 to 15 percent slopes)",
-          "values": {
-            "feasibility": "favorable",
-            "mapUnit": "Springdale sandy loam, 0 to 15 percent slopes",
-            "hydrologicGroup": "A",
-            "drainage": "Somewhat excessively drained",
-            "soilSlopePct": 8,
-            "source": "USDA NRCS Soil Data Access",
-            "backup": false
-          }
-        },
-        "terrain": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 6015,
-          "status": "ok",
-          "detail": "avg grade 24%, max 61.8%",
-          "values": {
-            "gradePct": 24,
-            "maxGradePct": 61.8,
-            "reliefFt": 149,
-            "sampleCount": 9
-          }
-        },
-        "existingWell": {
-          "route": "/api/existing-well",
-          "httpStatus": 200,
-          "ms": 27,
-          "status": "unavailable",
-          "detail": "Existing-well matching is not configured for this county yet.",
-          "values": {
-            "status": "not_supported"
-          }
-        },
-        "assessment": {
-          "route": "/api/property-assessment",
-          "httpStatus": 200,
-          "ms": 124,
-          "status": "ok",
-          "detail": "assessed $439,033, class 11 Household, single family units, no tax amount",
-          "values": {
-            "assessedValue": 439033,
-            "landValue": 52800,
-            "improvementValue": 386233,
-            "taxPresent": false,
-            "netValue": 439033,
-            "homeownerExemption": null,
-            "taxYear": 2026,
-            "propertyClass": "11",
-            "propertyClassDescription": "Household, single family units",
-            "source": "Stevens County Assessor (RealPropertyParcels_Public)"
-          }
-        },
-        "tax": {
-          "route": "/api/property-tax",
-          "httpStatus": 200,
-          "ms": 775,
-          "status": "ok",
-          "detail": "billed 2026 tax $2,962.61",
-          "values": {
-            "taxTotal": 2962.61,
-            "taxYear": 2026,
-            "taxBasis": "billed",
-            "taxSource": "Stevens County Treasurer (property search hosted by True Automation)"
-          }
-        },
-        "listing": {
-          "route": "/api/reso-listings",
-          "httpStatus": 200,
-          "ms": 950,
-          "status": "unavailable",
-          "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
-          "values": {
-            "matchCount": 500,
-            "confidence": "insufficient",
-            "listingStatus": null
-          }
-        },
-        "power": {
-          "route": "/api/power-intelligence",
-          "httpStatus": 200,
-          "ms": 1516,
-          "status": "ok",
-          "detail": "AVISTA CORP, ~57 ft to mapped power",
-          "values": {
-            "provider": "AVISTA CORP",
-            "distanceFt": 57,
-            "confidence": "moderate",
-            "distributionStatus": "utility_published_proximity"
-          }
-        },
-        "zoningRules": {
-          "route": "/api/zoning-rules",
-          "httpStatus": 200,
-          "ms": 11,
-          "status": "ok",
-          "detail": "RA-10: Rural (6 uses)",
-          "values": {
-            "code": "RA-10",
-            "family": "Rural",
-            "useCount": 6
-          }
-        },
-        "slope": {
-          "route": "/api/slope-grid",
-          "httpStatus": 200,
-          "ms": 6013,
-          "status": "ok",
-          "detail": "16 cells, avg 21.3%",
-          "values": {
-            "cellCount": 16,
-            "avgSlopePct": 21.3,
-            "maxSlopePct": 31.2,
-            "partial": false
-          }
-        }
-      },
-      "mismatches": []
-    },
-    {
-      "parcelId": "2378200",
-      "label": "Kettle Falls situs, 2.28 ac, RA-20/RA-10 boundary, wetlands",
-      "why": "Unincorporated 1-5 ac parcel with a city-named situs (picked by discovery 2026-11-02, seed 42). Its centroid sits on an RA-20/RA-10 district boundary: the county zoning layer answers RA-10 at -117.903489,48.873808 and RA-20 at -117.9034,48.8738 (MapServer/1, checked 2026-11-02); AcresX reported 20 (RA-20). Neither point is inside the parcel outline (its centroid falls outside it); read across the whole parcel (since 2026-11-04) it is RA-10 only, the RA-20 polygon touching an edge. No expected value is recorded. A real two-zone parcel is 2378001 (about 51% RA-20, 49% RA-10; test/fixtures/stevens-zoning-2378001.json).",
-      "layers": {
-        "parcel": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 1933,
-          "status": "ok",
-          "detail": "parcel 2378200, 2.27 ac (mapped)",
-          "values": {
-            "parcelId": "2378200",
-            "acres": 2.27,
-            "address": "3600 NORTHPORT FLAT CREEK RD, KETTLE FALLS, 99141",
-            "lat": 48.873808,
-            "lon": -117.903489,
-            "acresSource": "mapped outline"
-          }
-        },
-        "wells": {
-          "route": "/api/arcgis",
-          "httpStatus": 200,
-          "ms": 113,
-          "status": "ok",
-          "detail": "75 well record(s), 5 of nearest 5 report depth",
-          "values": {
-            "wellCount": 75,
-            "nearestDepthsCount": 5,
-            "nearestMi": 0.02,
-            "medianDepthFt": 280
-          }
-        },
-        "utility": {
-          "route": "/api/utility-territory",
-          "httpStatus": 200,
-          "ms": 265,
-          "status": "ok",
-          "detail": "AVISTA CORP",
-          "values": {
-            "providers": [
-              "AVISTA CORP"
-            ]
-          }
-        },
-        "flood": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 188,
-          "status": "ok",
-          "detail": "zones X (via Stevens County digitized FEMA FIRM)",
-          "values": {
-            "high": false,
-            "intersects": true,
-            "zones": [
-              "X"
-            ],
-            "category": "minimal",
-            "provider": "Stevens County digitized FEMA FIRM",
-            "coverage": "paper-firm-copy",
-            "emptyResult": null
-          }
-        },
-        "wetlands": {
-          "route": "/api/hazards",
-          "httpStatus": 200,
-          "ms": 9616,
-          "status": "ok",
-          "detail": "1 NWI feature(s)",
-          "values": {
-            "intersects": true,
-            "count": 1,
-            "coveragePct": 0
-          }
-        },
-        "zoning": {
-          "route": "/api/zoning-permits",
-          "httpStatus": 200,
-          "ms": 331,
-          "status": "ok",
-          "detail": "RA-10 (Stevens County)",
-          "values": {
-            "code": "RA-10",
-            "jurisdiction": "Stevens County",
-            "countyStatus": "stevens-official-adapter-v1",
-            "zoningStatus": "gis_match",
-            "allowedBuildings": null,
-            "permitHistoryStatus": "not_configured",
-            "source": "primary",
-            "sourceAsOf": null,
-            "overlays": null,
-            "overlayTypes": null,
-            "overlaysUnavailable": null
-          }
-        },
-        "publicUtilities": {
-          "route": "/api/public-utilities",
-          "httpStatus": 200,
-          "ms": 114,
-          "status": "ok",
-          "detail": "water not_found; sewer not_found",
-          "values": {
-            "water": "not_found",
-            "sewer": "not_found",
-            "waterProvider": null,
-            "sewerProvider": null,
-            "waterProviders": [],
-            "sewerProviders": [],
-            "waterPublic": false,
-            "sewerPublic": false,
-            "waterDistanceM": null,
-            "sewerDistanceM": null,
-            "failedLayers": []
-          }
-        },
-        "soil": {
-          "route": "/api/land-analysis",
-          "httpStatus": 200,
-          "ms": 4792,
+          "ms": 1012,
           "status": "ok",
           "detail": "limited (Stevens channery silt loam, 8 to 25 percent slopes)",
           "values": {
@@ -1321,7 +1358,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 4792,
+          "ms": 1012,
           "status": "ok",
           "detail": "avg grade 15.5%, max 52.9%",
           "values": {
@@ -1334,7 +1371,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 17,
+          "ms": 28,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1344,7 +1381,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 116,
+          "ms": 130,
           "status": "ok",
           "detail": "assessed $61,606, class 11 Household, single family units, no tax amount",
           "values": {
@@ -1363,7 +1400,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 856,
+          "ms": 668,
           "status": "ok",
           "detail": "billed 2026 tax $467.31",
           "values": {
@@ -1376,7 +1413,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 655,
+          "ms": 802,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1388,7 +1425,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1537,
+          "ms": 1539,
           "status": "ok",
           "detail": "AVISTA CORP, ~1 ft to mapped power",
           "values": {
@@ -1401,7 +1438,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 43,
+          "ms": 30,
           "status": "ok",
           "detail": "RA-10: Rural (6 uses)",
           "values": {
@@ -1413,7 +1450,7 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 5809,
+          "ms": 1177,
           "status": "ok",
           "detail": "16 cells, avg 14.2%",
           "values": {
@@ -1434,7 +1471,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1856,
+          "ms": 1825,
           "status": "ok",
           "detail": "parcel 2214900, 1.01 ac (mapped)",
           "values": {
@@ -1449,7 +1486,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 137,
+          "ms": 149,
           "status": "ok",
           "detail": "94 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1462,7 +1499,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 260,
+          "ms": 330,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -1474,7 +1511,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 781,
+          "ms": 219,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -1492,7 +1529,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 491,
+          "ms": 276,
           "status": "ok",
           "detail": "2 NWI feature(s)",
           "values": {
@@ -1504,7 +1541,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 142,
+          "ms": 179,
           "status": "ok",
           "detail": "RA-5 (Stevens County)",
           "values": {
@@ -1524,7 +1561,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 112,
+          "ms": 178,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -1544,7 +1581,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6035,
+          "ms": 1017,
           "status": "ok",
           "detail": "favorable (Aits loam, 0 to 15 percent slopes)",
           "values": {
@@ -1560,7 +1597,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6035,
+          "ms": 1017,
           "status": "ok",
           "detail": "avg grade 8.8%, max 16.7%",
           "values": {
@@ -1573,7 +1610,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 31,
+          "ms": 46,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1583,7 +1620,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 134,
+          "ms": 142,
           "status": "ok",
           "detail": "assessed $187,814, class 11 Household, single family units, no tax amount",
           "values": {
@@ -1602,7 +1639,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 982,
+          "ms": 698,
           "status": "ok",
           "detail": "billed 2026 tax $1,414.69",
           "values": {
@@ -1615,7 +1652,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 898,
+          "ms": 731,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1627,7 +1664,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1536,
+          "ms": 1540,
           "status": "ok",
           "detail": "AVISTA CORP, ~106 ft to mapped power",
           "values": {
@@ -1640,7 +1677,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 33,
+          "ms": 35,
           "status": "ok",
           "detail": "RA-5: Rural (6 uses)",
           "values": {
@@ -1652,13 +1689,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6019,
+          "ms": 812,
           "status": "ok",
-          "detail": "16 cells, avg 8.5%",
+          "detail": "16 cells, avg 8.9%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 8.5,
-            "maxSlopePct": 14.6,
+            "avgSlopePct": 8.9,
+            "maxSlopePct": 21.4,
             "partial": false
           }
         }
@@ -1673,7 +1710,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1700,
+          "ms": 1799,
           "status": "ok",
           "detail": "parcel 2611300, 5.94 ac (mapped)",
           "values": {
@@ -1688,7 +1725,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 126,
+          "ms": 177,
           "status": "ok",
           "detail": "114 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1701,7 +1738,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 231,
+          "ms": 287,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -1713,7 +1750,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 313,
+          "ms": 169,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -1731,7 +1768,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 329,
+          "ms": 270,
           "status": "ok",
           "detail": "1 NWI feature(s)",
           "values": {
@@ -1743,7 +1780,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 261,
+          "ms": 139,
           "status": "ok",
           "detail": "RA-5 (Stevens County)",
           "values": {
@@ -1763,7 +1800,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 105,
+          "ms": 180,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -1783,7 +1820,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6014,
+          "ms": 980,
           "status": "ok",
           "detail": "moderate (Martella ashy silt loam, 5 to 15 percent slopes)",
           "values": {
@@ -1799,7 +1836,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6014,
+          "ms": 980,
           "status": "ok",
           "detail": "avg grade 8.8%, max 23%",
           "values": {
@@ -1812,7 +1849,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 8,
+          "ms": 28,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -1822,7 +1859,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 118,
+          "ms": 134,
           "status": "ok",
           "detail": "assessed $319,918, class 11 Household, single family units, no tax amount",
           "values": {
@@ -1841,7 +1878,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 946,
+          "ms": 841,
           "status": "ok",
           "detail": "billed 2026 tax $2,551.63",
           "values": {
@@ -1854,7 +1891,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 705,
+          "ms": 635,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -1866,7 +1903,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1517,
+          "ms": 1538,
           "status": "ok",
           "detail": "AVISTA CORP, ~0 ft to mapped power",
           "values": {
@@ -1879,7 +1916,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 11,
+          "ms": 26,
           "status": "ok",
           "detail": "RA-5: Rural (6 uses)",
           "values": {
@@ -1891,13 +1928,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6017,
+          "ms": 1077,
           "status": "ok",
-          "detail": "16 cells, avg 7.9%",
+          "detail": "16 cells, avg 8.8%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 7.9,
-            "maxSlopePct": 14.4,
+            "avgSlopePct": 8.8,
+            "maxSlopePct": 17.6,
             "partial": false
           }
         }
@@ -1912,7 +1949,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1862,
+          "ms": 1745,
           "status": "ok",
           "detail": "parcel 8673053, 17.04 ac (mapped)",
           "values": {
@@ -1927,7 +1964,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 130,
+          "ms": 269,
           "status": "ok",
           "detail": "84 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -1940,7 +1977,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 294,
+          "ms": 290,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -1952,7 +1989,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 211,
+          "ms": 281,
           "status": "ok",
           "detail": "high-risk zone (X, A) (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -1971,7 +2008,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 603,
+          "ms": 770,
           "status": "ok",
           "detail": "11 NWI feature(s)",
           "values": {
@@ -1983,7 +2020,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 158,
+          "ms": 175,
           "status": "ok",
           "detail": "RA-5 (Stevens County)",
           "values": {
@@ -2003,7 +2040,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 105,
+          "ms": 218,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -2023,7 +2060,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6022,
+          "ms": 4265,
           "status": "ok",
           "detail": "limited (Hodgson silt loam, 15 to 25 percent slopes)",
           "values": {
@@ -2039,7 +2076,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6022,
+          "ms": 4265,
           "status": "ok",
           "detail": "avg grade 4.9%, max 21.1%",
           "values": {
@@ -2052,7 +2089,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 15,
+          "ms": 28,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2062,7 +2099,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 119,
+          "ms": 137,
           "status": "ok",
           "detail": "assessed n/a, class 99 Other undeveloped land, no tax amount",
           "values": {
@@ -2081,7 +2118,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 505,
+          "ms": 696,
           "status": "ok",
           "detail": "billed 2026 tax $0.00",
           "values": {
@@ -2094,7 +2131,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 668,
+          "ms": 800,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2106,7 +2143,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1517,
+          "ms": 1565,
           "status": "ok",
           "detail": "AVISTA CORP, ~30 ft to mapped power",
           "values": {
@@ -2119,7 +2156,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 11,
+          "ms": 27,
           "status": "ok",
           "detail": "RA-5: Rural (6 uses)",
           "values": {
@@ -2131,13 +2168,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6019,
+          "ms": 1570,
           "status": "ok",
-          "detail": "16 cells, avg 8.8%",
+          "detail": "16 cells, avg 8.5%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 8.8,
-            "maxSlopePct": 25.9,
+            "avgSlopePct": 8.5,
+            "maxSlopePct": 26.7,
             "partial": false
           }
         }
@@ -2152,7 +2189,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1700,
+          "ms": 1891,
           "status": "ok",
           "detail": "parcel 2342700, 290.23 ac (mapped)",
           "values": {
@@ -2167,7 +2204,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 102,
+          "ms": 170,
           "status": "ok",
           "detail": "61 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2180,7 +2217,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 223,
+          "ms": 301,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -2192,7 +2229,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 177,
+          "ms": 186,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -2210,7 +2247,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 5665,
+          "ms": 279,
           "status": "ok",
           "detail": "4 NWI feature(s)",
           "values": {
@@ -2222,7 +2259,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 265,
+          "ms": 158,
           "status": "ok",
           "detail": "AR-10 (Stevens County)",
           "values": {
@@ -2242,7 +2279,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 113,
+          "ms": 211,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -2262,7 +2299,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6015,
+          "ms": 2257,
           "status": "ok",
           "detail": "limited (Aits loam, 15 to 25 percent slopes)",
           "values": {
@@ -2278,7 +2315,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6015,
+          "ms": 2257,
           "status": "ok",
           "detail": "avg grade 18.5%, max 64.3%",
           "values": {
@@ -2291,7 +2328,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 9,
+          "ms": 60,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2301,7 +2338,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 113,
+          "ms": 143,
           "status": "ok",
           "detail": "assessed $26,794, class 88 Designated forest land under chapter 84.33 RCW, no tax amount",
           "values": {
@@ -2320,7 +2357,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 853,
+          "ms": 687,
           "status": "ok",
           "detail": "billed 2026 tax $291.33",
           "values": {
@@ -2333,7 +2370,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 660,
+          "ms": 702,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2345,7 +2382,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1516,
+          "ms": 1541,
           "status": "ok",
           "detail": "AVISTA CORP, ~6 ft to mapped power",
           "values": {
@@ -2358,7 +2395,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 10,
+          "ms": 37,
           "status": "ok",
           "detail": "AR-10: Resource (6 uses)",
           "values": {
@@ -2370,13 +2407,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6029,
+          "ms": 3141,
           "status": "ok",
-          "detail": "16 cells, avg 13.9%",
+          "detail": "16 cells, avg 13.4%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 13.9,
-            "maxSlopePct": 30.3,
+            "avgSlopePct": 13.4,
+            "maxSlopePct": 30.4,
             "partial": false
           }
         }
@@ -2391,7 +2428,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1672,
+          "ms": 1881,
           "status": "ok",
           "detail": "parcel 5320900, 189.94 ac (mapped)",
           "values": {
@@ -2406,7 +2443,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 113,
+          "ms": 127,
           "status": "ok",
           "detail": "42 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2419,7 +2456,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 260,
+          "ms": 297,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -2431,7 +2468,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 226,
+          "ms": 565,
           "status": "ok",
           "detail": "high-risk zone (X, A) (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -2450,7 +2487,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 258,
+          "ms": 793,
           "status": "ok",
           "detail": "15 NWI feature(s)",
           "values": {
@@ -2462,7 +2499,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 121,
+          "ms": 147,
           "status": "ok",
           "detail": "RA-10 (Stevens County)",
           "values": {
@@ -2482,7 +2519,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 116,
+          "ms": 212,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -2502,7 +2539,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6018,
+          "ms": 4710,
           "status": "ok",
           "detail": "limited (Bridgeson silt loam, drained)",
           "values": {
@@ -2518,7 +2555,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6018,
+          "ms": 4710,
           "status": "ok",
           "detail": "avg grade 23.8%, max 112.6%",
           "values": {
@@ -2531,7 +2568,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 9,
+          "ms": 29,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2541,7 +2578,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 114,
+          "ms": 116,
           "status": "ok",
           "detail": "assessed $313,685, class 88 Designated forest land under chapter 84.33 RCW, no tax amount",
           "values": {
@@ -2560,7 +2597,7 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 567,
+          "ms": 846,
           "status": "ok",
           "detail": "billed 2026 tax $1,778.89",
           "values": {
@@ -2573,7 +2610,7 @@
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 649,
+          "ms": 796,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2585,7 +2622,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1546,
+          "ms": 1550,
           "status": "ok",
           "detail": "AVISTA CORP, ~35 ft to mapped power",
           "values": {
@@ -2598,7 +2635,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 13,
+          "ms": 42,
           "status": "ok",
           "detail": "RA-10: Rural (6 uses)",
           "values": {
@@ -2610,13 +2647,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6015,
+          "ms": 916,
           "status": "ok",
-          "detail": "16 cells, avg 15.6%",
+          "detail": "16 cells, avg 14.8%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 15.6,
-            "maxSlopePct": 36.4,
+            "avgSlopePct": 14.8,
+            "maxSlopePct": 35.6,
             "partial": false
           }
         }
@@ -2631,7 +2668,7 @@
         "parcel": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 1794,
+          "ms": 2347,
           "status": "ok",
           "detail": "parcel 5317201, 54.8 ac (mapped)",
           "values": {
@@ -2646,7 +2683,7 @@
         "wells": {
           "route": "/api/arcgis",
           "httpStatus": 200,
-          "ms": 107,
+          "ms": 210,
           "status": "ok",
           "detail": "77 well record(s), 5 of nearest 5 report depth",
           "values": {
@@ -2659,7 +2696,7 @@
         "utility": {
           "route": "/api/utility-territory",
           "httpStatus": 200,
-          "ms": 287,
+          "ms": 669,
           "status": "ok",
           "detail": "AVISTA CORP",
           "values": {
@@ -2671,7 +2708,7 @@
         "flood": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 180,
+          "ms": 712,
           "status": "ok",
           "detail": "zones X (via Stevens County digitized FEMA FIRM)",
           "values": {
@@ -2689,7 +2726,7 @@
         "wetlands": {
           "route": "/api/hazards",
           "httpStatus": 200,
-          "ms": 225,
+          "ms": 925,
           "status": "ok",
           "detail": "2 NWI feature(s)",
           "values": {
@@ -2701,7 +2738,7 @@
         "zoning": {
           "route": "/api/zoning-permits",
           "httpStatus": 200,
-          "ms": 161,
+          "ms": 506,
           "status": "ok",
           "detail": "RA-5 (Stevens County)",
           "values": {
@@ -2721,7 +2758,7 @@
         "publicUtilities": {
           "route": "/api/public-utilities",
           "httpStatus": 200,
-          "ms": 123,
+          "ms": 406,
           "status": "ok",
           "detail": "water not_found; sewer not_found",
           "values": {
@@ -2741,7 +2778,7 @@
         "soil": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6031,
+          "ms": 4376,
           "status": "ok",
           "detail": "limited (Aits stony loam, 40 to 65 percent slopes)",
           "values": {
@@ -2757,7 +2794,7 @@
         "terrain": {
           "route": "/api/land-analysis",
           "httpStatus": 200,
-          "ms": 6031,
+          "ms": 4376,
           "status": "ok",
           "detail": "avg grade 13%, max 103.8%",
           "values": {
@@ -2770,7 +2807,7 @@
         "existingWell": {
           "route": "/api/existing-well",
           "httpStatus": 200,
-          "ms": 22,
+          "ms": 103,
           "status": "unavailable",
           "detail": "Existing-well matching is not configured for this county yet.",
           "values": {
@@ -2780,7 +2817,7 @@
         "assessment": {
           "route": "/api/property-assessment",
           "httpStatus": 200,
-          "ms": 114,
+          "ms": 144,
           "status": "ok",
           "detail": "assessed $196,984, class 88 Designated forest land under chapter 84.33 RCW, no tax amount",
           "values": {
@@ -2799,17 +2836,20 @@
         "tax": {
           "route": "/api/property-tax",
           "httpStatus": 200,
-          "ms": 81,
-          "status": "unavailable",
-          "detail": "unavailable: property tax not available",
+          "ms": 955,
+          "status": "ok",
+          "detail": "billed 2026 tax $1,556.27",
           "values": {
-            "taxStatus": "unavailable"
+            "taxTotal": 1556.27,
+            "taxYear": 2026,
+            "taxBasis": "billed",
+            "taxSource": "Stevens County Treasurer (property search hosted by True Automation)"
           }
         },
         "listing": {
           "route": "/api/reso-listings",
           "httpStatus": 200,
-          "ms": 655,
+          "ms": 1076,
           "status": "unavailable",
           "detail": "no listing match in connected dataset (not evidence the parcel is unlisted)",
           "values": {
@@ -2821,7 +2861,7 @@
         "power": {
           "route": "/api/power-intelligence",
           "httpStatus": 200,
-          "ms": 1519,
+          "ms": 1656,
           "status": "ok",
           "detail": "AVISTA CORP, ~22 ft to mapped power",
           "values": {
@@ -2834,7 +2874,7 @@
         "zoningRules": {
           "route": "/api/zoning-rules",
           "httpStatus": 200,
-          "ms": 9,
+          "ms": 45,
           "status": "ok",
           "detail": "RA-5: Rural (6 uses)",
           "values": {
@@ -2846,13 +2886,13 @@
         "slope": {
           "route": "/api/slope-grid",
           "httpStatus": 200,
-          "ms": 6031,
+          "ms": 475,
           "status": "ok",
-          "detail": "16 cells, avg 23%",
+          "detail": "16 cells, avg 21.8%",
           "values": {
             "cellCount": 16,
-            "avgSlopePct": 23,
-            "maxSlopePct": 55.9,
+            "avgSlopePct": 21.8,
+            "maxSlopePct": 53,
             "partial": false
           }
         }
@@ -2862,12 +2902,12 @@
   ],
   "summary": {
     "parcels": 12,
-    "failed": 3,
+    "failed": 1,
     "layerCounts": {
-      "ok": 159,
-      "unavailable": 30,
-      "error": 3,
-      "mismatch": 0,
+      "ok": 161,
+      "unavailable": 29,
+      "error": 0,
+      "mismatch": 2,
       "skipped": 0
     }
   }

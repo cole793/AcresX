@@ -1,22 +1,23 @@
 # Changes since the previous run: Stevens, WA
 
-- Run: 2026-11-22T20:31:03.109Z
+- Run: 2026-11-24T01:05:42.486Z
 
 ## Cells
 
-Parcel x layer cells: newly broken 3, still broken 0, recovered 0, newly unavailable 1.
+Parcel x layer cells: newly broken 2, still broken 0, recovered 3, newly unavailable 0.
 
 ### Newly broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 0763202 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
-| 0231200 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |
-| 0000500 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
+| 8974701 | Zoning | ok | mismatch | zoning.code: expected "RA-5", got null |
+| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected "RA-5", got null |
 
-### Newly unavailable
+### Recovered
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 5317201 | Property tax | ok | unavailable | unavailable: property tax not available |
+| 0763202 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
+| 0231200 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry returned 503 |
+| 0000500 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |
 
