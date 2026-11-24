@@ -2,6 +2,21 @@
 
 Verified facts, decisions and gotchas, each with its source. Newest first.
 
+## 2026-11-24: Spokane index pipeline, live sample (branch claude/index-pipeline-spokane, 12c3b05)
+
+- 30 parcels from a cloud container, concurrency 4: median 8.0 s per parcel (p90 13.0 s), median
+  49 requests (about 23 to gismo.spokanecounty.org, 7 services.arcgis.com, 5.8 terrain tiles),
+  about 664 parcels per hour.
+- Spokane assessor bulk pull: 214,835 rows in 63 s. 64,215 candidates after code/size exclusions;
+  about 94% of them are included, so roughly 60,000 parcels. A full build at this rate is ~90 h
+  and ~1.4M requests to the county server.
+- Parity: 8/8 against the deployed Worker; well depth can wobble because `/api/well-depth-terrain`
+  times out on Ecology (4.5 s + 2 s) and the page falls back to the nearest-wells median.
+- `findWells` (public/index.html) fails on MultiPolygon parcels: `turf.polygonToLine` returns a
+  FeatureCollection. 3/30 sample parcels, all large.
+- Overpass answered within its 1.5 s cap on 0/30 parcels (line distance only, not the score).
+- Actions secrets can't be listed from a cloud session (the proxy blocks that GitHub API path).
+
 ## 2026-11-23: Parcel index sources
 
 Reader research for the parcel search index (`docs/explore-index.md`), live read-only queries
