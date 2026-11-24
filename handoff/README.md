@@ -22,19 +22,61 @@ pick up where the last one stopped. Re-check SHAs and PR states with git before 
   Actions is the only deploy path. PR #1 (Cloudflare autoconfig) closed unmerged.
 - Production: `main`, deployed to Cloudflare by `.github/workflows/deploy-cloudflare.yml` on every
   push. As of Oct 2026, every push to `main` is first gated by `npm run check`.
-- Coverage: Spokane and Stevens (WA), Kootenai (ID), Gallatin and Yellowstone (MT). Level 3:
-  Spokane, Stevens, Kootenai, Yellowstone. Level 2: Gallatin.
+- Coverage: Spokane and Stevens (WA), Kootenai (ID), Gallatin and Yellowstone (MT). All five
+  are level 3 (Gallatin since #101).
 - Accounts (#75) are merged but OFF: `/api/me` answers `enabled:false` until the D1 tables exist
   and `RESEND_API_KEY` is set (see "Waiting on the owner").
 - Tests: offline smoke tests in `test/` (see `testing.md`).
+
+## Strategy (owner, 2026-11-23)
+
+"Nationwide coverage (eventually)", then compare properties and AI insights ("most buildable
+5-10 ac lots in Spokane County", "allows a manufactured home"). No new features except realtor
+feedback until expansion and AI search are underway. Plan:
+- **Phase 1 (current): Explore.** Pre-score rural-relevant parcels of the 5 counties into the
+  separate D1 database `acresx-index`, refreshed by a GitHub Actions job. Then a hidden `/explore`
+  page with filters, then "Ask AcresX" (Claude translates a question into a strict
+  `search_parcels` tool call over the index; only returned rows are summarized), then compare.
+  Design: `docs/explore-index.md`. Kept separate: own page (not in the injection list), own
+  routes `/api/explore/*`, own DB, `EXPLORE_ENABLED` flag, batch job off the Worker.
+- **Phase 2:** nationwide parcel vendor (Regrid or similar; quotes needed, nothing bought) for
+  "Limited coverage" reports anywhere.
+- **Phase 3:** state-by-state depth, a zoning data vendor, PostGIS when past a few states.
 
 ## Open work
 
 | Branch | SHA | PR | Status |
 |---|---|---|---|
-| `claude/small-fixes-nov18` | | | Tiny-parcel homesite centroid, Stevens easement note hidden, this handoff update. |
-| (none else) | | | Everything through #96 is merged. |
-| `claude/explore-index-design` | | | Parcel search index, Phase 1 step 1: design + schema only (`docs/explore-index.md`, `migrations-index/`). No runtime change. |
+| `claude/index-pipeline-spokane` | 12c3b05 | not opened | Phase 1 step 2A: `pipeline/` batch job scoring Spokane into local SQLite. Verifier PASS (1424/1424 twice, dry-run 848.77 KiB, fresh 5-parcel live parity 5/5). Live sample 30 parcels: median 8.0 s and ~49 requests per parcel (~23 to gismo.spokanecounty.org), ~664 parcels/h at concurrency 4; ~60k Spokane parcels qualify, so ~90 h and ~1.4M county requests for a full build. **Do not run a full load yet** (see decisions below). |
+
+### Explore: owner decisions still open (asked 2026-11-24, not answered)
+
+1. Build a **local data store** first (weekly bulk download of county-wide layers: zoning,
+   permits, city limits, flood, wetlands, soils, well logs, OSM power, roads, shared terrain
+   tiles; parcels checked locally; nightly live parity sample). Lead recommends yes: cuts ~1.4M
+   county requests to a few thousand and is the base for nationwide coverage.
+2. Token savings: builder on Sonnet for routine work, capped agent reports, no second verifier
+   pass on doc-only PRs, a fresh session per milestone. Lead recommends yes.
+3. Floor for vacant rural lots (slivers down to 0.03 ac get in today): 0.25 ac recommended.
+4. Fix the live-report bug: `findWells` in `public/index.html` fails on every MultiPolygon parcel
+   (`turf.polygonToLine` returns a FeatureCollection), so water shows "not checked" (3/30 sample
+   parcels, all large). The pipeline copies this behaviour for parity; fix both together.
+
+### Explore: next steps after those answers
+
+- (If 1 = yes) builder: local data store, then re-measure requests and time per parcel.
+- Database setup PR: `INDEX_DB` binding in `wrangler.jsonc` (database `acresx-index`, id
+  `fc0bf7b8-82cd-469c-b2f0-172f74d4424b`, `migrations_dir: "migrations-index"`), a migration
+  workflow using the `CLOUDFLARE_D1_TOKEN` secret, the nightly/sharded index workflow writing to
+  D1, and the "Apply D1 migrations" workflow for accounts switched to the same secret. The
+  secret's existence can't be checked from a cloud session (Actions secrets API is blocked by
+  the proxy); the first workflow run confirms it.
+- First Spokane load, then a 50-parcel check against live reports; then the other 4 counties.
+- Refactors still pending from the design: R4 (shared request builders; `pipeline/report-inputs.mjs`
+  is a marked copy with drift tests), R5 (`src/zoning/use-flags.js`), R7 (`p50Pct`), pin Turf on
+  the page (pipeline pins 7.4.0).
+- Offered, not done: the third inline score formula in `index.html` `renderSummary`; the two
+  near-duplicate generic cost models; WA codes 68, 69, 71-79 not excluded yet.
 
 Merged 2026-11-02 to 11-04 (owner-approved, all deploys succeeded): #29 WA power provider via
 HIFLD + wrong-state labels, #30 terrain/slope fallback across 3DEP getSamples/identify/EPQS,
@@ -85,13 +127,27 @@ change: previews share the Cache API with production); #96 recorded restrictions
 subdivisions, Spokane development agreements, PAD-US + MSL conservation easements, recorder
 links).
 
+Merged 2026-11-19 to 11-24 (each approved with its own button; every deploy succeeded): #97 small
+fixes; #99 Montana existing-well matching (GWIC + DNRC + cadastral owner matching; owner fields
+never returned); #100 Montana assessor details; #101 Gallatin level 3; #102 tighter cost ranges
+(each line: central, likely range, tail; totals show the most likely value; power/well first;
+`WELL_TERRAIN_RULES_VERSION` 5); #103 power lookup timeouts (Overpass cap 1.5 s, route budget
+6 s, `power-intelligence/v1` cache, browser keeps the Worker answer); #109 Explore design +
+index schema (docs only); #110 `public/score-core.js`: the score rules in one shared file,
+`SCORE_RULES_VERSION` 1, 11 fixture parcels, duplicate score in `score-cost.js` removed (verifier
+parity: 24 cases, 0 differences).
+
 Product gap report (2026-11-14): all 16 gaps closed except accounts setup (owner steps).
 
 Yearly chore: replace `src/counties/kootenai-levy-2026.js` each fall when Kootenai certifies levies.
 
 ## County report card (checklist score)
 
-Kootenai 87 and Yellowstone 80: **level 3** (lastValidated 2026-11-11; clean daily runs
+Update 2026-11-24: all five are level 3. Gallatin went to level 3 in #101 (lastValidated
+2026-11-19). Known flaky spots: Yellowstone county server slow some days (e.g.
+03113520290010000 "unavailable"); Kootenai parcel 015270010070 lookup failures.
+
+Earlier notes: Kootenai 87 and Yellowstone 80: **level 3** (lastValidated 2026-11-11; clean daily runs
 2026-11-09, 11-10 and 11-11, owner sign-off 2026-11-12; merged in #54). Stevens 78: **level 3**
 (lastValidated 2026-11-12; clean daily runs 2026-11-11 and 11-12, owner sign-off 2026-11-13;
 merged in #57-#59). Spokane about 90: level 3 (#65). Gallatin 75: level 2; owner signed off
@@ -120,9 +176,11 @@ artifact upload failed (fixed on `claude/validation-publish-resilience`).
 
 ## Waiting on the owner
 
-- Accounts: create a new GitHub secret `CLOUDFLARE_D1_TOKEN` (a Cloudflare token with
-  **Account → D1 → Edit**); then the lead changes the "Apply D1 migrations" workflow to use it
-  and reruns it (the 2026-11-15 run failed with code 7403). Then: Resend account, verify
+- Explore: the four open decisions above; an Anthropic API key (Cloudflare secret) at the
+  "Ask AcresX" step; OK for a research agent to get nationwide parcel/zoning vendor quotes.
+- Accounts: the `CLOUDFLARE_D1_TOKEN` secret is added (2026-11-24); the lead still has to switch
+  the "Apply D1 migrations" workflow to it and rerun (the 2026-11-15 run failed with code 7403;
+  this rides in the Explore database setup PR). Then: Resend account, verify
   acresx.info DNS, set Cloudflare secret `RESEND_API_KEY` on the `acresx` Worker. Meanwhile
   testers keep saved items in browser storage, behind Cloudflare Zero Trust.
 - City of Spokane / Spokane Valley zoning code pages (their sites block automated fetches).
@@ -174,6 +232,17 @@ Each entry: date, the exact action approved.
   best homesite; the two-deep-wells rule with comparables, and one deep upland well sets the top
   when fewer than 3 wells are comparable. Owner signed off Gallatin parcels 06069905302080000 and
   06033804413010000. Merges #89-#96, each approved by button.
+
+- 2026-11-23: owner set the strategy (nationwide, then compare + AI insights; no new features
+  except realtor feedback). Approved Phase 1 and the inclusion rule: parcels >= 1 ac or vacant
+  outside city limits, plus >= 1 ac inside city limits; improved rural parcels tagged; in-town
+  lots < 1 ac, condos, commercial/industrial, ROW strips and public land left out.
+- 2026-11-23: merge #109 (Explore design). Cloudflare: upgrade to Workers Paid (done by owner
+  2026-11-24). MLS list prices stay on the report only, not in search results, until the MLS
+  Grid terms are confirmed.
+- 2026-11-24: merge #110 (score-core). Owner approved creating D1 `acresx-index` and created it
+  (id `fc0bf7b8-82cd-469c-b2f0-172f74d4424b`); owner created a Cloudflare token (Account → D1 →
+  Edit) and added it as GitHub secret `CLOUDFLARE_D1_TOKEN`.
 
 ## Next steps (offered, not approved)
 
