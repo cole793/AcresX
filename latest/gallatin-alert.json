@@ -1,85 +1,53 @@
 {
-  "runId": "45066209926",
+  "runId": "45301541998",
   "county": "Gallatin",
-  "alerting": true,
-  "aboveThreshold": true,
+  "alerting": false,
+  "aboveThreshold": false,
   "changed": true,
-  "title": "Validation: Gallatin — 1 layer broken",
-  "body": "The scheduled county validation for Gallatin, MT found broken layers (run 2026-11-22T20:24:08.940Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45066209926\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Wetlands | 11 of 12 | broken for 11 of 12 parcels in this run | 06079621201790000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06079611101010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06069818101020000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s |\n|  |  |  | 06079801358210000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06069905302080000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n|  |  |  | 06069624301010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06033804413010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n|  |  |  | 06033908402700000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06101033302010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06042734301530000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06079812230210000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 11, still broken 0, recovered 0, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079611101010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069818101020000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s |\n| 06079801358210000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069905302080000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06069624301010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06033804413010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06033908402700000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06101033302010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06042734301530000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079812230210000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
-  "updateComment": "Still broken in run 2026-11-22T20:24:08.940Z: Wetlands 11 of 12.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45066209926\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n| Wetlands | 11 of 12 | broken for 11 of 12 parcels in this run | 06079621201790000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06079611101010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06069818101020000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s |\n|  |  |  | 06079801358210000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06069905302080000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n|  |  |  | 06069624301010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06033804413010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n|  |  |  | 06033908402700000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06101033302010000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06042734301530000 | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n|  |  |  | 06079812230210000 | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 11, still broken 0, recovered 0, newly unavailable 0.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079611101010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069818101020000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s |\n| 06079801358210000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069905302080000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06069624301010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06033804413010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06033908402700000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06101033302010000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06042734301530000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079812230210000 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n",
-  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-22T20:24:08.940Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45066209926\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n",
+  "title": "Validation: Gallatin — 0 layers broken",
+  "body": "The scheduled county validation for Gallatin, MT found broken layers (run 2026-11-24T00:59:40.814Z).\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45301541998\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n## Broken layers\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Public water/sewer: 2 of 12 (06079621201790000, 06079812230210000)\n- Zoning: 1 of 12 (06079801358210000)\n\nAlert rule: a layer alerts when it is broken (error or mismatch) for at least 3 parcels in one run, or when it meets the threshold (3 parcels, or any parcel for the parcel lookup) in two consecutive runs. This issue closes when no layer meets the threshold.\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 3, still broken 0, recovered 11, newly unavailable 10.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"not\\_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not\\_found\", got \"unavailable\" |\n| 06079801358210000 | Zoning | ok | mismatch | zoning: expected \"ok\", got \"unavailable\"; zoning.code: expected \"R-3\", got null |\n| 06079812230210000 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"served\", got \"likely\" |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079611101010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069818101020000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s |\n| 06079801358210000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069905302080000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06069624301010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06033804413010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06033908402700000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06101033302010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06042734301530000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079812230210000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079611101010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06069818101020000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06069905302080000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06069624301010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06033804413010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06033908402700000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06110827101470000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06101033302010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06042734301530000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06079812230210000 | Zoning | ok | unavailable | City of Bozeman zoning lookup unavailable · overlays: none mapped |\n\nResults are screening checks of the deployed site against county and state servers. Verify a failure in the results before changing code.\n",
+  "updateComment": "Still broken in run 2026-11-24T00:59:40.814Z: none alerting.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45301541998\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\n| Layer | Parcels broken | Why it alerts | Parcel | Status | Detail |\n|---|---|---|---|---|---|\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Public water/sewer: 2 of 12 (06079621201790000, 06079812230210000)\n- Zoning: 1 of 12 (06079801358210000)\n\n## Changes since the previous run\n\nParcel x layer cells: newly broken 3, still broken 0, recovered 11, newly unavailable 10.\n\n### Newly broken\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"not\\_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not\\_found\", got \"unavailable\" |\n| 06079801358210000 | Zoning | ok | mismatch | zoning: expected \"ok\", got \"unavailable\"; zoning.code: expected \"R-3\", got null |\n| 06079812230210000 | Public water/sewer | ok | mismatch | publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"served\", got \"likely\" |\n\n### Recovered\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079621201790000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079611101010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069818101020000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s |\n| 06079801358210000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06069905302080000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06069624301010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06033804413010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n| 06033908402700000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06101033302010000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06042734301530000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s |\n| 06079812230210000 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503 |\n\n### Newly unavailable\n\n| Parcel | Layer | Was | Now | Detail |\n|---|---|---|---|---|\n| 06079611101010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06069818101020000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06069905302080000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06069624301010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06033804413010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06033908402700000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06110827101470000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06101033302010000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06042734301530000 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |\n| 06079812230210000 | Zoning | ok | unavailable | City of Bozeman zoning lookup unavailable · overlays: none mapped |\n\n",
+  "recoveredComment": "Recovered: no layer meets the alert threshold in run 2026-11-24T00:59:40.814Z. Closing this issue.\n\n- Run: https://github.com/cole793/AcresX/actions/runs/45301541998\n- Latest results: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin.md\n- Changes since the previous run: https://github.com/cole793/AcresX/blob/validation-results/latest/gallatin-changes.md\n- Every run: https://github.com/cole793/AcresX/tree/validation-results/history\n\nAlso failing, below the alert threshold or waiting for a second run:\n\n- Public water/sewer: 2 of 12 (06079621201790000, 06079812230210000)\n- Zoning: 1 of 12 (06079801358210000)\n",
   "decision": {
-    "alerting": true,
-    "aboveThreshold": true,
-    "alertLayers": [
+    "alerting": false,
+    "aboveThreshold": false,
+    "alertLayers": [],
+    "watchLayers": [],
+    "belowThreshold": [
       {
-        "layer": "wetlands",
-        "label": "Wetlands",
-        "count": 11,
+        "layer": "publicUtilities",
+        "label": "Public water/sewer",
+        "count": 2,
         "total": 12,
         "previousCount": 0,
         "parcels": [
           {
             "parcelId": "06079621201790000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06079611101010000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06069818101020000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06079801358210000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06069905302080000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
-          },
-          {
-            "parcelId": "06069624301010000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06033804413010000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
-          },
-          {
-            "parcelId": "06033908402700000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06101033302010000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
-          },
-          {
-            "parcelId": "06042734301530000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
+            "status": "mismatch",
+            "detail": "publicUtilities.water: expected \"not_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not_found\", got \"unavailable\""
           },
           {
             "parcelId": "06079812230210000",
-            "status": "error",
-            "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
+            "status": "mismatch",
+            "detail": "publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"served\", got \"likely\""
           }
-        ],
-        "reason": "broken for 11 of 12 parcels in this run"
+        ]
+      },
+      {
+        "layer": "zoning",
+        "label": "Zoning",
+        "count": 1,
+        "total": 12,
+        "previousCount": 0,
+        "parcels": [
+          {
+            "parcelId": "06079801358210000",
+            "status": "mismatch",
+            "detail": "zoning: expected \"ok\", got \"unavailable\"; zoning.code: expected \"R-3\", got null"
+          }
+        ]
       }
     ],
-    "watchLayers": [],
-    "belowThreshold": [],
     "minParcels": 3,
     "comparable": true,
     "reason": null
@@ -90,84 +58,177 @@
     "newlyBroken": [
       {
         "parcelId": "06079621201790000",
-        "layer": "wetlands",
+        "layer": "publicUtilities",
         "was": "ok",
-        "now": "error",
+        "now": "mismatch",
+        "detail": "publicUtilities.water: expected \"not_found\", got \"unavailable\"; publicUtilities.sewer: expected \"not_found\", got \"unavailable\""
+      },
+      {
+        "parcelId": "06079801358210000",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "zoning: expected \"ok\", got \"unavailable\"; zoning.code: expected \"R-3\", got null"
+      },
+      {
+        "parcelId": "06079812230210000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "mismatch",
+        "detail": "publicUtilities.water: expected \"served\", got \"likely\"; publicUtilities.sewer: expected \"served\", got \"likely\""
+      }
+    ],
+    "stillBroken": [],
+    "recovered": [
+      {
+        "parcelId": "06079621201790000",
+        "layer": "wetlands",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06079611101010000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06069818101020000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s"
       },
       {
         "parcelId": "06079801358210000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06069905302080000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       },
       {
         "parcelId": "06069624301010000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06033804413010000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       },
       {
         "parcelId": "06033908402700000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06101033302010000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06042734301530000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s"
       },
       {
         "parcelId": "06079812230210000",
         "layer": "wetlands",
-        "was": "ok",
-        "now": "error",
+        "was": "error",
+        "now": "ok",
         "detail": "HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503"
       }
     ],
-    "stillBroken": [],
-    "recovered": [],
-    "newlyUnavailable": []
+    "newlyUnavailable": [
+      {
+        "parcelId": "06079611101010000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06069818101020000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06069905302080000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06069624301010000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06033804413010000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06033908402700000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06110827101470000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06101033302010000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06042734301530000",
+        "layer": "publicUtilities",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "water unavailable; sewer unavailable"
+      },
+      {
+        "parcelId": "06079812230210000",
+        "layer": "zoning",
+        "was": "ok",
+        "now": "unavailable",
+        "detail": "City of Bozeman zoning lookup unavailable · overlays: none mapped"
+      }
+    ]
   }
 }

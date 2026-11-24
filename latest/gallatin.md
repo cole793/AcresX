@@ -1,24 +1,24 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-22T20:24:08.940Z
-- Parcels: 12, with an error or mismatch: 11
-- Layer results: ok 162, unavailable 19, error 11, mismatch 0, skipped 0
+- Run: 2026-11-24T00:59:40.814Z
+- Parcels: 12, with an error or mismatch: 3
+- Layer results: ok 160, unavailable 29, error 0, mismatch 3, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 06079621201790000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06079611101010000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06069818101020000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06079801358210000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 06069905302080000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06069624301010000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06033804413010000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06033908402700000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06110827101470000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06101033302010000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06042734301530000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06079812230210000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
+| 06079621201790000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | mismatch | ok | ok | ok | ok | unavailable |
+| 06079611101010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06069818101020000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06079801358210000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | mismatch | unavailable | ok | ok | unavailable |
+| 06069905302080000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06069624301010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06033804413010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06033908402700000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06110827101470000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | unavailable | ok | ok | unavailable |
+| 06101033302010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | unavailable | ok | ok | unavailable |
+| 06042734301530000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | ok | ok | unavailable |
+| 06079812230210000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | mismatch | unavailable | unavailable | ok | unavailable | unavailable |
 
 ## Parcel details
 
@@ -33,10 +33,12 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Terrain**: ok. avg grade 6%, max 23.9% [gradePct=6, maxGradePct=23.9, reliefFt=43, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=14.9, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: mismatch. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
+  - mismatch `publicUtilities.water`: expected not_found, got unavailable
+  - mismatch `publicUtilities.sewer`: expected not_found, got unavailable
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $1,221, no tax amount [assessedValue=1221, landValue=1221, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -54,10 +56,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Terrain**: ok. avg grade 9.8%, max 36.6% [gradePct=9.8, maxGradePct=36.6, reliefFt=225, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.7% [cellCount=16, avgSlopePct=5.7, maxSlopePct=13.2, partial=false]
 - **Flood**: ok. zones X, D (via FEMA NFHL) [high=false, intersects=true, zones=X; D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $530,345, no tax amount [assessedValue=530345, landValue=221765, improvementValue=308580, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -75,10 +77,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel 
 - **Terrain**: ok. avg grade 5.1%, max 7.6% [gradePct=5.1, maxGradePct=7.6, reliefFt=24, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.8% [cellCount=16, avgSlopePct=5.8, maxSlopePct=15.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry timeout after 6s
+- **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=0.7]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $1,067,605, no tax amount [assessedValue=1067605, landValue=716325, improvementValue=351280, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -96,12 +98,14 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Terrain**: ok. avg grade 1.5%, max 1.6% [gradePct=1.5, maxGradePct=1.6, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=10, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water served (City of Bozeman) 9 m; sewer served (City of Bozeman) 13 m [water=served, sewer=served, waterProvider=City of Bozeman, sewerProvider=City of Bozeman, waterProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, waterDistanceM=9, sewerDistanceM=13, failedLayers=(none)]
-- **Zoning**: ok. R-3 (City of Bozeman) · overlays: none mapped [code=R-3, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
+- **Public water/sewer**: ok. water likely (Bozeman - Drinking Water & Wastewater Planning Area); sewer likely (Bozeman - Drinking Water & Wastewater Planning Area) [water=likely, sewer=likely, waterProvider=Bozeman - Drinking Water & Wastewater Planning Area, sewerProvider=Bozeman - Drinking Water & Wastewater Planning Area, waterProviders=Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
+- **Zoning**: mismatch. City of Bozeman zoning lookup unavailable · overlays: none mapped [jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=unavailable, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
+  - mismatch `zoning`: expected ok, got unavailable
+  - mismatch `zoning.code`: expected R-3, got null
+- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $662,000, no tax amount [assessedValue=662000, landValue=206513, improvementValue=455487, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: ok. billed 2026 tax $3,337.65 [taxTotal=3337.65, taxYear=2026, taxBasis=billed, taxSource=Gallatin County Treasurer (iTax)]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -117,10 +121,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Zoned county pa
 - **Terrain**: ok. avg grade 15.5%, max 28% [gradePct=15.5, maxGradePct=28, reliefFt=173, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 15.1% [cellCount=16, avgSlopePct=15.1, maxSlopePct=23.1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC [providers=NORTHWESTERN ENERGY LLC - (MT); PARK ELECTRIC COOP INC]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. RR-10 (Gallatin County) · overlays: none mapped [code=RR-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. RR-10: Rural Residential (6 uses) [code=RR-10, family=Rural Residential, useCount=6]
 - **Assessment**: ok. assessed $1,228,455, no tax amount [assessedValue=1228455, landValue=1228455, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -138,10 +142,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 - **Terrain**: ok. avg grade 25.3%, max 68.5% [gradePct=25.3, maxGradePct=68.5, reliefFt=673, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 22.4% [cellCount=16, avgSlopePct=22.4, maxSlopePct=30.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. 2 NWI feature(s) [intersects=true, count=2, coveragePct=0.8]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. UNZONED (Gallatin County) · overlays: none mapped [code=UNZONED, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=unzoned, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. UNZONED: Unzoned (5 uses) [code=UNZONED, family=Unzoned, useCount=5]
 - **Assessment**: ok. assessed $18,108, no tax amount [assessedValue=18108, landValue=18108, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -159,10 +163,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Terrain**: ok. avg grade 16.9%, max 42.4% [gradePct=16.9, maxGradePct=42.4, reliefFt=99, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 16.2% [cellCount=16, avgSlopePct=16.2, maxSlopePct=25.6, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. RC-SF-10 (Gallatin County) · overlays: none mapped [code=RC-SF-10, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. RC-SF-10: Rural Residential (7 uses) [code=RC-SF-10, family=Rural Residential, useCount=7]
 - **Assessment**: ok. assessed $2,012,317, no tax amount [assessedValue=2012317, landValue=2012317, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -180,10 +184,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improv
 - **Terrain**: ok. avg grade 2.2%, max 3% [gradePct=2.2, maxGradePct=3, reliefFt=3, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 3.2% [cellCount=16, avgSlopePct=3.2, maxSlopePct=7.7, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. R-SF-11000 (Gallatin County) · overlays: none mapped [code=R-SF-11000, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. R-SF-11000: Residential (7 uses) [code=R-SF-11000, family=Residential, useCount=7]
 - **Assessment**: ok. assessed $1,479,400, no tax amount [assessedValue=1479400, landValue=327612, improvementValue=1151788, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -204,7 +208,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: unavailable. No mapped zoning district · overlays: none mapped [jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $1,554,437, no tax amount [assessedValue=1554437, landValue=213407, improvementValue=1341030, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -222,10 +226,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 - **Terrain**: ok. avg grade 0.7%, max 0.9% [gradePct=0.7, maxGradePct=0.9, reliefFt=18, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: unavailable. No mapped zoning district · overlays: none mapped [jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=no_mapped_result, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $4,500, no tax amount [assessedValue=4500, landValue=4500, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -243,10 +247,10 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Terrain**: ok. avg grade 29.2%, max 58.5% [gradePct=29.2, maxGradePct=58.5, reliefFt=152, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=34.7, partial=false]
 - **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI timeout after 8s; retry timeout after 6s
+- **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=2.3]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
+- **Public water/sewer**: unavailable. water unavailable; sewer unavailable [water=unavailable, sewer=unavailable, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
 - **Zoning**: ok. RC-SF-2.5 (Gallatin County) · overlays: none mapped [code=RC-SF-2.5, jurisdiction=Gallatin County, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
 - **Zoning rules**: ok. RC-SF-2.5: Residential (7 uses) [code=RC-SF-2.5, family=Residential, useCount=7]
 - **Assessment**: ok. assessed $869,596, no tax amount [assessedValue=869596, landValue=869596, improvementValue=0, taxPresent=false, source=Montana Cadastral / ORION integration]
@@ -262,14 +266,16 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. moderate (Urban land) [feasibility=moderate, mapUnit=Urban land, soilSlopePct=0, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 1.4%, max 1.8% [gradePct=1.4, maxGradePct=1.8, reliefFt=1, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 1.4% [cellCount=16, avgSlopePct=1.4, maxSlopePct=1.8, partial=false]
+- **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=6.8, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
-- **Public water/sewer**: ok. water served (City of Bozeman) 12 m; sewer served (City of Bozeman) 3 m [water=served, sewer=served, waterProvider=City of Bozeman, sewerProvider=City of Bozeman, waterProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, waterDistanceM=12, sewerDistanceM=3, failedLayers=(none)]
-- **Zoning**: ok. R-2 (City of Bozeman) · overlays: none mapped [code=R-2, jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=gis_match, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
-- **Zoning rules**: unavailable. zone_not_mapped [status=zone_not_mapped]
+- **Public water/sewer**: mismatch. water likely (Bozeman - Drinking Water & Wastewater Planning Area); sewer likely (Bozeman - Drinking Water & Wastewater Planning Area) [water=likely, sewer=likely, waterProvider=Bozeman - Drinking Water & Wastewater Planning Area, sewerProvider=Bozeman - Drinking Water & Wastewater Planning Area, waterProviders=Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, failedLayers=bozeman-water-mains; bozeman-sewer-mains]
+  - mismatch `publicUtilities.water`: expected served, got likely
+  - mismatch `publicUtilities.sewer`: expected served, got likely
+- **Zoning**: unavailable. City of Bozeman zoning lookup unavailable · overlays: none mapped [jurisdiction=City of Bozeman, countyStatus=gallatin-v3, zoningStatus=unavailable, permitHistoryStatus=unavailable, source=primary, overlays=(none), overlayTypes=(none)]
+- **Zoning rules**: unavailable. not requested: no zoning code returned (the browser skips this call too)
 - **Assessment**: ok. assessed $742,800, no tax amount [assessedValue=742800, landValue=302880, improvementValue=439920, taxPresent=false, source=Montana Cadastral / ORION integration]
 - **Property tax**: unavailable. not_found: iTax lists no tax bill for this parcel. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
