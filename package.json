@@ -11,6 +11,7 @@
     "check": "npm test && npm run build-check"
   },
   "devDependencies": {
+    "@turf/turf": "7.4.0",
     "wrangler": "^4.0.0"
   }
 }

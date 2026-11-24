@@ -5,3 +5,4 @@ package-lock.json
 .claude/worktrees/
 .claude/settings.local.json
 validation-results/
+tmp/
