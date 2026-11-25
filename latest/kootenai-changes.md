@@ -1,15 +1,21 @@
 # Changes since the previous run: Kootenai, ID
 
-- Run: 2026-11-24T23:03:56.514Z
+- Run: 2026-11-25T22:36:47.420Z
 
 ## Cells
 
-Parcel x layer cells: newly broken 2, still broken 0, recovered 0, newly unavailable 0.
+Parcel x layer cells: newly broken 0, still broken 0, recovered 2, newly unavailable 1.
 
-### Newly broken
+### Recovered
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| C72150030040 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521 |
-| 007740020050 | Wetlands | ok | error | HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521 |
+| C72150030040 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521 |
+| 007740020050 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521 |
+
+### Newly unavailable
+
+| Parcel | Layer | Was | Now | Detail |
+|---|---|---|---|---|
+| 0K2660010030 | Public water/sewer | ok | unavailable | water unavailable; sewer unavailable |
 
