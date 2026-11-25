@@ -1,22 +1,22 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-24T23:03:57.106Z
-- Parcels: 12, with an error or mismatch: 3
-- Layer results: ok 170, unavailable 19, error 3, mismatch 0, skipped 0
+- Run: 2026-11-25T22:36:48.311Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 173, unavailable 19, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 06079621201790000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06079611101010000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06069818101020000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06079611101010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06069818101020000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06079801358210000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 06069905302080000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06069624301010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06033804413010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06033908402700000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06110827101470000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06101033302010000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06101033302010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
 | 06042734301530000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06079812230210000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
 
@@ -32,7 +32,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 - **Soil**: ok. favorable (Amsterdam-Quagle silt loams, 4 to 8 percent slopes) [feasibility=favorable, mapUnit=Amsterdam-Quagle silt loams, 4 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=6, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 6%, max 23.9% [gradePct=6, maxGradePct=23.9, reliefFt=43, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.5% [cellCount=16, avgSlopePct=6.5, maxSlopePct=14.9, partial=false]
-- **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -54,7 +54,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved p
 - **Terrain**: ok. avg grade 9.8%, max 36.6% [gradePct=9.8, maxGradePct=36.6, reliefFt=225, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.7% [cellCount=16, avgSlopePct=5.7, maxSlopePct=13.2, partial=false]
 - **Flood**: ok. zones X, D (via FEMA NFHL) [high=false, intersects=true, zones=X; D, category=undetermined, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 525; retry returned 521
+- **Wetlands**: ok. 4 NWI feature(s) [intersects=true, count=4, coveragePct=1]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -75,7 +75,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Improved parcel 
 - **Terrain**: ok. avg grade 5.1%, max 7.6% [gradePct=5.1, maxGradePct=7.6, reliefFt=24, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 5.8% [cellCount=16, avgSlopePct=5.8, maxSlopePct=15.3, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521
+- **Wetlands**: ok. 1 NWI feature(s) [intersects=true, count=1, coveragePct=0.7]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
@@ -158,7 +158,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 - **Soil**: ok. limited (Yellowmule-Ouselfal complex, 8 to 25 percent slopes) [feasibility=limited, mapUnit=Yellowmule-Ouselfal complex, 8 to 25 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=17, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 16.9%, max 42.4% [gradePct=16.9, maxGradePct=42.4, reliefFt=99, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 16.2% [cellCount=16, avgSlopePct=16.2, maxSlopePct=25.6, partial=false]
-- **Flood**: ok. zones D (via FEMA NFHL) [high=false, intersects=true, zones=D, category=undetermined, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -179,7 +179,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small improv
 - **Soil**: ok. favorable (Bridger loam, 2 to 8 percent slopes) [feasibility=favorable, mapUnit=Bridger loam, 2 to 8 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=5, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 2.2%, max 3% [gradePct=2.2, maxGradePct=3, reliefFt=3, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 3.2% [cellCount=16, avgSlopePct=3.2, maxSlopePct=7.7, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -199,8 +199,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 - **Existing well**: ok. Recorded well on this parcel [status=strong_match, confidence=High, score=100]
 - **Soil**: ok. moderate (Amesha loam, 8 to 15 percent slopes) [feasibility=moderate, mapUnit=Amesha loam, 8 to 15 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=12, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 16.5%, max 48% [gradePct=16.5, maxGradePct=48, reliefFt=114, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 14.1% [cellCount=16, avgSlopePct=14.1, maxSlopePct=35.6, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Slope grid**: ok. 16 cells, avg 14.2% [cellCount=16, avgSlopePct=14.2, maxSlopePct=35.3, partial=false]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -222,7 +222,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 - **Terrain**: ok. avg grade 0.7%, max 0.9% [gradePct=0.7, maxGradePct=0.9, reliefFt=18, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521
+- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
