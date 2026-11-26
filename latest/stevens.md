@@ -1,13 +1,13 @@
 # County validation: Stevens, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-25T22:41:35.554Z
-- Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 163, unavailable 29, error 0, mismatch 0, skipped 0
+- Run: 2026-11-26T22:27:53.247Z
+- Parcels: 12, with an error or mismatch: 1
+- Layer results: ok 161, unavailable 29, error 0, mismatch 2, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | mismatch | mismatch | ok | unavailable | unavailable |
 | 0763202 | ok | ok | unavailable | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | ok | ok | ok | unavailable |
 | 0231200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 0000500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
@@ -37,8 +37,10 @@ Why: Small unincorporated lot with a blank situs city (picked by discovery 2026-
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~1499 ft to mapped power [provider=AVISTA CORP, distanceFt=1499, confidence=low, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
-- **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
-- **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
+- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured, source=primary]
+  - mismatch `zoning.code`: expected RA-5, got null
+- **Zoning rules**: mismatch. not requested: no zoning code returned (the browser skips this call too)
+  - mismatch `zoningRules.code`: expected RA-5, got null
 - **Assessment**: ok. assessed n/a, class 99 Other undeveloped land, no tax amount [taxPresent=false, taxYear=2026, propertyClass=99, propertyClassDescription=Other undeveloped land, source=Stevens County Assessor (RealPropertyParcels_Public)]
 - **Property tax**: unavailable. not_found: The property search lists no tax statement for this parcel. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]

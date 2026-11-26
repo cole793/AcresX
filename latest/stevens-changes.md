@@ -1,14 +1,15 @@
 # Changes since the previous run: Stevens, WA
 
-- Run: 2026-11-25T22:41:35.554Z
+- Run: 2026-11-26T22:27:53.247Z
 
 ## Cells
 
-Parcel x layer cells: newly broken 0, still broken 0, recovered 1, newly unavailable 0.
+Parcel x layer cells: newly broken 2, still broken 0, recovered 0, newly unavailable 0.
 
-### Recovered
+### Newly broken
 
 | Parcel | Layer | Was | Now | Detail |
 |---|---|---|---|---|
-| 5320900 | Wetlands | error | ok | HTTP 502: Wetland data unavailable: USFWS NWI returned 521; retry returned 521 |
+| 8974701 | Zoning | ok | mismatch | zoning.code: expected "RA-5", got null |
+| 8974701 | Zoning rules | ok | mismatch | zoningRules.code: expected "RA-5", got null |
 
