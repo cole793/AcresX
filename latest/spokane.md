@@ -1,7 +1,7 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-25T22:39:39.516Z
+- Run: 2026-11-26T22:27:17.562Z
 - Parcels: 12, with an error or mismatch: 0
 - Layer results: ok 175, unavailable 17, error 0, mismatch 0, skipped 0
 
@@ -74,7 +74,7 @@ Why: Small lot inside the City of Cheney (3175 Pheasant St). No county zoning po
 - **Soil**: ok. favorable (Cheney ashy silt loam, 0 to 8 percent slopes) [feasibility=favorable, mapUnit=Cheney ashy silt loam, 0 to 8 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0%, max 0% [gradePct=0, maxGradePct=0, reliefFt=0, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.7% [cellCount=16, avgSlopePct=6.7, maxSlopePct=13.1, partial=false]
-- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
+- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. CITY OF CHENEY - (WA) [providers=CITY OF CHENEY - (WA)]
 - **Power**: ok. CITY OF CHENEY - (WA) [provider=CITY OF CHENEY - (WA), confidence=low, distributionStatus=no_verified_distance]
@@ -158,7 +158,7 @@ Why: Unincorporated 1-5 ac parcel with a blank situs city (picked by discovery 2
 - **Soil**: ok. favorable (Scrabblers ashy fine sandy loam, 3 to 8 percent slopes) [feasibility=favorable, mapUnit=Scrabblers ashy fine sandy loam, 3 to 8 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=5, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 5.3%, max 17.7% [gradePct=5.3, maxGradePct=17.7, reliefFt=29, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 6.9% [cellCount=16, avgSlopePct=6.9, maxSlopePct=17.7, partial=false]
-- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
+- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; AVISTA CORP; BONNEVILLE POWER ADMINISTRATION]
 - **Power**: ok. INLAND POWER & LIGHT COMPANY [provider=INLAND POWER & LIGHT COMPANY, confidence=low, distributionStatus=no_verified_distance]
