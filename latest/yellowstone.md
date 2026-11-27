@@ -1,24 +1,24 @@
 # County validation: Yellowstone, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-26T22:31:15.992Z
-- Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 174, unavailable 18, error 0, mismatch 0, skipped 0
+- Run: 2026-11-27T22:12:43.319Z
+- Parcels: 12, with an error or mismatch: 12
+- Layer results: ok 162, unavailable 18, error 12, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 03113520290010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 03072530104010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 03103333215010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233201230000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03113517000000000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
-| 03072527101010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103333303010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
-| 03103233202530000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03113519316050000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
-| 03072528309010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103333414250000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 03103233202670000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03113520290010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 03072530104010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 03103333215010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103233201230000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03113517000000000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
+| 03072527101010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103333303010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 03103233202530000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03113519316050000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 03072528309010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103333414250000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 03103233202670000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 
 ## Parcel details
 
@@ -27,8 +27,8 @@
 Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant land with no polygon in any Yellowstone zoning layer; the unzoned case (was "No mapped zoning district found"). Expected values checked by hand on 2026-11-02 (read-only): no feature in layers 7, 4, 8, 0, 2 or 1 at an interior point, e.g. https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?geometry=-108.271860%2C45.912034&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X. Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): no MSDI, county (layer 27) or Lockwood (18-20) district and no zoning jurisdiction at the point.
 
 - **Parcel**: ok. parcel 03113520290010000, 12.48 ac (mapped) [parcelId=03113520290010000, acres=12.48, lat=45.911619, lon=-108.271699, acresSource=mapped outline]
-- **Wells**: ok. 382 well record(s), 5 of nearest 5 report depth [wellCount=382, nearestDepthsCount=5, nearestMi=0.19, medianDepthFt=21]
-- **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=25]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
+- **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=30]
 - **Soil**: ok. limited (Vananda silty clay, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Vananda silty clay, 0 to 1 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.1%, max 0.9% [gradePct=0.1, maxGradePct=0.9, reliefFt=3, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.5% [cellCount=16, avgSlopePct=0.5, maxSlopePct=1.1, partial=false]
@@ -48,7 +48,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant la
 Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vacant parcel outside every zoning layer; unzoned case (was "No mapped zoning district found").
 
 - **Parcel**: ok. parcel 03072530104010000, 120.3 ac (mapped) [parcelId=03072530104010000, acres=120.3, lat=45.549337, lon=-108.678552, acresSource=mapped outline]
-- **Wells**: ok. 32 well record(s), 5 of nearest 5 report depth [wellCount=32, nearestDepthsCount=5, nearestMi=0.79, medianDepthFt=37]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. moderate (Grail soils, 2 to 15 percent slopes) [feasibility=moderate, mapUnit=Grail soils, 2 to 15 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=9, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 21.4%, max 80.7% [gradePct=21.4, maxGradePct=80.7, reliefFt=460, sampleCount=9]
@@ -69,7 +69,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural vaca
 Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside the Billings zoning jurisdiction (layer 7 entity BILLINGS); the parcel that showed jurisdiction "2". Its outline is curved, so the vertex average falls outside it on a neighbouring NX3 polygon (the old answer); the outline itself is P1 with an edge touching NX2. Expected values checked by hand on 2026-11-02 (read-only): layer 7 at an interior point returns ZoningJurisdictions_Entity BILLINGS: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?geometry=-108.506970%2C45.796300&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; Billings zoning layer 4 at the same interior point returns ZONE_CODE P1: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?geometry=-108.506970%2C45.796300&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; layer 4 queried with the parcel outline returns P1 and NX2; sampled over about 1,300 points P1 covers 99.7% of the parcel and NX2 only touches its edge; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard).
 
 - **Parcel**: ok. parcel 03103333215010000, 2.91 ac (mapped) [parcelId=03103333215010000, acres=2.91, address=1105 N 21ST ST, lat=45.79691, lon=-108.50538, acresSource=mapped outline]
-- **Wells**: ok. 1486 well record(s), 5 of nearest 5 report depth [wellCount=1486, nearestDepthsCount=5, nearestMi=0.34, medianDepthFt=22.5]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (McRae loam, 4 to 7 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 4 to 7 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=6, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 17.8%, max 42.6% [gradePct=17.8, maxGradePct=42.6, reliefFt=53, sampleCount=9]
@@ -90,7 +90,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings, inside
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end). Expected values checked by hand on 2026-11-02 (read-only): Billings zoning layer 4 returns ZONE_CODE N3: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/4/query?geometry=-108.630387%2C45.791953&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; layer 7 returns BILLINGS: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/7/query?geometry=-108.630387%2C45.791953&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned X (area of minimal flood hazard). Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): Zoning/MapServer/7 ZoningJurisdictions_Entity 'BILLINGS'; no MSDI or county water/sewer district polygon; no reachable Billings utility map.
 
 - **Parcel**: ok. parcel 03103233201230000, 0.41 ac (mapped) [parcelId=03103233201230000, acres=0.41, address=4541 EDGEWATER CIR, lat=45.79188, lon=-108.630517, acresSource=mapped outline]
-- **Wells**: ok. 686 well record(s), 5 of nearest 5 report depth [wellCount=686, nearestDepthsCount=5, nearestMi=0.1, medianDepthFt=83]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (McRae loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 1 to 4 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 2.3%, max 2.7% [gradePct=2.3, maxGradePct=2.7, reliefFt=4, sampleCount=9]
@@ -111,8 +111,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural parcel with no situs address, multipart outline (4 rings) and no zoning polygon; unzoned case and multipart geometry.
 
 - **Parcel**: ok. parcel 03113517000000000, 20.99 ac (mapped) [parcelId=03113517000000000, acres=20.99, lat=45.9168, lon=-108.264805, acresSource=mapped outline]
-- **Wells**: ok. 293 well record(s), 5 of nearest 5 report depth [wellCount=293, nearestDepthsCount=5, nearestMi=0.12, medianDepthFt=29]
-- **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=45]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
+- **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Vananda silty clay, 0 to 1 percent slopes) [feasibility=limited, mapUnit=Vananda silty clay, 0 to 1 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.5%, max 2.2% [gradePct=0.5, maxGradePct=2.2, reliefFt=5, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.5% [cellCount=16, avgSlopePct=0.5, maxSlopePct=1.2, partial=false]
@@ -132,7 +132,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural parcel wi
 Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural parcel inside Special Zoning District 16 (county layer 2), outside the Billings jurisdiction. Expected values checked by hand on 2026-11-02 (read-only): county Zoning Districts layer 2 returns CODE D16: https://gis.yellowstonecountymt.gov/arcgis/rest/services/Zoning/MapServer/2/query?geometry=-108.623451%2C45.545177&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CODE%2CZONE_NAME%2CCODE%2CZoningJurisdictions_Entity&returnGeometry=false&f=json; layer 7 returns no jurisdiction polygon for the parcel outline; FEMA NFHL https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query (POST, parcel outline, outFields FLD_ZONE,ZONE_SUBTY) returned D (undetermined).
 
 - **Parcel**: ok. parcel 03072527101010000, 281.28 ac (mapped) [parcelId=03072527101010000, acres=281.28, lat=45.545434, lon=-108.624805, acresSource=mapped outline]
-- **Wells**: ok. 29 well record(s), 5 of nearest 5 report depth [wellCount=29, nearestDepthsCount=5, nearestMi=1.97, medianDepthFt=43]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Maginnis channery clay loam, 15 to 35 percent slopes) [feasibility=limited, mapUnit=Maginnis channery clay loam, 15 to 35 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=25, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 17.1%, max 68.1% [gradePct=17.1, maxGradePct=68.1, reliefFt=313, sampleCount=9]
@@ -153,12 +153,12 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large rural parc
 Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Downtown Billings exempt property (CBD zoning).
 
 - **Parcel**: ok. parcel 03103333303010000, 1 ac (mapped) [parcelId=03103333303010000, acres=1, address=220 N 25TH ST, lat=45.784964, lon=-108.503716, acresSource=mapped outline]
-- **Wells**: ok. 1572 well record(s), 5 of nearest 5 report depth [wellCount=1572, nearestDepthsCount=5, nearestMi=0.03, medianDepthFt=25]
-- **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=45]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
+- **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=25]
 - **Soil**: ok. favorable (Lohmiller silty clay, 0 to 1 percent slopes) [feasibility=favorable, mapUnit=Lohmiller silty clay, 0 to 1 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.4%, max 0.8% [gradePct=0.4, maxGradePct=0.8, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 1.4% [cellCount=16, avgSlopePct=1.4, maxSlopePct=5.2, partial=false]
-- **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
+- **Flood**: ok. no high/moderate-risk zone mapped (via Esri USA Flood Hazard Areas, high/moderate-risk zones only) [high=false, intersects=false, zones=(none), category=limited, provider=Esri USA Flood Hazard Areas, coverage=high-and-moderate-risk-only, emptyResult=true]
 - **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION [providers=NORTHWESTERN ENERGY LLC - (MT); YELLOWSTONE VALLEY ELEC CO-OP; WAPA-- WESTERN AREA POWER ADMINISTRATION]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
@@ -174,7 +174,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Downtown Billing
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end, N3).
 
 - **Parcel**: ok. parcel 03103233202530000, 0.34 ac (mapped) [parcelId=03103233202530000, acres=0.34, address=2280 RIDGEWOOD LN S, lat=45.793066, lon=-108.628665, acresSource=mapped outline]
-- **Wells**: ok. 686 well record(s), 5 of nearest 5 report depth [wellCount=686, nearestDepthsCount=5, nearestMi=0.03, medianDepthFt=79]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (Glenberg fine sandy loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=Glenberg fine sandy loam, 1 to 4 percent slopes, hydrologicGroup=A, drainage=Well drained, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 3.9%, max 4.5% [gradePct=3.9, maxGradePct=4.5, reliefFt=6, sampleCount=9]
@@ -195,7 +195,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billin
 Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant parcel with no zoning polygon; unzoned case (was "No mapped zoning district found").
 
 - **Parcel**: ok. parcel 03113519316050000, 5.19 ac (mapped) [parcelId=03113519316050000, acres=5.19, lat=45.906252, lon=-108.291924, acresSource=mapped outline]
-- **Wells**: ok. 336 well record(s), 5 of nearest 5 report depth [wellCount=336, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=26]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=25]
 - **Soil**: ok. favorable (Haverson loam, 0 to 1 percent slopes) [feasibility=favorable, mapUnit=Haverson loam, 0 to 1 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.1%, max 0.5% [gradePct=0.1, maxGradePct=0.5, reliefFt=0, sampleCount=9]
@@ -216,7 +216,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Rural vacant pa
 Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved rural parcel inside Special Zoning District 16.
 
 - **Parcel**: ok. parcel 03072528309010000, 224.47 ac (mapped) [parcelId=03072528309010000, acres=224.47, lat=45.544265, lon=-108.643746, acresSource=mapped outline]
-- **Wells**: ok. 28 well record(s), 5 of nearest 5 report depth [wellCount=28, nearestDepthsCount=5, nearestMi=1.05, medianDepthFt=43]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Absarokee clay loam, 4 to 7 percent slopes) [feasibility=limited, mapUnit=Absarokee clay loam, 4 to 7 percent slopes, hydrologicGroup=D, drainage=Well drained, soilSlopePct=6, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 13.9%, max 73.3% [gradePct=13.9, maxGradePct=73.3, reliefFt=280, sampleCount=9]
@@ -237,8 +237,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large improved r
 Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings East Billings Urban Renewal District zone (EB_CW).
 
 - **Parcel**: ok. parcel 03103333414250000, 1.32 ac (mapped) [parcelId=03103333414250000, acres=1.32, address=111 N 17TH ST, lat=45.78924, lon=-108.491937, acresSource=mapped outline]
-- **Wells**: ok. 1520 well record(s), 5 of nearest 5 report depth [wellCount=1520, nearestDepthsCount=5, nearestMi=0.04, medianDepthFt=20]
-- **Existing well**: ok. Possible well record near this parcel [status=likely_match, confidence=Moderate, score=54]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
+- **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (Lohmiller silty clay, 0 to 1 percent slopes) [feasibility=favorable, mapUnit=Lohmiller silty clay, 0 to 1 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.4%, max 1.1% [gradePct=0.4, maxGradePct=1.1, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 0.7% [cellCount=16, avgSlopePct=0.7, maxSlopePct=1.9, partial=false]
@@ -258,7 +258,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Billings East Bi
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small Billings residential lot (west end, N3).
 
 - **Parcel**: ok. parcel 03103233202670000, 0.37 ac (mapped) [parcelId=03103233202670000, acres=0.37, address=2285 PARK RIDGE LN S, lat=45.793052, lon=-108.629537, acresSource=mapped outline]
-- **Wells**: ok. 681 well record(s), 5 of nearest 5 report depth [wellCount=681, nearestDepthsCount=5, nearestMi=0.01, medianDepthFt=79]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. favorable (McRae loam, 1 to 4 percent slopes) [feasibility=favorable, mapUnit=McRae loam, 1 to 4 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=3, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 3.8%, max 4.3% [gradePct=3.8, maxGradePct=4.3, reliefFt=4, sampleCount=9]
