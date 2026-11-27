@@ -1,7 +1,7 @@
 # County validation: Spokane, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-26T22:27:17.562Z
+- Run: 2026-11-27T22:08:34.817Z
 - Parcels: 12, with an error or mismatch: 0
 - Layer results: ok 175, unavailable 17, error 0, mismatch 0, skipped 0
 
@@ -220,7 +220,7 @@ Why: Unincorporated 40+ ac forest parcel with mapped wetlands (picked by discove
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Keeler-Kruse complex, 15 to 30 percent slopes) [feasibility=limited, mapUnit=Keeler-Kruse complex, 15 to 30 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=23, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 27.4%, max 72.3% [gradePct=27.4, maxGradePct=72.3, reliefFt=623, sampleCount=9]
-- **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=41.4, partial=false]
+- **Slope grid**: ok. 16 cells, avg 19.4% [cellCount=16, avgSlopePct=19.4, maxSlopePct=42.5, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
 - **Wetlands**: ok. 3 NWI feature(s) [intersects=true, count=3, coveragePct=0.6]
 - **Utility**: ok. INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION [providers=INLAND POWER & LIGHT COMPANY; BONNEVILLE POWER ADMINISTRATION]
