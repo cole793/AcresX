@@ -1,24 +1,24 @@
 # County validation: Stevens, WA
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-26T22:27:53.247Z
-- Parcels: 12, with an error or mismatch: 1
-- Layer results: ok 161, unavailable 29, error 0, mismatch 2, skipped 0
+- Run: 2026-11-27T22:10:05.284Z
+- Parcels: 12, with an error or mismatch: 0
+- Layer results: ok 158, unavailable 34, error 0, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | mismatch | mismatch | ok | unavailable | unavailable |
+| 8974701 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 0763202 | ok | ok | unavailable | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | ok | ok | ok | unavailable |
 | 0231200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 0000500 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 2371220 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 2378200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 2378200 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 | 2214900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 2611300 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 8673053 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 2342700 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 5320900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 5317201 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 8673053 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 2342700 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 5320900 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
+| 5317201 | ok | ok | unavailable | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable |
 
 ## Parcel details
 
@@ -37,10 +37,8 @@ Why: Small unincorporated lot with a blank situs city (picked by discovery 2026-
 - **Utility**: ok. AVISTA CORP [providers=AVISTA CORP]
 - **Power**: ok. AVISTA CORP, ~1499 ft to mapped power [provider=AVISTA CORP, distanceFt=1499, confidence=low, distributionStatus=utility_published_proximity]
 - **Public water/sewer**: ok. water not_found; sewer not_found [water=not_found, sewer=not_found, waterProviders=(none), sewerProviders=(none), waterPublic=false, sewerPublic=false, failedLayers=(none)]
-- **Zoning**: mismatch. Stevens County zoning lookup unavailable [jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=unavailable, permitHistoryStatus=not_configured, source=primary]
-  - mismatch `zoning.code`: expected RA-5, got null
-- **Zoning rules**: mismatch. not requested: no zoning code returned (the browser skips this call too)
-  - mismatch `zoningRules.code`: expected RA-5, got null
+- **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
+- **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
 - **Assessment**: ok. assessed n/a, class 99 Other undeveloped land, no tax amount [taxPresent=false, taxYear=2026, propertyClass=99, propertyClassDescription=Other undeveloped land, source=Stevens County Assessor (RealPropertyParcels_Public)]
 - **Property tax**: unavailable. not_found: The property search lists no tax statement for this parcel. [taxStatus=not_found]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
@@ -147,7 +145,7 @@ Why: Unincorporated 1-5 ac parcel with a city-named situs (picked by discovery 2
 - **Zoning**: ok. RA-10 (Stevens County) [code=RA-10, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
 - **Zoning rules**: ok. RA-10: Rural (6 uses) [code=RA-10, family=Rural, useCount=6]
 - **Assessment**: ok. assessed $61,606, class 11 Household, single family units, no tax amount [assessedValue=61606, landValue=45000, improvementValue=16606, taxPresent=false, netValue=61606, taxYear=2026, propertyClass=11, propertyClassDescription=Household, single family units, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $467.31 [taxTotal=467.31, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 2214900 (Addy, 1.01 ac, RA-5, wetlands)
@@ -210,7 +208,7 @@ Why: Unincorporated 5-40 ac parcel with a blank situs city (picked by discovery 
 - **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
 - **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
 - **Assessment**: ok. assessed n/a, class 99 Other undeveloped land, no tax amount [taxPresent=false, taxYear=2026, propertyClass=99, propertyClassDescription=Other undeveloped land, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $0.00 [taxTotal=0, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 2342700 (Colville situs, 290 ac, AR-10, wetlands)
@@ -231,7 +229,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Zoning**: ok. AR-10 (Stevens County) [code=AR-10, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
 - **Zoning rules**: ok. AR-10: Resource (6 uses) [code=AR-10, family=Resource, useCount=6]
 - **Assessment**: ok. assessed $26,794, class 88 Designated forest land under chapter 84.33 RCW, no tax amount [assessedValue=26794, landValue=12794, improvementValue=14000, taxPresent=false, netValue=26794, taxYear=2026, propertyClass=88, propertyClassDescription=Designated forest land under chapter 84.33 RCW, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $291.33 [taxTotal=291.33, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 5320900 (Loon Lake, 190 ac, RA-10, wetlands)
@@ -252,7 +250,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42). Cou
 - **Zoning**: ok. RA-10 (Stevens County) [code=RA-10, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
 - **Zoning rules**: ok. RA-10: Rural (6 uses) [code=RA-10, family=Rural, useCount=6]
 - **Assessment**: ok. assessed $313,685, class 88 Designated forest land under chapter 84.33 RCW, no tax amount [assessedValue=313685, landValue=137277, improvementValue=176408, taxPresent=false, netValue=313685, taxYear=2026, propertyClass=88, propertyClassDescription=Designated forest land under chapter 84.33 RCW, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $1,778.89 [taxTotal=1778.89, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 ### 5317201 (Valley, 54.9 ac, RA-5, wetlands)
@@ -273,7 +271,7 @@ Why: Unincorporated 40+ ac parcel (picked by discovery 2026-11-02, seed 42).
 - **Zoning**: ok. RA-5 (Stevens County) [code=RA-5, jurisdiction=Stevens County, countyStatus=stevens-official-adapter-v1, zoningStatus=gis_match, permitHistoryStatus=not_configured, source=primary]
 - **Zoning rules**: ok. RA-5: Rural (6 uses) [code=RA-5, family=Rural, useCount=6]
 - **Assessment**: ok. assessed $196,984, class 88 Designated forest land under chapter 84.33 RCW, no tax amount [assessedValue=196984, landValue=102962, improvementValue=94022, taxPresent=false, netValue=196984, taxYear=2026, propertyClass=88, propertyClassDescription=Designated forest land under chapter 84.33 RCW, source=Stevens County Assessor (RealPropertyParcels_Public)]
-- **Property tax**: ok. billed 2026 tax $1,556.27 [taxTotal=1556.27, taxYear=2026, taxBasis=billed, taxSource=Stevens County Treasurer (property search hosted by True Automation)]
+- **Property tax**: unavailable. unavailable: property tax not available [taxStatus=unavailable]
 - **Listing**: unavailable. no listing match in connected dataset (not evidence the parcel is unlisted) [matchCount=500, confidence=insufficient]
 
 Statuses: ok = usable data; unavailable = the API answered cleanly that the data is not available (or the browser would not request it); error = HTTP error, timeout, invalid JSON or an error field; mismatch = differs from `expected`; skipped = not run because the parcel lookup failed.
