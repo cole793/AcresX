@@ -1,24 +1,24 @@
 # County validation: Gallatin, MT
 
 - Base URL: https://acresx.cole-groshens.workers.dev
-- Run: 2026-11-26T22:23:53.881Z
-- Parcels: 12, with an error or mismatch: 0
-- Layer results: ok 173, unavailable 19, error 0, mismatch 0, skipped 0
+- Run: 2026-11-27T22:04:24.213Z
+- Parcels: 12, with an error or mismatch: 4
+- Layer results: ok 169, unavailable 19, error 4, mismatch 0, skipped 0
 
 | Parcel | Parcel | Wells | Existing well | Soil | Terrain | Slope grid | Flood | Wetlands | Utility | Power | Public water/sewer | Zoning | Zoning rules | Assessment | Property tax | Listing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 06079621201790000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06079611101010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06069818101020000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06079801358210000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
+| 06079801358210000 | ok | ok | ok | ok | ok | ok | ok | error | ok | ok | ok | ok | unavailable | ok | ok | unavailable |
 | 06069905302080000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06069624301010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06033804413010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06033908402700000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
 | 06110827101470000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06101033302010000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
-| 06042734301530000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
-| 06079812230210000 | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
+| 06101033302010000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | unavailable | ok | ok | unavailable |
+| 06042734301530000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable |
+| 06079812230210000 | ok | error | ok | ok | ok | ok | ok | ok | ok | ok | ok | ok | unavailable | ok | unavailable | unavailable |
 
 ## Parcel details
 
@@ -96,7 +96,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot in
 - **Terrain**: ok. avg grade 1.5%, max 1.6% [gradePct=1.5, maxGradePct=1.6, reliefFt=1, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 2.8% [cellCount=16, avgSlopePct=2.8, maxSlopePct=10, partial=false]
 - **Flood**: ok. zones X (via FEMA NFHL) [high=false, intersects=true, zones=X, category=minimal, provider=FEMA NFHL]
-- **Wetlands**: ok. no NWI wetlands [intersects=false, count=0, coveragePct=0]
+- **Wetlands**: error. HTTP 502: Wetland data unavailable: USFWS NWI returned 503; retry returned 503
 - **Utility**: ok. NORTHWESTERN ENERGY LLC - (MT) [providers=NORTHWESTERN ENERGY LLC - (MT)]
 - **Power**: ok. NORTHWESTERN ENERGY LLC - (MT) [provider=NORTHWESTERN ENERGY LLC - (MT), confidence=low, distributionStatus=no_verified_distance]
 - **Public water/sewer**: ok. water served (City of Bozeman) 9 m; sewer served (City of Bozeman) 13 m [water=served, sewer=served, waterProvider=City of Bozeman, sewerProvider=City of Bozeman, waterProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, sewerProviders=City of Bozeman; Bozeman - Drinking Water & Wastewater Planning Area, waterPublic=true, sewerPublic=true, waterDistanceM=9, sewerDistanceM=13, failedLayers=(none)]
@@ -216,7 +216,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 5-40 ac). Improved parcel
 Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt parcel near Belgrade (River Rock area) in a gap of the county zoning map (no district and no unzoned polygon), outside mapped city limits.
 
 - **Parcel**: ok. parcel 06101033302010000, 74.68 ac (mapped) [parcelId=06101033302010000, acres=74.68, lat=45.790464, lon=-111.239659, acresSource=mapped outline]
-- **Wells**: ok. 1581 well record(s), 5 of nearest 5 report depth [wellCount=1581, nearestDepthsCount=5, nearestMi=0.17, medianDepthFt=73]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. Possible well record near this parcel [status=likely_match, confidence=Moderate, score=54]
 - **Soil**: ok. favorable (Beaverell loam, 0 to 2 percent slopes) [feasibility=favorable, mapUnit=Beaverell loam, 0 to 2 percent slopes, hydrologicGroup=B, drainage=Well drained, soilSlopePct=1, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 0.7%, max 0.9% [gradePct=0.7, maxGradePct=0.9, reliefFt=18, sampleCount=9]
@@ -237,8 +237,8 @@ Why: Picked by the 2026-11-02 discovery run (acre band 40+ ac). Large exempt par
 Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant lot (RC-SF-2.5); returned an empty zone code before the fix.
 
 - **Parcel**: ok. parcel 06042734301530000, 2.76 ac (mapped) [parcelId=06042734301530000, acres=2.76, address=OUTLOOK TRL, lat=45.266901, lon=-111.344732, acresSource=mapped outline]
-- **Wells**: ok. 316 well record(s), 5 of nearest 5 report depth [wellCount=316, nearestDepthsCount=5, nearestMi=0.07, medianDepthFt=140]
-- **Existing well**: ok. Possible well record near this parcel [status=possible_match, confidence=Low, score=25]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
+- **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. limited (Lonniebee-Cowood complex, 35 to 60 percent slopes) [feasibility=limited, mapUnit=Lonniebee-Cowood complex, 35 to 60 percent slopes, hydrologicGroup=C, drainage=Well drained, soilSlopePct=48, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 29.2%, max 58.5% [gradePct=29.2, maxGradePct=58.5, reliefFt=152, sampleCount=9]
 - **Slope grid**: ok. 16 cells, avg 22.6% [cellCount=16, avgSlopePct=22.6, maxSlopePct=34.7, partial=false]
@@ -258,7 +258,7 @@ Why: Picked by the 2026-11-02 discovery run (acre band 1-5 ac). Big Sky vacant l
 Why: Picked by the 2026-11-02 discovery run (acre band under 1 ac). Small lot inside Bozeman city limits; was "No mapped zoning district", now City of Bozeman zoning (R-2). Public water/sewer hand-checked 2026-11-09 (read-only queries of the layers themselves, not through AcresX): Bozeman COB_Utilities Wastewater_Utility/MapServer/8 collector 3.3 m and Water_Utility/MapServer/6 distribution main 12.0 m from the outline; inside Bozeman city limits (layer 267).
 
 - **Parcel**: ok. parcel 06079812230210000, 0.26 ac (mapped) [parcelId=06079812230210000, acres=0.26, address=518 N 17TH AVE, lat=45.685405, lon=-111.059186, acresSource=mapped outline]
-- **Wells**: ok. 1476 well record(s), 5 of nearest 5 report depth [wellCount=1476, nearestDepthsCount=5, nearestMi=0.11, medianDepthFt=42]
+- **Wells**: error. HTTP 502: GWIC Boreholes service timed out after 8s
 - **Existing well**: ok. No existing well match found [status=no_match, confidence=Low, score=0]
 - **Soil**: ok. moderate (Urban land) [feasibility=moderate, mapUnit=Urban land, soilSlopePct=0, source=USDA NRCS Soil Data Access, backup=false]
 - **Terrain**: ok. avg grade 1.4%, max 1.8% [gradePct=1.4, maxGradePct=1.8, reliefFt=1, sampleCount=9]
